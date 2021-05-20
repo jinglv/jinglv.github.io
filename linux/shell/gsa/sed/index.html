@@ -1,0 +1,663 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>三剑客之sed | Jing's Blog</title><meta name="keywords" content="Shell"><meta name="author" content="jinglv,lvjing0705@126.com"><meta name="copyright" content="jinglv"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="介绍基础介绍 sed(Stream Editor)，流编辑器。对标准输出或文件逐行进行处理  语法格式 第一种形式：stdout | sed [option] “pattern command” 第二种形式：sed [option] “pattern command” file  处理过程sed 编辑器逐行处理文件（或输入），并将输出结果发送到屏幕。 sed 的命令就是在 vi和 ed&#x2F;ex 编辑">
+<meta property="og:type" content="article">
+<meta property="og:title" content="三剑客之sed">
+<meta property="og:url" content="https://jinglv.github.io/linux/shell/gsa/sed/index.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="介绍基础介绍 sed(Stream Editor)，流编辑器。对标准输出或文件逐行进行处理  语法格式 第一种形式：stdout | sed [option] “pattern command” 第二种形式：sed [option] “pattern command” file  处理过程sed 编辑器逐行处理文件（或输入），并将输出结果发送到屏幕。 sed 的命令就是在 vi和 ed&#x2F;ex 编辑">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg">
+<meta property="article:published_time" content="2021-05-17T03:25:09.302Z">
+<meta property="article:modified_time" content="2021-05-17T03:25:09.302Z">
+<meta property="article:author" content="jinglv">
+<meta property="article:tag" content="Shell">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://jinglv.github.io/linux/shell/gsa/sed/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":200},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '三剑客之sed',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-05-17 11:25:09'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    })(window)</script><meta name="generator" content="Hexo 5.3.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Jing's Blog" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/img/avatar.jpeg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img" id="page-header"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Jing's Blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">三剑客之sed</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-05-17T03:25:09.302Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-05-17T03:25:09.302Z" title="更新于 2021-05-17 11:25:09">2021-05-17</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Linux/">Linux</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="三剑客之sed"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div><article class="post-content" id="article-container"><h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><h2 id="基础介绍"><a href="#基础介绍" class="headerlink" title="基础介绍"></a>基础介绍</h2><ul>
+<li>sed(Stream Editor)，流编辑器。对标准输出或文件逐行进行处理</li>
+</ul>
+<h2 id="语法格式"><a href="#语法格式" class="headerlink" title="语法格式"></a>语法格式</h2><ul>
+<li>第一种形式：stdout | sed [option] “pattern command”</li>
+<li>第二种形式：sed [option] “pattern command” file</li>
+</ul>
+<h2 id="处理过程"><a href="#处理过程" class="headerlink" title="处理过程"></a>处理过程</h2><p>sed 编辑器逐行处理文件（或输入），并将输出结果发送到屏幕。 sed 的命令就是在 vi和 ed/ex 编辑器中见到的那些。 sed 把当前正在处理的行保存在一个临时缓存区中，这个缓存区称为模式空间或临时缓冲。sed 处理完模式空间中的行后（即在该行上执行 sed 命令后），就把改行发送到屏幕上（除非之前有命令删除这一行或取消打印操作）。 sed 每处理完输入文件的最后一行后， sed 便结束运行。 sed 把每一行都存在临时缓存区中，对这个副本进行编辑，所以不会修改或破坏源文件。</p>
+<h1 id="sed选项"><a href="#sed选项" class="headerlink" title="sed选项"></a>sed选项</h1><table>
+<thead>
+<tr>
+<th>选项</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-n</td>
+<td>只打印模式匹配行</td>
+</tr>
+<tr>
+<td>-e</td>
+<td>直接在命令行进行sed编辑，默认选项</td>
+</tr>
+<tr>
+<td>-f</td>
+<td>编辑动作保存在文件中，指定文件执行</td>
+</tr>
+<tr>
+<td>-r</td>
+<td>支持扩展正则表达式</td>
+</tr>
+<tr>
+<td>-i</td>
+<td>直接修改文件内容</td>
+</tr>
+</tbody></table>
+<h1 id="sed中的pattern详解"><a href="#sed中的pattern详解" class="headerlink" title="sed中的pattern详解"></a>sed中的pattern详解</h1><h2 id="pattern用法表"><a href="#pattern用法表" class="headerlink" title="pattern用法表"></a>pattern用法表</h2><table>
+<thead>
+<tr>
+<th>匹配模式</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>10command</td>
+<td>匹配到第10行</td>
+</tr>
+<tr>
+<td>10,20command</td>
+<td>匹配从第10行开始，到第20行结束</td>
+</tr>
+<tr>
+<td>10,+5command</td>
+<td>匹配从第10行开始，到第16行结束</td>
+</tr>
+<tr>
+<td>/pattern1/command</td>
+<td>匹配到pattern1的行</td>
+</tr>
+<tr>
+<td>/pattern1/,/pattern2/command</td>
+<td>匹配到pattern1的开始行，到匹配到pattern2的结束行</td>
+</tr>
+<tr>
+<td>10,/pattern1/command</td>
+<td>匹配从第10行开始，到匹配到pattern1的行结束</td>
+</tr>
+<tr>
+<td>/pattern1/,10command</td>
+<td>匹配到pattern1的行开始，到第10行匹配结束</td>
+</tr>
+</tbody></table>
+<h2 id="练习"><a href="#练习" class="headerlink" title="练习"></a>练习</h2><table>
+<thead>
+<tr>
+<th>用法</th>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>LineNumber—直接指定行号</td>
+<td>sed -n “17p” file</td>
+<td>打印file文件的第17行</td>
+</tr>
+<tr>
+<td>StartLine，EndLine—指定起始行号和结束行号</td>
+<td>sed -n “10,20p” file</td>
+<td>打印file文件的10到20行</td>
+</tr>
+<tr>
+<td>StartLine，+N—指定起始行号，然后后面N行</td>
+<td>sed -n “10,+5p” file</td>
+<td>打印file文件中从第10行开始，往后面加5行</td>
+</tr>
+<tr>
+<td>/pattern1/—正则表达式匹配的行</td>
+<td>sed -n “/^root/p” file</td>
+<td>打印file文件中以root开头的行</td>
+</tr>
+<tr>
+<td>/pattern1/，/pattern2/—从匹配到pattern1的行开始，到匹配到pattern2的行结束</td>
+<td>sed -n “/^ftp/,/^mail/p” file</td>
+<td>打印file文件中第一个匹配到以ftp开头的行开始，到第二个匹配到以mail开头的行结束</td>
+</tr>
+<tr>
+<td>LineNumber,/pattern1/从指定行号开始匹配，直到匹配到pattern1的行</td>
+<td>sed -n “4,/^hdfs/p” file</td>
+<td>打印file文件中从第4行开始匹配，直到以hdfs开头的行</td>
+</tr>
+<tr>
+<td>/pattern1/,LineNumber—从pattern1匹配的行开始，直到匹配到指定的行数结束</td>
+<td>sed -n “/root/,10p” file</td>
+<td>打印file文件中匹配root行，直到第10行结束</td>
+</tr>
+</tbody></table>
+<h1 id="sed中的编辑命令详解"><a href="#sed中的编辑命令详解" class="headerlink" title="sed中的编辑命令详解"></a>sed中的编辑命令详解</h1><h2 id="编辑命令对照表"><a href="#编辑命令对照表" class="headerlink" title="编辑命令对照表"></a>编辑命令对照表</h2><table>
+<thead>
+<tr>
+<th>类别</th>
+<th>编辑命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>查询</td>
+<td>p</td>
+<td>打印</td>
+</tr>
+<tr>
+<td>增加</td>
+<td>a</td>
+<td>行后追加</td>
+</tr>
+<tr>
+<td></td>
+<td>i</td>
+<td>行前追加</td>
+</tr>
+<tr>
+<td></td>
+<td>r</td>
+<td>外部文件读入，行后追加</td>
+</tr>
+<tr>
+<td></td>
+<td>w</td>
+<td>匹配行写入外部文件</td>
+</tr>
+<tr>
+<td>删除</td>
+<td>d</td>
+<td>删除</td>
+</tr>
+<tr>
+<td>修改</td>
+<td>s/old/new</td>
+<td>将行内第一个old替换为new</td>
+</tr>
+<tr>
+<td></td>
+<td>s/old/new/g</td>
+<td>将行内全部的old替换为new</td>
+</tr>
+<tr>
+<td></td>
+<td>s/old/new/2g</td>
+<td>将行内前2个old替换为new</td>
+</tr>
+<tr>
+<td></td>
+<td>s/old/new/ig</td>
+<td>将行内old全部替换为new，忽略大小写</td>
+</tr>
+<tr>
+<td>其他编辑命令</td>
+<td>=</td>
+<td>显示行号</td>
+</tr>
+</tbody></table>
+<h2 id="什么是反向引用？"><a href="#什么是反向引用？" class="headerlink" title="什么是反向引用？"></a>什么是反向引用？</h2><ul>
+<li><p>&amp;和\1    引用模式匹配到整个串</p>
+</li>
+<li><p>sed “s/1..e/&amp;r/g” file    在file中搜索以1开头，然后跟两个任意字符，以e结尾的字符串</p>
+</li>
+<li><p><code>sed "s/\(1..e\)/\1r/g" file </code>   和上面实现一样的功能，使用\1代表搜寻到的字符串</p>
+<p>上面两种方式实现了一样的功能，分别使用&amp;和\1引用前面匹配到整个字符串</p>
+<p>两者区别在于&amp;只能表示匹配到的完整字符串，只能引用整个字符串；而\1可以使用()对匹配到的字符串</p>
+<p>例如：如果我们仅想要替换匹配到的字符串的一部分，name必须使用\1这种方式，不能使用&amp;</p>
+<p>查找test.txt文中以1开头，紧接着跟着两个任意字符，再接一个e的字符串。将找到的字符串中开头的</p>
+<p><code>sed "s/1\(..e\)/L\1/g" test.txt</code></p>
+</li>
+</ul>
+<h2 id="sed中引用变量时注意事项："><a href="#sed中引用变量时注意事项：" class="headerlink" title="sed中引用变量时注意事项："></a>sed中引用变量时注意事项：</h2><ol>
+<li>匹配模式中存在边，则建议使用双引号</li>
+<li>sed中需要引入自定义变量时，如果外面使用单引号，则自定义变量也必须使用单引号</li>
+</ol>
+<h1 id="利用sed查询特定内容"><a href="#利用sed查询特定内容" class="headerlink" title="利用sed查询特定内容"></a>利用sed查询特定内容</h1><h2 id="查询命令对照表"><a href="#查询命令对照表" class="headerlink" title="查询命令对照表"></a>查询命令对照表</h2><table>
+<thead>
+<tr>
+<th>查询命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1p</td>
+<td>打印1行内容</td>
+</tr>
+<tr>
+<td>1,10p</td>
+<td>打印1行到10行的内容</td>
+</tr>
+<tr>
+<td>1,+5p</td>
+<td>打印1行到6行的内容</td>
+</tr>
+<tr>
+<td>/pattern1/p</td>
+<td>打印每行中匹配到pattern1的行内容</td>
+</tr>
+<tr>
+<td>/pattern1/,/pattern2/p</td>
+<td>打印匹配到pattern1的行直到匹配到pattern2的所有内容</td>
+</tr>
+<tr>
+<td>/pattern1/,10p</td>
+<td>打印匹配到pattern1的行到10行的所有行内容</td>
+</tr>
+<tr>
+<td>10,/pattern1/p</td>
+<td>打印第10行直到匹配到pattern1的所有行内容</td>
+</tr>
+</tbody></table>
+<h2 id="练习-1"><a href="#练习-1" class="headerlink" title="练习"></a>练习</h2><table>
+<thead>
+<tr>
+<th>打印/etc/passwd中第20行的内容</th>
+<th>sed -n ‘20p’ /etc/passwd</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>打印/etc/passwd中从第8行开始，到第15行结束的内容</td>
+<td>sed -n ‘8,15p’ /etc/passwd</td>
+</tr>
+<tr>
+<td>打印/etc/passwd中从第8行开始，然后+5行结束的内容</td>
+<td>sed -n ‘8,+5p’ /etc/passwd</td>
+</tr>
+<tr>
+<td>打印/etc/passwd中开头匹配lvjing字符串的内容</td>
+<td>sed -n ‘/^lvjing/p’ /etc/passwd</td>
+</tr>
+<tr>
+<td>打印/etc/passwd中开头为root的行开始，到开头为hdfs的行结束的内容</td>
+<td>sed -n ‘/^root/,/^hdfs/p’ /etc/passwd</td>
+</tr>
+<tr>
+<td>打印/etc/passwd中第8行开始，到含有/sbin/nologin的内容的行结束内容</td>
+<td>sed -n ‘8,//sbin/nologin/p’ /etc/passwd</td>
+</tr>
+<tr>
+<td>打印/etc/passwd中第一个包含/bin/bash内容的行开始，到第5行结束的内容</td>
+<td>sed -n ‘//bin/bash/,5p’ /etc/passwd</td>
+</tr>
+</tbody></table>
+<h2 id="脚本练习"><a href="#脚本练习" class="headerlink" title="脚本练习"></a>脚本练习</h2><p>需求描述：处理一个类似MySQL配置文件my.cnf的文本，示例如下：</p>
+<figure class="highlight plain"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br></pre></td><td class="code"><pre><span class="line">[client]</span><br><span class="line">port = 3306</span><br><span class="line">socket = /data/mysqldata/3307/mysql.sock</span><br><span class="line">default-character-set = utf8mb4</span><br><span class="line"></span><br><span class="line">[mysqld]</span><br><span class="line">port = 3307</span><br><span class="line">socket = /data/mysqldata/3307/mysql.sock</span><br><span class="line">pid-file = /data/mysqldata/3307/mysql.pid</span><br><span class="line">basedir = /usr/local/mysql-5.7.11</span><br><span class="line">datadir = /data/mysqldata/3307/data</span><br><span class="line">tmpdir = /data/mysqldata/3307/tmp</span><br><span class="line">character_set_server = utf8mb4</span><br><span class="line">collation_server = utf8mb4_bin</span><br><span class="line">user = mysql</span><br><span class="line">log_bin_trust_function_creators = 1 　　　　</span><br><span class="line">performance_schema = 0</span><br><span class="line">secure_auth = 1</span><br><span class="line">ft_min_word_len = 1</span><br><span class="line">myisam_recover</span><br><span class="line">explicit_defaults_for_timestamp</span><br><span class="line">event_scheduler</span><br><span class="line">skip-external-locking</span><br><span class="line">skip-name-resolve</span><br><span class="line">bind-address = 127.0.0.1</span><br><span class="line">skip-slave-start</span><br><span class="line">slave_net_timeout = 30</span><br><span class="line">local-infile = 0</span><br><span class="line">back_log = 1024 </span><br><span class="line">sql_mode = NO_ENGINE_SUBSTITUTION,NO_AUTO_CREATE_USER</span><br><span class="line">NO_AUTO_CREATE_USER　　　　　　　　　　　　　　　　　　　　　　　</span><br><span class="line">key_buffer_size = 32M</span><br><span class="line">max_allowed_packet = 512M</span><br><span class="line">thread_stack = 256K</span><br><span class="line">sort_buffer_size = 16M</span><br><span class="line">read_buffer_size = 16M</span><br><span class="line">join_buffer_size = 16M</span><br><span class="line">read_rnd_buffer_size = 32M</span><br><span class="line">net_buffer_length = 16K</span><br><span class="line">myisam_sort_buffer_size = 128M</span><br><span class="line">bulk_insert_buffer_size = 32M</span><br><span class="line">thread_cache_size = 384</span><br><span class="line">query_cache_size = 0　</span><br><span class="line">query_cache_type = 0　　</span><br><span class="line">tmp_table_size = 1024M</span><br><span class="line">max_heap_table_size = 512M </span><br><span class="line">open_files_limit = 10240</span><br><span class="line">max_connections = 2000</span><br><span class="line">max-user-connections = 0</span><br><span class="line">max_connect_errors = 100000</span><br><span class="line">server_id = 100</span><br><span class="line">log_slave_updates = 1</span><br><span class="line">expire-logs-days = 15</span><br><span class="line">max_binlog_size = 512M</span><br><span class="line">auto_increment_offset = 1</span><br><span class="line">auto_increment_increment = 2　</span><br><span class="line">relay_log_info_repository = TABLE</span><br><span class="line">master_info_repository = TABLE</span><br><span class="line">relay_log_recovery = on</span><br><span class="line"></span><br><span class="line"># *** innodb setting ***</span><br><span class="line">innodb_buffer_pool_size = 4G</span><br><span class="line">innodb_data_file_path = ibdata1:1G:autoextend　</span><br><span class="line">innodb_flush_log_at_trx_commit = 0</span><br><span class="line">innodb_read_io_threads = 8　　</span><br><span class="line">innodb_write_io_threads = 8</span><br><span class="line">innodb_file_format = Barracuda</span><br><span class="line">innodb_open_files = 65536</span><br><span class="line">innodb_purge_threads = 1</span><br><span class="line">innodb_support_xa = FALSE</span><br><span class="line">innodb_log_buffer_size = 256M</span><br><span class="line">innodb_log_file_size = 1G</span><br><span class="line">innodb_log_files_in_group = 3</span><br><span class="line">innodb_max_dirty_pages_pct = 75</span><br><span class="line">innodb_buffer_pool_instances = 4</span><br><span class="line">innodb_io_capacity = 500</span><br><span class="line">innodb_file_per_table = 1</span><br><span class="line">innodb_change_buffering = inserts</span><br><span class="line">innodb_adaptive_flushing = 1</span><br><span class="line">transaction-isolation = READ-COMMITTED</span><br><span class="line">innodb_flush_method = O_DIRECT</span><br><span class="line"></span><br><span class="line">[mysqldump]</span><br><span class="line">quick</span><br><span class="line">max_allowed_packet = 512M</span><br><span class="line">net_buffer_length = 16384</span><br><span class="line"></span><br><span class="line">[mysql]</span><br><span class="line">auto-rehash</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">[isamchk]</span><br><span class="line">key_buffer = 256M</span><br><span class="line">sort_buffer_size = 256M</span><br><span class="line">read_buffer = 2M</span><br><span class="line">write_buffer = 2M</span><br><span class="line"></span><br><span class="line"> </span><br><span class="line"></span><br><span class="line">[myisamchk]</span><br><span class="line">key_buffer = 256M</span><br><span class="line">sort_buffer_size = 256M</span><br><span class="line">read_buffer = 2M</span><br><span class="line">write_buffer = 2M</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">[mysqlhotcopy]</span><br><span class="line">interactive-timeout</span><br></pre></td></tr></tbody></table></figure>
+<p>编写脚本实现以下功能：输出文件有几个段，并且针对每个段可以统计配置参数总个数(需要去除空行和注释)</p>
+<p>预期输出结果：</p>
+<p>1:client xx<br>2:mysqld xx<br>3:mysqldump xx<br>4:mysql xx<br>5:isamchk xx<br>6:myisamchk xx<br>7:mysqlhotcopy xx</p>
+<p>function get_all_segment</p>
+<p>function count_items_in_segment #根据段名查找下面的内容,段名间的匹配</p>
+<p>获取段的个数：</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[root@iZ2ze0gzw63rkie6uwjs74Z lvjing]# grep -E "^\[" my.cnf</span><br><span class="line">[client]</span><br><span class="line">[mysqld]</span><br><span class="line">[mysqldump]</span><br><span class="line">[mysql]</span><br><span class="line">[isamchk]</span><br><span class="line">[myisamchk]</span><br><span class="line">[mysqlhotcopy]</span><br><span class="line">[root@iZ2ze0gzw63rkie6uwjs74Z lvjing]# sed -n '/\[.*\]/p' my.cnf</span><br><span class="line">[client]</span><br><span class="line">[mysqld]</span><br><span class="line">[mysqldump]</span><br><span class="line">[mysql]</span><br><span class="line">[isamchk]</span><br><span class="line">[myisamchk]</span><br><span class="line">[mysqlhotcopy]</span><br><span class="line"><span class="meta">#</span><span class="bash"> 将[]替换为空</span></span><br><span class="line">[root@iZ2ze0gzw63rkie6uwjs74Z lvjing]# sed -n '/\[.*\]/p' my.cnf | sed -e 's/\[//g' -e 's/\]//g'</span><br><span class="line">client</span><br><span class="line">mysqld</span><br><span class="line">mysqldump</span><br><span class="line">mysql</span><br><span class="line">isamchk</span><br><span class="line">myisamchk</span><br><span class="line">mysqlhotcopy</span><br></pre></td></tr></tbody></table></figure>
+<p>脚本实现：</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">! /bin/bash</span></span><br><span class="line"><span class="meta">#</span></span><br><span class="line"></span><br><span class="line">FILE_NAME=/home/lvjing/my.cnf</span><br><span class="line"></span><br><span class="line">function get_all_segments</span><br><span class="line">{</span><br><span class="line">	echo "`sed -n '/\[.*\]/p' $FILE_NAME | sed -e 's/\[//g' -e 's/\]//g'`"</span><br><span class="line"></span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">function count_items_in_segment</span><br><span class="line">{</span><br><span class="line">	items=`sed -n '/\['$1'\]/,/\[.*\]/p' $FILE_NAME | grep -v '^#' | grep -v '^$' | grep -v '\[.*\]'`</span><br><span class="line">	index=0</span><br><span class="line">	for item in $items</span><br><span class="line">	do</span><br><span class="line">		index=`expr $index + 1`</span><br><span class="line">	done</span><br><span class="line"></span><br><span class="line">	echo $index</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">number=0</span><br><span class="line">for segment in `get_all_segments`</span><br><span class="line">do</span><br><span class="line">	number=`expr $number + 1`</span><br><span class="line">	items_count=`count_items_in_segment $segment`</span><br><span class="line">	echo "$number: $segment $items_count"</span><br><span class="line">done</span><br></pre></td></tr></tbody></table></figure>
+<p>执行结果：</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@iZ2ze0gzw63rkie6uwjs74Z lvjing]# sh example.sh</span><br><span class="line">1: client 9</span><br><span class="line">2: mysqld 206</span><br><span class="line">3: mysqldump 7</span><br><span class="line">4: mysql 1</span><br><span class="line">5: isamchk 12</span><br><span class="line">6: myisamchk 12</span><br><span class="line">7: mysqlhotcopy 1</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h1 id="利用sed删除特定内容"><a href="#利用sed删除特定内容" class="headerlink" title="利用sed删除特定内容"></a>利用sed删除特定内容</h1><h2 id="删除命令对照表"><a href="#删除命令对照表" class="headerlink" title="删除命令对照表"></a>删除命令对照表</h2><table>
+<thead>
+<tr>
+<th>查询命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1d</td>
+<td>删除第1行内容</td>
+</tr>
+<tr>
+<td>1,10d</td>
+<td>删除1行到10行内容</td>
+</tr>
+<tr>
+<td>1,+5d</td>
+<td>删除1行到6行内容</td>
+</tr>
+<tr>
+<td>/pattern1/d</td>
+<td>删除每行中匹配到pattern1的行内容</td>
+</tr>
+<tr>
+<td>/pattern1/,/pattern2/d</td>
+<td>删除匹配到pattern1的行直到匹配到pattern2的所有行内容</td>
+</tr>
+<tr>
+<td>/pattern1/,10d</td>
+<td>删除匹配到pattern1的行到10行的所有行内容</td>
+</tr>
+<tr>
+<td>10,/pattern1/d</td>
+<td>删除第10行直到匹配到pattern1的所有行内容</td>
+</tr>
+</tbody></table>
+<h2 id="练习-2"><a href="#练习-2" class="headerlink" title="练习"></a>练习</h2><table>
+<thead>
+<tr>
+<th>删除/etc/passwd中的第15行</th>
+<th>sed -i ‘15d’ passwd</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>删除/etc/passwd中的第8行到第14行的所有内容</td>
+<td>sed -i ‘8,14d’ passwd</td>
+</tr>
+<tr>
+<td>删除/etc/passwd中不能登录的用户（筛选条件/sbin/nologin）</td>
+<td>sed -i ‘/\sbin/nologin/d’ passwd</td>
+</tr>
+<tr>
+<td>删除/etc/passwd中以mail开头的行，到以yarn开头的行的所有内容</td>
+<td>sed -i ‘/^mail/,/^yarn/d’ passwd</td>
+</tr>
+<tr>
+<td>删除/etc/passwd中第一个不能登录的用户，到第13行的所有内容</td>
+<td>sed -i ‘/\sbin/nologin/,13d’ passwd<br>这种方式有缺陷，13行后还会继续匹配不能登录的用户进行删除</td>
+</tr>
+<tr>
+<td>删除/etc/passwd中第5行到以ftp开头的所有行的内容</td>
+<td>sed -i ‘5,/^ftp/d’ passwd</td>
+</tr>
+<tr>
+<td>删除/etc/passwd中已yarn开头到最后行的所有内容</td>
+<td>Sed -i ‘/^yarn/,$’ passwd</td>
+</tr>
+<tr>
+<td>删除/etc/passwd中不能登录的所有用户</td>
+<td>sed -i ‘/\sbin/nologin/d’ passwd</td>
+</tr>
+</tbody></table>
+<p>注意: </p>
+<ul>
+<li><code>-i</code> 直接修改文件内容</li>
+<li>/etc/passwd是重要文件，需要拷贝一个文件进行操作</li>
+<li><code>$</code>表示最后一行</li>
+</ul>
+<h2 id="脚本练习-1"><a href="#脚本练习-1" class="headerlink" title="脚本练习"></a>脚本练习</h2><ol>
+<li><p>删除配置文件中的所有注释行和空行</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '/^#/d;/^$/d' my.cnf</span><br></pre></td></tr></tbody></table></figure>
+<p>注意：上面的命令只会将<code>#</code>顶头的行删除，剩下的行有空格带有<code>#</code>注释的行则不会删除</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">my.cnf# 删除带有空格的#行</span><br><span class="line">sed -i '/[:blank:]*#/' my.cnf</span><br></pre></td></tr></tbody></table></figure>
+<p>[:blank:]* 表示空格字符</p>
+</li>
+</ol>
+<ol start="2">
+<li><p>在配置文件中所有不以#开头的行前面添加*符号，注意：以#开头的行不添加</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i 's/^[^#]/\*&amp;/g' my.cnf</span><br></pre></td></tr></tbody></table></figure>
+<p><code>^[^#]</code>非警号开头的行</p>
+</li>
+</ol>
+<h1 id="利用sed修改文件内容"><a href="#利用sed修改文件内容" class="headerlink" title="利用sed修改文件内容"></a>利用sed修改文件内容</h1><h2 id="修改命令对照表"><a href="#修改命令对照表" class="headerlink" title="修改命令对照表"></a>修改命令对照表</h2><table>
+<thead>
+<tr>
+<th>编辑命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1s/old/new/</td>
+<td>替换第1行内容old为new，如果不加数字，则是每一行</td>
+</tr>
+<tr>
+<td>1,10s/old/new/</td>
+<td>替换1行到10行的内容old为new</td>
+</tr>
+<tr>
+<td>1,+5s/old/new/</td>
+<td>替换1行到6行的内容old为new</td>
+</tr>
+<tr>
+<td>/pattern1/s/old/new/</td>
+<td>替换匹配到pattern1的行内容old为new</td>
+</tr>
+<tr>
+<td>/pattern1/,/pattern2/s/old/new</td>
+<td>替换匹配到pattern1的行直到匹配到pattern2的所有行内容old为new</td>
+</tr>
+<tr>
+<td>/pattern1/,10s/old/new/</td>
+<td>替换匹配到pattern1的行到10行的所有行内容old为new</td>
+</tr>
+<tr>
+<td>10,/pattern1/s/old/new/</td>
+<td>替换第10行直到匹配到pattern1的所有行内容old为new</td>
+</tr>
+</tbody></table>
+<h2 id="练习-3"><a href="#练习-3" class="headerlink" title="练习"></a>练习</h2><table>
+<thead>
+<tr>
+<th>修改/etc/passwd中第一行中第1个root为ROOT</th>
+<th>sed -i ‘1s/root/ROOT/‘ passwd</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>修改/etc/passwd中第5行到第10行中所有的/sbin/nologin为/bin/bash</td>
+<td>sed -i ‘5,10s//sbin/nologin//bin/bash/g’ passwd</td>
+</tr>
+<tr>
+<td>修改/etc/passwd中匹配到/sbin/nologin，将匹配到行中的login中改为大写的LOGIN</td>
+<td>sed -i ‘//sbin/nologin/s/login/LOGIN/g’ passwd</td>
+</tr>
+<tr>
+<td>修改/etc/passwd中从匹配到以root开头的行，到匹配到行中包含mail的所有行。修改内容为将这些所有匹配到的行中的bin改为HADOOP</td>
+<td>sed -i ‘/^root/,/mail/s/bin/HADOOP/g’ passwd</td>
+</tr>
+<tr>
+<td>修改/etc/passwd中从匹配以root开头的行，到第15行中的所有行，修改内容为将这些行中的nologin修改为SPARK</td>
+<td>sed -i ‘/^root/,15s/nologin/SPARK/g’ passwd</td>
+</tr>
+<tr>
+<td>修改/etc/passwd中从第15行开始，到匹配到以yarn开头的所有行，修改内容为将这些行中的bin修改为BIN</td>
+<td>sed -i ‘15,/^yarn/s/bin/BIN/g’ passwd</td>
+</tr>
+</tbody></table>
+<h1 id="利用sed追加文件内容"><a href="#利用sed追加文件内容" class="headerlink" title="利用sed追加文件内容"></a>利用sed追加文件内容</h1><h2 id="追加用法总结"><a href="#追加用法总结" class="headerlink" title="追加用法总结"></a>追加用法总结</h2><ul>
+<li>a    在匹配行后面追加</li>
+<li>i      在匹配行前面追加</li>
+<li>r      将文件内容追加到匹配行后面</li>
+<li>w     将匹配行写入指定文件</li>
+</ul>
+<h2 id="追加用法示例详解"><a href="#追加用法示例详解" class="headerlink" title="追加用法示例详解"></a>追加用法示例详解</h2><ul>
+<li><p>a    append</p>
+<ul>
+<li><p>passwd文件第10行后面追加”Add Line Behind”</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '10a Add Line Behind' passwd</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>passwd文件第10行到第20行，每一行后面都追加”Test Line Behind”</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '10,20s Test Line Behind' passwd</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<ul>
+<li><p>passwd文件匹配到/bin/bash的行后面追加”Insert Line For /bin/bash Behind”</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '/\/bin\/bash/a Insert Line For /bin/bash Behind' passwd</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>i</li>
+</ul>
+</li>
+<li><p>passwd文件匹配到以yarn开头的行，在匹配行前面追加”Add Line Before”</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '/^yarn/i Add Line Before' passwd</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<ul>
+<li><p>passwd文件每一行前面追加”Insert Line Before Every Line”</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i 'i Insert Line Before Every Line' passwd</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>r</li>
+</ul>
+</li>
+<li><p>将/etc/fstab文件的内容追加到passwd文件的第20行后</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '20r /etc/fstab' passwd</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<ul>
+<li><p>将/etc/inittab文件的内容追加到passwd文件匹配/bin/bash行的后面</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '/\/bin\/bash/r /etc/inittab' passwd</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<ul>
+<li><p>将/etc/vconsole.conf文件内容追加到passwd文件特定行后面，匹配已ftp开头的行，到第18行的所有行</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '/^ftp/,18r /etc/vconsole.conf' passwd</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<ul>
+<li><p>w</p>
+<ul>
+<li><p>将passwd文件匹配到/bin/bash的行追加到/tmp/sed.txt文件中</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '/\/bin\/bash/w /tmp/sed.txt' passwd</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>将passwd文件从第10行开始，到匹配到hdfs开头的所有行内容追加到/tmp/sed-1.text</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -i '10,/^hdfs/w /tmp/sed-1.text' passwd</span><br></pre></td></tr></tbody></table></figure>
+
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:lvjing0705@126.com">jinglv</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://jinglv.github.io/linux/shell/gsa/sed/">https://jinglv.github.io/linux/shell/gsa/sed/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://jinglv.github.io" target="_blank">Jing's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Shell/">Shell</a></div><div class="post_share"><div class="social-share" data-image="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/linux/shell/gsa/gsa/"><img class="prev-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Linux文本处理三剑客</div></div></a></div><div class="next-post pull-right"><a href="/linux/shell/find/"><img class="next-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Shell编程中常用查找命令</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts-list"><div><a href="/linux/shell/actual/" title="Shell实战"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell实战</div></div></a></div><div><a href="/linux/shell/basics/" title="Shell基础语法"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell基础语法</div></div></a></div><div><a href="/linux/shell/find/" title="Shell编程中常用查找命令"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell编程中常用查找命令</div></div></a></div><div><a href="/linux/shell/function/" title="Shell函数高级用法"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell函数高级用法</div></div></a></div><div><a href="/linux/shell/use/" title="Shell典型应用"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell典型应用</div></div></a></div><div><a href="/linux/shell/variable/" title="Shell变量高级用法"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell变量高级用法</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-info-avatar is-center"><img class="avatar-img" src="/img/avatar.jpeg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-info__name">jinglv</div><div class="author-info__description"></div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div><div class="card-info-data-item is-center"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div><div class="card-info-data-item is-center"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/jinglv"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/jinglv" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="/lvjing0705@126.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">欢迎交流技术！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.1.</span> <span class="toc-text">基础介绍</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%AD%E6%B3%95%E6%A0%BC%E5%BC%8F"><span class="toc-number">1.2.</span> <span class="toc-text">语法格式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%84%E7%90%86%E8%BF%87%E7%A8%8B"><span class="toc-number">1.3.</span> <span class="toc-text">处理过程</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#sed%E9%80%89%E9%A1%B9"><span class="toc-number">2.</span> <span class="toc-text">sed选项</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#sed%E4%B8%AD%E7%9A%84pattern%E8%AF%A6%E8%A7%A3"><span class="toc-number">3.</span> <span class="toc-text">sed中的pattern详解</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#pattern%E7%94%A8%E6%B3%95%E8%A1%A8"><span class="toc-number">3.1.</span> <span class="toc-text">pattern用法表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0"><span class="toc-number">3.2.</span> <span class="toc-text">练习</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#sed%E4%B8%AD%E7%9A%84%E7%BC%96%E8%BE%91%E5%91%BD%E4%BB%A4%E8%AF%A6%E8%A7%A3"><span class="toc-number">4.</span> <span class="toc-text">sed中的编辑命令详解</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BC%96%E8%BE%91%E5%91%BD%E4%BB%A4%E5%AF%B9%E7%85%A7%E8%A1%A8"><span class="toc-number">4.1.</span> <span class="toc-text">编辑命令对照表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%8F%8D%E5%90%91%E5%BC%95%E7%94%A8%EF%BC%9F"><span class="toc-number">4.2.</span> <span class="toc-text">什么是反向引用？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sed%E4%B8%AD%E5%BC%95%E7%94%A8%E5%8F%98%E9%87%8F%E6%97%B6%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9%EF%BC%9A"><span class="toc-number">4.3.</span> <span class="toc-text">sed中引用变量时注意事项：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%A9%E7%94%A8sed%E6%9F%A5%E8%AF%A2%E7%89%B9%E5%AE%9A%E5%86%85%E5%AE%B9"><span class="toc-number">5.</span> <span class="toc-text">利用sed查询特定内容</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E5%91%BD%E4%BB%A4%E5%AF%B9%E7%85%A7%E8%A1%A8"><span class="toc-number">5.1.</span> <span class="toc-text">查询命令对照表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0-1"><span class="toc-number">5.2.</span> <span class="toc-text">练习</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%84%9A%E6%9C%AC%E7%BB%83%E4%B9%A0"><span class="toc-number">5.3.</span> <span class="toc-text">脚本练习</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%A9%E7%94%A8sed%E5%88%A0%E9%99%A4%E7%89%B9%E5%AE%9A%E5%86%85%E5%AE%B9"><span class="toc-number">6.</span> <span class="toc-text">利用sed删除特定内容</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A0%E9%99%A4%E5%91%BD%E4%BB%A4%E5%AF%B9%E7%85%A7%E8%A1%A8"><span class="toc-number">6.1.</span> <span class="toc-text">删除命令对照表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0-2"><span class="toc-number">6.2.</span> <span class="toc-text">练习</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%84%9A%E6%9C%AC%E7%BB%83%E4%B9%A0-1"><span class="toc-number">6.3.</span> <span class="toc-text">脚本练习</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%A9%E7%94%A8sed%E4%BF%AE%E6%94%B9%E6%96%87%E4%BB%B6%E5%86%85%E5%AE%B9"><span class="toc-number">7.</span> <span class="toc-text">利用sed修改文件内容</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E5%91%BD%E4%BB%A4%E5%AF%B9%E7%85%A7%E8%A1%A8"><span class="toc-number">7.1.</span> <span class="toc-text">修改命令对照表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0-3"><span class="toc-number">7.2.</span> <span class="toc-text">练习</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%A9%E7%94%A8sed%E8%BF%BD%E5%8A%A0%E6%96%87%E4%BB%B6%E5%86%85%E5%AE%B9"><span class="toc-number">8.</span> <span class="toc-text">利用sed追加文件内容</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%BD%E5%8A%A0%E7%94%A8%E6%B3%95%E6%80%BB%E7%BB%93"><span class="toc-number">8.1.</span> <span class="toc-text">追加用法总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%BD%E5%8A%A0%E7%94%A8%E6%B3%95%E7%A4%BA%E4%BE%8B%E8%AF%A6%E8%A7%A3"><span class="toc-number">8.2.</span> <span class="toc-text">追加用法示例详解</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/agency/" title="Nginx代理实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx代理实战"/></a><div class="content"><a class="title" href="/web/nginx/agency/" title="Nginx代理实战">Nginx代理实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/introduce/" title="Nginx介绍"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx介绍"/></a><div class="content"><a class="title" href="/web/nginx/introduce/" title="Nginx介绍">Nginx介绍</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/load/" title="Nginx负载均衡实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx负载均衡实战"/></a><div class="content"><a class="title" href="/web/nginx/load/" title="Nginx负载均衡实战">Nginx负载均衡实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx安装、常用命令及配置"/></a><div class="content"><a class="title" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置">Nginx安装、常用命令及配置</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/testtools/jmeter/record/" title="Jmeter录制与回放"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jmeter录制与回放"/></a><div class="content"><a class="title" href="/testtools/jmeter/record/" title="Jmeter录制与回放">Jmeter录制与回放</a><time datetime="2021-05-17T03:25:09.319Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021 By jinglv</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Hi, welcome to my <a href="https://jinglv.github.io/">blog</a>!</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

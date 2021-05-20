@@ -1,0 +1,227 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Jenkins容器中安装Python3 | Jing's Blog</title><meta name="keywords" content="Jenkins"><meta name="author" content="jinglv,lvjing0705@126.com"><meta name="copyright" content="jinglv"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Jenkins容器中安装Python3浅谈容器内安装 python3 方案 将 python3 挂载到容器工作目录上 直接复制 python3 目录到工作目录上 jenkins 容器内安装 python3  但经过尝试后，方案1和2都以失败告终，各种乱七八糟的报错，原因是宿主机和容器中的系统有差异，会缺少些配置，因此不推荐方案1和2，接下来我们选择方案3。 查看容器内的系统 以root进入jenk">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jenkins容器中安装Python3">
+<meta property="og:url" content="https://jinglv.github.io/jenkins/installpython3/index.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="Jenkins容器中安装Python3浅谈容器内安装 python3 方案 将 python3 挂载到容器工作目录上 直接复制 python3 目录到工作目录上 jenkins 容器内安装 python3  但经过尝试后，方案1和2都以失败告终，各种乱七八糟的报错，原因是宿主机和容器中的系统有差异，会缺少些配置，因此不推荐方案1和2，接下来我们选择方案3。 查看容器内的系统 以root进入jenk">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg">
+<meta property="article:published_time" content="2021-05-17T03:25:09.297Z">
+<meta property="article:modified_time" content="2021-05-17T03:25:09.297Z">
+<meta property="article:author" content="jinglv">
+<meta property="article:tag" content="Jenkins">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://jinglv.github.io/jenkins/installpython3/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":200},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Jenkins容器中安装Python3',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-05-17 11:25:09'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    })(window)</script><meta name="generator" content="Hexo 5.3.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Jing's Blog" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/img/avatar.jpeg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img" id="page-header"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Jing's Blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">Jenkins容器中安装Python3</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-05-17T03:25:09.297Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-05-17T03:25:09.297Z" title="更新于 2021-05-17 11:25:09">2021-05-17</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8C%81%E7%BB%AD%E4%BA%A4%E4%BB%98/">持续交付</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Jenkins容器中安装Python3"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div><article class="post-content" id="article-container"><h1 id="Jenkins容器中安装Python3"><a href="#Jenkins容器中安装Python3" class="headerlink" title="Jenkins容器中安装Python3"></a>Jenkins容器中安装Python3</h1><h2 id="浅谈容器内安装-python3-方案"><a href="#浅谈容器内安装-python3-方案" class="headerlink" title="浅谈容器内安装 python3 方案"></a>浅谈容器内安装 python3 方案</h2><ol>
+<li>将 python3 挂载到容器工作目录上</li>
+<li>直接复制 python3 目录到工作目录上</li>
+<li>jenkins 容器内安装 python3</li>
+</ol>
+<p>但经过尝试后，方案1和2都以失败告终，各种乱七八糟的报错，原因是宿主机和容器中的系统有差异，会缺少些配置，因此不推荐方案1和2，接下来我们选择方案3。</p>
+<h2 id="查看容器内的系统"><a href="#查看容器内的系统" class="headerlink" title="查看容器内的系统"></a>查看容器内的系统</h2><ul>
+<li>以root进入jenkins容器：<code>docker exec -it -u root 容器id|容器名 /bin/bash</code></li>
+<li><code>cat /etc/issue</code>查看系统类型</li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@iZ2ze0mc5577fn814ewhb8Z ~]<span class="comment"># docker exec -it -u root cca651588eb3 /bin/bash</span></span><br><span class="line">root@cca651588eb3:/<span class="comment"># cat /etc/issue</span></span><br><span class="line">Debian GNU/Linux 9 \n \l</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+<p>这是我们看到容器中的系统是Debian（不是Ubuntu、也不是CentOS，虽然我们的宿主机是CentOS），因此在容器中不能使用<code>yum</code>，但是可以使用<code>apt-get</code>。注意：一定要是root进入容器，否则在执行<code>apt-get</code>会告诉你没有权限。</p>
+<h2 id="容器中安装Python3"><a href="#容器中安装Python3" class="headerlink" title="容器中安装Python3"></a>容器中安装Python3</h2><ol>
+<li><p>更新apt-get : <code>apt-get update</code></p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@cca651588eb3:/<span class="comment"># apt-get update</span></span><br><span class="line">Get:1 http://security.debian.org/debian-security stretch/updates InRelease [53.0 kB]</span><br><span class="line">Get:2 http://security.debian.org/debian-security stretch/updates/main amd64 Packages [656 kB]</span><br><span class="line">Ign:3 http://deb.debian.org/debian stretch InRelease</span><br><span class="line">Get:5 http://deb.debian.org/debian stretch-updates InRelease [93.6 kB]</span><br><span class="line">……</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>安装依赖包</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">apt-get install build-essential -y</span><br><span class="line"></span><br><span class="line">apt-get install libncurses5-dev libncursesw5-dev libreadline6-dev -y</span><br><span class="line"></span><br><span class="line">apt-get install libdb5.3-dev libgdbm-dev libsqlite3-dev libssl-dev -y</span><br><span class="line"></span><br><span class="line">apt-get install libbz2-dev libexpat1-dev liblzma-dev zlib1g-dev -y</span><br><span class="line"></span><br><span class="line">apt-get install libssl-dev openssl -y</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="3">
+<li><p>在/var/jenkins_home目录下创建python3的安装目录</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@cca651588eb3:/<span class="comment"># cd /var/jenkins_home/</span></span><br><span class="line">root@cca651588eb3:/var/jenkins_home<span class="comment"># mkdir python3</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="4">
+<li><p>下载python3.9.1版本的压缩包：wget <a target="_blank" rel="noopener" href="https://www.python.org/ftp/python/3.9.1/Python-3.9.1.tgz">https://www.python.org/ftp/python/3.9.1/Python-3.9.1.tgz</a></p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">root@cca651588eb3:/var/jenkins_home<span class="comment"># mkdir python3</span></span><br><span class="line">root@cca651588eb3:/var/jenkins_home<span class="comment"># cd python3/</span></span><br><span class="line">root@cca651588eb3:/var/jenkins_home/python3<span class="comment"># wget https://www.python.org/ftp/python/3.9.1/Python-3.9.1.tgz</span></span><br><span class="line">--2021-02-20 06:06:35--  https://www.python.org/ftp/python/3.9.1/Python-3.9.1.tgz</span><br><span class="line">Resolving www.python.org (www.python.org)... 151.101.228.223, 2a04:4e42:1a::223</span><br><span class="line">Connecting to www.python.org (www.python.org)|151.101.228.223|:443... connected.</span><br><span class="line">HTTP request sent, awaiting response... 200 OK</span><br><span class="line">Length: 25372998 (24M) [application/octet-stream]</span><br><span class="line">Saving to: ‘Python-3.9.1.tgz’</span><br><span class="line"></span><br><span class="line">Python-3.9.1.tgz                      47%[===============================&gt;                                    ]  11.59M  31.8KB/s    <span class="keyword">in</span> 12m 2s</span><br><span class="line">……</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="5">
+<li><p>解压：tar -xvf Python-3.9.1.tgz</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root@cca651588eb3:/var/jenkins_home/python3<span class="comment"># tar -xvf Python-3.9.1.tgz</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="6">
+<li><p>进入解压后的目录，进行编译安装</p>
+<ul>
+<li>配置：<code>./configure --prefix=/var/jenkins_home/python3 --with-ssl</code> 报错缺少依赖包</li>
+<li>编译安装：<code>make &amp;&amp; make install</code></li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@cca651588eb3:/var/jenkins_home/python3<span class="comment"># cd Python-3.9.1</span></span><br><span class="line">root@cca651588eb3:/var/jenkins_home/python3/Python-3.9.1<span class="comment"># ./configure --prefix=/var/jenkins_home/python3 --with-ssl</span></span><br><span class="line">configure: WARNING: unrecognized options: --with-ssl</span><br><span class="line">checking build system <span class="built_in">type</span>... x86_64-pc-linux-gnu</span><br><span class="line">checking host system <span class="built_in">type</span>... x86_64-pc-linux-gnu</span><br><span class="line">……</span><br><span class="line">root@cca651588eb3:/var/jenkins_home/python3/Python-3.9.1<span class="comment"># make &amp;&amp; make install</span></span><br><span class="line">gcc -pthread -c -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall    -std=c99 -Wextra -Wno-unused-result -Wno-unused-parameter -Wno-missing-field-initializers -Werror=implicit-function-declaration -fvisibility=hidden  -I./Include/internal  -I. -I./Include    -DPy_BUILD_CORE -o Programs/python.o ./Programs/python.c</span><br><span class="line">……</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="7">
+<li><p>添加python3软连接</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ln -s /var/jenkins_home/python3/bin/python3.9  /usr/bin/python3</span><br><span class="line">ln -s /var/jenkins_home/python3/bin/pip3.9 /usr/bin/pip3</span><br></pre></td></tr></tbody></table></figure>
+
+
+
+
+</li>
+</ol>
+<h2 id="将安装Python3的容器打包成镜像"><a href="#将安装Python3的容器打包成镜像" class="headerlink" title="将安装Python3的容器打包成镜像"></a>将安装Python3的容器打包成镜像</h2><ol>
+<li><p>从容器中创建镜像</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@iZ2ze0mc5577fn814ewhb8Z ~]<span class="comment"># docker ps</span></span><br><span class="line">CONTAINER ID   IMAGE                 COMMAND                  CREATED       STATUS       PORTS                               NAMES</span><br><span class="line">cca651588eb3   jenkins/jenkins:lts   <span class="string">"/sbin/tini -- /usr/…"</span>   4 hours ago   Up 4 hours   50000/tcp, 0.0.0.0:8082-&gt;8080/tcp   jenkins</span><br><span class="line">[root@iZ2ze0mc5577fn814ewhb8Z ~]<span class="comment"># docker commit -a "lvjing" -m "Jenkins install python3" cca651588eb3 jenkins/python3:v1</span></span><br><span class="line">sha256:6e361084a78882f6409358b98dec4617a744130d77ad0e05610c4243e7f74ced</span><br><span class="line">[root@iZ2ze0mc5577fn814ewhb8Z ~]<span class="comment"># docker images</span></span><br><span class="line">REPOSITORY        TAG       IMAGE ID       CREATED          SIZE</span><br><span class="line">jenkins/python3   v1        6e361084a788   10 seconds ago   929MB</span><br><span class="line">jenkins/jenkins   lts       e5599f396096   5 weeks ago      717MB</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>打包镜像</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@iZ2ze0mc5577fn814ewhb8Z ~]<span class="comment"># docker save -o jenkins_python3.tar jenkins/python3:v1</span></span><br></pre></td></tr></tbody></table></figure>
+<p><img src="https://gitee.com/JeanLv/study_image/raw/master///image-20210220161843372.png" alt="image-20210220161843372"></p>
+<p>打包得到的镜像，可以上传远端，也可以复制到别处，load镜像即可使用。</p>
+</li>
+</ol>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:lvjing0705@126.com">jinglv</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://jinglv.github.io/jenkins/installpython3/">https://jinglv.github.io/jenkins/installpython3/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://jinglv.github.io" target="_blank">Jing's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Jenkins/">Jenkins</a></div><div class="post_share"><div class="social-share" data-image="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/jenkins/tomcat/"><img class="prev-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Jenkins Tomcat部署持续交付实战</div></div></a></div><div class="next-post pull-right"><a href="/jenkins/introduce/"><img class="next-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Jenkins介绍</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts-list"><div><a href="/jenkins/api/" title="Jenkins Api 接口"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Jenkins Api 接口</div></div></a></div><div><a href="/jenkins/ciaction/" title="Jenkins持续集成实战"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Jenkins持续集成实战</div></div></a></div><div><a href="/jenkins/docker/" title="Jenkins Docker部署持续交付实战"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Jenkins Docker部署持续交付实战</div></div></a></div><div><a href="/jenkins/environment/" title="生产与测试环境分离持续交付"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">生产与测试环境分离持续交付</div></div></a></div><div><a href="/jenkins/function/" title="Jenkins基础功能"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Jenkins基础功能</div></div></a></div><div><a href="/jenkins/gitlab/" title="Jenkins GitLab实现自动部署"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Jenkins GitLab实现自动部署</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-info-avatar is-center"><img class="avatar-img" src="/img/avatar.jpeg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-info__name">jinglv</div><div class="author-info__description"></div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div><div class="card-info-data-item is-center"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div><div class="card-info-data-item is-center"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/jinglv"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/jinglv" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="/lvjing0705@126.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">欢迎交流技术！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Jenkins%E5%AE%B9%E5%99%A8%E4%B8%AD%E5%AE%89%E8%A3%85Python3"><span class="toc-number">1.</span> <span class="toc-text">Jenkins容器中安装Python3</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%85%E8%B0%88%E5%AE%B9%E5%99%A8%E5%86%85%E5%AE%89%E8%A3%85-python3-%E6%96%B9%E6%A1%88"><span class="toc-number">1.1.</span> <span class="toc-text">浅谈容器内安装 python3 方案</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E5%AE%B9%E5%99%A8%E5%86%85%E7%9A%84%E7%B3%BB%E7%BB%9F"><span class="toc-number">1.2.</span> <span class="toc-text">查看容器内的系统</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%B9%E5%99%A8%E4%B8%AD%E5%AE%89%E8%A3%85Python3"><span class="toc-number">1.3.</span> <span class="toc-text">容器中安装Python3</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86%E5%AE%89%E8%A3%85Python3%E7%9A%84%E5%AE%B9%E5%99%A8%E6%89%93%E5%8C%85%E6%88%90%E9%95%9C%E5%83%8F"><span class="toc-number">1.4.</span> <span class="toc-text">将安装Python3的容器打包成镜像</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/agency/" title="Nginx代理实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx代理实战"/></a><div class="content"><a class="title" href="/web/nginx/agency/" title="Nginx代理实战">Nginx代理实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/introduce/" title="Nginx介绍"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx介绍"/></a><div class="content"><a class="title" href="/web/nginx/introduce/" title="Nginx介绍">Nginx介绍</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/load/" title="Nginx负载均衡实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx负载均衡实战"/></a><div class="content"><a class="title" href="/web/nginx/load/" title="Nginx负载均衡实战">Nginx负载均衡实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx安装、常用命令及配置"/></a><div class="content"><a class="title" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置">Nginx安装、常用命令及配置</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/testtools/jmeter/record/" title="Jmeter录制与回放"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jmeter录制与回放"/></a><div class="content"><a class="title" href="/testtools/jmeter/record/" title="Jmeter录制与回放">Jmeter录制与回放</a><time datetime="2021-05-17T03:25:09.319Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021 By jinglv</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Hi, welcome to my <a href="https://jinglv.github.io/">blog</a>!</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

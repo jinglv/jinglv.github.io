@@ -1,0 +1,402 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dockerfile介绍 | Jing's Blog</title><meta name="keywords" content="Docker"><meta name="author" content="jinglv,lvjing0705@126.com"><meta name="copyright" content="jinglv"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="学习Docker容器化技术第八讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dockerfile介绍">
+<meta property="og:url" content="https://jinglv.github.io/docker/dockerfile/index.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="学习Docker容器化技术第八讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png">
+<meta property="article:published_time" content="2021-02-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-05-19T06:16:38.000Z">
+<meta property="article:author" content="jinglv">
+<meta property="article:tag" content="Docker">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://jinglv.github.io/docker/dockerfile/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":200},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Dockerfile介绍',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-05-19 14:16:38'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    })(window)</script><meta name="generator" content="Hexo 5.3.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Jing's Blog" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/img/avatar.jpeg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img" id="page-header"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Jing's Blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">Dockerfile介绍</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-02-04T16:00:00.000Z" title="发表于 2021-02-05 00:00:00">2021-02-05</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-05-19T06:16:38.000Z" title="更新于 2021-05-19 14:16:38">2021-05-19</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Docker/">Docker</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Dockerfile介绍"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div><article class="post-content" id="article-container"><h1 id="什么是Dockerfile"><a href="#什么是Dockerfile" class="headerlink" title="什么是Dockerfile"></a>什么是Dockerfile</h1><p>Dockerfile可以认为是<strong>Docker镜像的描述文件，是由一系列命令和参数构成的脚本</strong>。主要作用是<strong>用来构建docker镜像的构建文件</strong>。</p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213102047171.png" alt="image-20210213102047171"></p>
+<ul>
+<li><strong>通过架构图可以看出通过DockerFile可以直接构建镜像</strong></li>
+</ul>
+<h1 id="为什么要使用Dockerfile"><a href="#为什么要使用Dockerfile" class="headerlink" title="为什么要使用Dockerfile"></a>为什么要使用Dockerfile</h1><p>问题：在docker hub中官方提供了很多镜像的，已经能满足我们的所有服务，为什么还需要自定义镜像呢？</p>
+<p>核心作用：是将我们自己的应用打包成镜像，这样就可以使我们的应用容器运行。</p>
+<p>也可将基础的镜像，根据自己的配置，进行重新构建镜像，日后以便复用。</p>
+<h1 id="Dockerfile解析过程"><a href="#Dockerfile解析过程" class="headerlink" title="Dockerfile解析过程"></a>Dockerfile解析过程</h1><p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213103317114.png" alt="image-20210213103317114"></p>
+<h1 id="Dockerfile的常用语法命令"><a href="#Dockerfile的常用语法命令" class="headerlink" title="Dockerfile的常用语法命令"></a>Dockerfile的常用语法命令</h1><p>官方说明:<a target="_blank" rel="noopener" href="https://docs.docker.com/engine/reference/builder/">https://docs.docker.com/engine/reference/builder/</a></p>
+<table>
+<thead>
+<tr>
+<th>保留字</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>FROM</strong></td>
+<td><strong>当前镜像是基于哪个镜像的</strong> <code>第一个指令必须是FROM</code></td>
+</tr>
+<tr>
+<td>MAINTAINER</td>
+<td>镜像维护者的姓名和邮箱地址（已废弃）</td>
+</tr>
+<tr>
+<td><strong>RUN</strong></td>
+<td><strong>构建镜像时需要运行的指令</strong></td>
+</tr>
+<tr>
+<td><strong>EXPOSE</strong></td>
+<td><strong>当前容器对外暴露出的端口号</strong></td>
+</tr>
+<tr>
+<td><strong>WORKDIR</strong></td>
+<td><strong>指定在创建容器后，终端默认登录进来的工作目录，一个落脚点</strong></td>
+</tr>
+<tr>
+<td><strong>ENV</strong></td>
+<td><strong>用来在构建镜像过程中设置环境变量</strong></td>
+</tr>
+<tr>
+<td><strong>ADD</strong></td>
+<td><strong>将宿主机目录下的文件拷贝进镜像且ADD命令会自动处理URL和解压tar包</strong></td>
+</tr>
+<tr>
+<td><strong>COPY</strong></td>
+<td><strong>类似于ADD，拷贝文件和目录到镜像中<br>将从构建上下文目录中&lt;原路径&gt;的文件/目录复制到新的一层的镜像内的&lt;目标路径&gt;位置</strong></td>
+</tr>
+<tr>
+<td><strong>VOLUME</strong></td>
+<td><strong>容器数据卷，用于数据保存和持久化工作</strong></td>
+</tr>
+<tr>
+<td><strong>CMD</strong></td>
+<td><strong>指定一个容器启动时要运行的命令<br>Dockerfile中可以有多个CMD指令，但只有最后一个生效，CMD会被docker run之后的参数替换</strong></td>
+</tr>
+<tr>
+<td><strong>ENTRYPOINT</strong></td>
+<td><strong>指定一个容器启动时要运行的命令<br>ENTRYPOINT的目的和CMD一样，都是在指定容器启动程序及其参数</strong></td>
+</tr>
+</tbody></table>
+<h2 id="1-FROM-命令"><a href="#1-FROM-命令" class="headerlink" title="1. FROM 命令"></a>1. FROM 命令</h2><ul>
+<li><p>基于那个镜像进行构建新的镜像,在构建时会自动从docker hub拉取base镜像 必须作为Dockerfile的第一个指令出现</p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span>  &lt;image&gt;</span><br><span class="line"><span class="keyword">FROM</span>  &lt;image&gt;[:&lt;tag&gt;]     使用版本不写为latest</span><br><span class="line"><span class="keyword">FROM</span>  &lt;image&gt;[@&lt;digest&gt;]  使用摘要</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h2 id="2-MAINTAINER-命令"><a href="#2-MAINTAINER-命令" class="headerlink" title="2. MAINTAINER  命令"></a>2. MAINTAINER  命令</h2><ul>
+<li><p>镜像维护者的姓名和邮箱地址[已废弃]</p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">MAINTAINER</span> &lt;name&gt;</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h2 id="3-RUN-命令"><a href="#3-RUN-命令" class="headerlink" title="3. RUN 命令"></a>3. RUN 命令</h2><ul>
+<li><p>RUN指令将在当前映像之上的新层中执行任何命令并提交结果。生成的提交映像将用于Dockerfile中的下一步</p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">RUN</span><span class="bash"> &lt;<span class="built_in">command</span>&gt; (shell form, the <span class="built_in">command</span> is run <span class="keyword">in</span> a shell, <span class="built_in">which</span> by default is /bin/sh -c on Linux or cmd /S /C on Windows)</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">echo</span> hello</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> [<span class="string">"executable"</span>, <span class="string">"param1"</span>, <span class="string">"param2"</span>] (<span class="built_in">exec</span> form)</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> [<span class="string">"/bin/bash"</span>, <span class="string">"-c"</span>, <span class="string">"echo hello"</span>]</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h2 id="4-EXPOSE-命令"><a href="#4-EXPOSE-命令" class="headerlink" title="4. EXPOSE 命令"></a>4. EXPOSE 命令</h2><ul>
+<li><p>用来指定构建的镜像在运行为容器时对外暴露的<strong>端口</strong></p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">EXPOSE</span> <span class="number">80</span>/tcp  如果没有显示指定则默认暴露都是tcp</span><br><span class="line"><span class="keyword">EXPOSE</span> <span class="number">80</span>/udp</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h2 id="5-WORKDIR-命令"><a href="#5-WORKDIR-命令" class="headerlink" title="5. WORKDIR 命令"></a>5. WORKDIR 命令</h2><ul>
+<li><p>用来为Dockerfile中的任何RUN、CMD、ENTRYPOINT、COPY和ADD指令设置<strong>工作目录</strong>。如果WORKDIR不存在，即使它没有在任何后续Dockerfile指令中使用，它也将被创建。</p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /path/to/workdir</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /a</span></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> b</span></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> c</span></span><br></pre></td></tr></tbody></table></figure>
+<p><strong>注意</strong>:WORKDIR指令可以在Dockerfile中多次使用。如果提供了相对路径，则该路径将与先前WORKDIR指令的路径相对</p>
+</li>
+</ul>
+<h2 id="6-ENV-命令"><a href="#6-ENV-命令" class="headerlink" title="6. ENV 命令"></a>6. ENV 命令</h2><ul>
+<li><p>用来为构建镜像设置环境变量。这个值将出现在构建阶段中所有后续指令的环境中。</p>
+</li>
+<li><p>语法：</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ENV</span> &lt;key&gt; &lt;value&gt;</span><br><span class="line"><span class="keyword">ENV</span> &lt;key&gt;=&lt;value&gt; ...</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h2 id="7-ADD-命令"><a href="#7-ADD-命令" class="headerlink" title="7. ADD 命令"></a>7. ADD 命令</h2><ul>
+<li><p>用来从context上下文复制新文件、目录或远程文件url，并将它们添加到位于指定路径的映像文件系统中。</p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ADD</span><span class="bash"> hom* /mydir/       通配符添加多个文件</span></span><br><span class="line"><span class="keyword">ADD</span><span class="bash"> hom?.txt /mydir/   通配符添加</span></span><br><span class="line"><span class="keyword">ADD</span><span class="bash"> test.txt relativeDir/  可以指定相对路径</span></span><br><span class="line"><span class="keyword">ADD</span><span class="bash"> test.txt /absoluteDir/ 也可以指定绝对路径</span></span><br><span class="line"><span class="keyword">ADD</span><span class="bash"> url / 可以指定工程的连接进行下载到指定的目录</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h2 id="8-COPY-命令"><a href="#8-COPY-命令" class="headerlink" title="8. COPY 命令"></a>8. COPY 命令</h2><ul>
+<li><p>用来将context目录中指定文件复制到镜像的指定目录中</p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">COPY</span><span class="bash"> src dest</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> [<span class="string">"&lt;src&gt;"</span>,... <span class="string">"&lt;dest&gt;"</span>]</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h2 id="9-VOLUME-命令"><a href="#9-VOLUME-命令" class="headerlink" title="9. VOLUME 命令"></a>9. VOLUME 命令</h2><ul>
+<li><p>用来定义容器运行时可以挂在到宿主机的目录</p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">VOLUME</span><span class="bash"> [<span class="string">"/data"</span>]</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h2 id="10-CMD-命令"><a href="#10-CMD-命令" class="headerlink" title="10. CMD 命令"></a>10. CMD 命令</h2><ul>
+<li><p>用来为启动的容器指定执行的命令,在Dockerfile中只能有一条CMD指令。如果列出多个命令，则只有最后一个命令才会生效。</p>
+</li>
+<li><p>注意: <strong>Dockerfile中只能有一条CMD指令。如果列出多个命令，则只有最后一个命令才会生效。</strong></p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CMD</span><span class="bash"> [<span class="string">"executable"</span>,<span class="string">"param1"</span>,<span class="string">"param2"</span>] (<span class="built_in">exec</span> form, this is the preferred form)</span></span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> [<span class="string">"param1"</span>,<span class="string">"param2"</span>] (as default parameters to ENTRYPOINT)</span></span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> <span class="built_in">command</span> param1 param2 (shell form)</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h2 id="11-ENTRYPOINT命令"><a href="#11-ENTRYPOINT命令" class="headerlink" title="11. ENTRYPOINT命令"></a>11. ENTRYPOINT命令</h2><ul>
+<li><p>用来指定容器启动时执行命令和CMD类似</p>
+</li>
+<li><p>语法:</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ENTRYPOINT</span><span class="bash"> [<span class="string">"executable"</span>, <span class="string">"param1"</span>, <span class="string">"param2"</span>]</span></span><br><span class="line"><span class="keyword">ENTRYPOINT</span><span class="bash"> <span class="built_in">command</span> param1 param2</span></span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>ENTRYPOINT指令，往往用于设置容器启动后的<strong>第一个命令</strong>，这对一个容器来说往往是固定的。</li>
+<li>CMD指令，往往用于设置容器启动的第一个命令的<strong>默认参数</strong>，这对一个容器来说可以是变化的。</li>
+</ul>
+</li>
+</ul>
+<h1 id="Dockerfile构建镜像"><a href="#Dockerfile构建镜像" class="headerlink" title="Dockerfile构建镜像"></a>Dockerfile构建镜像</h1><p>在 Dockerfile 文件的存放目录下，执行构建动作:</p>
+<ul>
+<li><code>docker build -t 镜像名称:[tag] .</code></li>
+<li>注意：后面有个点(.)千万不能忽略，如果不写tag则默认是latest</li>
+</ul>
+<h1 id="实战：Dockerfile构建SpringBoot应用"><a href="#实战：Dockerfile构建SpringBoot应用" class="headerlink" title="实战：Dockerfile构建SpringBoot应用"></a>实战：Dockerfile构建SpringBoot应用</h1><ol>
+<li><p>准备SpringBoot可运行项目</p>
+<ul>
+<li>SpringBoot工程Github地址：<a target="_blank" rel="noopener" href="https://github.com/jinglv/spring-boot-restful-api">https://github.com/jinglv/spring-boot-restful-api</a></li>
+<li>进入工程进行打包：mvn clean package -Dmaven.test.skip=true</li>
+</ul>
+</li>
+<li><p>服务器中创建Dockerfile上下文目录context</p>
+<ul>
+<li>任意创建一个目录：mkdir demo</li>
+</ul>
+</li>
+<li><p>在上一步创建的目录下，新建Dockerfile文件</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># cd demo</span></span><br><span class="line">[root@localhost demo]<span class="comment"># touch Dockerfile</span></span><br><span class="line">[root@localhost demo]<span class="comment"># ls</span></span><br><span class="line">Dockerfile</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="4">
+<li><p>获取打包完成的jar并上传至部署的服务器中的上下文目录</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">bogon:spring-boot-restful-api jinglv$ ls</span><br><span class="line">README.md                       pom.xml                         src</span><br><span class="line">checkstyle                      spring-boot-restful-api.iml     target</span><br><span class="line">bogon:spring-boot-restful-api jinglv$ <span class="built_in">cd</span> target/</span><br><span class="line">bogon:target jinglv$ ls</span><br><span class="line">checkstyle-cachefile                                    classes                                                 maven-status</span><br><span class="line">checkstyle-checker.xml                                  generated-sources                                       spring-boot-restful-api-0.0.1-SNAPSHOT.jar</span><br><span class="line">checkstyle-result.xml                                   maven-archiver                                          spring-boot-restful-api-0.0.1-SNAPSHOT.jar.original</span><br><span class="line">bogon:target jinglv$ scp spring-boot-restful-api-0.0.1-SNAPSHOT.jar root@192.168.1.115:/root/demo</span><br><span class="line">root@192.168.1.115<span class="string">'s password:  </span></span><br><span class="line"><span class="string">spring-boot-restful-api-0.0.1-SNAPSHOT.jar                                                                                                100%   32MB  46.1MB/s   00:00  </span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="5">
+<li><p>编写Dockerfile</p>
+<figure class="highlight dockerfile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> openjdk:<span class="number">8</span></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /api</span></span><br><span class="line"><span class="keyword">ADD</span><span class="bash"> spring-boot-restful-api-0.0.1-SNAPSHOT.jar api.jar</span></span><br><span class="line"><span class="keyword">EXPOSE</span> <span class="number">8088</span></span><br><span class="line"><span class="keyword">ENTRYPOINT</span><span class="bash"> [<span class="string">"java"</span>,<span class="string">"-jar"</span>]</span></span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> [<span class="string">"api.jar"</span>]</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ul>
+<li>FROM：基于镜像进行构建，如果是war包则是基于tomcat</li>
+<li>WORKDIR：定义进入容器时默认位置，接下来后续操作工作位置</li>
+<li>ADD：将上面的spring-boot-restful-api-0.0.1-SNAPSHOT.jar的jar包复制到工作目录，同时修改其名为api.jar</li>
+<li>EXPOSE：当前容器暴露哪个端口，因为项目使用端口是8088</li>
+<li>ENTRYPOINT：启动应用固定命令</li>
+<li>CMD：执行jar</li>
+</ul>
+<ol start="6">
+<li><p>构建镜像</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost demo]<span class="comment"># docker build -t api .</span></span><br><span class="line">Sending build context to Docker daemon  33.64MB</span><br><span class="line">Step 1/6 : FROM openjdk:8</span><br><span class="line">8: Pulling from library/openjdk</span><br><span class="line">b9a857cbf04d: Already exists</span><br><span class="line">d557ee20540b: Already exists</span><br><span class="line">3b9ca4f00c2e: Already exists</span><br><span class="line">667fd949ed93: Already exists</span><br><span class="line">661d3b55f657: Already exists</span><br><span class="line">60cfec2a948e: Pull complete</span><br><span class="line">79ee4b4b7121: Pull complete</span><br><span class="line">Digest: sha256:b253b93dc528967eff64ade00a9079dc464fb75b9d27a7a578c8006ca0645de8</span><br><span class="line">Status: Downloaded newer image <span class="keyword">for</span> openjdk:8</span><br><span class="line"> ---&gt; 8ca4a86e32d8</span><br><span class="line">Step 2/6 : WORKDIR /api</span><br><span class="line"> ---&gt; Running <span class="keyword">in</span> 202d8c20a39d</span><br><span class="line">Removing intermediate container 202d8c20a39d</span><br><span class="line"> ---&gt; c8108d4b5491</span><br><span class="line">Step 3/6 : ADD spring-boot-restful-api-0.0.1-SNAPSHOT.jar api.jar</span><br><span class="line"> ---&gt; 74379d1de17c</span><br><span class="line">Step 4/6 : EXPOSE 8088</span><br><span class="line"> ---&gt; Running <span class="keyword">in</span> a10fdc264ac3</span><br><span class="line">Removing intermediate container a10fdc264ac3</span><br><span class="line"> ---&gt; f0b514cc7c02</span><br><span class="line">Step 5/6 : ENTRYPOINT [<span class="string">"java"</span>,<span class="string">"-jar"</span>]</span><br><span class="line"> ---&gt; Running <span class="keyword">in</span> ae146c0d6b17</span><br><span class="line">Removing intermediate container ae146c0d6b17</span><br><span class="line"> ---&gt; 0e359f8ab6de</span><br><span class="line">Step 6/6 : CMD [<span class="string">"api.jar"</span>]</span><br><span class="line"> ---&gt; Running <span class="keyword">in</span> 84b2aa3efc52</span><br><span class="line">Removing intermediate container 84b2aa3efc52</span><br><span class="line"> ---&gt; e3c3287903c9</span><br><span class="line">Successfully built e3c3287903c9</span><br><span class="line">Successfully tagged api:latest</span><br><span class="line">[root@localhost demo]<span class="comment"># docker images</span></span><br><span class="line">REPOSITORY      TAG       IMAGE ID       CREATED          SIZE</span><br><span class="line">api             latest    e3c3287903c9   10 seconds ago   547MB</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="7">
+<li><p>运行镜像</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost demo]<span class="comment"># docker run -d --name api -p 8088:8088 api</span></span><br><span class="line">160c52c651c18ad35f02d4e4f618bb827b7e865d5ff4856a6fe0aa32883b6f7f</span><br><span class="line">[root@localhost demo]<span class="comment"># docker ps</span></span><br><span class="line">CONTAINER ID   IMAGE                  COMMAND                  CREATED         STATUS         PORTS                                            NAMES</span><br><span class="line">160c52c651c1   api                    <span class="string">"java -jar api.jar"</span>      7 seconds ago   Up 3 seconds   0.0.0.0:8088-&gt;8088/tcp                           api</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="8">
+<li><p>访问项目</p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213165807948.png" alt="image-20210213165807948"></p>
+</li>
+</ol>
+<h1 id="Idea中安装Docker插件"><a href="#Idea中安装Docker插件" class="headerlink" title="Idea中安装Docker插件"></a>Idea中安装Docker插件</h1><ol>
+<li><p>搜索Docker插件进行安装，安装成功后重启Idea</p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213170047860.png" alt="image-20210213170047860"></p>
+</li>
+<li><p>在工程目录下，创建Dockerfile文件，并编写Dockerfile的内容</p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213170504380.png" alt="image-20210213170504380"></p>
+</li>
+</ol>
+<h1 id="Idea连接远程SFTP"><a href="#Idea连接远程SFTP" class="headerlink" title="Idea连接远程SFTP"></a>Idea连接远程SFTP</h1><ol>
+<li><p>idea菜单栏Tools -&gt; Deploymet -&gt; Browse Remote Host</p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213171541625.png" alt="image-20210213171541625"></p>
+</li>
+<li><p>打开“Remote Host”界面，进行远程服务的添加</p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213171751605.png" alt="image-20210213171751605"></p>
+</li>
+<li><p>新增SFTP协议远程服务</p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213171919769.png" alt="image-20210213171919769"></p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213172010394.png" alt="image-20210213172010394"></p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213172113021.png" alt="image-20210213172113021"></p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213172210252.png" alt="image-20210213172210252"></p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213172241965.png" alt="image-20210213172241965"></p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213172346542.png" alt="image-20210213172346542"></p>
+</li>
+<li><p>完成以上配置后，我们就可以看到服务器的目录</p>
+<p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210213172443452.png" alt="image-20210213172443452"></p>
+<p>这时，我们就可以在Idea里面，对服务器进行操作，比如：新建文件/目录，拖拽文件到服务器目录等……</p>
+</li>
+</ol>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:lvjing0705@126.com">jinglv</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://jinglv.github.io/docker/dockerfile/">https://jinglv.github.io/docker/dockerfile/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://jinglv.github.io" target="_blank">Jing's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Docker/">Docker</a></div><div class="post_share"><div class="social-share" data-image="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/docker/compose/"><img class="prev-cover" src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">docker-compose</div></div></a></div><div class="next-post pull-right"><a href="/docker/example/"><img class="next-cover" src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Docker常用服务安装</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts-list"><div><a href="/docker/compose/" title="docker-compose"><img class="cover" src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-02-05</div><div class="title">docker-compose</div></div></a></div><div><a href="/docker/example/" title="Docker常用服务安装"><img class="cover" src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-02-05</div><div class="title">Docker常用服务安装</div></div></a></div><div><a href="/docker/install/" title="Docker安装及配置"><img class="cover" src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-02-05</div><div class="title">Docker安装及配置</div></div></a></div><div><a href="/docker/introduce/" title="Docker介绍"><img class="cover" src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-02-05</div><div class="title">Docker介绍</div></div></a></div><div><a href="/docker/network/" title="Docker中的网络配置"><img class="cover" src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-02-05</div><div class="title">Docker中的网络配置</div></div></a></div><div><a href="/docker/operation/" title="Docker相关操作"><img class="cover" src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210206142436296.png" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-02-05</div><div class="title">Docker相关操作</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-info-avatar is-center"><img class="avatar-img" src="/img/avatar.jpeg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-info__name">jinglv</div><div class="author-info__description"></div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div><div class="card-info-data-item is-center"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div><div class="card-info-data-item is-center"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/jinglv"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/jinglv" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="/lvjing0705@126.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">欢迎交流技术！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFDockerfile"><span class="toc-number">1.</span> <span class="toc-text">什么是Dockerfile</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E4%BD%BF%E7%94%A8Dockerfile"><span class="toc-number">2.</span> <span class="toc-text">为什么要使用Dockerfile</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Dockerfile%E8%A7%A3%E6%9E%90%E8%BF%87%E7%A8%8B"><span class="toc-number">3.</span> <span class="toc-text">Dockerfile解析过程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Dockerfile%E7%9A%84%E5%B8%B8%E7%94%A8%E8%AF%AD%E6%B3%95%E5%91%BD%E4%BB%A4"><span class="toc-number">4.</span> <span class="toc-text">Dockerfile的常用语法命令</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-FROM-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.1.</span> <span class="toc-text">1. FROM 命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-MAINTAINER-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.2.</span> <span class="toc-text">2. MAINTAINER  命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-RUN-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.3.</span> <span class="toc-text">3. RUN 命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-EXPOSE-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.4.</span> <span class="toc-text">4. EXPOSE 命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-WORKDIR-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.5.</span> <span class="toc-text">5. WORKDIR 命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-ENV-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.6.</span> <span class="toc-text">6. ENV 命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-ADD-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.7.</span> <span class="toc-text">7. ADD 命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-COPY-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.8.</span> <span class="toc-text">8. COPY 命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9-VOLUME-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.9.</span> <span class="toc-text">9. VOLUME 命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#10-CMD-%E5%91%BD%E4%BB%A4"><span class="toc-number">4.10.</span> <span class="toc-text">10. CMD 命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#11-ENTRYPOINT%E5%91%BD%E4%BB%A4"><span class="toc-number">4.11.</span> <span class="toc-text">11. ENTRYPOINT命令</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Dockerfile%E6%9E%84%E5%BB%BA%E9%95%9C%E5%83%8F"><span class="toc-number">5.</span> <span class="toc-text">Dockerfile构建镜像</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E6%88%98%EF%BC%9ADockerfile%E6%9E%84%E5%BB%BASpringBoot%E5%BA%94%E7%94%A8"><span class="toc-number">6.</span> <span class="toc-text">实战：Dockerfile构建SpringBoot应用</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Idea%E4%B8%AD%E5%AE%89%E8%A3%85Docker%E6%8F%92%E4%BB%B6"><span class="toc-number">7.</span> <span class="toc-text">Idea中安装Docker插件</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Idea%E8%BF%9E%E6%8E%A5%E8%BF%9C%E7%A8%8BSFTP"><span class="toc-number">8.</span> <span class="toc-text">Idea连接远程SFTP</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/agency/" title="Nginx代理实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx代理实战"/></a><div class="content"><a class="title" href="/web/nginx/agency/" title="Nginx代理实战">Nginx代理实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/introduce/" title="Nginx介绍"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx介绍"/></a><div class="content"><a class="title" href="/web/nginx/introduce/" title="Nginx介绍">Nginx介绍</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/load/" title="Nginx负载均衡实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx负载均衡实战"/></a><div class="content"><a class="title" href="/web/nginx/load/" title="Nginx负载均衡实战">Nginx负载均衡实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx安装、常用命令及配置"/></a><div class="content"><a class="title" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置">Nginx安装、常用命令及配置</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/testtools/jmeter/record/" title="Jmeter录制与回放"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jmeter录制与回放"/></a><div class="content"><a class="title" href="/testtools/jmeter/record/" title="Jmeter录制与回放">Jmeter录制与回放</a><time datetime="2021-05-17T03:25:09.319Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021 By jinglv</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Hi, welcome to my <a href="https://jinglv.github.io/">blog</a>!</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

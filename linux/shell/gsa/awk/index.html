@@ -1,0 +1,867 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>三剑客之awk | Jing's Blog</title><meta name="keywords" content="Shell"><meta name="author" content="jinglv,lvjing0705@126.com"><meta name="copyright" content="jinglv"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="简介 awk是一个文本处理工具，通常用于处理数据并生成结果报告 awk的命名是它的创始人Alfred Aho、Peter Weinberger和Brian Kernighan姓氏的首个字母组成的  工作模式 读：从文件、管道或标准输入中读入一行然后把它存放到内存中 执行：对每一行数据，根据AWK命令按顺序执行。默认情况是处理每一行数据，也可以指定模式 重复：一直重复上述两个过程直到文件结束  语法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="三剑客之awk">
+<meta property="og:url" content="https://jinglv.github.io/linux/shell/gsa/awk/index.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="简介 awk是一个文本处理工具，通常用于处理数据并生成结果报告 awk的命名是它的创始人Alfred Aho、Peter Weinberger和Brian Kernighan姓氏的首个字母组成的  工作模式 读：从文件、管道或标准输入中读入一行然后把它存放到内存中 执行：对每一行数据，根据AWK命令按顺序执行。默认情况是处理每一行数据，也可以指定模式 重复：一直重复上述两个过程直到文件结束  语法">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg">
+<meta property="article:published_time" content="2021-05-17T03:25:09.301Z">
+<meta property="article:modified_time" content="2021-05-17T03:25:09.301Z">
+<meta property="article:author" content="jinglv">
+<meta property="article:tag" content="Shell">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://jinglv.github.io/linux/shell/gsa/awk/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":200},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '三剑客之awk',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-05-17 11:25:09'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    })(window)</script><meta name="generator" content="Hexo 5.3.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Jing's Blog" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/img/avatar.jpeg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img" id="page-header"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Jing's Blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">三剑客之awk</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-05-17T03:25:09.301Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-05-17T03:25:09.301Z" title="更新于 2021-05-17 11:25:09">2021-05-17</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Linux/">Linux</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="三剑客之awk"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div><article class="post-content" id="article-container"><h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><ul>
+<li>awk是一个文本处理工具，通常用于处理数据并生成结果报告</li>
+<li>awk的命名是它的创始人Alfred Aho、Peter Weinberger和Brian Kernighan姓氏的首个字母组成的</li>
+</ul>
+<h1 id="工作模式"><a href="#工作模式" class="headerlink" title="工作模式"></a>工作模式</h1><ul>
+<li>读：从文件、管道或标准输入中读入一行然后把它存放到内存中</li>
+<li>执行：对每一行数据，根据AWK命令按顺序执行。默认情况是处理每一行数据，也可以指定模式</li>
+<li>重复：一直重复上述两个过程直到文件结束</li>
+</ul>
+<h1 id="语法格式"><a href="#语法格式" class="headerlink" title="语法格式"></a>语法格式</h1><ul>
+<li><p>第一种形式：<code>awk 'BEGIN{}pattern{commands}END{}' filename</code> </p>
+</li>
+<li><p>第二种形式：<code>standard output | awk 'BEGIN{}pattern{commands}END{}'</code></p>
+</li>
+</ul>
+<h2 id="语法格式说明"><a href="#语法格式说明" class="headerlink" title="语法格式说明"></a>语法格式说明</h2><table>
+<thead>
+<tr>
+<th>语法格式</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>BEGIN{}</td>
+<td>正式处理数据之前执行</td>
+</tr>
+<tr>
+<td>pattern</td>
+<td>匹配模式</td>
+</tr>
+<tr>
+<td>{commands}</td>
+<td>处理命令，可能多行</td>
+</tr>
+<tr>
+<td>END{}</td>
+<td>处理完所有匹配数据后执行</td>
+</tr>
+</tbody></table>
+<h1 id="内置变量"><a href="#内置变量" class="headerlink" title="内置变量"></a>内置变量</h1><h2 id="内置变量对照表"><a href="#内置变量对照表" class="headerlink" title="内置变量对照表"></a>内置变量对照表</h2><table>
+<thead>
+<tr>
+<th>内置变量</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$0</code></td>
+<td>整行内容</td>
+</tr>
+<tr>
+<td><code>$1-$n</code></td>
+<td>当前行的第1~n个字段</td>
+</tr>
+<tr>
+<td>NF (Number Field)</td>
+<td>当前行的字段个数，也就是有多少列</td>
+</tr>
+<tr>
+<td>NR （Number Row）</td>
+<td>当前行的行号，从1开始计数</td>
+</tr>
+<tr>
+<td>FNR (Field Number Row)</td>
+<td>多文件处理时，每个文件行号单独计数，都是从0开始</td>
+</tr>
+<tr>
+<td>FS (Field Separator)</td>
+<td>输入字段分隔符。不指定默认以空格或tab键分割</td>
+</tr>
+<tr>
+<td>RS (Row Separator)</td>
+<td>输入行分隔符。默认回车换行</td>
+</tr>
+<tr>
+<td>OFS (Output Filed Separator)</td>
+<td>输出字段分隔符。默认为空格</td>
+</tr>
+<tr>
+<td>ORS (Output Row Separator)</td>
+<td>输出行分隔符。默认为回车换行</td>
+</tr>
+<tr>
+<td>FILENAME</td>
+<td>当前输入的文件名字</td>
+</tr>
+<tr>
+<td>ARGC</td>
+<td>命令行参数个数</td>
+</tr>
+<tr>
+<td>ARGV</td>
+<td>命令行参数数组</td>
+</tr>
+</tbody></table>
+<h2 id="练习"><a href="#练习" class="headerlink" title="练习"></a>练习</h2><table>
+<thead>
+<tr>
+<th>用法</th>
+<th>命令</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>awk输出/etc/passwd每一行(整行)的内容</td>
+<td><code>awk '{print $0}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以<code>:</code>字段分隔符输出/etc/passwd第一行的内容</td>
+<td><code>awk 'BEGIN{FS=":"}{print $1}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以<code>:</code>字段分隔符输出/etc/passwd每行字段的个数</td>
+<td><code>awk 'BEGIN{FS=":"}{print NF}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>输出/etc/passwd每行的行号</td>
+<td><code>awk '{print NR}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>输出/etc/passwd每行的行号(多个文件，不会单独计数)</td>
+<td><code>awk '{print NR}' /etc/passwd /etc/passwd</code></td>
+</tr>
+<tr>
+<td>输出/etc/passwd每行的行号(多个文件，单独计数)</td>
+<td><code>awk '{print FNR}' /etc/passwd /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以<code>:</code>行分隔符输出/etc/passwd每行(整行)内容</td>
+<td><code>awk 'BEGIN{RS=":"}{print $0}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以<code>&amp;</code>分隔符输出/etc/passwd第三行的内容</td>
+<td><code>[root@localhost ~]# awk 'BEGIN{FS=":";ORS="&amp;"}{print $3}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以<code>&amp;</code>分隔符输出,<code>@</code>行分隔符/etc/passwd第一，三行的内容</td>
+<td><code>awk 'BEGIN{FS=":";ORS="&amp;";OFS="@"}{print $1,$3}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>输出文件内多行的文件名</td>
+<td><code>awk '{print FILENAME}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>输出命令行参数个数</td>
+<td><code>awk '{print ARGC}' /etc/passwd</code></td>
+</tr>
+</tbody></table>
+<h1 id="格式化输出之printf"><a href="#格式化输出之printf" class="headerlink" title="格式化输出之printf"></a>格式化输出之printf</h1><h2 id="printf的格式说明符"><a href="#printf的格式说明符" class="headerlink" title="printf的格式说明符"></a>printf的格式说明符</h2><table>
+<thead>
+<tr>
+<th>格式符</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>%s</td>
+<td>打印字符串</td>
+</tr>
+<tr>
+<td>%d</td>
+<td>打印十进制数</td>
+</tr>
+<tr>
+<td>%f</td>
+<td>打印一个浮点数</td>
+</tr>
+<tr>
+<td>%x</td>
+<td>打印十六进制数</td>
+</tr>
+<tr>
+<td>%o</td>
+<td>打印八进制数</td>
+</tr>
+<tr>
+<td>%e</td>
+<td>打印数字的科学计数法形式</td>
+</tr>
+<tr>
+<td>%c</td>
+<td>打印单个字符的ASCII码</td>
+</tr>
+</tbody></table>
+<h2 id="printf的修饰符"><a href="#printf的修饰符" class="headerlink" title="printf的修饰符"></a>printf的修饰符</h2><table>
+<thead>
+<tr>
+<th>修饰符</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>-</td>
+<td>左对齐</td>
+</tr>
+<tr>
+<td>+</td>
+<td>右对齐</td>
+</tr>
+<tr>
+<td>#</td>
+<td>显示8进制在前面加0，显示16进制在前面加0x</td>
+</tr>
+</tbody></table>
+<h2 id="练习-1"><a href="#练习-1" class="headerlink" title="练习"></a>练习</h2><h3 id="格式符示例"><a href="#格式符示例" class="headerlink" title="格式符示例"></a>格式符示例</h3><table>
+<thead>
+<tr>
+<th>用法</th>
+<th>命令</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>以字符串格式打印/etc/passwd中的第7个字段，以”:”作为分隔符</td>
+<td><code>awk 'BEGIN{FS=":"} {printf "%s",$7}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以10进制格式打印/etc/passwd中的第3个字段，以”:”作为分隔符</td>
+<td><code>awk 'BEGIN{FS=":"} {printf "%d\n",$3}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以浮点数格式打印/etc/passwd中的第3个字段，以”:”作为分隔符</td>
+<td><code>awk 'BEGIN{FS=":"} {printf "%0.3f\n",$3}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以16进制数格式打印/etc/passwd中的第3个字段，以”:”作为分隔符</td>
+<td><code>awk 'BEGIN{FS=":"} {printf "%#x\n",$3}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以8进制数格式打印/etc/passwd中的第3个字段，以”:”作为分隔符</td>
+<td><code>awk 'BEGIN{FS=":"} {printf "%#o\n",$3}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以科学计数法格式打印/etc/passwd中的第3个字段，以”:”作为分隔符</td>
+<td><code>awk 'BEGIN{FS=":"} {printf "%e\n",$3}' /etc/passwd</code></td>
+</tr>
+</tbody></table>
+<h3 id="修饰符示例"><a href="#修饰符示例" class="headerlink" title="修饰符示例"></a>修饰符示例</h3><table>
+<thead>
+<tr>
+<th>用法</th>
+<th>命令</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>左对齐格式</td>
+<td><code>awk 'BEGIN{FS=":"}{printf "%-20s %-20s\n",$1,$7}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>右对齐格式(默认都是右对齐)</td>
+<td><code>awk 'BEGIN{FS=":"}{printf "%-20s %+20s\n",$1,$7}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>打印8进制或16进制数字是在前面加#</td>
+<td><code>awk 'BEGIN{FS=":"} {printf "%#x\n",$3}' /etc/passwd</code></td>
+</tr>
+</tbody></table>
+<h1 id="模式匹配的两种用法"><a href="#模式匹配的两种用法" class="headerlink" title="模式匹配的两种用法"></a>模式匹配的两种用法</h1><ul>
+<li><p>第一种模式匹配：RegExp</p>
+</li>
+<li><p>第二种模式匹配：关系运算匹配</p>
+</li>
+</ul>
+<h2 id="用法格式对照表"><a href="#用法格式对照表" class="headerlink" title="用法格式对照表"></a>用法格式对照表</h2><table>
+<thead>
+<tr>
+<th>语法格式</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>RegExp</td>
+<td>按正则表达式匹配</td>
+</tr>
+<tr>
+<td>关系运算匹配</td>
+<td>按关系运算匹配</td>
+</tr>
+</tbody></table>
+<h2 id="练习-2"><a href="#练习-2" class="headerlink" title="练习"></a>练习</h2><h3 id="RegExp示例"><a href="#RegExp示例" class="headerlink" title="RegExp示例"></a>RegExp示例</h3><table>
+<thead>
+<tr>
+<th>用法</th>
+<th>命令</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>匹配/etc/passwd文件行中含有root字符串的所有行</td>
+<td><code>awk 'BEGIN{FS=":"}/root/{print $0}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>匹配/etc/passwd文件行中以yarn开头的所有行</td>
+<td><code>awk 'BEGIN{FS=":"}/^yarn/{print $0}' /etc/passwd</code></td>
+</tr>
+</tbody></table>
+<p>###关系运算匹配示例</p>
+<h4 id="关系运算符"><a href="#关系运算符" class="headerlink" title="关系运算符"></a>关系运算符</h4><table>
+<thead>
+<tr>
+<th>符号</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&lt;</code></td>
+<td>小于</td>
+</tr>
+<tr>
+<td><code>&gt;</code></td>
+<td>大于</td>
+</tr>
+<tr>
+<td><code>&lt;=</code></td>
+<td>小于等于</td>
+</tr>
+<tr>
+<td><code>&gt;=</code></td>
+<td>大于等于</td>
+</tr>
+<tr>
+<td><code>==</code></td>
+<td>等于</td>
+</tr>
+<tr>
+<td><code>!=</code></td>
+<td>不等于</td>
+</tr>
+<tr>
+<td><code>~</code></td>
+<td>匹配正则表达式</td>
+</tr>
+<tr>
+<td><code>!~</code></td>
+<td>不匹配正则表达式</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th>用法</th>
+<th>命令</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>以<code>:</code>为分隔符，匹配/etc/passwd文件中第3个字段小于50的所有行信息</td>
+<td><code>awk 'BEGIN{FS=":"}$3&lt;50{print $0}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以<code>:</code>为分隔符，匹配/etc/passwd文件中第3个字段大于50的所有行信息</td>
+<td><code>awk 'BEGIN{FS=":"}$3&gt;50{print $0}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以<code>:</code>为分隔符，匹配/etc/passwd文件中第7个字段为/bin/bash的所有行信息</td>
+<td><code>awk 'BEGIN{FS=":"}$7=="/bin/bash"{print $0}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以<code>:</code>为分隔符，匹配/etc/passwd文件中第7个字段不为/bin/bash的所有行信息</td>
+<td><code>awk 'BEGIN{FS=":"}$7!="/bin/bash"{print $0}' /etc/passwd</code></td>
+</tr>
+<tr>
+<td>以<code>:</code>为分隔符，匹配/etc/passwd中第3个字段包含3个以上数字的所有行信息</td>
+<td><code>awk 'BEGIN{FS=":"}$3~/[0,9]{3,}/{print $0}' /etc/passwd</code></td>
+</tr>
+</tbody></table>
+<h4 id="布尔运算符"><a href="#布尔运算符" class="headerlink" title="布尔运算符"></a>布尔运算符</h4><table>
+<thead>
+<tr>
+<th>符号</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>||</td>
+<td>或</td>
+</tr>
+<tr>
+<td>&amp;&amp;</td>
+<td>与</td>
+</tr>
+<tr>
+<td>!</td>
+<td>非</td>
+</tr>
+</tbody></table>
+<table>
+<thead>
+<tr>
+<th>用法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>以<code>:</code>为分隔符，匹配/etc/passwd文件中包含hdfs或yarn的所有行信息</td>
+<td>`awk ‘BEGIN{FS=”:”}$1==”hdfs”</td>
+</tr>
+<tr>
+<td>以<code>:</code>为分隔符，匹配/etc/passwd文件中第3个字段小于50并且第4个字段大于50的所有行信息</td>
+<td><code>awk 'BEGIN{FS=":"}$3&lt;50 &amp;&amp; $4&gt;50 {print $0}' /etc/passwd</code></td>
+</tr>
+</tbody></table>
+<h1 id="表达式用法"><a href="#表达式用法" class="headerlink" title="表达式用法"></a>表达式用法</h1><h2 id="awk动作表达式中的算术运算符"><a href="#awk动作表达式中的算术运算符" class="headerlink" title="awk动作表达式中的算术运算符"></a>awk动作表达式中的算术运算符</h2><table>
+<thead>
+<tr>
+<th>运算符</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>+</code></td>
+<td>加</td>
+</tr>
+<tr>
+<td><code>-</code></td>
+<td>减</td>
+</tr>
+<tr>
+<td><code>*</code></td>
+<td>乘</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>除</td>
+</tr>
+<tr>
+<td><code>%</code></td>
+<td>模</td>
+</tr>
+<tr>
+<td><code>^</code>或<code>**</code></td>
+<td>乘方</td>
+</tr>
+<tr>
+<td><code>++X</code></td>
+<td>在返回X变量之前，X变量加1</td>
+</tr>
+<tr>
+<td><code>X++</code></td>
+<td>在返回X变量之后，X变量加1</td>
+</tr>
+</tbody></table>
+<h2 id="练习-3"><a href="#练习-3" class="headerlink" title="练习"></a>练习</h2><ol>
+<li><p>使用awk计算/etc/services中的空白行(<code>^$</code>)数量</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'/^$/{sum++}END{print sum}'</span> /etc/services</span><br></pre></td></tr></tbody></table></figure></li>
+<li><p>计算学生课程分数平均值，学生课程文件(student.txt)内容如下：</p>
+<figure class="highlight txt"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Allen	80	90	96	98</span><br><span class="line">Mike	93	98	92	91</span><br><span class="line">Zhang	78	76	87	92</span><br><span class="line">Jerry	86	89	68	92</span><br><span class="line">Han		85	95	75	90</span><br><span class="line">Li		78	88	98	100</span><br></pre></td></tr></tbody></table></figure>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># awk 'BEGIN{printf "%-8s%-8s%-8s%-8s%-8s%s\n","Name","Chinese","Math","English","Pysical","Average"}{total=$2+$3+$4+$5;AVG=total/4;printf "%-8s%-8d%-8d%-8d%-8d%0.2f\n",$1,$2,$3,$4,$5,AVG}' student.txt</span></span><br><span class="line">Name    Chinese Math    English Pysical Average</span><br><span class="line">Allen   80      90      96      98      91.00</span><br><span class="line">Mike    93      98      92      91      93.50</span><br><span class="line">Zhang   78      76      87      92      83.25</span><br><span class="line">Jerry   86      89      68      92      83.75</span><br><span class="line">Han     85      95      75      90      86.25</span><br><span class="line">Li      78      88      98      100     91.00</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<h1 id="条件及循环语句"><a href="#条件及循环语句" class="headerlink" title="条件及循环语句"></a>条件及循环语句</h1><h2 id="条件语句"><a href="#条件语句" class="headerlink" title="条件语句"></a>条件语句</h2><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(条件表达式)</span><br><span class="line">	动作1</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>(条件表达式)</span><br><span class="line">	动作2</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">	动作3</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="循环语句"><a href="#循环语句" class="headerlink" title="循环语句"></a>循环语句</h2><h3 id="while循环"><a href="#while循环" class="headerlink" title="while循环"></a>while循环</h3><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(条件表达式)</span><br><span class="line">	动作</span><br></pre></td></tr></tbody></table></figure>
+<h3 id="do-while循环"><a href="#do-while循环" class="headerlink" title="do while循环"></a>do while循环</h3><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span></span><br><span class="line">	动作</span><br><span class="line"><span class="keyword">while</span>(条件表达式)</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h3 id="for循环"><a href="#for循环" class="headerlink" title="for循环"></a>for循环</h3><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(初始化计数器;计数器测试;计数器变更)</span><br><span class="line">	动作</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="练习-4"><a href="#练习-4" class="headerlink" title="练习"></a>练习</h2><ol>
+<li><p>以:为分隔符，只打印/etc/passwd中第3个字段的数值在50-100范围内的行信息</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{FS=":"}{if($3&gt;50 &amp;&amp; $3&lt;100) print $0}'</span> /etc/passwd</span><br></pre></td></tr></tbody></table></figure>
+<p>使用条件语句进行输出</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">touch script-if.awk</span><br><span class="line">vim script-if.awk</span><br><span class="line">BEGIN{</span><br><span class="line">        FS=<span class="string">":"</span></span><br><span class="line">}</span><br><span class="line">{</span><br><span class="line">        <span class="keyword">if</span>(<span class="variable">$3</span>&lt;50)</span><br><span class="line">        {</span><br><span class="line">                <span class="built_in">printf</span> <span class="string">"%-20s%-25s%-5d\n"</span>,<span class="string">"UUID&lt;50"</span>,<span class="variable">$1</span>,<span class="variable">$3</span></span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(<span class="variable">$3</span>&gt;50 &amp;&amp; <span class="variable">$3</span>&lt;100)</span><br><span class="line">        {</span><br><span class="line">                <span class="built_in">printf</span> <span class="string">"%-20s%-25s%-5d\n"</span>,<span class="string">"50&lt;UUID&lt;100"</span>,<span class="variable">$1</span>,<span class="variable">$3</span></span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        {</span><br><span class="line">                 <span class="built_in">printf</span> <span class="string">"%-20s%-25s%-5d\n"</span>,<span class="string">"UUID&gt;100"</span>,<span class="variable">$1</span>,<span class="variable">$3</span></span><br><span class="line">        }</span><br><span class="line">}</span><br><span class="line"> awk -f script-if.awk /etc/passwd</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>计算student.txt文件中每个同学的平均分数，并且只打印平均分数大于90的同学姓名和分数信息</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">BEGIN{</span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-10s%-10s%-10s%-10s%-10s\n"</span>,<span class="string">"Name"</span>,<span class="string">"Chinese"</span>,<span class="string">"English"</span>,<span class="string">"Math"</span>,<span class="string">"Physical"</span>,<span class="string">"Average"</span></span><br><span class="line">}</span><br><span class="line">{</span><br><span class="line">	total=<span class="variable">$2</span>+<span class="variable">$3</span>+<span class="variable">$4</span>+<span class="variable">$5</span></span><br><span class="line">	avg=total/4</span><br><span class="line">	<span class="keyword">if</span>(avg&gt;90)</span><br><span class="line">	{</span><br><span class="line">		<span class="built_in">printf</span> <span class="string">"%-10s%-10d%-10d%-10d%-10d%-0.2f\n"</span>,<span class="variable">$1</span>,<span class="variable">$2</span>,<span class="variable">$3</span>,<span class="variable">$4</span>,<span class="variable">$5</span>,avg</span><br><span class="line">		score_chinese+=<span class="variable">$2</span></span><br><span class="line">        	score_english+=<span class="variable">$3</span></span><br><span class="line">        	score_math+=<span class="variable">$4</span></span><br><span class="line">        	score_physical+=<span class="variable">$5</span></span><br><span class="line">	}</span><br><span class="line">}</span><br><span class="line">END{</span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-10d%-10d%-10d%-10d\n"</span>,<span class="string">""</span>,score_chinese,score_english,score_math,score_physical</span><br><span class="line"></span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f script-avg.awk student.txt</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="3">
+<li><p>计算1+2+3+4+…+100的和，请使用while、do while、for三种循环方式实现</p>
+<ul>
+<li><p>while</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">BEGIN{</span><br><span class="line">        <span class="keyword">while</span>(i&lt;=100)</span><br><span class="line">        {</span><br><span class="line">                sum+=i</span><br><span class="line">                i++</span><br><span class="line">        }</span><br><span class="line">        <span class="built_in">print</span> sum</span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f script-while.awk</span></span><br><span class="line">5050</span><br></pre></td></tr></tbody></table></figure></li>
+<li><p>do while</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">BEGIN{</span><br><span class="line">        <span class="keyword">do</span>{</span><br><span class="line">                sum+=i</span><br><span class="line">                i++</span><br><span class="line">        }<span class="keyword">while</span>(i&lt;=100)</span><br><span class="line">        <span class="built_in">print</span> sum</span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f script-do.awk</span></span><br><span class="line">5050</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+</li>
+</ol>
+<ul>
+<li><p>for</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">BEGIN{</span><br><span class="line">        <span class="keyword">for</span>(i=0;i&lt;=100;i++){</span><br><span class="line">                sum+=i</span><br><span class="line">        }</span><br><span class="line">        <span class="built_in">print</span> sum</span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f script-for.awk</span></span><br><span class="line">5050</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h1 id="字符串函数"><a href="#字符串函数" class="headerlink" title="字符串函数"></a>字符串函数</h1><h2 id="字符串函数对照表"><a href="#字符串函数对照表" class="headerlink" title="字符串函数对照表"></a>字符串函数对照表</h2><table>
+<thead>
+<tr>
+<th>函数名</th>
+<th>解释</th>
+<th>函数返回值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>length(str)</td>
+<td>计算字符串长度</td>
+<td>整数长度值</td>
+</tr>
+<tr>
+<td>index(str1,str2)</td>
+<td>在str1中查找str2的位置</td>
+<td>返回值为位置索引，从1计数</td>
+</tr>
+<tr>
+<td>tolower(str)</td>
+<td>转换为小写</td>
+<td>转换后的小写字符串</td>
+</tr>
+<tr>
+<td>toupper(str)</td>
+<td>转换为大写</td>
+<td>转换后的大写字符串</td>
+</tr>
+<tr>
+<td>substr(str,m,n)</td>
+<td>从str的m个字符串开始，截取n位</td>
+<td>截取后的子串</td>
+</tr>
+<tr>
+<td>split(str,arr,fs)</td>
+<td>按fs切割字符串，结果保存arr</td>
+<td>切割后的子串的个数</td>
+</tr>
+<tr>
+<td>match(str,RE)</td>
+<td>在str中安装RE查找，返回位置</td>
+<td>返回索引位置</td>
+</tr>
+<tr>
+<td>sub(RE,RepStr,str)</td>
+<td>在str中搜索符合RE的子串，将其替换为RepStr；只替换第一个</td>
+<td>替换的个数</td>
+</tr>
+<tr>
+<td>Gsub(RE,RepStr,str)</td>
+<td>在str中搜索符合RE的子串，将其替换为RepStr；替换所有</td>
+<td>替换的个数</td>
+</tr>
+</tbody></table>
+<h2 id="练习-5"><a href="#练习-5" class="headerlink" title="练习"></a>练习</h2><ol>
+<li><p>以<code>:</code>为分隔符，返回/etc/passwd中每行中每个字段的长度    </p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">BEGIN{</span><br><span class="line">	FS=<span class="string">":"</span></span><br><span class="line">}</span><br><span class="line">{</span><br><span class="line">	i=1</span><br><span class="line">	<span class="keyword">while</span>(i&lt;=NF)</span><br><span class="line">	{</span><br><span class="line">		<span class="keyword">if</span>(i==NF)</span><br><span class="line">			<span class="built_in">printf</span> <span class="string">"%d"</span>,length(<span class="variable">$i</span>)</span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">			<span class="built_in">printf</span> <span class="string">"%d:"</span>,length(<span class="variable">$i</span>)</span><br><span class="line">				i++</span><br><span class="line">	}</span><br><span class="line">	<span class="built_in">print</span> <span class="string">""</span></span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f script-length.awk  /etc/passwd</span></span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li><code>NF</code>:每行有多少列</li>
+</ul>
+</li>
+<li><p>搜索字符串”I have a dream”中出现”ea”子串的位置</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{str="I hava a dream";location=index(str,"ea");print location}'</span></span><br><span class="line">awk <span class="string">'BEGIN{str="I hava a dream";location=match(str,"ea");print location}'</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="3">
+<li><p>将字符串”Hadoop is a bigdata Framawork”全部转换为小写</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{str="Hadoop is a bigdata Framework";print tolower(str)}'</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="4">
+<li><p>将字符串”Hadoop is a bigdata Framawork”全部转换为大写</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{str="Hadoop is a bigdata Framework";print toupper(str)}'</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="5">
+<li><p>将字符串”Hadoop Kafka Spark Storm HDFS YARN Zookeeper”，按照空格为分隔符，分隔每部分保存到数组array中</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{str="Hadoop Kafka Spark Storm HDFS YARN Zookeeper";split(str,arr);for(a in arr) print arr[a]}'</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="6">
+<li><p>搜索字符串”Tranction 2345 Start:Select * from master”第一个数字出现的位置</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{str="Tranction 2345 Start:Select * from master";location=match(str,/[0-9]/);print location}'</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="7">
+<li><p>截取字符串”transaction start”的子串，截取条件从第4个字符开始，截取5位</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{str="transaction start";print substr(str,4,5)}'</span></span><br></pre></td></tr></tbody></table></figure>
+<p>从第4个字符开始，截取剩余的字符串</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{str="transaction start";print substr(str,4)}'</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="8">
+<li><p>替换字符串”Tranction 243 Start,Event ID:9002”中第一个匹配到的数字串为$符号</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{str="Tranction 243 Start,Event ID:9002";count=sub(/[0-9]+/,"$",str);print count,str}'</span></span><br></pre></td></tr></tbody></table></figure>
+<p>全部替换</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">awk <span class="string">'BEGIN{str="Tranction 243 Start,Event ID:9002";count=gsub(/[0-9]+/,"$",str);print count,str}'</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+
+
+</li>
+</ol>
+<h1 id="常用选项"><a href="#常用选项" class="headerlink" title="常用选项"></a>常用选项</h1><h2 id="常用选项总结"><a href="#常用选项总结" class="headerlink" title="常用选项总结"></a>常用选项总结</h2><table>
+<thead>
+<tr>
+<th>选项</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>-v</code></td>
+<td>参数传递</td>
+</tr>
+<tr>
+<td><code>-f</code></td>
+<td>指定脚本文件</td>
+</tr>
+<tr>
+<td><code>-F</code></td>
+<td>指定分隔符</td>
+</tr>
+<tr>
+<td><code>-V</code></td>
+<td>查看awk的版本号</td>
+</tr>
+</tbody></table>
+<h2 id="练习-6"><a href="#练习-6" class="headerlink" title="练习"></a>练习</h2><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># num1=20</span></span><br><span class="line">[root@localhost ~]<span class="comment"># var="hello world"</span></span><br><span class="line">[root@localhost ~]<span class="comment"># awk -v num2="$num1" -v var1="$var" 'BEGIN{print num2,var1}'</span></span><br><span class="line">20 hello world</span><br><span class="line">[root@localhost ~]<span class="comment"># vim script-str.awk</span></span><br><span class="line">[root@localhost ~]<span class="comment"># cat script-str.awk</span></span><br><span class="line">BEGIN{</span><br><span class="line">	str=<span class="string">"I have a dream"</span></span><br><span class="line">	location=index(str,<span class="string">"ea"</span>)</span><br><span class="line">	<span class="built_in">print</span> location</span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f script-str.awk</span></span><br><span class="line">12</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -F ":" '{print $7}' /etc/passwd</span></span><br><span class="line">/bin/bash</span><br><span class="line">……</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -F: '{print $7}' /etc/passwd</span></span><br><span class="line">/bin/bash</span><br><span class="line">……</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -V</span></span><br><span class="line">GNU Awk 4.0.2</span><br><span class="line">Copyright (C) 1989, 1991-2012 Free Software Foundation.</span><br><span class="line">……</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h1 id="数组的用法"><a href="#数组的用法" class="headerlink" title="数组的用法"></a>数组的用法</h1><p>学习时，与Shell中的数组进行对比</p>
+<h2 id="Shell中数组的用法"><a href="#Shell中数组的用法" class="headerlink" title="Shell中数组的用法"></a>Shell中数组的用法</h2><p><code>array=("Allen" "Mike" "Messi" "Jerry" "Man" "Women")</code></p>
+<ul>
+<li><p>打印元素：<code>echo ${array[2]}</code> 注意：下标是从0开始 打印所有元素：<code>echo ${array[@]}</code></p>
+</li>
+<li><p>打印元素个数：<code>echo ${#array[@]}</code>或者<code>echo ${#array[*]}</code></p>
+</li>
+<li><p>打印元素长度：<code>echo ${#array[0]}</code></p>
+</li>
+<li><p>给元素赋值：<code> array[1]="Jack"</code></p>
+</li>
+<li><p>删除元素：<code>unset array[2]</code> 删除数组所有元素：<code>unset array</code></p>
+</li>
+<li><p>分片访问：<code>echo ${array[@]:1:3}</code>访问下标1到3的元素</p>
+</li>
+<li><p>元素内容替换：<code>echo ${array[@]/e/E}</code>只替换元素的第一个e；<code>echo ${array[@]//e/E}</code> 替换元素中所有的e</p>
+</li>
+<li><p>数组的遍历：<code> for a in ${array[@]};do echo $a;done</code></p>
+</li>
+</ul>
+<h2 id="awk中数组的用法"><a href="#awk中数组的用法" class="headerlink" title="awk中数组的用法"></a>awk中数组的用法</h2><p> 在awk中，使用数组时，不仅可以使用1.2..n作为数组下标，也可以使用字符串作为数组下标，注意：awk数组遍历时，下标时以1开始</p>
+<p>当使用1.2.3..n时，直接使用array[2]访问元素；需要遍历数组时，使用以下形式：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">str=<span class="string">"Allen Mike Messi Jerry Man Women"</span></span><br><span class="line">split(str,array) <span class="comment"># 默认空格为分割符，可不写默认分隔符</span></span><br><span class="line"><span class="keyword">for</span>(i=1;i&lt;length(array);i++)</span><br><span class="line">	<span class="built_in">print</span> array[i]</span><br></pre></td></tr></tbody></table></figure>
+<p>当使用字符串作为数组下标时，需要使用array[str]形式访问元素；遍历数组时，使用以下形式：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">array[<span class="string">"var1"</span>]=<span class="string">"Jin"</span></span><br><span class="line">array[<span class="string">"var2"</span>]=<span class="string">"Hao"</span></span><br><span class="line">array[<span class="string">"var3"</span>]=<span class="string">"Fang"</span></span><br><span class="line"><span class="keyword">for</span>(a <span class="keyword">in</span> array)</span><br><span class="line">	<span class="built_in">print</span> array[a]</span><br></pre></td></tr></tbody></table></figure>
+
+
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># awk 'BEGIN{str="Allen Mike Jerry Hanmeimei Lilei";split(str,array);for(i=1;i&lt;=length(array);i++) print array[i]}'</span></span><br><span class="line">Allen</span><br><span class="line">Mike</span><br><span class="line">Jerry</span><br><span class="line">Hanmeimei</span><br><span class="line">Lilei</span><br><span class="line">[root@localhost ~]<span class="comment"># awk 'BEGIN{str="Allen Mike Jerry Hanmeimei Lilei";split(str,array);for(a in array) print array[a]}'</span></span><br><span class="line">Hanmeimei</span><br><span class="line">Lilei</span><br><span class="line">Allen</span><br><span class="line">Mike</span><br><span class="line">Jerry</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="典型常用例子"><a href="#典型常用例子" class="headerlink" title="典型常用例子"></a>典型常用例子</h2><ol>
+<li><p>统计主机上所有TCP连接状态数，安装每个TCP状态分类</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># netstat -an | grep tcp | awk '{print $6}'</span></span><br><span class="line">LISTEN</span><br><span class="line">LISTEN</span><br><span class="line">LISTEN</span><br><span class="line">ESTABLISHED</span><br><span class="line">ESTABLISHED</span><br><span class="line">LISTEN</span><br><span class="line">LISTEN</span><br><span class="line">[root@localhost ~]<span class="comment"># netstat -an | grep tcp | awk '{array[$6]++}END{for(a in array) print a,array[a]}'</span></span><br><span class="line">LISTEN 5</span><br><span class="line">ESTABLISHED 2</span><br><span class="line">[root@localhost ~]<span class="comment"># netstat -nat |tail -n +3|awk '{print $6}'|sort|uniq -c|sort -rn</span></span><br><span class="line">      5 LISTEN</span><br><span class="line">      2 ESTABLISHED</span><br></pre></td></tr></tbody></table></figure></li>
+<li><p>计算横向数据总和，计算纵向数据总和（student.txt）</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># cat student.txt</span></span><br><span class="line">Allen	80	90	96	98</span><br><span class="line">Mike	93	98	92	91</span><br><span class="line">Zhang	78	76	87	92</span><br><span class="line">Jerry	86	89	68	92</span><br><span class="line">Han	85	95	75	90</span><br><span class="line">Li	78	88	98	100</span><br><span class="line">[root@localhost ~]<span class="comment"># cat script-stu.awk</span></span><br><span class="line">BEGIN {</span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-10s%-10s%-10s%-10s\n"</span>, <span class="string">"Name"</span>,<span class="string">"Chinese"</span>,<span class="string">"Math"</span>,<span class="string">"English"</span>,<span class="string">"Physical"</span>,<span class="string">"Total"</span></span><br><span class="line">}</span><br><span class="line">{</span><br><span class="line">	total=<span class="variable">$2</span>+<span class="variable">$3</span>+<span class="variable">$4</span>+<span class="variable">$5</span></span><br><span class="line">	chinese_sum+=<span class="variable">$2</span></span><br><span class="line">	math_sum+=<span class="variable">$3</span></span><br><span class="line">	eng_sum+=<span class="variable">$4</span></span><br><span class="line">	phy_sum+=<span class="variable">$5</span></span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-10d%-10d%-10d%-10d%-10d\n"</span>,<span class="variable">$1</span>,<span class="variable">$2</span>,<span class="variable">$3</span>,<span class="variable">$4</span>,<span class="variable">$5</span>,total</span><br><span class="line">}</span><br><span class="line">END {</span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-10d%-10d%-10d%-10d\n"</span>,<span class="string">""</span>,chinese_sum,math_sum,eng_sum,phy_sum</span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f script-stu.awk student.txt</span></span><br><span class="line">Name      Chinese   Math      English   Physical</span><br><span class="line">Allen     80        90        96        98        364</span><br><span class="line">Mike      93        98        92        91        374</span><br><span class="line">Zhang     78        76        87        92        333</span><br><span class="line">Jerry     86        89        68        92        335</span><br><span class="line">Han       85        95        75        90        345</span><br><span class="line">Li        78        88        98        100       364</span><br><span class="line">          500       536       516       563</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<h1 id="awk处理生产数据实例"><a href="#awk处理生产数据实例" class="headerlink" title="awk处理生产数据实例"></a>awk处理生产数据实例</h1><p>需求描述：利用awk处理日志，并生成结果报告。</p>
+<p>生成数据测试脚本如下</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> create_random()</span><br><span class="line">{</span><br><span class="line">	min=<span class="variable">$1</span></span><br><span class="line">  	max=$((<span class="variable">$2</span>-<span class="variable">$min</span>+<span class="number">1</span>))</span><br><span class="line">  	num=$(date +%s%N)</span><br><span class="line">  	<span class="built_in">echo</span> $((<span class="variable">$num</span>%<span class="variable">$max</span>+<span class="variable">$min</span>))</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">INDEX=1</span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> <span class="literal">true</span></span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">	<span class="keyword">for</span> user <span class="keyword">in</span> allen mike jerry tracy han lilei</span><br><span class="line">	<span class="keyword">do</span></span><br><span class="line">		COUNT=<span class="variable">$RANDOM</span></span><br><span class="line">		NUM1=`create_random 1 <span class="variable">$COUNT</span>`</span><br><span class="line">		NUM2=`expr <span class="variable">$COUNT</span> - <span class="variable">$NUM1</span>`		</span><br><span class="line">		<span class="built_in">echo</span> <span class="string">"`date '+%Y-%m-%d %H:%M:%S'` <span class="variable">$INDEX</span> Batches: user <span class="variable">$user</span> insert <span class="variable">$COUNT</span> records into database:product table:detail, insert <span class="variable">$NUM1</span> records successfully,failed <span class="variable">$NUM2</span> records"</span> &gt;&gt; ./db.log.`date +%Y%m%d`</span><br><span class="line">		INDEX=`expr <span class="variable">$INDEX</span> + 1`</span><br><span class="line">	<span class="keyword">done</span></span><br><span class="line"><span class="keyword">done</span></span><br></pre></td></tr></tbody></table></figure>
+<p>生成的log如下格式：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">2021-03-07 02:31:30 2407 Batches: user allen insert 2473 records into database:product table:detail, insert 1954 records successfully,failed 519 records</span><br><span class="line">2021-03-07 02:31:30 2408 Batches: user mike insert 27173 records into database:product table:detail, insert 26642 records successfully,failed 531 records</span><br><span class="line">2021-03-07 02:31:30 2409 Batches: user jerry insert 23659 records into database:product table:detail, insert 8085 records successfully,failed 15574 records</span><br><span class="line">……</span><br></pre></td></tr></tbody></table></figure>
+
+
+<ol>
+<li><p>统计每个人员分别插入了多少条record进数据库</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">输出结果：</span><br><span class="line">			User	Total_Records</span><br><span class="line">			allen	493082</span><br><span class="line">			mike	349287</span><br></pre></td></tr></tbody></table></figure>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># cat exam_1.awk</span></span><br><span class="line">BEGIN {</span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-10s\n"</span>,<span class="string">"User"</span>,<span class="string">"Total_Records"</span></span><br><span class="line">}</span><br><span class="line">{</span><br><span class="line">	USER[<span class="variable">$6</span>]+=<span class="variable">$8</span></span><br><span class="line">}</span><br><span class="line">END {</span><br><span class="line">	<span class="keyword">for</span>(u <span class="keyword">in</span> USER)</span><br><span class="line">		<span class="built_in">printf</span> <span class="string">"%-10s%-20d\n"</span>, u,USER[u]</span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f exam_1.awk db.log.20210307</span></span><br><span class="line">User      Total_Records</span><br><span class="line">tracy     9369577</span><br><span class="line">allen     9408437</span><br><span class="line">mike      9262759</span><br><span class="line">jerry     9796791</span><br><span class="line">lilei     9229997</span><br><span class="line">han       9005836</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>统计每个人分别插入成功了多少record，失败了多少record</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">输出结果:</span><br><span class="line">		User 	Sucess_Record		Failed_Records</span><br><span class="line">		jerry	3472738				283737</span><br><span class="line">		mike	2738237				28373</span><br></pre></td></tr></tbody></table></figure>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># cat exam_2.awk</span></span><br><span class="line">BEGIN {</span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-20s%-20s\n"</span>,<span class="string">"User"</span>,<span class="string">"Sucess_Record"</span>,<span class="string">"Failed_Records"</span></span><br><span class="line">}</span><br><span class="line">{</span><br><span class="line">	SUCCESS[<span class="variable">$6</span>]+=<span class="variable">$14</span></span><br><span class="line">	FAIL[<span class="variable">$6</span>]+=<span class="variable">$17</span></span><br><span class="line">}</span><br><span class="line">END {</span><br><span class="line">	<span class="keyword">for</span>(u <span class="keyword">in</span> SUCCESS)</span><br><span class="line">		<span class="built_in">printf</span> <span class="string">"%-10s%-20d%-20d\n"</span>,u,SUCCESS[u],FAIL[u]</span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f exam_2.awk db.log.20210307</span></span><br><span class="line">User      Sucess_Record       Failed_Records</span><br><span class="line">tracy     4542256             4827321</span><br><span class="line">allen     4870765             4537672</span><br><span class="line">mike      4575874             4686885</span><br><span class="line">jerry     5097645             4699146</span><br><span class="line">lilei     4646997             4583000</span><br><span class="line">han       4547662             4458174</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="3">
+<li><p>将例子1和例子2结合起来，一起输出，输出每个人分别插入多少数据，多少成功，多少失败，并且要格式化输出，加上标题</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">输出结果：</span><br><span class="line">		User      Total               Sucess              Failed              </span><br><span class="line">		tracy     7472277             3945659             3526618             </span><br><span class="line">		allen     7390330             3597157             3793173             </span><br><span class="line">		mike      7226579             3679395             3547184</span><br></pre></td></tr></tbody></table></figure>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">root@localhost ~]<span class="comment"># cat exam_3.awk</span></span><br><span class="line">BEGIN {</span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-20s%-20s%-20s\n"</span>,<span class="string">"Total"</span>,<span class="string">"User"</span>,<span class="string">"Sucess"</span>,<span class="string">"Failed"</span></span><br><span class="line">}</span><br><span class="line">{</span><br><span class="line">	TOTAL[<span class="variable">$6</span>]+=<span class="variable">$8</span></span><br><span class="line">	SUCCESS[<span class="variable">$6</span>]+=<span class="variable">$14</span></span><br><span class="line">	FAIL[<span class="variable">$6</span>]+=<span class="variable">$17</span></span><br><span class="line">}</span><br><span class="line">END {</span><br><span class="line">	<span class="keyword">for</span>(u <span class="keyword">in</span> SUCCESS)</span><br><span class="line">		<span class="built_in">printf</span> <span class="string">"%-10s%-20d%--20d%-20d\n"</span>,u,TOTAL[u],SUCCESS[u],FAIL[u]</span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f exam_3.awk db.log.20210307</span></span><br><span class="line">Total     User                Sucess              Failed</span><br><span class="line">tracy     9369577             4542256             4827321</span><br><span class="line">allen     9408437             4870765             4537672</span><br><span class="line">mike      9262759             4575874             4686885</span><br><span class="line">jerry     9796791             5097645             4699146</span><br><span class="line">lilei     9229997             4646997             4583000</span><br><span class="line">han       9005836             4547662             4458174</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="4">
+<li><p>在例子3的基础上，加上结尾，统计全部插入记录数，成功记录数，失败记录数</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">输出结果：</span><br><span class="line">		User      Total               Sucess              Failed              </span><br><span class="line">		tracy     7472277             3945659             3526618             </span><br><span class="line">		allen     7390330             3597157             3793173             </span><br><span class="line">		mike      7226579             3679395             3547184</span><br><span class="line">				      21384945						11222211            10866975</span><br></pre></td></tr></tbody></table></figure>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># cat exam_4.awk</span></span><br><span class="line">BEGIN {</span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-20s%-20s%-20s\n"</span>,<span class="string">"Total"</span>,<span class="string">"User"</span>,<span class="string">"Sucess"</span>,<span class="string">"Failed"</span></span><br><span class="line">}</span><br><span class="line">{</span><br><span class="line">	TOTAL[<span class="variable">$6</span>]+=<span class="variable">$8</span></span><br><span class="line">	SUCCESS[<span class="variable">$6</span>]+=<span class="variable">$14</span></span><br><span class="line">	FAIL[<span class="variable">$6</span>]+=<span class="variable">$17</span></span><br><span class="line">}</span><br><span class="line">END {</span><br><span class="line">	<span class="keyword">for</span>(u <span class="keyword">in</span> SUCCESS) {</span><br><span class="line">		total+=TOTAL[u]</span><br><span class="line">		success+=SUCCESS[u]</span><br><span class="line">		fail+=FAIL[u]</span><br><span class="line">		<span class="built_in">printf</span> <span class="string">"%-10s%-20d%--20d%-20d\n"</span>,u,TOTAL[u],SUCCESS[u],FAIL[u]</span><br><span class="line">	}</span><br><span class="line">	<span class="built_in">printf</span> <span class="string">"%-10s%-20d%--20d%-20d\n"</span>,<span class="string">""</span>,total,success,fail</span><br><span class="line">}</span><br><span class="line">[root@localhost ~]<span class="comment"># awk -f exam_4.awk db.log.20210307</span></span><br><span class="line">Total     User                Sucess              Failed</span><br><span class="line">tracy     9369577             4542256             4827321</span><br><span class="line">allen     9408437             4870765             4537672</span><br><span class="line">mike      9262759             4575874             4686885</span><br><span class="line">jerry     9796791             5097645             4699146</span><br><span class="line">lilei     9229997             4646997             4583000</span><br><span class="line">han       9005836             4547662             4458174</span><br><span class="line">          56073397            28281199            27792198</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="5">
+<li><p>查找丢失数据的现象，也就是成功+失败的记录数，不等于一共插入的记录数。找出这些数据并显示行号和对应行的日志信息</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]<span class="comment"># awk '{if($8!=$14+$17) print NR,$0}' db.log.20210307</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:lvjing0705@126.com">jinglv</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://jinglv.github.io/linux/shell/gsa/awk/">https://jinglv.github.io/linux/shell/gsa/awk/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://jinglv.github.io" target="_blank">Jing's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Shell/">Shell</a></div><div class="post_share"><div class="social-share" data-image="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/linux/shell/gsa/grep/"><img class="prev-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">三剑客之grep</div></div></a></div><div class="next-post pull-right"><a href="/linux/ps/"><img class="next-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Linux ps命令</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts-list"><div><a href="/linux/shell/actual/" title="Shell实战"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell实战</div></div></a></div><div><a href="/linux/shell/basics/" title="Shell基础语法"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell基础语法</div></div></a></div><div><a href="/linux/shell/find/" title="Shell编程中常用查找命令"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell编程中常用查找命令</div></div></a></div><div><a href="/linux/shell/function/" title="Shell函数高级用法"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell函数高级用法</div></div></a></div><div><a href="/linux/shell/use/" title="Shell典型应用"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell典型应用</div></div></a></div><div><a href="/linux/shell/variable/" title="Shell变量高级用法"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Shell变量高级用法</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-info-avatar is-center"><img class="avatar-img" src="/img/avatar.jpeg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-info__name">jinglv</div><div class="author-info__description"></div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div><div class="card-info-data-item is-center"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div><div class="card-info-data-item is-center"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/jinglv"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/jinglv" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="/lvjing0705@126.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">欢迎交流技术！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F"><span class="toc-number">2.</span> <span class="toc-text">工作模式</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%AD%E6%B3%95%E6%A0%BC%E5%BC%8F"><span class="toc-number">3.</span> <span class="toc-text">语法格式</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%AD%E6%B3%95%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E"><span class="toc-number">3.1.</span> <span class="toc-text">语法格式说明</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%85%E7%BD%AE%E5%8F%98%E9%87%8F"><span class="toc-number">4.</span> <span class="toc-text">内置变量</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E7%BD%AE%E5%8F%98%E9%87%8F%E5%AF%B9%E7%85%A7%E8%A1%A8"><span class="toc-number">4.1.</span> <span class="toc-text">内置变量对照表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0"><span class="toc-number">4.2.</span> <span class="toc-text">练习</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A0%BC%E5%BC%8F%E5%8C%96%E8%BE%93%E5%87%BA%E4%B9%8Bprintf"><span class="toc-number">5.</span> <span class="toc-text">格式化输出之printf</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#printf%E7%9A%84%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E%E7%AC%A6"><span class="toc-number">5.1.</span> <span class="toc-text">printf的格式说明符</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#printf%E7%9A%84%E4%BF%AE%E9%A5%B0%E7%AC%A6"><span class="toc-number">5.2.</span> <span class="toc-text">printf的修饰符</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0-1"><span class="toc-number">5.3.</span> <span class="toc-text">练习</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%BC%E5%BC%8F%E7%AC%A6%E7%A4%BA%E4%BE%8B"><span class="toc-number">5.3.1.</span> <span class="toc-text">格式符示例</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%A4%BA%E4%BE%8B"><span class="toc-number">5.3.2.</span> <span class="toc-text">修饰符示例</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A8%A1%E5%BC%8F%E5%8C%B9%E9%85%8D%E7%9A%84%E4%B8%A4%E7%A7%8D%E7%94%A8%E6%B3%95"><span class="toc-number">6.</span> <span class="toc-text">模式匹配的两种用法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8%E6%B3%95%E6%A0%BC%E5%BC%8F%E5%AF%B9%E7%85%A7%E8%A1%A8"><span class="toc-number">6.1.</span> <span class="toc-text">用法格式对照表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0-2"><span class="toc-number">6.2.</span> <span class="toc-text">练习</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#RegExp%E7%A4%BA%E4%BE%8B"><span class="toc-number">6.2.1.</span> <span class="toc-text">RegExp示例</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%B3%E7%B3%BB%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="toc-number">6.2.1.1.</span> <span class="toc-text">关系运算符</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B8%83%E5%B0%94%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="toc-number">6.2.1.2.</span> <span class="toc-text">布尔运算符</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%A1%A8%E8%BE%BE%E5%BC%8F%E7%94%A8%E6%B3%95"><span class="toc-number">7.</span> <span class="toc-text">表达式用法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#awk%E5%8A%A8%E4%BD%9C%E8%A1%A8%E8%BE%BE%E5%BC%8F%E4%B8%AD%E7%9A%84%E7%AE%97%E6%9C%AF%E8%BF%90%E7%AE%97%E7%AC%A6"><span class="toc-number">7.1.</span> <span class="toc-text">awk动作表达式中的算术运算符</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0-3"><span class="toc-number">7.2.</span> <span class="toc-text">练习</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%9D%A1%E4%BB%B6%E5%8F%8A%E5%BE%AA%E7%8E%AF%E8%AF%AD%E5%8F%A5"><span class="toc-number">8.</span> <span class="toc-text">条件及循环语句</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9D%A1%E4%BB%B6%E8%AF%AD%E5%8F%A5"><span class="toc-number">8.1.</span> <span class="toc-text">条件语句</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BE%AA%E7%8E%AF%E8%AF%AD%E5%8F%A5"><span class="toc-number">8.2.</span> <span class="toc-text">循环语句</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#while%E5%BE%AA%E7%8E%AF"><span class="toc-number">8.2.1.</span> <span class="toc-text">while循环</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#do-while%E5%BE%AA%E7%8E%AF"><span class="toc-number">8.2.2.</span> <span class="toc-text">do while循环</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#for%E5%BE%AA%E7%8E%AF"><span class="toc-number">8.2.3.</span> <span class="toc-text">for循环</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0-4"><span class="toc-number">8.3.</span> <span class="toc-text">练习</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%87%BD%E6%95%B0"><span class="toc-number">9.</span> <span class="toc-text">字符串函数</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%87%BD%E6%95%B0%E5%AF%B9%E7%85%A7%E8%A1%A8"><span class="toc-number">9.1.</span> <span class="toc-text">字符串函数对照表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0-5"><span class="toc-number">9.2.</span> <span class="toc-text">练习</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E9%80%89%E9%A1%B9"><span class="toc-number">10.</span> <span class="toc-text">常用选项</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E9%80%89%E9%A1%B9%E6%80%BB%E7%BB%93"><span class="toc-number">10.1.</span> <span class="toc-text">常用选项总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0-6"><span class="toc-number">10.2.</span> <span class="toc-text">练习</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%95%B0%E7%BB%84%E7%9A%84%E7%94%A8%E6%B3%95"><span class="toc-number">11.</span> <span class="toc-text">数组的用法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Shell%E4%B8%AD%E6%95%B0%E7%BB%84%E7%9A%84%E7%94%A8%E6%B3%95"><span class="toc-number">11.1.</span> <span class="toc-text">Shell中数组的用法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#awk%E4%B8%AD%E6%95%B0%E7%BB%84%E7%9A%84%E7%94%A8%E6%B3%95"><span class="toc-number">11.2.</span> <span class="toc-text">awk中数组的用法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B8%E5%9E%8B%E5%B8%B8%E7%94%A8%E4%BE%8B%E5%AD%90"><span class="toc-number">11.3.</span> <span class="toc-text">典型常用例子</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#awk%E5%A4%84%E7%90%86%E7%94%9F%E4%BA%A7%E6%95%B0%E6%8D%AE%E5%AE%9E%E4%BE%8B"><span class="toc-number">12.</span> <span class="toc-text">awk处理生产数据实例</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/agency/" title="Nginx代理实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx代理实战"/></a><div class="content"><a class="title" href="/web/nginx/agency/" title="Nginx代理实战">Nginx代理实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/introduce/" title="Nginx介绍"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx介绍"/></a><div class="content"><a class="title" href="/web/nginx/introduce/" title="Nginx介绍">Nginx介绍</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/load/" title="Nginx负载均衡实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx负载均衡实战"/></a><div class="content"><a class="title" href="/web/nginx/load/" title="Nginx负载均衡实战">Nginx负载均衡实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx安装、常用命令及配置"/></a><div class="content"><a class="title" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置">Nginx安装、常用命令及配置</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/testtools/jmeter/record/" title="Jmeter录制与回放"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jmeter录制与回放"/></a><div class="content"><a class="title" href="/testtools/jmeter/record/" title="Jmeter录制与回放">Jmeter录制与回放</a><time datetime="2021-05-17T03:25:09.319Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021 By jinglv</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Hi, welcome to my <a href="https://jinglv.github.io/">blog</a>!</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

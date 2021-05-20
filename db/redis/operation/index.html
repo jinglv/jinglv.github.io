@@ -1,0 +1,600 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Redis数据库相关指令 | Jing's Blog</title><meta name="keywords" content="Redis"><meta name="author" content="jinglv,lvjing0705@126.com"><meta name="copyright" content="jinglv"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="数据库操作指令Redis中库说明 库：database用来存放数据一个基本单元，一个库可以存放key-value键值对redis中每一个都有一个唯一名称|编号，从0开始  默认库的个数：16个库，库的编号：0-15，默认使用的是0号库，注意：库的个数可以在redis.conf中修改 1234# Set the number of databases. The default database is">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis数据库相关指令">
+<meta property="og:url" content="https://jinglv.github.io/db/redis/operation/index.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="数据库操作指令Redis中库说明 库：database用来存放数据一个基本单元，一个库可以存放key-value键值对redis中每一个都有一个唯一名称|编号，从0开始  默认库的个数：16个库，库的编号：0-15，默认使用的是0号库，注意：库的个数可以在redis.conf中修改 1234# Set the number of databases. The default database is">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg">
+<meta property="article:published_time" content="2021-05-17T03:25:09.280Z">
+<meta property="article:modified_time" content="2021-05-17T03:25:09.280Z">
+<meta property="article:author" content="jinglv">
+<meta property="article:tag" content="Redis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://jinglv.github.io/db/redis/operation/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":200},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Redis数据库相关指令',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-05-17 11:25:09'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    })(window)</script><meta name="generator" content="Hexo 5.3.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Jing's Blog" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/img/avatar.jpeg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img" id="page-header"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Jing's Blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">Redis数据库相关指令</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-05-17T03:25:09.280Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-05-17T03:25:09.280Z" title="更新于 2021-05-17 11:25:09">2021-05-17</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Redis数据库相关指令"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div><article class="post-content" id="article-container"><h1 id="数据库操作指令"><a href="#数据库操作指令" class="headerlink" title="数据库操作指令"></a>数据库操作指令</h1><h2 id="Redis中库说明"><a href="#Redis中库说明" class="headerlink" title="Redis中库说明"></a>Redis中库说明</h2><ul>
+<li><p>库：database用来存放数据一个基本单元，一个库可以存放key-value键值对redis中每一个都有一个唯一名称|编号，从0开始</p>
+</li>
+<li><p>默认库的个数：16个库，库的编号：0-15，默认使用的是0号库，注意：库的个数可以在redis.conf中修改</p>
+<figure class="highlight plain"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># Set the number of databases. The default database is DB 0, you can select</span><br><span class="line"># a different one on a per-connection basis using SELECT &lt;dbid&gt; where</span><br><span class="line"># dbid is a number between 0 and 'databases'-1</span><br><span class="line">databases 16</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="Redis库的操作"><a href="#Redis库的操作" class="headerlink" title="Redis库的操作"></a>Redis库的操作</h2></li>
+<li><p>切换库指令：<code>select 库的编号</code></p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost bin]<span class="comment"># ./redis-cli -h localhost -p 6379</span></span><br><span class="line">localhost:6379&gt; select 0</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; select 1</span><br><span class="line">OK</span><br></pre></td></tr></tbody></table></figure></li>
+<li><p>请出库指令</p>
+<ul>
+<li>清空当前的库  FLUSHDB</li>
+<li>清空全部的库  FLUSHALL</li>
+</ul>
+</li>
+<li><p>客户端显示中文</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost bin]<span class="comment"># ./redis-cli -h localhost -p 6379 --raw</span></span><br><span class="line">localhost:6379&gt;</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ul>
+<h1 id="操作key相关指令"><a href="#操作key相关指令" class="headerlink" title="操作key相关指令"></a>操作key相关指令</h1><p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210325124930817.png" alt="image-20210325124930817"></p>
+<h2 id="DEL指令"><a href="#DEL指令" class="headerlink" title="DEL指令"></a>DEL指令</h2><ul>
+<li>语法 :  DEL key [key …] </li>
+<li>作用 :  删除给定的一个或多个key ,不存在的key 会被忽略</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 被删除key 的数量</li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; <span class="built_in">set</span> name zhangsan</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> age 19</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> bir 2021-03-25</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> content 北京市丰台区</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">age</span><br><span class="line">content</span><br><span class="line">name</span><br><span class="line">bir</span><br><span class="line">localhost:6379&gt; del bir age</span><br><span class="line">2</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">content</span><br><span class="line">name</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="EXISTS指令"><a href="#EXISTS指令" class="headerlink" title="EXISTS指令"></a>EXISTS指令</h2><ul>
+<li>语法:  EXISTS key</li>
+<li>作用:  检查给定key 是否存在</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 若key 存在，返回1 ，否则返回0</li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; exists name</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; exists age</span><br><span class="line">0</span><br><span class="line">localhost:6379&gt; exists name age bir (只要有一个存在，就返回1)</span><br><span class="line">1</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="EXPIRE"><a href="#EXPIRE" class="headerlink" title="EXPIRE"></a>EXPIRE</h2><ul>
+<li>语法:  EXPIRE key seconds</li>
+<li>作用:  为给定key 设置生存时间，当key 过期时(生存时间为0 )，它会被自动删除。</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>时间复杂度： O(1)</li>
+<li>返回值：设置成功返回1 </li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; keys *</span><br><span class="line">content</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; expire name 10</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">content</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="KEYS"><a href="#KEYS" class="headerlink" title="KEYS"></a>KEYS</h2><ul>
+<li>语法 :  KEYS pattern</li>
+<li>作用 :  查找所有符合给定模式pattern 的key 。</li>
+<li>语法:<ul>
+<li><code>KEYS *</code>匹配数据库中所有key</li>
+<li><code>KEYS h?llo</code> 匹配hello ，hallo 和hxllo 等</li>
+<li><code>KEYS h*llo</code> 匹配hllo 和heeeeello 等</li>
+<li><code>KEYS h[ae]llo</code> 匹配hello 和hallo ，但不匹配hillo 。特殊符号用 “" 隔开</li>
+</ul>
+</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 符合给定模式的key 列表。</li>
+</ul>
+<h2 id="MOVE"><a href="#MOVE" class="headerlink" title="MOVE"></a>MOVE</h2><ul>
+<li>语法 :  MOVE key db</li>
+<li>作用 :  将当前数据库的key 移动到给定的数据库db当中</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 移动成功返回1 ，失败则返回0 </li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; select 0</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">name</span><br><span class="line">content</span><br><span class="line">localhost:6379&gt; select 1</span><br><span class="line">OK</span><br><span class="line">localhost:6379[1]&gt; keys *</span><br><span class="line"></span><br><span class="line">localhost:6379[1]&gt; select 0</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; move content 1</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; select 1</span><br><span class="line">OK</span><br><span class="line">localhost:6379[1]&gt; keys *</span><br><span class="line">content</span><br><span class="line">localhost:6379[1]&gt; get content</span><br><span class="line">北京市丰台区</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="PEXPIRE"><a href="#PEXPIRE" class="headerlink" title="PEXPIRE"></a>PEXPIRE</h2><ul>
+<li>语法 :  PEXPIRE key milliseconds</li>
+<li>作用 :  这个命令和EXPIRE 命令的作用类似，但是它以<strong>毫秒</strong>为单位设置key 的生存时间，而不像EXPIRE 命令那样，以秒为单位</li>
+<li>可用版本： &gt;= 2.6.0</li>
+<li>时间复杂度： O(1)</li>
+<li>返回值：设置成功，返回1  key 不存在或设置失败，返回0</li>
+</ul>
+<h2 id="PEXPIREAT"><a href="#PEXPIREAT" class="headerlink" title="PEXPIREAT"></a>PEXPIREAT</h2><ul>
+<li>语法 :  PEXPIREAT key milliseconds-timestamp</li>
+<li>作用 :  这个命令和EXPIREAT 命令类似，但它以毫秒为单位设置key 的过期unix 时间戳，而不是像EXPIREAT那样，以秒为单位</li>
+<li>可用版本： &gt;= 2.6.0</li>
+<li>返回值：如果生存时间设置成功，返回1 。当key 不存在或没办法设置生存时间时，返回0 。(查看EXPIRE 命令获取更多信息)</li>
+</ul>
+<h2 id="TTL"><a href="#TTL" class="headerlink" title="TTL"></a>TTL</h2><ul>
+<li>语法 :   TTL key</li>
+<li>作用 :   以<strong>秒</strong>为单位，返回给定key 的剩余生存时间(TTL, time to live)</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值：<ul>
+<li>当key 不存在时，返回-2 </li>
+<li>当key 存在但没有设置剩余生存时间时，返回-1 </li>
+<li>否则，以秒为单位，返回key 的剩余生存时间</li>
+</ul>
+</li>
+<li>Note : 在Redis 2.8 以前，当key 不存在，或者key 没有设置剩余生存时间时，命令都返回-1</li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; keys *</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; ttl name</span><br><span class="line">-1</span><br><span class="line">localhost:6379&gt; ttl content</span><br><span class="line">-2</span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> address 北京市</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; expire address 100</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; ttl address</span><br><span class="line">94</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="PTTL"><a href="#PTTL" class="headerlink" title="PTTL"></a>PTTL</h2><ul>
+<li>语法 :  PTTL key</li>
+<li>作用 :  这个命令类似于TTL 命令，但它以<strong>毫秒</strong>为单位返回key 的剩余生存时间，而不是像TTL 命令那样，以秒为单位</li>
+<li>可用版本： &gt;= 2.6.0</li>
+<li>返回值： <ul>
+<li>当key 不存在时，返回-2 </li>
+<li>当key 存在但没有设置剩余生存时间时，返回-1</li>
+<li>否则，以毫秒为单位，返回key 的剩余生存时间</li>
+</ul>
+</li>
+<li>注意 : 在Redis 2.8 以前，当key 不存在，或者key 没有设置剩余生存时间时，命令都返回-1 </li>
+</ul>
+<h2 id="RANDOMKEY"><a href="#RANDOMKEY" class="headerlink" title="RANDOMKEY"></a>RANDOMKEY</h2><ul>
+<li>语法 :  RANDOMKEY</li>
+<li>作用 :  从当前数据库中随机返回(不删除) 一个key</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值：当数据库不为空时，返回一个key 。当数据库为空时，返回nil </li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; randomkey</span><br><span class="line">address</span><br><span class="line">localhost:6379&gt; randomkey</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; randomkey</span><br><span class="line">address</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="RENAME"><a href="#RENAME" class="headerlink" title="RENAME"></a>RENAME</h2><ul>
+<li>语法 :  RENAME key newkey</li>
+<li>作用 :  将key 改名为newkey 。当key 和newkey 相同，或者key 不存在时，返回一个错误。当newkey 已经存在时，RENAME 命令将覆盖旧值</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 改名成功时提示OK ，失败时候返回一个错误</li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; keys *</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; rename name username</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">username</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="TYPE"><a href="#TYPE" class="headerlink" title="TYPE"></a>TYPE</h2><ul>
+<li>语法 :  TYPE key</li>
+<li>作用 :  返回key 所储存的值的类型。</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值：<ul>
+<li>none (key 不存在)</li>
+<li>string (字符串)</li>
+<li>list (列表)</li>
+<li>set (集合)</li>
+<li>zset (有序集)</li>
+<li>hash (哈希表)</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; <span class="built_in">type</span> username</span><br><span class="line">string</span><br><span class="line">localhost:6379&gt; <span class="built_in">type</span> age</span><br><span class="line">string</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h1 id="String类型"><a href="#String类型" class="headerlink" title="String类型"></a>String类型</h1><h2 id="内存存储模型"><a href="#内存存储模型" class="headerlink" title="内存存储模型"></a>内存存储模型</h2><p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210325130753699.png" alt="image-20210325130753699"></p>
+<h2 id="常用操作命令"><a href="#常用操作命令" class="headerlink" title="常用操作命令"></a>常用操作命令</h2><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>set</td>
+<td>设置一个key/value</td>
+</tr>
+<tr>
+<td>get</td>
+<td>根据key获得对应的value</td>
+</tr>
+<tr>
+<td>mset</td>
+<td>一次设置多个key value</td>
+</tr>
+<tr>
+<td>mget</td>
+<td>一次获得多个key的value</td>
+</tr>
+<tr>
+<td>getset</td>
+<td>获得原始key的值，同时设置新值</td>
+</tr>
+<tr>
+<td>strlen</td>
+<td>获得对应key存储value的长度</td>
+</tr>
+<tr>
+<td>append</td>
+<td>为对应key的value追加内容</td>
+</tr>
+<tr>
+<td>getrange 索引0开始</td>
+<td>截取value的内容</td>
+</tr>
+<tr>
+<td>setex</td>
+<td>设置一个key存活的有效期（<strong>秒</strong>）</td>
+</tr>
+<tr>
+<td>psetex</td>
+<td>设置一个key存活的有效期（<strong>毫秒</strong>）</td>
+</tr>
+<tr>
+<td>setnx</td>
+<td>存在不做任何操作,不存在添加</td>
+</tr>
+<tr>
+<td>msetnx原子操作(只要有一个存在不做任何操作)</td>
+<td>可以同时设置多个key,只有有一个存在都不保存</td>
+</tr>
+<tr>
+<td>decr</td>
+<td>进行数值类型的-1操作</td>
+</tr>
+<tr>
+<td>decrby</td>
+<td>根据提供的数据进行减法操作</td>
+</tr>
+<tr>
+<td>Incr</td>
+<td>进行数值类型的+1操作</td>
+</tr>
+<tr>
+<td>incrby</td>
+<td>根据提供的数据进行加法操作</td>
+</tr>
+<tr>
+<td>Incrbyfloat</td>
+<td>根据提供的数据加入浮点数</td>
+</tr>
+</tbody></table>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; <span class="built_in">set</span> name 王小花</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; get name</span><br><span class="line">王小花</span><br><span class="line">localhost:6379&gt; mset age 18 bir 2012-12-12</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">username</span><br><span class="line">age</span><br><span class="line">name</span><br><span class="line">bir</span><br><span class="line">localhost:6379&gt; mget name age bir</span><br><span class="line">王小花</span><br><span class="line">18</span><br><span class="line">2012-12-12</span><br><span class="line">localhost:6379&gt; getset name 小黑</span><br><span class="line">王小花</span><br><span class="line">localhost:6379&gt; get name</span><br><span class="line">小黑</span><br><span class="line">localhost:6379&gt; strlen name</span><br><span class="line">6</span><br><span class="line">localhost:6379&gt; append name thisgoodman</span><br><span class="line">17</span><br><span class="line">localhost:6379&gt; get name</span><br><span class="line">小黑thisgoodman</span><br><span class="line">localhost:6379&gt; getrange name 6 16</span><br><span class="line">thisgoodman</span><br><span class="line">localhost:6379&gt; getrange name 6 -1</span><br><span class="line">thisgoodman</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line"></span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> name zhangsan</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; ttl name</span><br><span class="line">-1</span><br><span class="line">localhost:6379&gt; setex age 100 19</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; ttl age</span><br><span class="line">96</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; setnx name xiaohei</span><br><span class="line">0</span><br><span class="line">localhost:6379&gt; get name</span><br><span class="line">zhangsan</span><br><span class="line">localhost:6379&gt; setnx content xiaohei</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; get content</span><br><span class="line">xiaohei</span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> age 19</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; get age</span><br><span class="line">19</span><br><span class="line">localhost:6379&gt; decr age</span><br><span class="line">18</span><br><span class="line">localhost:6379&gt; decr age</span><br><span class="line">17</span><br><span class="line">localhost:6379&gt; incr age</span><br><span class="line">18</span><br><span class="line">localhost:6379&gt; incr age</span><br><span class="line">19</span><br><span class="line">localhost:6379&gt; incr age</span><br><span class="line">20</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h1 id="List类型"><a href="#List类型" class="headerlink" title="List类型"></a>List类型</h1><p>list 列表 相当于java中list 集合  特点  <strong>元素有序</strong>  且 <strong>可以重复</strong></p>
+<h2 id="内存存储模型-1"><a href="#内存存储模型-1" class="headerlink" title="内存存储模型"></a>内存存储模型</h2><p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210325141431608.png" alt="image-20210325141431608"></p>
+<h2 id="常用操作指令"><a href="#常用操作指令" class="headerlink" title="常用操作指令"></a>常用操作指令</h2><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>lpush</td>
+<td>将某个值加入到一个key列表头部</td>
+</tr>
+<tr>
+<td>lpushx(x:exists是否存在)</td>
+<td>同lpush,但是必须要保证这个key存在</td>
+</tr>
+<tr>
+<td>rpush</td>
+<td>将某个值加入到一个key列表末尾</td>
+</tr>
+<tr>
+<td>rpushx</td>
+<td>同rpush,但是必须要保证这个key存在</td>
+</tr>
+<tr>
+<td>lpop</td>
+<td>返回和移除列表<strong>左边</strong>的第一个元素</td>
+</tr>
+<tr>
+<td>rpop</td>
+<td>返回和移除列表<strong>右边</strong>的第一个元素</td>
+</tr>
+<tr>
+<td>lrange</td>
+<td>获取某一个下标区间内的元素</td>
+</tr>
+<tr>
+<td>llen</td>
+<td>获取列表元素个数</td>
+</tr>
+<tr>
+<td>lset</td>
+<td>设置某一个指定索引的值(索引必须存在)</td>
+</tr>
+<tr>
+<td>lindex</td>
+<td>获取某一个指定索引位置的元素</td>
+</tr>
+<tr>
+<td>lrem</td>
+<td>删除重复元素</td>
+</tr>
+<tr>
+<td>ltrim</td>
+<td>保留列表中特定区间内的元素</td>
+</tr>
+<tr>
+<td>linsert</td>
+<td>在某一个元素之前，之后插入新元素</td>
+</tr>
+</tbody></table>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; FLUSHDB</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; lpush lists zhangsan xiaoming xiaohei lisi xiaoming</span><br><span class="line">5</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">lists</span><br><span class="line">localhost:6379&gt; <span class="built_in">type</span> lists</span><br><span class="line">list</span><br><span class="line">localhost:6379&gt; lrange lists 0 -1</span><br><span class="line">xiaoming</span><br><span class="line">lisi</span><br><span class="line">xiaohei</span><br><span class="line">xiaoming</span><br><span class="line">zhangsan</span><br><span class="line">localhost:6379&gt; lrange lists 1 3</span><br><span class="line">lisi</span><br><span class="line">xiaohei</span><br><span class="line">xiaoming</span><br><span class="line">localhost:6379&gt; rpush lists xiaojindou xiaoheidou</span><br><span class="line">7</span><br><span class="line">localhost:6379&gt; lrange lists 0 -1</span><br><span class="line">xiaoming</span><br><span class="line">lisi</span><br><span class="line">xiaohei</span><br><span class="line">xiaoming</span><br><span class="line">zhangsan</span><br><span class="line">xiaojindou</span><br><span class="line">xiaoheidou</span><br><span class="line">localhost:6379&gt; lpop lists</span><br><span class="line">xiaoming</span><br><span class="line">localhost:6379&gt; lpop lists</span><br><span class="line">lisi</span><br><span class="line">localhost:6379&gt; lrange lists 0 -1</span><br><span class="line">xiaohei</span><br><span class="line">xiaoming</span><br><span class="line">zhangsan</span><br><span class="line">xiaojindou</span><br><span class="line">xiaoheidou</span><br><span class="line">localhost:6379&gt; rpop lists</span><br><span class="line">xiaoheidou</span><br><span class="line">localhost:6379&gt; rpop lists</span><br><span class="line">xiaojindou</span><br><span class="line">localhost:6379&gt; lrange lists 0 -1</span><br><span class="line">xiaohei</span><br><span class="line">xiaoming</span><br><span class="line">zhangsan</span><br><span class="line">localhost:6379&gt; llen lists</span><br><span class="line">3</span><br><span class="line">localhost:6379&gt; lset lists 1 wangxiaohua</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; lrange lists 0 -1</span><br><span class="line">xiaohei</span><br><span class="line">wangxiaohua</span><br><span class="line">zhangsan</span><br><span class="line">localhost:6379&gt; lindex lists 2</span><br><span class="line">zhangsan</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h1 id="Set类型"><a href="#Set类型" class="headerlink" title="Set类型"></a>Set类型</h1><p>Set类型 相当于Java中的Set集合 特点：<strong>元素无序  不可以重复</strong></p>
+<h2 id="内存存储模型-2"><a href="#内存存储模型-2" class="headerlink" title="内存存储模型"></a>内存存储模型</h2><p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210327132727333.png" alt="image-20210327132727333"></p>
+<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>sadd</td>
+<td>为集合添加元素</td>
+</tr>
+<tr>
+<td>smembers</td>
+<td>显示集合中所有元素 <strong>无序</strong></td>
+</tr>
+<tr>
+<td>scard</td>
+<td>返回集合中元素的个数</td>
+</tr>
+<tr>
+<td>spop</td>
+<td><strong>随机</strong>返回一个元素 并将元素在集合中删除</td>
+</tr>
+<tr>
+<td>smove</td>
+<td>从一个集合中向另一个集合移动元素  必须是同一种类型</td>
+</tr>
+<tr>
+<td>srem</td>
+<td>从集合中删除一个元素</td>
+</tr>
+<tr>
+<td>sismember</td>
+<td>判断一个集合中是否含有这个元素</td>
+</tr>
+<tr>
+<td>srandmember</td>
+<td>随机返回元素 不删除元素</td>
+</tr>
+<tr>
+<td>sdiff</td>
+<td>去掉第一个集合中其它集合含有的相同元素</td>
+</tr>
+<tr>
+<td>sinter</td>
+<td>求交集</td>
+</tr>
+<tr>
+<td>sunion</td>
+<td>求和集</td>
+</tr>
+</tbody></table>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; sadd sets zhangsan lisi wangwu zhaoliu lisi</span><br><span class="line">4</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">sets</span><br><span class="line">localhost:6379&gt; <span class="built_in">type</span> sets</span><br><span class="line"><span class="built_in">set</span></span><br><span class="line">localhost:6379&gt; smembers sets</span><br><span class="line">wangwu</span><br><span class="line">zhaoliu</span><br><span class="line">lisi</span><br><span class="line">zhangsan</span><br><span class="line">localhost:6379&gt; scard sets</span><br><span class="line">4</span><br><span class="line">localhost:6379&gt; spop sets</span><br><span class="line">zhaoliu</span><br><span class="line">localhost:6379&gt; smembers sets</span><br><span class="line">lisi</span><br><span class="line">wangwu</span><br><span class="line">zhangsan</span><br><span class="line">localhost:6379&gt; sadd ages 18 19 20</span><br><span class="line">3</span><br><span class="line">localhost:6379&gt; smembers sets</span><br><span class="line">lisi</span><br><span class="line">wangwu</span><br><span class="line">zhangsan</span><br><span class="line">localhost:6379&gt; smembers ages</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">localhost:6379&gt; smove sets ages zhangsan</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; smembers sets</span><br><span class="line">lisi</span><br><span class="line">wangwu</span><br><span class="line">localhost:6379&gt; smembers ages</span><br><span class="line">19</span><br><span class="line">18</span><br><span class="line">zhangsan</span><br><span class="line">20</span><br><span class="line">localhost:6379&gt; srem ages zhangsan 18</span><br><span class="line">2</span><br><span class="line">localhost:6379&gt; smembers ages</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">localhost:6379&gt; smembers sets</span><br><span class="line">lisi</span><br><span class="line">wangwu</span><br><span class="line">localhost:6379&gt; sismember sets lisi</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; sismember sets zhaoliu</span><br><span class="line">0</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h1 id="ZSet类型"><a href="#ZSet类型" class="headerlink" title="ZSet类型"></a>ZSet类型</h1><p>相当于Java中的TreeSet，特点: 可排序的set集合  <strong>排序  不可重复</strong> </p>
+<p>ZSET 官方  可排序SET  sortSet   </p>
+<h2 id="内存模型"><a href="#内存模型" class="headerlink" title="内存模型"></a>内存模型</h2><p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210325160310833.png" alt="image-20210325160310833"></p>
+<h2 id="常用命令-1"><a href="#常用命令-1" class="headerlink" title="常用命令"></a>常用命令</h2><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>zadd</td>
+<td>添加一个有序集合元素</td>
+</tr>
+<tr>
+<td>zcard</td>
+<td>返回集合的元素个数</td>
+</tr>
+<tr>
+<td>zrange 升序 zrevrange 降序</td>
+<td>返回一个范围内的元素</td>
+</tr>
+<tr>
+<td>zrangebyscore</td>
+<td>按照分数查找一个范围内的元素</td>
+</tr>
+<tr>
+<td>zrank</td>
+<td>返回排名</td>
+</tr>
+<tr>
+<td>zrevrank</td>
+<td>倒序排名</td>
+</tr>
+<tr>
+<td>zscore</td>
+<td>显示某一个元素的分数</td>
+</tr>
+<tr>
+<td>zrem</td>
+<td>移除某一个元素</td>
+</tr>
+<tr>
+<td>zincrby</td>
+<td>给某个特定元素加分</td>
+</tr>
+</tbody></table>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; flushdb</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; zadd zsets 10 zhangsan 9 xiaohei 8 xiaochen 100 xiaming 15 xiaochen</span><br><span class="line">4</span><br><span class="line">localhost:6379&gt; <span class="built_in">type</span> zsets</span><br><span class="line">zset</span><br><span class="line">localhost:6379&gt; zrange zsets 0 -1</span><br><span class="line">xiaohei</span><br><span class="line">zhangsan</span><br><span class="line">xiaochen</span><br><span class="line">xiaming</span><br><span class="line">localhost:6379&gt; zrange zsets 0 -1 withscores</span><br><span class="line">xiaohei</span><br><span class="line">9</span><br><span class="line">zhangsan</span><br><span class="line">10</span><br><span class="line">xiaochen</span><br><span class="line">15</span><br><span class="line">xiaming</span><br><span class="line">100</span><br><span class="line">localhost:6379&gt; zrangebyscore zsets 0 20 withscores <span class="built_in">limit</span> 0 10</span><br><span class="line">xiaohei</span><br><span class="line">9</span><br><span class="line">zhangsan</span><br><span class="line">10</span><br><span class="line">xiaochen</span><br><span class="line">15</span><br><span class="line">localhost:6379&gt; zrank zsets xiaochen</span><br><span class="line">2</span><br><span class="line">localhost:6379&gt; zrevrank zsets xiaochen</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; zrem zsets xiaochen</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; zrange zsets 0 -1 withscores</span><br><span class="line">xiaohei</span><br><span class="line">9</span><br><span class="line">zhangsan</span><br><span class="line">10</span><br><span class="line">xiaming</span><br><span class="line">100</span><br><span class="line">localhost:6379&gt; zincrby zsets 1 xiaohei</span><br><span class="line">10</span><br><span class="line">localhost:6379&gt; zincrby zsets 1 xiaohei</span><br><span class="line">11</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h1 id="Hash类型"><a href="#Hash类型" class="headerlink" title="Hash类型"></a>Hash类型</h1><p>特点: value 是一个map结构 存在key value  key 无序的 </p>
+<p>key(string) - value(map)</p>
+<h2 id="内存模型-1"><a href="#内存模型-1" class="headerlink" title="内存模型"></a>内存模型</h2><p><img src="https://gitee.com/JeanLv/study_image2/raw/master///image-20210325160844534.png" alt="image-20210325160844534"></p>
+<h2 id="常用命令-2"><a href="#常用命令-2" class="headerlink" title="常用命令"></a>常用命令</h2><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>hset</td>
+<td>设置一个key/value对</td>
+</tr>
+<tr>
+<td>hget</td>
+<td>获得一个key对应的value</td>
+</tr>
+<tr>
+<td>hgetall</td>
+<td>获得所有的key/value对</td>
+</tr>
+<tr>
+<td>hdel</td>
+<td>删除某一个key/value对</td>
+</tr>
+<tr>
+<td>hexists</td>
+<td>判断一个key是否存在</td>
+</tr>
+<tr>
+<td>hkeys</td>
+<td>获得所有的key</td>
+</tr>
+<tr>
+<td>hvals</td>
+<td>获得所有的value</td>
+</tr>
+<tr>
+<td>hmset</td>
+<td>设置多个key/value</td>
+</tr>
+<tr>
+<td>hmget</td>
+<td>获得多个key的value</td>
+</tr>
+<tr>
+<td>hsetnx</td>
+<td>设置一个不存在的key的值</td>
+</tr>
+<tr>
+<td>hincrby</td>
+<td>为value进行加法运算</td>
+</tr>
+<tr>
+<td>hincrbyfloat</td>
+<td>为value加入浮点值</td>
+</tr>
+</tbody></table>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; hset maps name zhangsan</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; <span class="built_in">type</span> maps</span><br><span class="line"><span class="built_in">hash</span></span><br><span class="line">localhost:6379&gt; hget maps name</span><br><span class="line">zhangsan</span><br><span class="line">localhost:6379&gt; hset maps age 18</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; hset maps bir 2012-12-12</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; hgetall maps</span><br><span class="line">name</span><br><span class="line">zhangsan</span><br><span class="line">age</span><br><span class="line">18</span><br><span class="line">bir</span><br><span class="line">2012-12-12</span><br><span class="line">localhost:6379&gt; hdel maps bir</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; hgetall maps</span><br><span class="line">name</span><br><span class="line">zhangsan</span><br><span class="line">age</span><br><span class="line">18</span><br><span class="line">localhost:6379&gt; hexists maps bir</span><br><span class="line">0</span><br><span class="line">localhost:6379&gt; hexists maps name</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; hkeys maps</span><br><span class="line">name</span><br><span class="line">age</span><br><span class="line">localhost:6379&gt; hvals maps</span><br><span class="line">zhangsan</span><br><span class="line">18</span><br><span class="line">localhost:6379&gt; hmset maps bir 2012-12-12 address beijing clazz 2001</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; hgetall maps</span><br><span class="line">name</span><br><span class="line">zhangsan</span><br><span class="line">age</span><br><span class="line">18</span><br><span class="line">bir</span><br><span class="line">2012-12-12</span><br><span class="line">address</span><br><span class="line">beijing</span><br><span class="line">clazz</span><br><span class="line">2001</span><br><span class="line">localhost:6379&gt; hmget maps name age bir content address clazz</span><br><span class="line">zhangsan</span><br><span class="line">18</span><br><span class="line">2012-12-12</span><br><span class="line"></span><br><span class="line">beijing</span><br><span class="line">2001</span><br><span class="line">localhost:6379&gt; hsetnx maps course redis</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; hgetall maps</span><br><span class="line">name</span><br><span class="line">zhangsan</span><br><span class="line">age</span><br><span class="line">18</span><br><span class="line">bir</span><br><span class="line">2012-12-12</span><br><span class="line">address</span><br><span class="line">beijing</span><br><span class="line">clazz</span><br><span class="line">2001</span><br><span class="line">course</span><br><span class="line">redis</span><br><span class="line">localhost:6379&gt; hincrby maps age 10</span><br><span class="line">28</span><br><span class="line">localhost:6379&gt; hincrby maps age 10</span><br><span class="line">38</span><br><span class="line">localhost:6379&gt; hincrbyfloat maps claszz 10.23423423423423423</span><br><span class="line">10.23423423423423423</span><br></pre></td></tr></tbody></table></figure>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:lvjing0705@126.com">jinglv</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://jinglv.github.io/db/redis/operation/">https://jinglv.github.io/db/redis/operation/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://jinglv.github.io" target="_blank">Jing's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Redis/">Redis</a></div><div class="post_share"><div class="social-share" data-image="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/db/redis/java/"><img class="prev-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Java操作Redis</div></div></a></div><div class="next-post pull-right"><a href="/db/redis/persistence/"><img class="next-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Redis持久化</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts-list"><div><a href="/db/redis/introduce/" title="Redis介绍"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Redis介绍</div></div></a></div><div><a href="/db/redis/java/" title="Java操作Redis"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Java操作Redis</div></div></a></div><div><a href="/db/redis/persistence/" title="Redis持久化"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Redis持久化</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-info-avatar is-center"><img class="avatar-img" src="/img/avatar.jpeg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-info__name">jinglv</div><div class="author-info__description"></div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">160</div></a></div><div class="card-info-data-item is-center"><a href="/tags/"><div class="headline">标签</div><div class="length-num">31</div></a></div><div class="card-info-data-item is-center"><a href="/categories/"><div class="headline">分类</div><div class="length-num">27</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/jinglv"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/jinglv" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="/lvjing0705@126.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">欢迎交流技术！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E6%93%8D%E4%BD%9C%E6%8C%87%E4%BB%A4"><span class="toc-number">1.</span> <span class="toc-text">数据库操作指令</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Redis%E4%B8%AD%E5%BA%93%E8%AF%B4%E6%98%8E"><span class="toc-number">1.1.</span> <span class="toc-text">Redis中库说明</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Redis%E5%BA%93%E7%9A%84%E6%93%8D%E4%BD%9C"><span class="toc-number">1.2.</span> <span class="toc-text">Redis库的操作</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%93%8D%E4%BD%9Ckey%E7%9B%B8%E5%85%B3%E6%8C%87%E4%BB%A4"><span class="toc-number">2.</span> <span class="toc-text">操作key相关指令</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#DEL%E6%8C%87%E4%BB%A4"><span class="toc-number">2.1.</span> <span class="toc-text">DEL指令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#EXISTS%E6%8C%87%E4%BB%A4"><span class="toc-number">2.2.</span> <span class="toc-text">EXISTS指令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#EXPIRE"><span class="toc-number">2.3.</span> <span class="toc-text">EXPIRE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#KEYS"><span class="toc-number">2.4.</span> <span class="toc-text">KEYS</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MOVE"><span class="toc-number">2.5.</span> <span class="toc-text">MOVE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PEXPIRE"><span class="toc-number">2.6.</span> <span class="toc-text">PEXPIRE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PEXPIREAT"><span class="toc-number">2.7.</span> <span class="toc-text">PEXPIREAT</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TTL"><span class="toc-number">2.8.</span> <span class="toc-text">TTL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PTTL"><span class="toc-number">2.9.</span> <span class="toc-text">PTTL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RANDOMKEY"><span class="toc-number">2.10.</span> <span class="toc-text">RANDOMKEY</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RENAME"><span class="toc-number">2.11.</span> <span class="toc-text">RENAME</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#TYPE"><span class="toc-number">2.12.</span> <span class="toc-text">TYPE</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#String%E7%B1%BB%E5%9E%8B"><span class="toc-number">3.</span> <span class="toc-text">String类型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E5%AD%98%E5%82%A8%E6%A8%A1%E5%9E%8B"><span class="toc-number">3.1.</span> <span class="toc-text">内存存储模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E6%93%8D%E4%BD%9C%E5%91%BD%E4%BB%A4"><span class="toc-number">3.2.</span> <span class="toc-text">常用操作命令</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#List%E7%B1%BB%E5%9E%8B"><span class="toc-number">4.</span> <span class="toc-text">List类型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E5%AD%98%E5%82%A8%E6%A8%A1%E5%9E%8B-1"><span class="toc-number">4.1.</span> <span class="toc-text">内存存储模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E6%93%8D%E4%BD%9C%E6%8C%87%E4%BB%A4"><span class="toc-number">4.2.</span> <span class="toc-text">常用操作指令</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Set%E7%B1%BB%E5%9E%8B"><span class="toc-number">5.</span> <span class="toc-text">Set类型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E5%AD%98%E5%82%A8%E6%A8%A1%E5%9E%8B-2"><span class="toc-number">5.1.</span> <span class="toc-text">内存存储模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4"><span class="toc-number">5.2.</span> <span class="toc-text">常用命令</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ZSet%E7%B1%BB%E5%9E%8B"><span class="toc-number">6.</span> <span class="toc-text">ZSet类型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="toc-number">6.1.</span> <span class="toc-text">内存模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4-1"><span class="toc-number">6.2.</span> <span class="toc-text">常用命令</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Hash%E7%B1%BB%E5%9E%8B"><span class="toc-number">7.</span> <span class="toc-text">Hash类型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B-1"><span class="toc-number">7.1.</span> <span class="toc-text">内存模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4-2"><span class="toc-number">7.2.</span> <span class="toc-text">常用命令</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/agency/" title="Nginx代理实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx代理实战"/></a><div class="content"><a class="title" href="/web/nginx/agency/" title="Nginx代理实战">Nginx代理实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/introduce/" title="Nginx介绍"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx介绍"/></a><div class="content"><a class="title" href="/web/nginx/introduce/" title="Nginx介绍">Nginx介绍</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/load/" title="Nginx负载均衡实战"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx负载均衡实战"/></a><div class="content"><a class="title" href="/web/nginx/load/" title="Nginx负载均衡实战">Nginx负载均衡实战</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Nginx安装、常用命令及配置"/></a><div class="content"><a class="title" href="/web/nginx/operation/" title="Nginx安装、常用命令及配置">Nginx安装、常用命令及配置</a><time datetime="2021-05-17T03:25:09.320Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/testtools/jmeter/record/" title="Jmeter录制与回放"><img src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Jmeter录制与回放"/></a><div class="content"><a class="title" href="/testtools/jmeter/record/" title="Jmeter录制与回放">Jmeter录制与回放</a><time datetime="2021-05-17T03:25:09.319Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021 By jinglv</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Hi, welcome to my <a href="https://jinglv.github.io/">blog</a>!</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
