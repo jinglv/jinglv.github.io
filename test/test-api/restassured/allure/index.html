@@ -1,0 +1,216 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>REST Assured 获取日志到文件并结合 Allure 报告进行展示 | Jing's Blog</title><meta name="keywords" content="Rest Assured"><meta name="author" content="jinglv,lvjing0705@126.com"><meta name="copyright" content="jinglv"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="使用 Rest-assured 集合 Allure 运行完用例之后，在生成的报告中只有断言信息，没有请求的日志信息。而当我们的用例失败时，特别是接口失败时，请求日志是分析原因的第一手资源。那如何将 Rest-assured 产生的日志存入 Allure 里，并且能和用例一一对应起来呢？ 问题的产生在使用 Rest-assured 集合 Allure 运行完用例之后，查看生成的报告信息如下：  我们">
+<meta property="og:type" content="article">
+<meta property="og:title" content="REST Assured 获取日志到文件并结合 Allure 报告进行展示">
+<meta property="og:url" content="https://jinglv.github.io/test/test-api/restassured/allure/index.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="使用 Rest-assured 集合 Allure 运行完用例之后，在生成的报告中只有断言信息，没有请求的日志信息。而当我们的用例失败时，特别是接口失败时，请求日志是分析原因的第一手资源。那如何将 Rest-assured 产生的日志存入 Allure 里，并且能和用例一一对应起来呢？ 问题的产生在使用 Rest-assured 集合 Allure 运行完用例之后，查看生成的报告信息如下：  我们">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg">
+<meta property="article:published_time" content="2021-05-17T03:25:09.273Z">
+<meta property="article:modified_time" content="2021-05-17T03:25:09.273Z">
+<meta property="article:author" content="jinglv">
+<meta property="article:tag" content="Rest Assured">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://jinglv.github.io/test/test-api/restassured/allure/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":200},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  date_suffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'REST Assured 获取日志到文件并结合 Allure 报告进行展示',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2021-05-17 11:25:09'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    })(window)</script><meta name="generator" content="Hexo 5.3.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Jing's Blog" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/img/avatar.jpeg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">文章</div><div class="length-num">165</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">标签</div><div class="length-num">36</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">分类</div><div class="length-num">30</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img" id="page-header"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">Jing's Blog</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">REST Assured 获取日志到文件并结合 Allure 报告进行展示</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-05-17T03:25:09.273Z" title="发表于 2021-05-17 11:25:09">2021-05-17</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2021-05-17T03:25:09.273Z" title="更新于 2021-05-17 11:25:09">2021-05-17</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8E%A5%E5%8F%A3%E6%B5%8B%E8%AF%95/">接口测试</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="REST Assured 获取日志到文件并结合 Allure 报告进行展示"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div><article class="post-content" id="article-container"><p>使用 Rest-assured 集合 Allure 运行完用例之后，在生成的报告中只有断言信息，没有请求的日志信息。而当我们的用例失败时，特别是接口失败时，请求日志是分析原因的第一手资源。那如何将 Rest-assured 产生的日志存入 Allure 里，并且能和用例一一对应起来呢？</p>
+<h1 id="问题的产生"><a href="#问题的产生" class="headerlink" title="问题的产生"></a>问题的产生</h1><p>在使用 Rest-assured 集合 Allure 运行完用例之后，查看生成的报告信息如下：</p>
+<p><img src="https://gitee.com/JeanLv/study_image/raw/master///image-20210111134833399.png" alt="image-20210111134833399"></p>
+<p>我们可以看到在生成的报告中只有断言信息，而没有请求的日志信息，而当我们的用例失败时，特别是接口失败时，请求日志是分析原因的第一手资源；</p>
+<h1 id="解决思路"><a href="#解决思路" class="headerlink" title="解决思路"></a>解决思路</h1><p>其实Rest-assured是有请求日志的，可以通过在<code>given()</code>和<code>then()</code>后面加上<code>.log().all()</code>来打印全部的日志信息：</p>
+<p><img src="https://gitee.com/JeanLv/study_image/raw/master///image-20210111135028442.png" alt="image-20210111135028442"></p>
+<p>接下来如何将打印的日志信息“转义”到Allure报告中呢？</p>
+<p>首先来看一下 <code>Allure </code>报告可以如何展示日志，在学习 <code>Allure </code>的过程中发现 Allure有添加附件展示的功能，那么我就直接想到将日志能存入文件然后添加到报告附件不就可以了吗？由此，<code>Allure </code>端的解决方向确定。</p>
+<p>接下来就是要想法办将 Rest-assured 产生的日志存入文件了;</p>
+<p><strong>整体思路：</strong></p>
+<p>【Rest-assured打印日志】- 【Rest-assured日志存入文件】- 【文件以附件形式传入Allure】- 【Allure展示附件日志】</p>
+<h1 id="Allure附件"><a href="#Allure附件" class="headerlink" title="Allure附件"></a>Allure附件</h1><p>先看一下Allure 添加附件的两种方法：</p>
+<h2 id="第一种"><a href="#第一种" class="headerlink" title="第一种"></a>第一种</h2><p><strong>@Attachment</strong>：在方法上添加注解<code>@Attachment</code>，方法的返回值就会作为附件上传，可添加展示文本和附件类型</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Attachment(value = "Page screenshot", type = "image/png")</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+<h2 id="第二种"><a href="#第二种" class="headerlink" title="第二种"></a>第二种</h2><p><strong>Allure.addAttachment</strong>：通过addAttachment方法指定要添加的附件和展示信息</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">addHttpLogToAllure</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="keyword">try</span> {</span><br><span class="line">    		Allure.addAttachment(<span class="string">"接口请求响应日志"</span>, <span class="keyword">new</span> FileInputStream(<span class="string">"src/main/resources/test.log"</span>));</span><br><span class="line">    } <span class="keyword">catch</span> (FileNotFoundException e) {</span><br><span class="line">    		e.printStackTrace();</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+
+<h1 id="保存日志"><a href="#保存日志" class="headerlink" title="保存日志"></a>保存日志</h1><h2 id="方案一"><a href="#方案一" class="headerlink" title="方案一"></a>方案一</h2><p>由于在框架中，我已经进行了封装，每个接口请求后都会返回 response 信息。所以一开始我想着从拿到 response 信息进行存储，查阅官方文档，寻找 response 信息获取的相关 API，发现 <code>response.asString();</code>可以获取到 <code>json body </code>的信息，就先尝试使用。</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//// Get the response body as a String</span></span><br><span class="line">response.asString();</span><br><span class="line"></span><br><span class="line"><span class="comment">// Get all headers</span></span><br><span class="line">Headers allHeaders = response.getHeaders();</span><br><span class="line"><span class="comment">// Get a single header value:</span></span><br><span class="line">String headerName = response.getHeader(<span class="string">"headerName"</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// Get all cookies as simple name-value pairs</span></span><br><span class="line">Map&lt;String, String&gt; allCookies = response.getCookies();</span><br><span class="line"><span class="comment">// Get a single cookie value:</span></span><br><span class="line">String cookieValue = response.getCookie(<span class="string">"cookieName"</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// Get status line</span></span><br><span class="line">String statusLine = response.getStatusLine();</span><br><span class="line"><span class="comment">// Get status code</span></span><br><span class="line"><span class="keyword">int</span> statusCode = response.getStatusCode();</span><br></pre></td></tr></tbody></table></figure>
+<ol>
+<li><p>先创建方法，用于接收 response 获取信息</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Attachment("响应结果")</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">responseBody</span><span class="params">(Response response)</span> </span>{</span><br><span class="line">    	<span class="comment">// 将response转为json并格式化输出</span></span><br><span class="line">      <span class="keyword">return</span> JSONUtil.toJsonPrettyStr(response.asString());</span><br><span class="line">  }</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>再创建方法，用于接收请求信息，由于我的所有请求信息都传入了一个 Restful 对象中且未找到 Rest Assured 关于请求信息直接获取的 API，这里我就直接取 Restful对象</p>
+<p>Restful对象：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.api.object.apimodel;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> lombok.Data;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.util.HashMap;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 接口请求参数实体</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> jingLv</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@date</span> 2021/01/11</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Restful</span> </span>{</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 请求接口url</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> String url;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 请求接口方法</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> String method;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 请求接口头信息</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> HashMap&lt;String, Object&gt; header = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 请求接口参数：key-value</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> HashMap&lt;String, Object&gt; query = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 请求接口参数：path中拼接参数</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> HashMap&lt;String, Object&gt; pathQuery = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 请求接口参数：主体</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> String body;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<p>   接收请求信息方法:</p>
+   <figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Attachment("请求信息")</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">requestBody</span><span class="params">(Restful restful)</span> </span>{</span><br><span class="line">      <span class="comment">//报告展现请求信息</span></span><br><span class="line">      <span class="keyword">return</span> restful.toString();</span><br><span class="line">  }</span><br></pre></td></tr></tbody></table></figure>
+
+
+<ol start="3">
+<li><p>最后创建一个总的接收方法加入请求流程中，在每个请求结束后获取日志信息进行附件添加</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">getRequestAndRespondBody</span><span class="params">(Restful restful, Response response)</span> </span>{</span><br><span class="line">		requestBody(restful);</span><br><span class="line">		responseBody(response);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<p>在testcase中使用定义的方法，并执行测试用例</p>
+<p><img src="https://gitee.com/JeanLv/study_image/raw/master///image-20210111163636700.png" alt="image-20210111163636700"></p>
+<p><strong>结果展示</strong></p>
+<p>从结果可以看到请求和响应报文已经成功展示，说明这种实现的思路的可行性，只是展示的日志信息还不满意，还是先想要全部的请求和响应信息且是格式化后的，不仅仅只有报文</p>
+<p><img src="https://gitee.com/JeanLv/study_image/raw/master///image-20210111164017179.png" alt="image-20210111164017179"></p>
+<h2 id="方案二"><a href="#方案二" class="headerlink" title="方案二"></a>方案二</h2><p>在研究过程中发现<code>RestAssured</code>提供了<code>logConfig</code>方法，可以将原本在Console中打印的信息指定格式化输出到文件中，具体用法如下：</p>
+<ol>
+<li><p>需要使用文件流，引入Jar包</p>
+<figure class="highlight xml"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>commons-io<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>commons-io<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.8.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></tbody></table></figure>
+
+
+</li>
+</ol>
+<ol start="2">
+<li><p>在请求中设置log打印方式和存储路径</p>
+</li>
+<li><p>创建附件添加方法加入请求流程中，在每个请求结束后获取日志信息进行附件添加</p>
+</li>
+<li><p>集成测试和附件添加，进行测试</p>
+</li>
+</ol>
+<h2 id="方案三"><a href="#方案三" class="headerlink" title="方案三"></a>方案三</h2><p><code>Rest-assured </code>提供了过滤器 <code>Filters</code>，利用它可以串改请求，设置鉴权信息，过滤 log 等，主要用到 <code>RequestLoggingFilter()</code>和 <code>ResponseLoggingFilter() </code>来实现我们的需求。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:lvjing0705@126.com">jinglv</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="https://jinglv.github.io/test/test-api/restassured/allure/">https://jinglv.github.io/test/test-api/restassured/allure/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="https://jinglv.github.io" target="_blank">Jing's Blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Rest-Assured/">Rest Assured</a></div><div class="post_share"><div class="social-share" data-image="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/developer/algorithm/introduction/"><img class="prev-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">算法与数据结构初学</div></div></a></div><div class="next-post pull-right"><a href="/test/test-api/apiframeworkforjava/apiobject/"><img class="next-cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Java Api Object接口自动化框架</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span> 相关推荐</span></div><div class="relatedPosts-list"><div><a href="/test/test-api/restassured/assert/" title="Rest Assured Assert"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Rest Assured Assert</div></div></a></div><div><a href="/test/test-api/restassured/other/" title="Rest Assured 辅助功能"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Rest Assured 辅助功能</div></div></a></div><div><a href="/test/test-api/restassured/response/" title="Rest Assured Response"><img class="cover" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/img/default.jpg" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-05-17</div><div class="title">Rest Assured Response</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-info-avatar is-center"><img class="avatar-img" src="/img/avatar.jpeg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-info__name">jinglv</div><div class="author-info__description"></div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">165</div></a></div><div class="card-info-data-item is-center"><a href="/tags/"><div class="headline">标签</div><div class="length-num">36</div></a></div><div class="card-info-data-item is-center"><a href="/categories/"><div class="headline">分类</div><div class="length-num">30</div></a></div></div><a class="button--animated" id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/jinglv"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/jinglv" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="/lvjing0705@126.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>公告</span></div><div class="announcement_content">欢迎交流技术！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E7%9A%84%E4%BA%A7%E7%94%9F"><span class="toc-number">1.</span> <span class="toc-text">问题的产生</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%80%9D%E8%B7%AF"><span class="toc-number">2.</span> <span class="toc-text">解决思路</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Allure%E9%99%84%E4%BB%B6"><span class="toc-number">3.</span> <span class="toc-text">Allure附件</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E7%A7%8D"><span class="toc-number">3.1.</span> <span class="toc-text">第一种</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E7%A7%8D"><span class="toc-number">3.2.</span> <span class="toc-text">第二种</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BF%9D%E5%AD%98%E6%97%A5%E5%BF%97"><span class="toc-number">4.</span> <span class="toc-text">保存日志</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%A1%88%E4%B8%80"><span class="toc-number">4.1.</span> <span class="toc-text">方案一</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%A1%88%E4%BA%8C"><span class="toc-number">4.2.</span> <span class="toc-text">方案二</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%A1%88%E4%B8%89"><span class="toc-number">4.3.</span> <span class="toc-text">方案三</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/developer/java/functional-programming/funcation/" title="Java之常用函数与方法"><img src="https://gitee.com/JeanLv/study_image/raw/master/image-20210621133437557.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Java之常用函数与方法"/></a><div class="content"><a class="title" href="/developer/java/functional-programming/funcation/" title="Java之常用函数与方法">Java之常用函数与方法</a><time datetime="2021-07-13T16:00:00.000Z" title="发表于 2021-07-14 00:00:00">2021-07-14</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/developer/java/functional-programming/lambda/" title="Java之Lambda表达式"><img src="https://gitee.com/JeanLv/study_image/raw/master/image-20210621133437557.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Java之Lambda表达式"/></a><div class="content"><a class="title" href="/developer/java/functional-programming/lambda/" title="Java之Lambda表达式">Java之Lambda表达式</a><time datetime="2021-07-13T16:00:00.000Z" title="发表于 2021-07-14 00:00:00">2021-07-14</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/developer/java/functional-programming/extend/" title="常用List集合初始化方式"><img src="https://gitee.com/JeanLv/study_image/raw/master/image-20210621133437557.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="常用List集合初始化方式"/></a><div class="content"><a class="title" href="/developer/java/functional-programming/extend/" title="常用List集合初始化方式">常用List集合初始化方式</a><time datetime="2021-06-30T16:00:00.000Z" title="发表于 2021-07-01 00:00:00">2021-07-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/developer/java/functional-programming/introduce/" title="Java之函数式编程"><img src="https://gitee.com/JeanLv/study_image/raw/master/image-20210621133437557.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Java之函数式编程"/></a><div class="content"><a class="title" href="/developer/java/functional-programming/introduce/" title="Java之函数式编程">Java之函数式编程</a><time datetime="2021-06-20T16:00:00.000Z" title="发表于 2021-06-21 00:00:00">2021-06-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/testtools/virtualbox-static-ip/" title="Virtualbox虚拟机配置双网卡实现固定IP"><img src="https://gitee.com/JeanLv/study_image/raw/master/image-20210529144037945.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Virtualbox虚拟机配置双网卡实现固定IP"/></a><div class="content"><a class="title" href="/testtools/virtualbox-static-ip/" title="Virtualbox虚拟机配置双网卡实现固定IP">Virtualbox虚拟机配置双网卡实现固定IP</a><time datetime="2021-05-28T16:00:00.000Z" title="发表于 2021-05-29 00:00:00">2021-05-29</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2020 - 2021 By jinglv</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">Hi, welcome to my <a href="https://jinglv.github.io/">blog</a>!</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
