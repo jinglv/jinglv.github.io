@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第四讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain核心模块chains（早期）">
+<meta property="og:url" content="https://jinglv.github.io/2023/09/22/ai/langchain/5-langchain-chains/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第四讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309141539648.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251419519.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251005200.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251058361.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251429614.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251432038.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251429485.png">
+<meta property="article:published_time" content="2023-09-21T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-09-22T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309141539648.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2023/09/22/ai/langchain/5-langchain-chains/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain核心模块chains（早期） | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2023/09/22/ai/langchain/5-langchain-chains/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain核心模块chains（早期）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-09-22 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2023-09-22T00:00:00+08:00">2023-09-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第四讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>Chain 作为 LangChain 的核心模块之一，重要性不言而喻，它相当于是所有复杂逻辑的基础，用来将每个零散的逻辑串联成一整个业务流程，Chain 的设计非常巧妙，可以说是大模型应用的最佳实践之一。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309141539648.png" alt="uml diagram"></p>
+<p>Chain的设计非常巧妙，也非常值得借鉴，也是为什么LangChain能火爆的主要原因之一。</p>
+<h2 id="设计思路"><a href="#设计思路" class="headerlink" title="设计思路"></a>设计思路</h2><p>Chain 的设计非常巧妙，也非常值得借鉴，也是为什么 LangChain 能火爆的主要原因之一。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251419519.png" alt="image-20231025141949429"></p>
+<p>Chain 的一个主要作用，就是根据需求，可以将各种能力拼接整合。比如上图，LangChain 内部包含多个模块，可以定制 LLMChain 只使用 Prompt 和 LLM 模块，也可以定制一个CustomChain（自定义Chain） 使用了 LLM、Parser、Agent模块。</p>
+<h2 id="Chains主要模块"><a href="#Chains主要模块" class="headerlink" title="Chains主要模块"></a>Chains主要模块</h2><p>Chains主要包含以下几个模块：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">模块</th>
+<th style="text-align:left">应用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">LLMChain</td>
+<td style="text-align:left">基础链</td>
+</tr>
+<tr>
+<td style="text-align:left">SimpleSequentialChain</td>
+<td style="text-align:left">单输入/输出串联调用</td>
+</tr>
+<tr>
+<td style="text-align:left">SequentialChain</td>
+<td style="text-align:left">更通用形式的顺序链，允许多个输入/输出</td>
+</tr>
+<tr>
+<td style="text-align:left">LLMRouteChain</td>
+<td style="text-align:left">实现条件判断的链</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="LLMChain"><a href="#LLMChain" class="headerlink" title="LLMChain"></a>LLMChain</h1><p>LLMChain是一个整合语言模型和提示模板的最简单链。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251005200.png" alt="LLMChain"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">LLMChain是一个整合语言模型和提示模板的最简单链</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> langchain <span class="keyword">import</span> LLMChain</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_llmchain</span>():</span><br><span class="line">    <span class="comment"># 创建OpenAI调用实例</span></span><br><span class="line">    <span class="comment"># temperature用来设置大模型返回数据的随机性和创造性，较低的数值返回的数据就更贴近现实</span></span><br><span class="line">    llm = ChatOpenAI(temperature=<span class="number">0.9</span>, openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                     openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line">    <span class="comment"># 根据prompt模板生成prompt实例</span></span><br><span class="line">    prompt = ChatPromptTemplate.from_template(<span class="string">&#x27;请给生产: &#123;product&#125; 的工厂起一个恰当的厂名，并给出一句广告语。&#x27;</span>)</span><br><span class="line">    <span class="comment"># 组合大模型实例和prompt实例，生成LLMChain实例，将结构固定，方便复用</span></span><br><span class="line">    chain = LLMChain(</span><br><span class="line">        <span class="comment"># 大模型实例</span></span><br><span class="line">        llm=llm,</span><br><span class="line">        <span class="comment"># prompt实例</span></span><br><span class="line">        prompt=prompt,</span><br><span class="line">        <span class="comment"># 开详细模式，会将大模型调用细节输出到控制台</span></span><br><span class="line">        verbose=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 通过run方法，传入模板中需要的参数，调用大模型获取结果</span></span><br><span class="line">    product = <span class="string">&#x27;IPhone15 Pro Max&#x27;</span></span><br><span class="line">    res = chain.run(product)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251058361.png" alt="image-20231025105809271" style="zoom:50%;" /></p>
+<p>其中绿色的部分就是请求大模型时发送的完整数据，通过查看发送的数据，可以更有效的了解调用细节、排查问题。</p>
+<h1 id="SimpleSequentialChain"><a href="#SimpleSequentialChain" class="headerlink" title="SimpleSequentialChain"></a>SimpleSequentialChain</h1><p>串联式调用语言模型链的一种，简单的串联每个步骤（Chain 实例），每个步骤都有单一的输入/输出，并且一个步骤的输入是下一个步骤的输出。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251429614.png" alt="image-20231025142927409"></p>
+<p>示例代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">SimpleSequentialChain</span></span><br><span class="line"><span class="string">串联式调用语言模型链的一种，简单的串联每个步骤（Chain 实例），每个步骤都有单一的输入/输出，并且一个步骤的输入是下一个步骤的输出。</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> langchain <span class="keyword">import</span> LLMChain</span><br><span class="line"><span class="keyword">from</span> langchain.chains <span class="keyword">import</span> SimpleSequentialChain</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_simple_sequential_chain</span>():</span><br><span class="line">    <span class="comment"># 创建OpenAI调用实例</span></span><br><span class="line">    <span class="comment"># temperature用来设置大模型返回数据的随机性和创造性，较低的数值返回的数据就更贴近现实</span></span><br><span class="line">    llm = ChatOpenAI(temperature=<span class="number">0.9</span>, openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                     openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line">    <span class="comment"># 第一个LLM请求的prompt模板</span></span><br><span class="line">    first_prompt = ChatPromptTemplate.from_template(<span class="string">&#x27;请给生产 &#123;product&#125; 的工厂起一个恰当的厂名&#x27;</span>)</span><br><span class="line">    <span class="comment"># 第一个Chain，接收外部输入，根据模板请求大模型获取输出，作为第二个Chain的输入</span></span><br><span class="line">    chain_one = LLMChain(llm=llm, prompt=first_prompt, verbose=<span class="literal">True</span>)</span><br><span class="line">    <span class="comment"># 第二个大模型请求的prompt模板</span></span><br><span class="line">    second_prompt = ChatPromptTemplate.from_template(<span class="string">&#x27;为厂名写一段不少于20字的广告语: &#123;company_name&#125;&#x27;</span>)</span><br><span class="line">    <span class="comment"># 第二个Chain，接收第一个Chain的输出，根据模板请求大模型获取输出</span></span><br><span class="line">    chain_two = LLMChain(llm=llm, prompt=second_prompt, verbose=<span class="literal">True</span>)</span><br><span class="line">    <span class="comment"># 将请求拆分成两个Chain，可以针对每段请求细化相应的prompt内容，得到更准确更合理的结果，并且也可以复用其中的每个Chain实例</span></span><br><span class="line">    <span class="comment"># 使用SimpleSequentialChain将两个Chain串联起来，其中买个Chain都只支持一个输入和一个输出，根据chains列表中的顺序，将前一个Chain的输出作为下一个Chain的输入</span></span><br><span class="line">    overall_simple_chain = SimpleSequentialChain(</span><br><span class="line">        chains=[chain_one, chain_two],</span><br><span class="line">        <span class="comment"># 开详细模式，会将大模型调用细节输出到控制台</span></span><br><span class="line">        verbose=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 第一个Chain需要输入</span></span><br><span class="line">    product = <span class="string">&#x27;IPhone15 Pro Max&#x27;</span></span><br><span class="line">    <span class="comment"># 通过run方法，传入参数，逐个运行整个Chain后，获取最终的结果</span></span><br><span class="line">    res = overall_simple_chain.run(product)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>输出结果：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251432038.png" alt="image-20231025143217939" style="zoom:50%;" /></p>
+<h1 id="SequentialChain"><a href="#SequentialChain" class="headerlink" title="SequentialChain"></a>SequentialChain</h1><p>串联式调用语言模型链的一种，序列中的每个 Chain 实例都支持多个输入和输出，最终 SequentialChain 运行时根据 chains 参数和每个 Chain 示例中设定的参数，分析每个实例所需的参数并按需传递。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251429485.png" alt="image-20231025142958444"></p>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">串联式调用语言模型链的一种，序列中的每个 Chain 实例都支持多个输入和输出，最终 SequentialChain 运行时根据 chains 参数和每个 Chain 示例中设定的参数，分析每个实例所需的参数并按需传递。</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> langchain</span><br><span class="line"><span class="keyword">from</span> langchain <span class="keyword">import</span> LLMChain</span><br><span class="line"><span class="keyword">from</span> langchain.chains <span class="keyword">import</span> SequentialChain</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在全局范围开启详细模式，能将调用大模型时发送的数据打印到控制台-绿色文本</span></span><br><span class="line">langchain.verbose = <span class="literal">True</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_sequential_chain</span>():</span><br><span class="line">    <span class="comment"># 创建OpenAI调用实例</span></span><br><span class="line">    <span class="comment"># temperature用来设置大模型返回数据的随机性和创造性，较低的数值返回的数据就更贴近现实</span></span><br><span class="line">    llm = ChatOpenAI(temperature=<span class="number">0.9</span>, openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                     openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Chain1  语言转换，生成英文产品名</span></span><br><span class="line">    prompt_one = ChatPromptTemplate.from_template(<span class="string">&#x27;将以下文本翻译成英文：&#123;product_name&#125;&#x27;</span>)</span><br><span class="line">    chat_one = LLMChain(</span><br><span class="line">        <span class="comment"># 使用的大模型实例</span></span><br><span class="line">        llm=llm,</span><br><span class="line">        <span class="comment"># prompt模板</span></span><br><span class="line">        prompt=prompt_one,</span><br><span class="line">        <span class="comment"># 输出数据变量名</span></span><br><span class="line">        output_key=<span class="string">&#x27;english_product_name&#x27;</span></span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># Chain2 根据英文产品名，生成一段英文介绍文本</span></span><br><span class="line">    prompt_two = ChatPromptTemplate.from_template(</span><br><span class="line">        <span class="string">&#x27;Based on the following product, give an introduction text about 100 words: &#123;english_product_name&#125;&#x27;</span>)</span><br><span class="line">    chain_two = LLMChain(</span><br><span class="line">        llm=llm,</span><br><span class="line">        prompt=prompt_two,</span><br><span class="line">        output_key=<span class="string">&#x27;english_introduce&#x27;</span></span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># Chain3 找到产品名所属的语言</span></span><br><span class="line">    prompt_three = ChatPromptTemplate.from_template(</span><br><span class="line">        <span class="string">&#x27;下列文本使用的语言是什么？：&#123;product_name&#125;&#x27;</span>)</span><br><span class="line">    chain_three = LLMChain(</span><br><span class="line">        llm=llm,</span><br><span class="line">        prompt=prompt_three,</span><br><span class="line">        output_key=<span class="string">&#x27;language&#x27;</span></span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># Chain4根据Chain2生成英文介绍，使用产品名称元宝的语言生成一段概述</span></span><br><span class="line">    prompt_four = ChatPromptTemplate.from_template(</span><br><span class="line">        <span class="string">&#x27;使用语言类型为: &#123;language&#125; ，为下列文本写一段不多于50字的概述: &#123;english_introduce&#125;&#x27;</span>)</span><br><span class="line">    chain_four = LLMChain(</span><br><span class="line">        llm=llm,</span><br><span class="line">        prompt=prompt_four,</span><br><span class="line">        output_key=<span class="string">&#x27;summary&#x27;</span></span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 标准的序列Chain，SequentialChain，其中每个chain都支持多个输入和输出</span></span><br><span class="line">    <span class="comment"># 根据chains中每个独立chain对象，和chains中的顺序，决定参数的传递，获取最终的输出结果</span></span><br><span class="line">    overall_chain = SequentialChain(</span><br><span class="line">        chains=[chat_one, chain_two, chain_three, chain_four],</span><br><span class="line">        input_variables=[<span class="string">&#x27;product_name&#x27;</span>],</span><br><span class="line">        output_variables=[<span class="string">&#x27;english_product_name&#x27;</span>, <span class="string">&#x27;english_introduce&#x27;</span>, <span class="string">&#x27;language&#x27;</span>, <span class="string">&#x27;summary&#x27;</span>],</span><br><span class="line">        <span class="comment"># 开详细模式，会将大模型调用细节输出到控制台</span></span><br><span class="line">        verbose=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line">    product_name = <span class="string">&#x27;黄油啤酒&#x27;</span></span><br><span class="line">    res = overall_chain(product_name)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>输出结果</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">/Users/jeanlv/.pyenv/versions/ai-testing/bin/python /Applications/PyCharm CE.app/Contents/plugins/python-ce/helpers/pycharm/_jb_pytest_runner.py --target test_sequential_chain_demo.py::test_sequential_chain </span><br><span class="line">Testing started at 14:33 ...</span><br><span class="line">Launching pytest with arguments test_sequential_chain_demo.py::test_sequential_chain --no-header --no-summary -q in /Users/jeanlv/PycharmProjects/tech-langchain/langchain-demo/chains</span><br><span class="line"></span><br><span class="line">============================= test session starts ==============================</span><br><span class="line">collecting ... collected 1 item</span><br><span class="line"></span><br><span class="line">test_sequential_chain_demo.py::test_sequential_chain PASSED              [100%]</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Entering new SequentialChain chain...</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Entering new LLMChain chain...</span></span><br><span class="line">Prompt after formatting:</span><br><span class="line">Human: 将以下文本翻译成英文：黄油啤酒</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Finished chain.</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Entering new LLMChain chain...</span></span><br><span class="line">Prompt after formatting:</span><br><span class="line">Human: Based on the following product, give an introduction text about 100 words: Butter beer</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Finished chain.</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Entering new LLMChain chain...</span></span><br><span class="line">Prompt after formatting:</span><br><span class="line">Human: 下列文本使用的语言是什么？：黄油啤酒</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Finished chain.</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Entering new LLMChain chain...</span></span><br><span class="line">Prompt after formatting:</span><br><span class="line">Human: 使用语言类型为: 根据所给文本“黄油啤酒”，无法确定使用的具体语言。请提供更多上下文或详细信息以便进行确认。 ，为下列文本写一段不多于50字的概述: Introducing the enchanting elixir that will transport you to a world of wizardry and magic - Butterbeer! Inspired by the beloved beverage from the famous wizarding world, this tantalizing concoction is the epitome of indulgence and nostalgia. With a rich and creamy base, each sip reveals a symphony of flavors, blending smooth butterscotch with hints of vanilla and a touch of warmth. Whether you&#x27;re a fan of fantasy or simply seeking a delectable treat, Butterbeer is the perfect potion to satisfy your cravings. Elevate any occasion with this bewitching beverage and embark on a captivating journey of taste and imagination. Prepare to be spellbound by the irresistible allure of Butterbeer!</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Finished chain.</span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Finished chain.</span></span><br><span class="line">&#123;&#x27;product_name&#x27;: &#x27;黄油啤酒&#x27;, &#x27;english_product_name&#x27;: &#x27;Butter beer&#x27;, &#x27;english_introduce&#x27;: &quot;Introducing the enchanting elixir that will transport you to a world of wizardry and magic - Butterbeer! Inspired by the beloved beverage from the famous wizarding world, this tantalizing concoction is the epitome of indulgence and nostalgia. With a rich and creamy base, each sip reveals a symphony of flavors, blending smooth butterscotch with hints of vanilla and a touch of warmth. Whether you&#x27;re a fan of fantasy or simply seeking a delectable treat, Butterbeer is the perfect potion to satisfy your cravings. Elevate any occasion with this bewitching beverage and embark on a captivating journey of taste and imagination. Prepare to be spellbound by the irresistible allure of Butterbeer!&quot;, &#x27;language&#x27;: &#x27;根据所给文本“黄油啤酒”，无法确定使用的具体语言。请提供更多上下文或详细信息以便进行确认。&#x27;, &#x27;summary&#x27;: &#x27;这是关于一种神奇的饮料“黄油啤酒”的介绍。它源于著名魔法世界中受人喜爱的饮料，让人仿佛置身于魔法世界。这种诱人的调制饮品是奢侈和怀旧的典范，拥有浓郁的奶油口感，每一口都散发着丰富的风味，融合了顺滑的奶油糖、香草和一丝温暖。无论你是幻想小说的粉丝还是只是想要一份美味的享受，黄油啤酒都是满足你口腹之欲的完美药水。用这款迷人的饮品提升任何场合，踏上一段迷人的味觉和想象之旅。准备好被不可抗拒的黄油啤酒的魅力所迷住吧！&#x27;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">=================== 1 passed, 1 warning in 82.10s (0:01:22) ====================</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>注：Human输出的内容在ide里显示绿色字体</p>
+<h1 id="LLMRouteChain"><a href="#LLMRouteChain" class="headerlink" title="LLMRouteChain"></a>LLMRouteChain</h1><p>LLMRouteChain 的主要作用是能根据<strong>提示词的不同而选择不同的Chain进行执行</strong>（类似于Python代码中的分支判断的作用）。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> a == <span class="number">1</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;我爱吃苹果&quot;</span>)</span><br><span class="line"><span class="keyword">elif</span> b == <span class="number">1</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;我爱吃香蕉&quot;</span>)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;我爱吃西瓜&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>而实现这一需求，需要以下3个模块结合完成，也是MultiPromptChain的三个参数，以下内容是摘取的部分源码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MultiPromptChain</span>(<span class="title class_ inherited__">MultiRouteChain</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;A multi-route chain that uses an LLM router chain to choose amongst prompts.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    router_chain: RouterChain</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Chain for deciding a destination chain and the input to it.&quot;&quot;&quot;</span></span><br><span class="line">    destination_chains: Mapping[<span class="built_in">str</span>, LLMChain]</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Map of name to candidate chains that inputs can be routed to.&quot;&quot;&quot;</span></span><br><span class="line">    default_chain: LLMChain</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Default chain to use when router doesn&#x27;t map input to one of the destinations.&quot;&quot;&quot;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>实现步骤如下：</p>
+<ol>
+<li>加载 Token，创建大模型实例</li>
+<li>创建 destination_chains，目的是构造各个分支，以及其对应的prompt</li>
+<li>通过模板和大模型对象，生成LLMRouterChain，用于实现分支逻辑。而其能实现分支逻辑的原理，也是通过 prompt 实现，注意示例中的变量<code>MULTI_PROMPT_ROUTER_TEMPLATE</code>对应的内容以及信息</li>
+<li>创建一个默认的LLMChain实例，作为上述匹配未命中时的默认调用目标，避免调用最终没有逻辑去处理的情况出现</li>
+<li>通过 MultiPromptChain 将以上三个模块整合，最终实现一个支持分支判断的 Chain</li>
+</ol>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">LLMRouteChain 的主要作用是能根据提示词的不同而选择不同的Chain进行执行。而实现这一需求，需要以下3个模块结合完成，也是MultiPromptChain的三个参数:</span></span><br><span class="line"><span class="string">- router_chain: RouterChain</span></span><br><span class="line"><span class="string">- destination_chains: Mapping[str, LLMChain]</span></span><br><span class="line"><span class="string">- default_chain: LLMChain</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">实现步骤：</span></span><br><span class="line"><span class="string">1. 加载 Token，创建大模型实例</span></span><br><span class="line"><span class="string">2. 创建 destination_chains，目的是构造各个分支，以及其对应的prompt</span></span><br><span class="line"><span class="string">3. 通过模板和大模型对象，生成LLMRouterChain，用于实现分支逻辑。而其能实现分支逻辑的原理，也是通过 prompt 实现，注意示例中的变量MULTI_PROMPT_ROUTER_TEMPLATE对应的内容以及信息</span></span><br><span class="line"><span class="string">4. 创建一个默认的LLMChain实例，作为上述匹配未命中时的默认调用目标，避免调用最终没有逻辑去处理的情况出现</span></span><br><span class="line"><span class="string">5. 通过 MultiPromptChain 将以上三个模块整合，最终实现一个支持分支判断的 Chain</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> langchain <span class="keyword">import</span> LLMChain</span><br><span class="line"><span class="keyword">from</span> langchain.chains <span class="keyword">import</span> MultiPromptChain</span><br><span class="line"><span class="keyword">from</span> langchain.chains.router.llm_router <span class="keyword">import</span> RouterOutputParser, LLMRouterChain</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain.prompts <span class="keyword">import</span> ChatPromptTemplate, PromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_llm_route</span>():</span><br><span class="line">    <span class="comment"># 创建OpenAI调用实例</span></span><br><span class="line">    <span class="comment"># temperature用来设置大模型返回数据的随机性和创造性，较低的数值返回的数据就更贴近现实</span></span><br><span class="line">    llm = ChatOpenAI(temperature=<span class="number">0.0</span>, openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                     openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 2个角色prompt模板，作为请求处理的2个分支</span></span><br><span class="line">    physics_template = <span class="string">&quot;&quot;&quot;你是一位非常聪明的物理学家，非常擅长回答物理相关的问题，\</span></span><br><span class="line"><span class="string">    并且会以一种简洁易懂的方式对问题做出讲解。\</span></span><br><span class="line"><span class="string">    当你无法回答问题的时候，就会主动承认无法回答问题。\</span></span><br><span class="line"><span class="string">    </span></span><br><span class="line"><span class="string">    以下是具体问题:  </span></span><br><span class="line"><span class="string">    &#123;input&#125;&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    math_template = <span class="string">&quot;&quot;&quot;你是一位非常棒的数学家，非常擅长回答数学相关的问题。\</span></span><br><span class="line"><span class="string">    你之所以这么棒，是因为你能够将难题拆解成它们的组成部分，\</span></span><br><span class="line"><span class="string">    对组成部分分别作答后，再将它们组合起来最终成功的回答出最初的原始问题。 \</span></span><br><span class="line"><span class="string">    </span></span><br><span class="line"><span class="string">    以下是具体问题:  </span></span><br><span class="line"><span class="string">    &#123;input&#125;&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 将角色prompt模板和对应的描述、名称组装成列表，方便遍历</span></span><br><span class="line">    prompt_info = [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;物理学家&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;擅长回答物理方面的问题&quot;</span>,</span><br><span class="line">            <span class="string">&quot;prompt_template&quot;</span>: physics_template</span><br><span class="line">        &#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;数学家&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;擅长回答数学方面的问题&quot;</span>,</span><br><span class="line">            <span class="string">&quot;prompt_template&quot;</span>: math_template</span><br><span class="line">        &#125;,</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 名称和大模型Chain映射关系的字典</span></span><br><span class="line">    destination_chains = &#123;&#125;</span><br><span class="line">    <span class="comment"># 根据prompt_info中的信息，创建对应的LLMChain实例，并放入映射字典中</span></span><br><span class="line">    <span class="keyword">for</span> p_info <span class="keyword">in</span> prompt_info:</span><br><span class="line">        <span class="comment"># destination_chains最终的结构为: &#123;name: 对应的LLMChain实例&#125;</span></span><br><span class="line">        name = p_info[<span class="string">&quot;name&quot;</span>]</span><br><span class="line">        prompt_template = p_info[<span class="string">&quot;prompt_template&quot;</span>]</span><br><span class="line">        prompt = ChatPromptTemplate.from_template(template=prompt_template)</span><br><span class="line">        <span class="comment"># 给每个角色创建一个自己的大模型Chain实例</span></span><br><span class="line">        chain = LLMChain(llm=llm, prompt=prompt)</span><br><span class="line">        <span class="comment"># 组装成字典，方便router根据逻辑选择分支之后，能够找到分支对应调用的Chain实例</span></span><br><span class="line">        destination_chains[name] = chain</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 生成destinations</span></span><br><span class="line">    destinations = [<span class="string">f&quot;<span class="subst">&#123;p[<span class="string">&#x27;name&#x27;</span>]&#125;</span>: <span class="subst">&#123;p[<span class="string">&#x27;description&#x27;</span>]&#125;</span>&quot;</span> <span class="keyword">for</span> p <span class="keyword">in</span> prompt_info]</span><br><span class="line">    <span class="comment"># 转换成多行字符串，每行一句对应关系</span></span><br><span class="line">    destinations_str = <span class="string">&quot;\n&quot;</span>.join(destinations)</span><br><span class="line">    <span class="comment"># 真正实现 if 分支判断的地方</span></span><br><span class="line">    <span class="comment"># 选择使用哪个人设模型进行处理的prompt模板</span></span><br><span class="line">    MULTI_PROMPT_ROUTER_TEMPLATE = <span class="string">&quot;&quot;&quot;Given a raw text input to a \</span></span><br><span class="line"><span class="string">    language model select the model prompt best suited for the input. \</span></span><br><span class="line"><span class="string">    You will be given the names of the available prompts and a \</span></span><br><span class="line"><span class="string">    description of what the prompt is best suited for. \</span></span><br><span class="line"><span class="string">    You may also revise the original input if you think that revising\</span></span><br><span class="line"><span class="string">    it will ultimately lead to a better response from the language model.  </span></span><br><span class="line"><span class="string">    </span></span><br><span class="line"><span class="string">    &lt;&lt; FORMATTING &gt;&gt;  </span></span><br><span class="line"><span class="string">    Return a markdown code snippet with a JSON object formatted to look like:  </span></span><br><span class="line"><span class="string">      ```json  &#123;&#123;&#123;&#123;    &quot;destination&quot;: string \ name of the prompt to use or &quot;DEFAULT&quot;    &quot;next_inputs&quot;: string \ a potentially modified version of the original input  &#125;&#125;&#125;&#125;```</span></span><br><span class="line"><span class="string">    REMEMBER: &quot;destination&quot; MUST be one of the candidate prompt \</span></span><br><span class="line"><span class="string">    names specified below OR it can be &quot;DEFAULT&quot; if the input is not\</span></span><br><span class="line"><span class="string">    well suited for any of the candidate prompts.  </span></span><br><span class="line"><span class="string">    REMEMBER: &quot;next_inputs&quot; can just be the original input \</span></span><br><span class="line"><span class="string">    if you don&#x27;t think any modifications are needed.  </span></span><br><span class="line"><span class="string">    </span></span><br><span class="line"><span class="string">    &lt;&lt; CANDIDATE PROMPTS &gt;&gt;  </span></span><br><span class="line"><span class="string">    &#123;destinations&#125;  </span></span><br><span class="line"><span class="string">    </span></span><br><span class="line"><span class="string">    &lt;&lt; INPUT &gt;&gt;  </span></span><br><span class="line"><span class="string">    &#123;&#123;input&#125;&#125;  </span></span><br><span class="line"><span class="string">    </span></span><br><span class="line"><span class="string">    &lt;&lt; OUTPUT (remember to include the ```json)&gt;&gt;&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 在router模版中先补充部分数据</span></span><br><span class="line">    router_template = MULTI_PROMPT_ROUTER_TEMPLATE.<span class="built_in">format</span>(</span><br><span class="line">        destinations=destinations_str</span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 组装一个基础的prompt模板对象，通过更多的参数设置更多的信息</span></span><br><span class="line">    router_prompt = PromptTemplate(</span><br><span class="line">        <span class="comment"># 基础模板</span></span><br><span class="line">        template=router_template,</span><br><span class="line">        <span class="comment"># 输入参数名称</span></span><br><span class="line">        input_variables=[<span class="string">&quot;input&quot;</span>],</span><br><span class="line">        <span class="comment"># 输出数据解析器</span></span><br><span class="line">        output_parser=RouterOutputParser(),</span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 通过模板和大模型对象，生成LLMRouterChain，用于支持分支逻辑</span></span><br><span class="line">    router_chain = LLMRouterChain.from_llm(llm, router_prompt)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 创建 else 场景</span></span><br><span class="line">    <span class="comment"># 创建一个默认的LLMChain实例，作为上述匹配未命中时的默认调用目标，避免调用最终没有逻辑去处理的情况出现</span></span><br><span class="line">    <span class="comment"># 上述的匹配规则可以看成一组if elif的逻辑匹配规则，default作为最后的else负责处理所有未命中的情况</span></span><br><span class="line">    default_prompt = ChatPromptTemplate.from_template(<span class="string">&quot;&#123;input&#125;&quot;</span>)</span><br><span class="line">    default_chain = LLMChain(llm=llm, prompt=default_prompt)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 把 分支、 else 的情况 以及 做if判断的语句结合到一起</span></span><br><span class="line">    <span class="comment"># 将多个chain组装成完整的chain对象，完成带有逻辑的请求链</span></span><br><span class="line">    chain = MultiPromptChain(</span><br><span class="line">        router_chain=router_chain,</span><br><span class="line">        destination_chains=destination_chains,</span><br><span class="line">        default_chain=default_chain,</span><br><span class="line">        verbose=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 提出一个物理问题</span></span><br><span class="line">    physics_res = chain.run(<span class="string">&quot;什么是黑体辐射?&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(physics_res)</span><br><span class="line">    <span class="comment"># 提出一个数学问题</span></span><br><span class="line">    math_res = chain.run(<span class="string">&quot;2的4次方是多少？&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(math_res)</span><br><span class="line">    food_res = chain.run(<span class="string">&quot;鱼香肉丝怎么做&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(food_res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line">/Users/jeanlv/.pyenv/versions/ai-testing/bin/python /Applications/PyCharm CE.app/Contents/plugins/python-ce/helpers/pycharm/_jb_pytest_runner.py --target test_llm_route_demo.py::test_llm_route </span><br><span class="line">Testing started at 15:04 ...</span><br><span class="line">Launching pytest with arguments test_llm_route_demo.py::test_llm_route --no-header --no-summary -q in /Users/jeanlv/PycharmProjects/tech-langchain/langchain-demo/chains</span><br><span class="line"></span><br><span class="line">============================= test session starts ==============================</span><br><span class="line">collecting ... collected 1 item</span><br><span class="line"></span><br><span class="line">test_llm_route_demo.py::test_llm_route PASSED                            [100%]</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Entering new MultiPromptChain chain...</span></span><br><span class="line">物理学家: &#123;&#x27;input&#x27;: &#x27;什么是黑体辐射?&#x27;&#125;</span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Finished chain.</span></span><br><span class="line">黑体辐射是指一个完全吸收所有入射辐射的物体所发出的热辐射。黑体辐射的特点是其辐射强度与波长和温度有关。根据普朗克辐射定律和斯特藩-玻尔兹曼定律，黑体辐射的辐射强度随着波长的增加而减小，同时随着温度的升高而增加。黑体辐射是研究热辐射和量子力学的重要基础，对于理解物体的热力学性质和宇宙背景辐射等现象具有重要意义。</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Entering new MultiPromptChain chain...</span></span><br><span class="line">数学家: &#123;&#x27;input&#x27;: &#x27;2的4次方是多少？&#x27;&#125;</span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Finished chain.</span></span><br><span class="line">2的4次方等于16。</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Entering new MultiPromptChain chain...</span></span><br><span class="line">None: &#123;&#x27;input&#x27;: &#x27;鱼香肉丝怎么做&#x27;&#125;</span><br><span class="line"><span class="meta prompt_">&gt; </span><span class="language-bash">Finished chain.</span></span><br><span class="line">鱼香肉丝是一道经典的川菜，下面是制作鱼香肉丝的步骤：</span><br><span class="line"></span><br><span class="line">材料：</span><br><span class="line">- 猪肉（里脊肉或瘦肉）250克</span><br><span class="line">- 胡萝卜1根</span><br><span class="line">- 青椒1个</span><br><span class="line">- 干辣椒适量</span><br><span class="line">- 葱姜蒜适量</span><br><span class="line">- 料酒适量</span><br><span class="line">- 酱油适量</span><br><span class="line">- 盐适量</span><br><span class="line">- 糖适量</span><br><span class="line">- 醋适量</span><br><span class="line">- 淀粉适量</span><br><span class="line">- 鸡蛋1个</span><br><span class="line">- 花椒粉适量</span><br><span class="line">- 食用油适量</span><br><span class="line"></span><br><span class="line">步骤：</span><br><span class="line">1. 将猪肉切成细丝，加入料酒、酱油、盐、糖、淀粉和鸡蛋拌匀，腌制15分钟。</span><br><span class="line">2. 胡萝卜和青椒切成细丝，葱姜蒜切末备用。</span><br><span class="line">3. 干辣椒剪成小段，去掉辣椒籽备用。</span><br><span class="line">4. 热锅冷油，将腌制好的猪肉丝放入锅中煸炒至变色，捞出备用。</span><br><span class="line">5. 锅中留底油，放入葱姜蒜末和干辣椒炒香。</span><br><span class="line">6. 加入胡萝卜丝和青椒丝翻炒均匀。</span><br><span class="line">7. 倒入适量的酱油、盐、糖和醋，炒匀。</span><br><span class="line">8. 将炒好的猪肉丝放入锅中，翻炒均匀。</span><br><span class="line">9. 最后撒上适量的花椒粉，炒匀即可。</span><br><span class="line"></span><br><span class="line">这样一道美味的鱼香肉丝就做好了，可以搭配米饭或面条一起享用。</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">======================== 1 passed, 4 warnings in 30.00s ========================</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/09/22/ai/langchain/8-langchain-agents/" rel="prev" title="LangChain核心模块agents（早期）">
+      <i class="fa fa-chevron-left"></i> LangChain核心模块agents（早期）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/09/24/ai/langchain/10-langchain-action-assistant/" rel="next" title="LangChain实战-基于需求文档、设计文档、测试用例的测试答疑助手">
+      LangChain实战-基于需求文档、设计文档、测试用例的测试答疑助手 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF"><span class="nav-number">1.1.</span> <span class="nav-text">设计思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Chains%E4%B8%BB%E8%A6%81%E6%A8%A1%E5%9D%97"><span class="nav-number">1.2.</span> <span class="nav-text">Chains主要模块</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LLMChain"><span class="nav-number">2.</span> <span class="nav-text">LLMChain</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SimpleSequentialChain"><span class="nav-number">3.</span> <span class="nav-text">SimpleSequentialChain</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SequentialChain"><span class="nav-number">4.</span> <span class="nav-text">SequentialChain</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LLMRouteChain"><span class="nav-number">5.</span> <span class="nav-text">LLMRouteChain</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">124</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">23</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

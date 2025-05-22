@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第五讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain核心模块agents（早期）">
+<meta property="og:url" content="https://jinglv.github.io/2023/09/22/ai/langchain/8-langchain-agents/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第五讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309151121262.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251527974.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251536653.png">
+<meta property="article:published_time" content="2023-09-21T16:00:00.000Z">
+<meta property="article:modified_time" content="2023-09-22T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309151121262.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2023/09/22/ai/langchain/8-langchain-agents/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain核心模块agents（早期） | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2023/09/22/ai/langchain/8-langchain-agents/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain核心模块agents（早期）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-09-22 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2023-09-22T00:00:00+08:00">2023-09-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第五讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>在之前学习 AutoGPT 的过程中，AutoGPT 的 Command 模块可以针对于 LLM 的一些局限性做补充，比如爬取网页信息，精密计算，代码执行等。Agents 设计的初衷也是同样的目的，<strong>补充大语言模型的能力</strong>。</p>
+<p>通过用户输入的自然语言转换为对工具调用的分析、工具参数的抽取，让每个角色发挥自己最擅长的部分，规避掉大模型在细节处理上不够精准的问题，解决用户与工具之间无法精确匹配的问题。</p>
+<h2 id="Agents主要能力"><a href="#Agents主要能力" class="headerlink" title="Agents主要能力"></a>Agents主要能力</h2><ul>
+<li>内置 Tools</li>
+<li>内置组件</li>
+<li>自定义工具</li>
+</ul>
+<p>前两种的内置工具与组件可以覆盖大部分的常见使用场景，如果有内置工具确实无法解决的场景，则可以通过自定义工具模块实现。由此可见 LangChain 的灵活性之强。</p>
+<h2 id="设计原理"><a href="#设计原理" class="headerlink" title="设计原理"></a>设计原理</h2><p>在代理（Agents）中，语言模型被用作推理引擎，以确定应该采取哪些动作以及执行顺序。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309151121262.png" alt="uml diagram"></p>
+<h1 id="调用内置Tools"><a href="#调用内置Tools" class="headerlink" title="调用内置Tools"></a>调用内置Tools</h1><p>内置 Tools 是作者封装好的一些工具，可以直接进行调用。主要步骤如下：</p>
+<ol>
+<li>加载工具。</li>
+<li>初始化 agent，并将工具传入。</li>
+<li>对代理输入问题。</li>
+</ol>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">内置tools</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">内置 Tools 是作者封装好的一些工具，可以直接进行调用。主要步骤如下：</span></span><br><span class="line"><span class="string">1.加载工具</span></span><br><span class="line"><span class="string">2.初始化agent，并将工具传入</span></span><br><span class="line"><span class="string">3.对代理输入问题</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> load_tools, initialize_agent, AgentType</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_built_in_tools</span>():</span><br><span class="line">    <span class="comment"># 创建OpenAI调用实例</span></span><br><span class="line">    <span class="comment"># temperature用来设置大模型返回数据的随机性和创造性，较低的数值返回的数据就更贴近现实</span></span><br><span class="line">    llm = ChatOpenAI(temperature=<span class="number">0.0</span>, openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                     openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line">    <span class="comment"># 加载内置工具llm-math和wikipedia,注意：加载工具前提，是要安装加载的工具pip install wikipedia</span></span><br><span class="line">    tools = load_tools([<span class="string">&#x27;llm-math&#x27;</span>, <span class="string">&#x27;wikipedia&#x27;</span>], llm=llm)</span><br><span class="line">    <span class="comment"># 创建Agent实例</span></span><br><span class="line">    agent = initialize_agent(</span><br><span class="line">        <span class="comment"># 设置可以使用的工具</span></span><br><span class="line">        tools=tools,</span><br><span class="line">        <span class="comment"># 设置逻辑解析所使用的大模型实例</span></span><br><span class="line">        llm=llm,</span><br><span class="line">        <span class="comment"># 设置agent类型，CHAT表示agent使用了chat大模型，REACT表示在prompt生成时使用更合乎逻辑的方式，获取更严谨的结果</span></span><br><span class="line">        agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,</span><br><span class="line">        <span class="comment"># 设置agent可以自动处理解析失败的情况，由于使用大模型处理逻辑，返回值并不会100%严谨，所以可能会出现返回的额数据不符合解析的格式，导致解析失败</span></span><br><span class="line">        <span class="comment"># agent可以自动处理解析失败的情况，再次发送请求以期望获取到能正常解析的返回数据</span></span><br><span class="line">        handle_parsing_errors=<span class="literal">True</span>,</span><br><span class="line">        <span class="comment"># 打开详细模式，会将agent调用细节输出到控制台</span></span><br><span class="line">        verbose=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line">    res = agent(<span class="string">&quot;1000的35%是多少？&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行报错：<code>No module named &#39;wikipedia&#39;</code>安装该模块即可<code>pip install wikipedia</code></p>
+<p>执行结果：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251527974.png" alt="image-20231025152740616" style="zoom:50%;" /></p>
+<p>从图中可以看出：</p>
+<ol>
+<li>LangChain 通过分析，决定调用 Calculator tool 计算最终的结果，并且分析出了需要传入的数据格式，最终根据返回的结果得到了正确的答案 350.0。</li>
+<li>虽然大模型本身对精确计算不是很擅长，但是通过 Agent 模块，大模型可以将需要精准计算的部分提交给更专业的工具进行计算，而大模型本身负责分析文本、决定使用的工具、抽取出相关的参数、分析和组合返回结果，这些部分正是大模型自己擅长的内容，通过与 Tools 分工合作，最终拿到了正确且精准的返回结果。</li>
+</ol>
+<h1 id="调用内置组件"><a href="#调用内置组件" class="headerlink" title="调用内置组件"></a>调用内置组件</h1><p>所谓内置组件，可以将其理解为 Python 代码执行工具。前一个示例是计算工具，能够覆盖的场景有限。由于大模型本身也具备生成代码的能力，一个能够支持运行 Python 代码的工具，显然能够通过代码实现覆盖更大更复杂的场景，并且通用性也更强。使用内置的 python 运行工具和大模型生成的代码结合的步骤如下：</p>
+<ol>
+<li>加载工具。</li>
+<li>初始化 agent，并将工具传入，工具为 <code>PythonREPLTool()</code>。</li>
+<li>对代理输入问题。</li>
+<li>代理运行过程打开 debug，方便查看运行流程。</li>
+</ol>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">调用内置组件</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">所谓内置组件，可以将其理解为 Python 代码执行工具。前一个示例是计算工具，能够覆盖的场景有限。由于大模型本身也具备生成代码的能力，一个能够支持运行 Python 代码的工具，显然能够通过代码实现覆盖更大更复杂的场景，并且通用性也更强。</span></span><br><span class="line"><span class="string">使用内置的 python 运行工具和大模型生成的代码结合的步骤如下：</span></span><br><span class="line"><span class="string">1. 加载工具。</span></span><br><span class="line"><span class="string">2. 初始化 agent，并将工具传入，工具为 PythonREPLTool()。</span></span><br><span class="line"><span class="string">3. 对代理输入问题。</span></span><br><span class="line"><span class="string">4. 代理运行过程打开 debug，方便查看运行流程。</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> langchain</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> initialize_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> PythonREPLTool</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_built_in_module</span>():</span><br><span class="line">    <span class="comment"># 创建OpenAI调用实例</span></span><br><span class="line">    <span class="comment"># temperature用来设置大模型返回数据的随机性和创造性，较低的数值返回的数据就更贴近现实</span></span><br><span class="line">    llm = ChatOpenAI(temperature=<span class="number">0.0</span>, openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                     openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line">    <span class="comment"># 创建Agent实例</span></span><br><span class="line">    agent = initialize_agent(</span><br><span class="line">        <span class="comment"># 设置可以使用的工具</span></span><br><span class="line">        tools=[PythonREPLTool()],</span><br><span class="line">        <span class="comment"># 设置逻辑解析所使用的大模型实例</span></span><br><span class="line">        llm=llm,</span><br><span class="line">        <span class="comment"># 打开相信模式，会将agent调用细节输出到控制台</span></span><br><span class="line">        verbose=<span class="literal">True</span>)</span><br><span class="line">    <span class="comment"># 待排序的人名列表</span></span><br><span class="line">    name_list = [<span class="string">&quot;Ashish Vaswani&quot;</span>, <span class="string">&quot;Noam Shazeer&quot;</span>, <span class="string">&quot;Niki Parmar&quot;</span>, <span class="string">&quot;Jakob Uszkoreit&quot;</span>, <span class="string">&quot;Llion Jones&quot;</span>, <span class="string">&quot;Aidan N. Gomez&quot;</span>,</span><br><span class="line">                 <span class="string">&quot;Łukasz Kaiser&quot;</span>, <span class="string">&quot;Illia Polosukhin&quot;</span>]</span><br><span class="line">    <span class="comment"># 打开Debug模式，会将输出更详细的日志信息，方便了整体运行逻辑</span></span><br><span class="line">    langchain.debug = <span class="literal">True</span></span><br><span class="line">    <span class="comment"># 组装成最终的命令字符串，并调用agent运行解析，获取结果</span></span><br><span class="line">    command_str = <span class="string">f&quot;将下列人名优先用姓氏、再使用名字进行排序，并将结果打印出来: \n<span class="subst">&#123;name_list&#125;</span>&quot;</span></span><br><span class="line">    res = agent.run(command_str)</span><br><span class="line">    <span class="comment"># 打印结果</span></span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line">    <span class="comment"># 关闭Debug模式</span></span><br><span class="line">    langchain.debug = <span class="literal">False</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br></pre></td><td class="code"><pre><span class="line">/Users/jeanlv/.pyenv/versions/ai-testing/bin/python /Applications/PyCharm CE.app/Contents/plugins/python-ce/helpers/pycharm/_jb_pytest_runner.py --path /Users/jeanlv/PycharmProjects/tech-langchain/langchain-demo/agents/test_built_in_module.py </span><br><span class="line">Testing started at 15:32 ...</span><br><span class="line">Launching pytest with arguments /Users/jeanlv/PycharmProjects/tech-langchain/langchain-demo/agents/test_built_in_module.py --no-header --no-summary -q in /Users/jeanlv/PycharmProjects/tech-langchain/langchain-demo/agents</span><br><span class="line"></span><br><span class="line">============================= test session starts ==============================</span><br><span class="line">collecting ... collected 1 item</span><br><span class="line"></span><br><span class="line">test_built_in_module.py::test_built_in_module PASSED                     [100%][chain/start] [1:chain:AgentExecutor] Entering Chain run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;input&quot;: &quot;将下列人名优先用姓氏、再使用名字进行排序，并将结果打印出来: \n[&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]&quot;</span><br><span class="line">&#125;</span><br><span class="line">[chain/start] [1:chain:AgentExecutor &gt; 2:chain:LLMChain] Entering Chain run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;input&quot;: &quot;将下列人名优先用姓氏、再使用名字进行排序，并将结果打印出来: \n[&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]&quot;,</span><br><span class="line">  &quot;agent_scratchpad&quot;: &quot;&quot;,</span><br><span class="line">  &quot;stop&quot;: [</span><br><span class="line">    &quot;\nObservation:&quot;,</span><br><span class="line">    &quot;\n\tObservation:&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[llm/start] [1:chain:AgentExecutor &gt; 2:chain:LLMChain &gt; 3:llm:ChatOpenAI] Entering LLM run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;prompts&quot;: [</span><br><span class="line">    &quot;Human: Answer the following questions as best you can. You have access to the following tools:\n\nPython_REPL: A Python shell. Use this to execute python commands. Input should be a valid python command. If you want to see the output of a value, you should print it out with `print(...)`.\n\nUse the following format:\n\nQuestion: the input question you must answer\nThought: you should always think about what to do\nAction: the action to take, should be one of [Python_REPL]\nAction Input: the input to the action\nObservation: the result of the action\n... (this Thought/Action/Action Input/Observation can repeat N times)\nThought: I now know the final answer\nFinal Answer: the final answer to the original input question\n\nBegin!\n\nQuestion: 将下列人名优先用姓氏、再使用名字进行排序，并将结果打印出来: \n[&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]\nThought:&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[llm/end] [1:chain:AgentExecutor &gt; 2:chain:LLMChain &gt; 3:llm:ChatOpenAI] [5.18s] Exiting LLM run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;generations&quot;: [</span><br><span class="line">    [</span><br><span class="line">      &#123;</span><br><span class="line">        &quot;text&quot;: &quot;I can use the `sorted()` function in Python to sort the list of names. I will need to provide a key function that extracts the last name from each name in the list.\nAction: Python_REPL\nAction Input: \n```\nnames = [&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]\nsorted_names = sorted(names, key=lambda x: x.split()[-1])\nprint(sorted_names)\n```&quot;,</span><br><span class="line">        &quot;generation_info&quot;: &#123;</span><br><span class="line">          &quot;finish_reason&quot;: &quot;stop&quot;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;message&quot;: &#123;</span><br><span class="line">          &quot;lc&quot;: 1,</span><br><span class="line">          &quot;type&quot;: &quot;constructor&quot;,</span><br><span class="line">          &quot;id&quot;: [</span><br><span class="line">            &quot;langchain&quot;,</span><br><span class="line">            &quot;schema&quot;,</span><br><span class="line">            &quot;messages&quot;,</span><br><span class="line">            &quot;AIMessage&quot;</span><br><span class="line">          ],</span><br><span class="line">          &quot;kwargs&quot;: &#123;</span><br><span class="line">            &quot;content&quot;: &quot;I can use the `sorted()` function in Python to sort the list of names. I will need to provide a key function that extracts the last name from each name in the list.\nAction: Python_REPL\nAction Input: \n```\nnames = [&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]\nsorted_names = sorted(names, key=lambda x: x.split()[-1])\nprint(sorted_names)\n```&quot;,</span><br><span class="line">            &quot;additional_kwargs&quot;: &#123;&#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  ],</span><br><span class="line">  &quot;llm_output&quot;: &#123;</span><br><span class="line">    &quot;token_usage&quot;: &#123;</span><br><span class="line">      &quot;completion_tokens&quot;: 128,</span><br><span class="line">      &quot;prompt_tokens&quot;: 257,</span><br><span class="line">      &quot;total_tokens&quot;: 385</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;model_name&quot;: &quot;gpt-3.5-turbo&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;run&quot;: null</span><br><span class="line">&#125;</span><br><span class="line">[chain/end] [1:chain:AgentExecutor &gt; 2:chain:LLMChain] [5.18s] Exiting Chain run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;text&quot;: &quot;I can use the `sorted()` function in Python to sort the list of names. I will need to provide a key function that extracts the last name from each name in the list.\nAction: Python_REPL\nAction Input: \n```\nnames = [&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]\nsorted_names = sorted(names, key=lambda x: x.split()[-1])\nprint(sorted_names)\n```&quot;</span><br><span class="line">&#125;</span><br><span class="line">[tool/start] [1:chain:AgentExecutor &gt; 4:tool:Python_REPL] Entering Tool run with input:</span><br><span class="line">&quot;```</span><br><span class="line">names = [&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]</span><br><span class="line">sorted_names = sorted(names, key=lambda x: x.split()[-1])</span><br><span class="line">print(sorted_names)</span><br><span class="line">```&quot;</span><br><span class="line">[tool/end] [1:chain:AgentExecutor &gt; 4:tool:Python_REPL] [38ms] Exiting Tool run with output:</span><br><span class="line">&quot;[&#x27;Aidan N. Gomez&#x27;, &#x27;Llion Jones&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Illia Polosukhin&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Ashish Vaswani&#x27;]&quot;</span><br><span class="line">[chain/start] [1:chain:AgentExecutor &gt; 5:chain:LLMChain] Entering Chain run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;input&quot;: &quot;将下列人名优先用姓氏、再使用名字进行排序，并将结果打印出来: \n[&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]&quot;,</span><br><span class="line">  &quot;agent_scratchpad&quot;: &quot;I can use the `sorted()` function in Python to sort the list of names. I will need to provide a key function that extracts the last name from each name in the list.\nAction: Python_REPL\nAction Input: \n```\nnames = [&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]\nsorted_names = sorted(names, key=lambda x: x.split()[-1])\nprint(sorted_names)\n```\nObservation: [&#x27;Aidan N. Gomez&#x27;, &#x27;Llion Jones&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Illia Polosukhin&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Ashish Vaswani&#x27;]\n\nThought:&quot;,</span><br><span class="line">  &quot;stop&quot;: [</span><br><span class="line">    &quot;\nObservation:&quot;,</span><br><span class="line">    &quot;\n\tObservation:&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[llm/start] [1:chain:AgentExecutor &gt; 5:chain:LLMChain &gt; 6:llm:ChatOpenAI] Entering LLM run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;prompts&quot;: [</span><br><span class="line">    &quot;Human: Answer the following questions as best you can. You have access to the following tools:\n\nPython_REPL: A Python shell. Use this to execute python commands. Input should be a valid python command. If you want to see the output of a value, you should print it out with `print(...)`.\n\nUse the following format:\n\nQuestion: the input question you must answer\nThought: you should always think about what to do\nAction: the action to take, should be one of [Python_REPL]\nAction Input: the input to the action\nObservation: the result of the action\n... (this Thought/Action/Action Input/Observation can repeat N times)\nThought: I now know the final answer\nFinal Answer: the final answer to the original input question\n\nBegin!\n\nQuestion: 将下列人名优先用姓氏、再使用名字进行排序，并将结果打印出来: \n[&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]\nThought:I can use the `sorted()` function in Python to sort the list of names. I will need to provide a key function that extracts the last name from each name in the list.\nAction: Python_REPL\nAction Input: \n```\nnames = [&#x27;Ashish Vaswani&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Llion Jones&#x27;, &#x27;Aidan N. Gomez&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Illia Polosukhin&#x27;]\nsorted_names = sorted(names, key=lambda x: x.split()[-1])\nprint(sorted_names)\n```\nObservation: [&#x27;Aidan N. Gomez&#x27;, &#x27;Llion Jones&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Illia Polosukhin&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Ashish Vaswani&#x27;]\n\nThought:&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[llm/end] [1:chain:AgentExecutor &gt; 5:chain:LLMChain &gt; 6:llm:ChatOpenAI] [2.90s] Exiting LLM run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;generations&quot;: [</span><br><span class="line">    [</span><br><span class="line">      &#123;</span><br><span class="line">        &quot;text&quot;: &quot;The names have been sorted correctly based on the last name.\nFinal Answer: [&#x27;Aidan N. Gomez&#x27;, &#x27;Llion Jones&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Illia Polosukhin&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Ashish Vaswani&#x27;]&quot;,</span><br><span class="line">        &quot;generation_info&quot;: &#123;</span><br><span class="line">          &quot;finish_reason&quot;: &quot;stop&quot;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;message&quot;: &#123;</span><br><span class="line">          &quot;lc&quot;: 1,</span><br><span class="line">          &quot;type&quot;: &quot;constructor&quot;,</span><br><span class="line">          &quot;id&quot;: [</span><br><span class="line">            &quot;langchain&quot;,</span><br><span class="line">            &quot;schema&quot;,</span><br><span class="line">            &quot;messages&quot;,</span><br><span class="line">            &quot;AIMessage&quot;</span><br><span class="line">          ],</span><br><span class="line">          &quot;kwargs&quot;: &#123;</span><br><span class="line">            &quot;content&quot;: &quot;The names have been sorted correctly based on the last name.\nFinal Answer: [&#x27;Aidan N. Gomez&#x27;, &#x27;Llion Jones&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Illia Polosukhin&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Ashish Vaswani&#x27;]&quot;,</span><br><span class="line">            &quot;additional_kwargs&quot;: &#123;&#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  ],</span><br><span class="line">  &quot;llm_output&quot;: &#123;</span><br><span class="line">    &quot;token_usage&quot;: &#123;</span><br><span class="line">      &quot;completion_tokens&quot;: 70,</span><br><span class="line">      &quot;prompt_tokens&quot;: 444,</span><br><span class="line">      &quot;total_tokens&quot;: 514</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;model_name&quot;: &quot;gpt-3.5-turbo&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;run&quot;: null</span><br><span class="line">&#125;</span><br><span class="line">[chain/end] [1:chain:AgentExecutor &gt; 5:chain:LLMChain] [2.90s] Exiting Chain run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;text&quot;: &quot;The names have been sorted correctly based on the last name.\nFinal Answer: [&#x27;Aidan N. Gomez&#x27;, &#x27;Llion Jones&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Illia Polosukhin&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Ashish Vaswani&#x27;]&quot;</span><br><span class="line">&#125;</span><br><span class="line">[chain/end] [1:chain:AgentExecutor] [8.12s] Exiting Chain run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;output&quot;: &quot;[&#x27;Aidan N. Gomez&#x27;, &#x27;Llion Jones&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Illia Polosukhin&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Ashish Vaswani&#x27;]&quot;</span><br><span class="line">&#125;</span><br><span class="line">[&#x27;Aidan N. Gomez&#x27;, &#x27;Llion Jones&#x27;, &#x27;Łukasz Kaiser&#x27;, &#x27;Niki Parmar&#x27;, &#x27;Illia Polosukhin&#x27;, &#x27;Noam Shazeer&#x27;, &#x27;Jakob Uszkoreit&#x27;, &#x27;Ashish Vaswani&#x27;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">============================== 1 passed in 9.22s ===============================</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>通过打开 Debug 开关，我们得以见到 LangChain 中 Agent 功能的详细工作流程和日志，简单梳理一下本次请求中 Agent 的工作如下图：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202310251536653.png" alt="Agent工作流程" style="zoom: 67%;" /></p>
+<h1 id="调用自定义工具"><a href="#调用自定义工具" class="headerlink" title="调用自定义工具"></a>调用自定义工具</h1><p>以上的两种方案，其实都有灵活性不足的问题，所以 LangChain 也提供了自定义 Tools 方法，方便开发者根据自己的业务生成 Tools，或者复用已有的 Tools 工具。</p>
+<ol>
+<li>定义好自己的工具方法，并添加 <code>@tool</code> 装饰器。定义工具方法的时候有以下注意事项： - 方法名作为自定义tool的实例名称。 - 方法参数是经过大模型分析之后，送入当前tool的文本信息。 - 方法中必须要存在doc,这个doc会被作为tool的描述信息，提交给大模型用于判断什么时候怎么调用当前tool。</li>
+<li>初始化 agent，并将定义好的工具传入。</li>
+<li>对代理输入问题。</li>
+<li>代理运行过程打开 debug，方便查看运行流程。</li>
+</ol>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">调用自定义工具</span></span><br><span class="line"><span class="string">以上的两种方案，其实都有灵活性不足的问题，所以 LangChain 也提供了自定义 Tools 方法，方便开发者根据自己的业务生成 Tools，或者复用已有的 Tools 工具。</span></span><br><span class="line"><span class="string">1. 定义好自己的工具方法，并添加 @tool 装饰器。定义工具方法的时候有以下注意事项： - 方法名作为自定义tool的实例名称。 - 方法参数是经过大模型分析之后，送入当前tool的文本信息。 - 方法中必须要存在doc,这个doc会被</span></span><br><span class="line"><span class="string">作为tool的描述信息，提交给大模型用于判断什么时候怎么调用当前tool。</span></span><br><span class="line"><span class="string">2. 初始化 agent，并将定义好的工具传入。</span></span><br><span class="line"><span class="string">3. 对代理输入问题。</span></span><br><span class="line"><span class="string">4. 代理运行过程打开 debug，方便查看运行流程。</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">import</span> langchain</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> tool, initialize_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建OpenAI调用实例</span></span><br><span class="line"><span class="comment"># temperature用来设置大模型返回数据的随机性和创造性，较低的数值返回的数据就更贴近现实</span></span><br><span class="line">llm = ChatOpenAI(temperature=<span class="number">0.0</span>, openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                 openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用tool装饰器，可以直接将一个方法转为BaseTool实例，用于放到Agent的tools参数中支持调用</span></span><br><span class="line"><span class="comment"># 编写一个工具，用于将中文文本转换成拼音，以列表的形式返回文本中的每一个字</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">chinese_to_pinyin</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    接收中文文本，返回对应中文的拼音列表，能够将中文转换成拼音的工具，必须要接收一个中文文本作为输入参数，并且返回的时候总是一个列表数据</span></span><br><span class="line"><span class="string">    :param query:</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 方法名作为自定义tool的实例名称</span></span><br><span class="line">    <span class="comment"># query参数是经过大模型分析之后，送入当前tool的文本信息</span></span><br><span class="line">    <span class="comment"># 方法中必须要存在doc,这个doc会被作为tool的描述信息，提交给大模型用于判断什么时候怎么调用当前tool</span></span><br><span class="line">    <span class="comment"># 使用pypinyin库将中文文本转换成拼音</span></span><br><span class="line">    <span class="comment"># 需要事先安装依赖库 pip3 install pypinyin</span></span><br><span class="line">    <span class="keyword">from</span> pypinyin <span class="keyword">import</span> pinyin</span><br><span class="line"></span><br><span class="line">    res = pinyin(query)</span><br><span class="line">    <span class="comment"># 将转换结果的格式修正一下[[&quot;zhong&quot;],[&quot;wen&quot;]] =&gt; &quot;[&#x27;zhong&#x27;,&#x27;wen&#x27;]&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">str</span>([i[<span class="number">0</span>] <span class="keyword">for</span> i <span class="keyword">in</span> res])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">test_custom_tools</span>():</span><br><span class="line">    agent = initialize_agent(</span><br><span class="line">        <span class="comment"># 设置可以使用的工具列表</span></span><br><span class="line">        tools=[chinese_to_pinyin],</span><br><span class="line">        <span class="comment"># 设置逻辑解析所使用的大模型实例</span></span><br><span class="line">        llm=llm,</span><br><span class="line">        <span class="comment"># 打开详细模式，会将agent调用细节输出到控制台</span></span><br><span class="line">        verbose=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 待翻译文本</span></span><br><span class="line">    chinese_str = <span class="string">&quot;打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑&quot;</span></span><br><span class="line">    <span class="comment"># 打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑</span></span><br><span class="line">    langchain.debug = <span class="literal">True</span></span><br><span class="line">    <span class="comment"># 组装成最终的命令字符串，并调用agent运行解析，获取结果</span></span><br><span class="line">    command_str = <span class="string">f&quot;将以下文本转换成拼音: \n<span class="subst">&#123;chinese_str&#125;</span>&quot;</span></span><br><span class="line">    res = agent.run(command_str)</span><br><span class="line">    <span class="comment"># 打印结果</span></span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line">    <span class="comment"># 关闭Debug模式</span></span><br><span class="line">    langchain.debug = <span class="literal">False</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br></pre></td><td class="code"><pre><span class="line">/Users/jeanlv/.pyenv/versions/ai-testing/bin/python /Applications/PyCharm CE.app/Contents/plugins/python-ce/helpers/pycharm/_jb_pytest_runner.py --path /Users/jeanlv/PycharmProjects/tech-langchain/langchain-demo/agents/test_custom_tools.py </span><br><span class="line">Testing started at 16:08 ...</span><br><span class="line">Launching pytest with arguments /Users/jeanlv/PycharmProjects/tech-langchain/langchain-demo/agents/test_custom_tools.py --no-header --no-summary -q in /Users/jeanlv/PycharmProjects/tech-langchain/langchain-demo/agents</span><br><span class="line"></span><br><span class="line">============================= test session starts ==============================</span><br><span class="line">collecting ... collected 1 item</span><br><span class="line"></span><br><span class="line">test_custom_tools.py::test_custom_tools PASSED                           [100%][chain/start] [1:chain:AgentExecutor] Entering Chain run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;input&quot;: &quot;将以下文本转换成拼音: \n打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑&quot;</span><br><span class="line">&#125;</span><br><span class="line">[chain/start] [1:chain:AgentExecutor &gt; 2:chain:LLMChain] Entering Chain run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;input&quot;: &quot;将以下文本转换成拼音: \n打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑&quot;,</span><br><span class="line">  &quot;agent_scratchpad&quot;: &quot;&quot;,</span><br><span class="line">  &quot;stop&quot;: [</span><br><span class="line">    &quot;\nObservation:&quot;,</span><br><span class="line">    &quot;\n\tObservation:&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[llm/start] [1:chain:AgentExecutor &gt; 2:chain:LLMChain &gt; 3:llm:ChatOpenAI] Entering LLM run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;prompts&quot;: [</span><br><span class="line">    &quot;Human: Answer the following questions as best you can. You have access to the following tools:\n\nchinese_to_pinyin: chinese_to_pinyin(query: str) -&gt; str - 接收中文文本，返回对应中文的拼音列表，能够将中文转换成拼音的工具，必须要接收一个中文文本作为输入参数，并且返回的时候总是一个列表数据\n    :param query:\n    :return:\n\nUse the following format:\n\nQuestion: the input question you must answer\nThought: you should always think about what to do\nAction: the action to take, should be one of [chinese_to_pinyin]\nAction Input: the input to the action\nObservation: the result of the action\n... (this Thought/Action/Action Input/Observation can repeat N times)\nThought: I now know the final answer\nFinal Answer: the final answer to the original input question\n\nBegin!\n\nQuestion: 将以下文本转换成拼音: \n打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑\nThought:&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[llm/end] [1:chain:AgentExecutor &gt; 2:chain:LLMChain &gt; 3:llm:ChatOpenAI] [2.66s] Exiting LLM run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;generations&quot;: [</span><br><span class="line">    [</span><br><span class="line">      &#123;</span><br><span class="line">        &quot;text&quot;: &quot;I need to convert the given text into pinyin.\nAction: chinese_to_pinyin\nAction Input: \&quot;打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑\&quot;&quot;,</span><br><span class="line">        &quot;generation_info&quot;: &#123;</span><br><span class="line">          &quot;finish_reason&quot;: &quot;stop&quot;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;message&quot;: &#123;</span><br><span class="line">          &quot;lc&quot;: 1,</span><br><span class="line">          &quot;type&quot;: &quot;constructor&quot;,</span><br><span class="line">          &quot;id&quot;: [</span><br><span class="line">            &quot;langchain&quot;,</span><br><span class="line">            &quot;schema&quot;,</span><br><span class="line">            &quot;messages&quot;,</span><br><span class="line">            &quot;AIMessage&quot;</span><br><span class="line">          ],</span><br><span class="line">          &quot;kwargs&quot;: &#123;</span><br><span class="line">            &quot;content&quot;: &quot;I need to convert the given text into pinyin.\nAction: chinese_to_pinyin\nAction Input: \&quot;打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑\&quot;&quot;,</span><br><span class="line">            &quot;additional_kwargs&quot;: &#123;&#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  ],</span><br><span class="line">  &quot;llm_output&quot;: &#123;</span><br><span class="line">    &quot;token_usage&quot;: &#123;</span><br><span class="line">      &quot;completion_tokens&quot;: 53,</span><br><span class="line">      &quot;prompt_tokens&quot;: 263,</span><br><span class="line">      &quot;total_tokens&quot;: 316</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;model_name&quot;: &quot;gpt-3.5-turbo&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;run&quot;: null</span><br><span class="line">&#125;</span><br><span class="line">[chain/end] [1:chain:AgentExecutor &gt; 2:chain:LLMChain] [2.66s] Exiting Chain run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;text&quot;: &quot;I need to convert the given text into pinyin.\nAction: chinese_to_pinyin\nAction Input: \&quot;打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑\&quot;&quot;</span><br><span class="line">&#125;</span><br><span class="line">[tool/start] [1:chain:AgentExecutor &gt; 4:tool:chinese_to_pinyin] Entering Tool run with input:</span><br><span class="line">&quot;打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑&quot;</span><br><span class="line">[tool/end] [1:chain:AgentExecutor &gt; 4:tool:chinese_to_pinyin] [141ms] Exiting Tool run with output:</span><br><span class="line">&quot;[&#x27;dǎ&#x27;, &#x27;kāi&#x27;, &#x27;Debug&#x27;, &#x27;mó&#x27;, &#x27;shì&#x27;, &#x27;，&#x27;, &#x27;jiāng&#x27;, &#x27;huì&#x27;, &#x27;shū&#x27;, &#x27;chū&#x27;, &#x27;gèng&#x27;, &#x27;xiáng&#x27;, &#x27;xì&#x27;, &#x27;de&#x27;, &#x27;rì&#x27;, &#x27;zhì&#x27;, &#x27;xìn&#x27;, &#x27;xī&#x27;, &#x27;，&#x27;, &#x27;fāng&#x27;, &#x27;biàn&#x27;, &#x27;liǎo&#x27;, &#x27;jiě&#x27;, &#x27;zhěng&#x27;, &#x27;tǐ&#x27;, &#x27;yùn&#x27;, &#x27;xíng&#x27;, &#x27;luó&#x27;, &#x27;jí&#x27;]&quot;</span><br><span class="line">[chain/start] [1:chain:AgentExecutor &gt; 5:chain:LLMChain] Entering Chain run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;input&quot;: &quot;将以下文本转换成拼音: \n打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑&quot;,</span><br><span class="line">  &quot;agent_scratchpad&quot;: &quot;I need to convert the given text into pinyin.\nAction: chinese_to_pinyin\nAction Input: \&quot;打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑\&quot;\nObservation: [&#x27;dǎ&#x27;, &#x27;kāi&#x27;, &#x27;Debug&#x27;, &#x27;mó&#x27;, &#x27;shì&#x27;, &#x27;，&#x27;, &#x27;jiāng&#x27;, &#x27;huì&#x27;, &#x27;shū&#x27;, &#x27;chū&#x27;, &#x27;gèng&#x27;, &#x27;xiáng&#x27;, &#x27;xì&#x27;, &#x27;de&#x27;, &#x27;rì&#x27;, &#x27;zhì&#x27;, &#x27;xìn&#x27;, &#x27;xī&#x27;, &#x27;，&#x27;, &#x27;fāng&#x27;, &#x27;biàn&#x27;, &#x27;liǎo&#x27;, &#x27;jiě&#x27;, &#x27;zhěng&#x27;, &#x27;tǐ&#x27;, &#x27;yùn&#x27;, &#x27;xíng&#x27;, &#x27;luó&#x27;, &#x27;jí&#x27;]\nThought:&quot;,</span><br><span class="line">  &quot;stop&quot;: [</span><br><span class="line">    &quot;\nObservation:&quot;,</span><br><span class="line">    &quot;\n\tObservation:&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[llm/start] [1:chain:AgentExecutor &gt; 5:chain:LLMChain &gt; 6:llm:ChatOpenAI] Entering LLM run with input:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;prompts&quot;: [</span><br><span class="line">    &quot;Human: Answer the following questions as best you can. You have access to the following tools:\n\nchinese_to_pinyin: chinese_to_pinyin(query: str) -&gt; str - 接收中文文本，返回对应中文的拼音列表，能够将中文转换成拼音的工具，必须要接收一个中文文本作为输入参数，并且返回的时候总是一个列表数据\n    :param query:\n    :return:\n\nUse the following format:\n\nQuestion: the input question you must answer\nThought: you should always think about what to do\nAction: the action to take, should be one of [chinese_to_pinyin]\nAction Input: the input to the action\nObservation: the result of the action\n... (this Thought/Action/Action Input/Observation can repeat N times)\nThought: I now know the final answer\nFinal Answer: the final answer to the original input question\n\nBegin!\n\nQuestion: 将以下文本转换成拼音: \n打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑\nThought:I need to convert the given text into pinyin.\nAction: chinese_to_pinyin\nAction Input: \&quot;打开Debug模式，将会输出更详细的日志信息，方便了解整体运行逻辑\&quot;\nObservation: [&#x27;dǎ&#x27;, &#x27;kāi&#x27;, &#x27;Debug&#x27;, &#x27;mó&#x27;, &#x27;shì&#x27;, &#x27;，&#x27;, &#x27;jiāng&#x27;, &#x27;huì&#x27;, &#x27;shū&#x27;, &#x27;chū&#x27;, &#x27;gèng&#x27;, &#x27;xiáng&#x27;, &#x27;xì&#x27;, &#x27;de&#x27;, &#x27;rì&#x27;, &#x27;zhì&#x27;, &#x27;xìn&#x27;, &#x27;xī&#x27;, &#x27;，&#x27;, &#x27;fāng&#x27;, &#x27;biàn&#x27;, &#x27;liǎo&#x27;, &#x27;jiě&#x27;, &#x27;zhěng&#x27;, &#x27;tǐ&#x27;, &#x27;yùn&#x27;, &#x27;xíng&#x27;, &#x27;luó&#x27;, &#x27;jí&#x27;]\nThought:&quot;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br><span class="line">[llm/end] [1:chain:AgentExecutor &gt; 5:chain:LLMChain &gt; 6:llm:ChatOpenAI] [4.95s] Exiting LLM run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;generations&quot;: [</span><br><span class="line">    [</span><br><span class="line">      &#123;</span><br><span class="line">        &quot;text&quot;: &quot;The given text has been converted into pinyin.\nFinal Answer: [&#x27;dǎ&#x27;, &#x27;kāi&#x27;, &#x27;Debug&#x27;, &#x27;mó&#x27;, &#x27;shì&#x27;, &#x27;，&#x27;, &#x27;jiāng&#x27;, &#x27;huì&#x27;, &#x27;shū&#x27;, &#x27;chū&#x27;, &#x27;gèng&#x27;, &#x27;xiáng&#x27;, &#x27;xì&#x27;, &#x27;de&#x27;, &#x27;rì&#x27;, &#x27;zhì&#x27;, &#x27;xìn&#x27;, &#x27;xī&#x27;, &#x27;，&#x27;, &#x27;fāng&#x27;, &#x27;biàn&#x27;, &#x27;liǎo&#x27;, &#x27;jiě&#x27;, &#x27;zhěng&#x27;, &#x27;tǐ&#x27;, &#x27;yùn&#x27;, &#x27;xíng&#x27;, &#x27;luó&#x27;, &#x27;jí&#x27;]&quot;,</span><br><span class="line">        &quot;generation_info&quot;: &#123;</span><br><span class="line">          &quot;finish_reason&quot;: &quot;stop&quot;</span><br><span class="line">        &#125;,</span><br><span class="line">        &quot;message&quot;: &#123;</span><br><span class="line">          &quot;lc&quot;: 1,</span><br><span class="line">          &quot;type&quot;: &quot;constructor&quot;,</span><br><span class="line">          &quot;id&quot;: [</span><br><span class="line">            &quot;langchain&quot;,</span><br><span class="line">            &quot;schema&quot;,</span><br><span class="line">            &quot;messages&quot;,</span><br><span class="line">            &quot;AIMessage&quot;</span><br><span class="line">          ],</span><br><span class="line">          &quot;kwargs&quot;: &#123;</span><br><span class="line">            &quot;content&quot;: &quot;The given text has been converted into pinyin.\nFinal Answer: [&#x27;dǎ&#x27;, &#x27;kāi&#x27;, &#x27;Debug&#x27;, &#x27;mó&#x27;, &#x27;shì&#x27;, &#x27;，&#x27;, &#x27;jiāng&#x27;, &#x27;huì&#x27;, &#x27;shū&#x27;, &#x27;chū&#x27;, &#x27;gèng&#x27;, &#x27;xiáng&#x27;, &#x27;xì&#x27;, &#x27;de&#x27;, &#x27;rì&#x27;, &#x27;zhì&#x27;, &#x27;xìn&#x27;, &#x27;xī&#x27;, &#x27;，&#x27;, &#x27;fāng&#x27;, &#x27;biàn&#x27;, &#x27;liǎo&#x27;, &#x27;jiě&#x27;, &#x27;zhěng&#x27;, &#x27;tǐ&#x27;, &#x27;yùn&#x27;, &#x27;xíng&#x27;, &#x27;luó&#x27;, &#x27;jí&#x27;]&quot;,</span><br><span class="line">            &quot;additional_kwargs&quot;: &#123;&#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    ]</span><br><span class="line">  ],</span><br><span class="line">  &quot;llm_output&quot;: &#123;</span><br><span class="line">    &quot;token_usage&quot;: &#123;</span><br><span class="line">      &quot;completion_tokens&quot;: 138,</span><br><span class="line">      &quot;prompt_tokens&quot;: 445,</span><br><span class="line">      &quot;total_tokens&quot;: 583</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;model_name&quot;: &quot;gpt-3.5-turbo&quot;</span><br><span class="line">  &#125;,</span><br><span class="line">  &quot;run&quot;: null</span><br><span class="line">&#125;</span><br><span class="line">[chain/end] [1:chain:AgentExecutor &gt; 5:chain:LLMChain] [4.95s] Exiting Chain run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;text&quot;: &quot;The given text has been converted into pinyin.\nFinal Answer: [&#x27;dǎ&#x27;, &#x27;kāi&#x27;, &#x27;Debug&#x27;, &#x27;mó&#x27;, &#x27;shì&#x27;, &#x27;，&#x27;, &#x27;jiāng&#x27;, &#x27;huì&#x27;, &#x27;shū&#x27;, &#x27;chū&#x27;, &#x27;gèng&#x27;, &#x27;xiáng&#x27;, &#x27;xì&#x27;, &#x27;de&#x27;, &#x27;rì&#x27;, &#x27;zhì&#x27;, &#x27;xìn&#x27;, &#x27;xī&#x27;, &#x27;，&#x27;, &#x27;fāng&#x27;, &#x27;biàn&#x27;, &#x27;liǎo&#x27;, &#x27;jiě&#x27;, &#x27;zhěng&#x27;, &#x27;tǐ&#x27;, &#x27;yùn&#x27;, &#x27;xíng&#x27;, &#x27;luó&#x27;, &#x27;jí&#x27;]&quot;</span><br><span class="line">&#125;</span><br><span class="line">[chain/end] [1:chain:AgentExecutor] [7.76s] Exiting Chain run with output:</span><br><span class="line">&#123;</span><br><span class="line">  &quot;output&quot;: &quot;[&#x27;dǎ&#x27;, &#x27;kāi&#x27;, &#x27;Debug&#x27;, &#x27;mó&#x27;, &#x27;shì&#x27;, &#x27;，&#x27;, &#x27;jiāng&#x27;, &#x27;huì&#x27;, &#x27;shū&#x27;, &#x27;chū&#x27;, &#x27;gèng&#x27;, &#x27;xiáng&#x27;, &#x27;xì&#x27;, &#x27;de&#x27;, &#x27;rì&#x27;, &#x27;zhì&#x27;, &#x27;xìn&#x27;, &#x27;xī&#x27;, &#x27;，&#x27;, &#x27;fāng&#x27;, &#x27;biàn&#x27;, &#x27;liǎo&#x27;, &#x27;jiě&#x27;, &#x27;zhěng&#x27;, &#x27;tǐ&#x27;, &#x27;yùn&#x27;, &#x27;xíng&#x27;, &#x27;luó&#x27;, &#x27;jí&#x27;]&quot;</span><br><span class="line">&#125;</span><br><span class="line">[&#x27;dǎ&#x27;, &#x27;kāi&#x27;, &#x27;Debug&#x27;, &#x27;mó&#x27;, &#x27;shì&#x27;, &#x27;，&#x27;, &#x27;jiāng&#x27;, &#x27;huì&#x27;, &#x27;shū&#x27;, &#x27;chū&#x27;, &#x27;gèng&#x27;, &#x27;xiáng&#x27;, &#x27;xì&#x27;, &#x27;de&#x27;, &#x27;rì&#x27;, &#x27;zhì&#x27;, &#x27;xìn&#x27;, &#x27;xī&#x27;, &#x27;，&#x27;, &#x27;fāng&#x27;, &#x27;biàn&#x27;, &#x27;liǎo&#x27;, &#x27;jiě&#x27;, &#x27;zhěng&#x27;, &#x27;tǐ&#x27;, &#x27;yùn&#x27;, &#x27;xíng&#x27;, &#x27;luó&#x27;, &#x27;jí&#x27;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">============================== 1 passed in 8.79s ===============================</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/09/20/ai/langchain/4-langchain-models/" rel="prev" title="LangChain核心模块models（早期）">
+      <i class="fa fa-chevron-left"></i> LangChain核心模块models（早期）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/09/22/ai/langchain/5-langchain-chains/" rel="next" title="LangChain核心模块chains（早期）">
+      LangChain核心模块chains（早期） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Agents%E4%B8%BB%E8%A6%81%E8%83%BD%E5%8A%9B"><span class="nav-number">1.1.</span> <span class="nav-text">Agents主要能力</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E5%8E%9F%E7%90%86"><span class="nav-number">1.2.</span> <span class="nav-text">设计原理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E7%94%A8%E5%86%85%E7%BD%AETools"><span class="nav-number">2.</span> <span class="nav-text">调用内置Tools</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E7%94%A8%E5%86%85%E7%BD%AE%E7%BB%84%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">调用内置组件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B7%A5%E5%85%B7"><span class="nav-number">4.</span> <span class="nav-text">调用自定义工具</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">124</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">23</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

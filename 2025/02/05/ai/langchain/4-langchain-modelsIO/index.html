@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第九讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain ModelsIO">
+<meta property="og:url" content="https://jinglv.github.io/2025/02/05/ai/langchain/4-langchain-modelsIO/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第九讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309141435993.png">
+<meta property="article:published_time" content="2025-02-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-02-05T06:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309141435993.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/02/05/ai/langchain/4-langchain-modelsIO/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain ModelsIO | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/02/05/ai/langchain/4-langchain-modelsIO/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain ModelsIO
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-02-05 00:00:00 / 修改时间：14:30:00" itemprop="dateCreated datePublished" datetime="2025-02-05T00:00:00+08:00">2025-02-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第九讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>LangChain实质上是对大语言模型（LLM）的一个扩展封装，其主要目的仍然是为了更好的使用大语言模型。</p>
+<p>通过LangChain，用户可以通过输入文本或补充模版信息来获取符合需求的文本输出。不难看出LangChain最终操作的结果都是字符串，因此在使用过程中不可避免地涉及到大量的文本处理工作，例如输入的格式化和输出结果的解析等。</p>
+<p>第一个核心概念就是 Prompts Models Parsers，也有人叫做 ModelsIO，他们代表了对一次大模型请求的完整周期。</p>
+<h1 id="Models-I-O的应用场景"><a href="#Models-I-O的应用场景" class="headerlink" title="Models I/O的应用场景"></a>Models I/O的应用场景</h1><p>文本处理工作即负责又重复，对于开发者来说是一个必要但不重要的繁琐步骤。</p>
+<p>LangChain深知文本处理的通电，因此提供了<code>Prompt Template</code>和<code>Output Parser</code>抽象。用户可以根据自己的需求选择合适的实现类型，从而简化文本处理工作，提高开发效率。I/O最主要的需求包含以下两个部分：</p>
+<ul>
+<li><code>Prompt Templates</code>:负责请求数据的准备步骤</li>
+<li><code>Output Parser</code>:用于解析输出结果</li>
+</ul>
+<p>这样开发者就可以专注于业务逻辑的实现，而无需过多关注底层的文本处理细节。这种抽象的设计使得LangChain在大语言模型应用开发中具有更强的灵活性和可扩展性。</p>
+<h1 id="Models-I-O-主要模块"><a href="#Models-I-O-主要模块" class="headerlink" title="Models I/O 主要模块"></a>Models I/O 主要模块</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309141435993.png" alt="官网-ModelI/O"></p>
+<p>从上图可以看出，我们把对模型的使用拆解成三块，分别是<strong>输入提示</strong>（对应图中的Format）、<strong>调用模型</strong>（对应图中的Predict）和<strong>输出解析</strong>（对应图中的Parse）。</p>
+<ul>
+<li>Prompts（提示模版）：负责请求数据的准备步骤，把提示信息输入到模型中</li>
+<li>Model（语言模型）：负责具体请求和参数，调用语言模型</li>
+<li>Parsers（输出解析）：负责请求结果返回后的处理步骤，提取模型输出的信息</li>
+</ul>
+<p>三者共同作用，完整的覆盖了整个大模型请求。</p>
+<h2 id="Prompts"><a href="#Prompts" class="headerlink" title="Prompts"></a>Prompts</h2><p>提示指的是将用户输入转换为语言模型的输入。这个提示由提示模板完成，它将用户的输入转换为一系列消息列表或最终的字符串对象。LangChain提供了多种抽象，使得操作提示变得更加简单和灵活。</p>
+<p>包含以下几种类型：</p>
+<ul>
+<li><code>PromptValue</code>:包含一个要转换为字符串的方法，以及一个要转换为消息列表的方法。</li>
+<li><code>PromptTemplate</code>:由模版字符串组成，格式化用户输入转为大语言模型的输入。</li>
+<li><code>MessagePromptTemplate</code>:由模版消息和一个PromptTemplate组成，将用户输入进行格式化，以生成最终字符串，即为消息的content。</li>
+<li><code>MessagePlaceholder</code>:消息的输入可以是消息列表。</li>
+<li><code>ChatPromptTemplate</code>:由MessagePromptTemplate和MessagesPlaceholder的列表组成，根据用户输入对这些内容进行格式化以生成最后的消息列表。</li>
+</ul>
+<h2 id="Models"><a href="#Models" class="headerlink" title="Models"></a>Models</h2><p>LangChain集成的模型主要有两个类型：LLMs和聊天模型。</p>
+<ul>
+<li>LLMs：指的是纯文本补全模型，包装的API将字符串提示作为输入并输出字符串完成。</li>
+<li>Chat Models：聊天模型在LLMs的基础上针对对话进行了调整。将包含聊天消息的列表作为输入。</li>
+</ul>
+<p>不同模型适合不同的提示策略，这意味着为一种模型设计的优化提示可能无法直接应用于其他模型。虽然LangChain提供了许多默认提示，但无法保证这些默认提示在所有模型中都能发挥良好的效果。</p>
+<h3 id="Message类型"><a href="#Message类型" class="headerlink" title="Message类型"></a>Message类型</h3><p>ChatModels将详细列表作为输入并返回消息。所有消息都有一个role和content属性。role代表消息的发出者是谁，content小数了消息的具体内容，可能是几种不同的内容形式。</p>
+<p>除了上述两种类型外，消息还有一个additional_kwargs的属性，可以传递消息的附加消息，例如OpenAI的function_all。</p>
+<p>Message有以下几种类型：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HumanMessage</td>
+<td>代表用户的消息</td>
+</tr>
+<tr>
+<td>AIMessage</td>
+<td>代表模型输出的消息</td>
+</tr>
+<tr>
+<td>SystemMessage</td>
+<td>代表系统消息</td>
+</tr>
+<tr>
+<td>FunctionMessage</td>
+<td>表示函数调用的结果，该参数为被调用的函数的名称</td>
+</tr>
+<tr>
+<td>ToolMessage</td>
+<td>表示工具调用的结果，对应匹配OpenAI的function和tool消息类型</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="Output-Parsers"><a href="#Output-Parsers" class="headerlink" title="Output Parsers"></a>Output Parsers</h2><p>输出解析器是用来处理模型生成的文本输出的组件，它接收模型的输出并将其转换为更易于使用的形式。</p>
+<p>通常，输出解析器会将模型输出中的信息提取出来，特别是针对输出信息中的内容部分，有时也会处理额外的参数，如additional_kwargs字段中的值。</p>
+<p>常见的输出解析器类型有如下几种：</p>
+<ul>
+<li><code>StrOutputParser</code>:把语言模型的输出转换为字符串</li>
+<li><code>OpenAI Functions Parsers</code>:用于处理OpenAI函数调用，获取并使用function_call和arguments参数</li>
+<li><code>Agent Output Parsers</code>:根据用户输入和应用场景，选择合适的方案来执行操作</li>
+</ul>
+<h1 id="LangChain-ModelsIO-Promopts"><a href="#LangChain-ModelsIO-Promopts" class="headerlink" title="LangChain ModelsIO Promopts"></a>LangChain ModelsIO Promopts</h1><p>在LangChain Models中输入和输出同样重要，Promots即为对输入信息的处理，这些提示是用户提供给模型的一组指令或输入，旨在触发模型生成响应并协助理解上，以生成相关且连贯的语言的输出。</p>
+<p>但是涉及到提示的内容过于冗长，并且很多事重复且不需要每次关注的内容，为了简化这一过程并提高效率，Prompts提供了许多模版类型，使得输入步骤变得更加简洁高效。</p>
+<h2 id="Prompts的优点"><a href="#Prompts的优点" class="headerlink" title="Prompts的优点"></a>Prompts的优点</h2><p>LangChain提供的常见模版能够帮助用户快速构建适当的输入，以获得相对准确的输出结果。</p>
+<p>LangChain的目标是创建出于模型无关的模板，以便能够轻松地跨不同语言模板重用现有模板。</p>
+<p>模板可以包括说明、少量示例以及适合给定任务的特定上下文和问题。</p>
+<p>并且所有模板都实现了Runnable接口，在内部完成对于Runnable的实现，这样用户可以轻松的使用LCEL将prompt与其他的Runnable对象连接起来。</p>
+<h2 id="实战示例"><a href="#实战示例" class="headerlink" title="实战示例"></a>实战示例</h2><h3 id="PromptTemplate提示模板的用法"><a href="#PromptTemplate提示模板的用法" class="headerlink" title="PromptTemplate提示模板的用法"></a>PromptTemplate提示模板的用法</h3><p>使用PromptTemplate创建字符串提示模板，默认情况下PromptTemplate使用的Python的str.format语法进行模板化。</p>
+<p>用户只需要自定义的消息提示语，将不同部分用插值的方式表示来自定义提示模板。</p>
+<p>PromptTemplate支持多个变量，如下代码所示：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个包含两个变量的提示模板</span></span><br><span class="line">prompt = PromptTemplate.from_template(<span class="string">&quot;给出一个&#123;topic&#125;的广告，它的价格是&#123;price&#125;￥，广告需要能够引起用户的兴趣&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 格式化并传入参数</span></span><br><span class="line">res = prompt.<span class="built_in">format</span>(topic=<span class="string">&#x27;冰淇淋&#x27;</span>, price=<span class="number">3</span>)</span><br><span class="line"><span class="built_in">print</span>(res)</span><br></pre></td></tr></table></figure>
+<p>除了支持多个变量之外，还支持无变量的形式，如下代码所示：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个无变量的提示模板</span></span><br><span class="line">prompt = PromptTemplate.from_template(<span class="string">&quot;告诉我一个广告&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 格式化并传入参数</span></span><br><span class="line">res = prompt.<span class="built_in">format</span>()</span><br><span class="line"><span class="built_in">print</span>(res)</span><br></pre></td></tr></table></figure>
+<p><strong>LCEL表达式</strong></p>
+<p>PromptTemplate接收字典并返回StringPromptValue</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个包含两个变量的提示模板</span></span><br><span class="line">prompt = PromptTemplate.from_template(<span class="string">&quot;给出一个&#123;topic&#125;的广告，它的价格是&#123;price&#125;￥，广告需要能够引起用户的兴趣&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># invoke调用</span></span><br><span class="line">prompt_val = prompt.invoke(&#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰淇淋&#x27;</span>, <span class="string">&#x27;price&#x27;</span>: <span class="number">3</span>&#125;)</span><br><span class="line"><span class="built_in">print</span>(prompt_val)</span><br></pre></td></tr></table></figure>
+<p>执行输出内容：text=’给出一个冰淇淋的广告，它的价格是3￥，广告需要能够引起用户的兴趣’</p>
+<p>通过to_string()方法能够将结果转换为字符串</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个包含两个变量的提示模板</span></span><br><span class="line">prompt = PromptTemplate.from_template(<span class="string">&quot;给出一个&#123;topic&#125;的广告，它的价格是&#123;price&#125;￥，广告需要能够引起用户的兴趣&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># invoke调用</span></span><br><span class="line">prompt_val = prompt.invoke(&#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰淇淋&#x27;</span>, <span class="string">&#x27;price&#x27;</span>: <span class="number">3</span>&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 转换为字符串</span></span><br><span class="line">prompt_val_str = prompt_val.to_string()</span><br><span class="line"><span class="built_in">print</span>(prompt_val_str)</span><br></pre></td></tr></table></figure>
+<p>执行输出内容：给出一个冰淇淋的广告，它的价格是3￥，广告需要能够引起用户的兴趣</p>
+<h3 id="ChatPromptTemplate聊天提示模版的用法"><a href="#ChatPromptTemplate聊天提示模版的用法" class="headerlink" title="ChatPromptTemplate聊天提示模版的用法"></a>ChatPromptTemplate聊天提示模版的用法</h3><p>聊天模型的提示是聊天消息列表，传入时需要传入一个消息的列表，其中传入的消息都需要与OpenAI消息列表的role相关，每个role对应的有不同的文本描述用来串联上下文，LangChain同样提供的形式来完成对role和content的定义，以实现更为方便的构建聊天提示。</p>
+<p>聊天提示模板有两种书写方式：</p>
+<ul>
+<li>二元组</li>
+<li>MessagePromptTemplate或BaseMessage的实例</li>
+</ul>
+<p>代码示例如下所示：</p>
+<p><strong>传入二元组</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 二元组</span></span><br><span class="line"><span class="comment"># 制定模板</span></span><br><span class="line">chat_prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一个游戏的npc，有三个任务让玩家完成，需要给出玩家三个任务，并且规定出完成的标准&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;你好，我是这个游戏的玩家&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;ai&quot;</span>, <span class="string">&quot;&#123;user&#125; 玩家你好，欢迎来到这个游戏&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;user_input&#125;&quot;</span>)</span><br><span class="line">])</span><br><span class="line"><span class="comment"># 格式化消息列表，并且传入参数</span></span><br><span class="line">message = chat_prompt.format_messages(user=<span class="string">&#x27;萧炎&#x27;</span>, user_input=<span class="string">&quot;你好，我需要做什么&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(message)</span><br></pre></td></tr></table></figure>
+<p>执行输出结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[SystemMessage(content=&#x27;你是一个游戏的npc，有三个任务让玩家完成，需要给出玩家三个任务，并且规定出完成的标准&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), HumanMessage(content=&#x27;你好，我是这个游戏的玩家&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), AIMessage(content=&#x27;萧炎 玩家你好，欢迎来到这个游戏&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), HumanMessage(content=&#x27;你好，我需要做什么&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;)]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><strong>传入示例</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate, HumanMessagePromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 传入SystemMessage HumanMessagePromptTemplate实例</span></span><br><span class="line">chat_template = ChatPromptTemplate.from_messages([</span><br><span class="line">    SystemMessage(content=(</span><br><span class="line">        <span class="string">&quot;你是一个擅长制定计划的助手&quot;</span>,</span><br><span class="line">        <span class="string">&quot;计划需要贴合用户需求，给出详细的时间节点和任务指标&quot;</span></span><br><span class="line">    )),</span><br><span class="line">    HumanMessagePromptTemplate.from_template(<span class="string">&quot;&#123;user_req&#125;&quot;</span>)</span><br><span class="line">])</span><br><span class="line">message_o = chat_template.format_messages(user_req=<span class="string">&quot;我想要一个履行计划&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(message_o)</span><br></pre></td></tr></table></figure>
+<p>执行输出结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[SystemMessage(content=[&#x27;你是一个擅长制定计划的助手&#x27;, &#x27;计划需要贴合用户需求，给出详细的时间节点和任务指标&#x27;], additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), HumanMessage(content=&#x27;我想要一个履行计划&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;)]</span><br></pre></td></tr></table></figure>
+<p><strong>LCEL表达式</strong></p>
+<p>ChatPromptValue接收字典并返回转换后消息的值。可以转换为消息列表或者转换为字符串。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 制定模板</span></span><br><span class="line">chat_prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一个游戏的npc，有三个任务让玩家完成，需要给出玩家三个任务，并且规定出完成的标准&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;你好，我是这个游戏的玩家&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;ai&quot;</span>, <span class="string">&quot;&#123;user&#125; 玩家你好，欢迎来到这个游戏&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;user_input&#125;&quot;</span>)</span><br><span class="line">])</span><br><span class="line"><span class="comment"># LCEL表达式，使用invoke调用</span></span><br><span class="line">chat_val = chat_prompt.invoke(&#123;<span class="string">&quot;user&quot;</span>: <span class="string">&quot;萧炎&quot;</span>, <span class="string">&quot;user_input&quot;</span>: <span class="string">&quot;你好，我需要做什么&quot;</span>&#125;)</span><br><span class="line"><span class="built_in">print</span>(chat_val)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;================================================&quot;</span>)</span><br><span class="line"><span class="comment"># 转换为字符串</span></span><br><span class="line">chat_val_str = chat_val.to_string()</span><br><span class="line"><span class="built_in">print</span>(chat_val_str)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;================================================&quot;</span>)</span><br><span class="line"><span class="comment"># 转换为消息列表</span></span><br><span class="line">chat_val_message = chat_val.to_messages()</span><br><span class="line"><span class="built_in">print</span>(chat_val_message)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行输出结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">messages=[SystemMessage(content=&#x27;你是一个游戏的npc，有三个任务让玩家完成，需要给出玩家三个任务，并且规定出完成的标准&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), HumanMessage(content=&#x27;你好，我是这个游戏的玩家&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), AIMessage(content=&#x27;萧炎 玩家你好，欢迎来到这个游戏&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), HumanMessage(content=&#x27;你好，我需要做什么&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;)]</span><br><span class="line">================================================</span><br><span class="line">System: 你是一个游戏的npc，有三个任务让玩家完成，需要给出玩家三个任务，并且规定出完成的标准</span><br><span class="line">Human: 你好，我是这个游戏的玩家</span><br><span class="line">AI: 萧炎 玩家你好，欢迎来到这个游戏</span><br><span class="line">Human: 你好，我需要做什么</span><br><span class="line">================================================</span><br><span class="line">[SystemMessage(content=&#x27;你是一个游戏的npc，有三个任务让玩家完成，需要给出玩家三个任务，并且规定出完成的标准&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), HumanMessage(content=&#x27;你好，我是这个游戏的玩家&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), AIMessage(content=&#x27;萧炎 玩家你好，欢迎来到这个游戏&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;), HumanMessage(content=&#x27;你好，我需要做什么&#x27;, additional_kwargs=&#123;&#125;, response_metadata=&#123;&#125;)]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h1 id="LangChain-ModelsIO-LLM"><a href="#LangChain-ModelsIO-LLM" class="headerlink" title="LangChain ModelsIO LLM"></a>LangChain ModelsIO LLM</h1><p>LangChain本质上还是对大语言模型的封装，其设计旨在简化对LLM的应用，并使用不局限于特定的大语言模型。所以，大语言模型（LLM）仍然是LangChain的核心组件。</p>
+<h2 id="LLMs模块的优势"><a href="#LLMs模块的优势" class="headerlink" title="LLMs模块的优势"></a>LLMs模块的优势</h2><p>LangChain并不会提供LLM是，而是通过提供一个统一的接口来适配不同的大语言模型，以便用户可以根据自己的需求来选择合适的模型进行调用。</p>
+<p>通过LLMs模块这样的设计使得LangChain在使用大型语言模型进行应用开发时具有更大的灵活性和可扩展性。开发者可以专注于业务逻辑的实现，而无需担心底层的模型选择和集成细节。</p>
+<h2 id="实战示例-1"><a href="#实战示例-1" class="headerlink" title="实战示例"></a>实战示例</h2><p>使用OpenAI的LLM，需要安装对应的包，安装命令：<code>pip install langchain_openai</code></p>
+<p><strong>调用模型示例</strong></p>
+<p>直接实例化模型，并且使用两种方式调用：nvoke和batch，代码如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/6 08:44</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># ChatGPT模型调用对象</span></span><br><span class="line">llm = OpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">             openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"><span class="comment"># 输入提示词模板中的变量部分，调用链会自动完成后续的调用和解析</span></span><br><span class="line"><span class="comment"># invoke调用</span></span><br><span class="line">res = llm.invoke(<span class="string">&quot;给出一个宣传语&quot;</span>)</span><br><span class="line"><span class="comment"># batch调用</span></span><br><span class="line">res_batch = llm.batch([<span class="string">&quot;给出一个宣传语&quot;</span>, <span class="string">&quot;将静夜思翻译为英文&quot;</span>])</span><br><span class="line"><span class="built_in">print</span>(res)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;================================================================&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(res_batch)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>结合之前学到的模板，可以将代码优化为</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/6 08:44</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># ChatGPT模型调用对象</span></span><br><span class="line">llm = OpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">             openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"><span class="comment"># 提示词模版</span></span><br><span class="line">prompt = PromptTemplate.from_template(<span class="string">&quot;给出一个关于&#123;goods&#125;的宣传语&quot;</span>)</span><br><span class="line"><span class="comment"># 将提示词模板与大模型组合为一个调用链</span></span><br><span class="line">chain = prompt | llm</span><br><span class="line"><span class="comment"># 输入提示词模板中的变量部分，调用链会自动完成后续的调用和解析</span></span><br><span class="line"><span class="comment"># invoke调用</span></span><br><span class="line">res = chain.invoke(&#123;<span class="string">&quot;goods&quot;</span>: <span class="string">&quot;鲜花&quot;</span>&#125;)</span><br><span class="line"><span class="comment"># batch调用</span></span><br><span class="line">res_batch = chain.batch([&#123;<span class="string">&quot;goods&quot;</span>: <span class="string">&quot;鲜花&quot;</span>&#125;])</span><br><span class="line"><span class="built_in">print</span>(res)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;================================================================&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(res_batch)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="扩展用法"><a href="#扩展用法" class="headerlink" title="扩展用法"></a>扩展用法</h2><ul>
+<li>自定义LLM：允许用户自定义LLM的功能，增加灵活性</li>
+<li>缓存：添加缓存，加快运行速度</li>
+<li>Stream流：支持返回一个迭代器，包含每次的回答结果</li>
+</ul>
+<h1 id="LangChain-ModelsIO-ChatModels"><a href="#LangChain-ModelsIO-ChatModels" class="headerlink" title="LangChain ModelsIO ChatModels"></a>LangChain ModelsIO ChatModels</h1><p>聊天模型ChatModels是Models的一种变体，基于语言模型的基础上进行了优化。不同于传统的语言模型，ChatModes更适合对话场景，因为它是基于消息进行响应和返回的。这意味着用户可以像与真人交流一样与ChatModels进行对话，而不需要提供原始文本。</p>
+<h2 id="ChatModels与Models区别"><a href="#ChatModels与Models区别" class="headerlink" title="ChatModels与Models区别"></a>ChatModels与Models区别</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Models</th>
+<th>ChatModels</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>应用场景</td>
+<td>文本生成、机器翻译、信息检索</td>
+<td>智能客服、虚拟助手、社交机器人</td>
+</tr>
+<tr>
+<td>输入</td>
+<td>原始文本</td>
+<td>消息形式</td>
+</tr>
+<tr>
+<td>输出</td>
+<td>单一的文本</td>
+<td>消息形式</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>语言模型：更加侧重于文件生成和理解，适用于各种文本处理和自然语言理解任务</li>
+<li>聊天模型：更加侧重于与用户进行自然语言交流</li>
+</ul>
+<h2 id="Messages类型"><a href="#Messages类型" class="headerlink" title="Messages类型"></a>Messages类型</h2><p>上述提到ChatModels基于的是消息而不是文本本身，所以消息也是ChatModels的重要组成部分。</p>
+<p>在传入时，可以使用默认<code>List[BaseMessage]</code>的形式传入消息不指定消息发出者，同时也可以将消息对象转换为LangChain定义好的几种消息类型，如下所示：</p>
+<ul>
+<li><code>HumanMessage</code>：代表用户的消息</li>
+<li><code>AIMessage</code>：代表模型输出的消息</li>
+<li><code>SystemMessage</code>：代表系统消息</li>
+<li><code>FunctionMessage</code>：表示函数调用的结果，该参数为被调用的函数的名称</li>
+<li><code>ToolMessage</code>：表示工具调用的结果，与FunctionMessage不同，是为了匹配OpenAI的function和tool消息类型</li>
+</ul>
+<h2 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h2><h3 id="List-BaseMessage-形式"><a href="#List-BaseMessage-形式" class="headerlink" title="List[BaseMessage]形式"></a>List[BaseMessage]形式</h3><p>聊天模型支持传入基础消息的列表作为输入，列表中的内容需要包含role和content所组成的字典形式，代码示例如下所示：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/6 09:17</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># ChatGPT模型调用对象</span></span><br><span class="line">llm = OpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">             openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line">messages = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一个制定方案的助手&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请给出我一个旅行方案，在北京一日游&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">messages_1 = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一个制定方案的助手&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请给出我一个旅行方案，在北京一日游&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">messages_2 = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一个制定方案的助手&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请给出我一个考雅思方案，备考时间三个月&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"><span class="comment"># invoke调用</span></span><br><span class="line">res = llm.invoke(messages)</span><br><span class="line"><span class="comment"># batch调用</span></span><br><span class="line">res_list = llm.batch([messages_1, messages_2])</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(res)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;================================================================&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(res_list)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="结合提示词模板"><a href="#结合提示词模板" class="headerlink" title="结合提示词模板"></a>结合提示词模板</h3><p>聊天模型可以同之前介绍的聊天提示模板结合起来，组成调用链，代码示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/6 09:17</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate, HumanMessagePromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># ChatGPT模型调用对象</span></span><br><span class="line">llm = OpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">             openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">结合提示词模板，完成LCEL表达式组合调用</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="comment"># 消息提示模板</span></span><br><span class="line">messages = ChatPromptTemplate.from_messages([</span><br><span class="line">    SystemMessage(content=<span class="string">&quot;你是一个翻译各种语言的助手&quot;</span>),</span><br><span class="line">    HumanMessagePromptTemplate.from_template(<span class="string">&quot;把&#123;poetry&#125;的原文翻译为英文&quot;</span>)</span><br><span class="line">])</span><br><span class="line"><span class="comment"># 将模板和模型调用组合为调用链</span></span><br><span class="line">chain = messages | llm</span><br><span class="line"><span class="comment"># 发送请求</span></span><br><span class="line">res = chain.invoke(&#123;<span class="string">&#x27;poetry&#x27;</span>: <span class="string">&#x27;静夜思&#x27;</span>&#125;)</span><br><span class="line"><span class="built_in">print</span>(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h1 id="LangChain-ModelsIO-OutputParsers"><a href="#LangChain-ModelsIO-OutputParsers" class="headerlink" title="LangChain ModelsIO OutputParsers"></a>LangChain ModelsIO OutputParsers</h1><p>LangChain已经可以轻松实现帮用户拿到大语言模型的输出，然而不难发现，前文介绍的模型调用，显示返回的内容通常是一个类（class）实例，其中包含了content以及其他一些额外的参数。</p>
+<p>对于模型调用者来说，可能只关心content的内容，也就是模型对输入内容的回答，或者希望得到一个可操作的数据结构，比如JSON格式的数据。</p>
+<h2 id="OutputParsers的优势"><a href="#OutputParsers的优势" class="headerlink" title="OutputParsers的优势"></a>OutputParsers的优势</h2><p>LangChain设计的初衷之一，旨在让用户更便捷地使用大模型，所以为了解决输出内容格式化的问题。</p>
+<p>通过使用LangChain提供的解析器，用户可以更轻松地获取模型的输出，并直接处理或操作所需的内容，而无需进行额外的转换或处理。</p>
+<h2 id="解析器类型"><a href="#解析器类型" class="headerlink" title="解析器类型"></a>解析器类型</h2><p>根据业务需求，开发者通常需要大模型返回一个结构化的数据，方便后续的逻辑可以根据这个数据进行进一步的处理。</p>
+<p>然而不同的输入结果可能需要相对应的解析器来做处理，LangChain同样提供了几种常见的解析器类型：</p>
+<ul>
+<li>String解析器</li>
+<li>Json解析器</li>
+<li>Pydantic解析器</li>
+<li>结构化输出解析器</li>
+<li>OpenAI函数输出解析器</li>
+</ul>
+<h2 id="实战示例-2"><a href="#实战示例-2" class="headerlink" title="实战示例"></a>实战示例</h2><h3 id="String解析器"><a href="#String解析器" class="headerlink" title="String解析器"></a>String解析器</h3><p>LangChain提供了StrOutputParser，这是一个专门用来处理模型输出内容的解析器。当模型输出的内容是字符串格式的时候，StrOutputParser能够直接返回模型输出的content字符串内容。</p>
+<p>这使得用户无需进行复杂的数据解析操作，可以直接获取模型输出的内容字符串，从而变更方便地进行后续处理或使用，代码示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> StrOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate, HumanMessagePromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># ChatGPT模型调用对象</span></span><br><span class="line">llm = OpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">             openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">string_parser_demo</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    String解析器</span></span><br><span class="line"><span class="string">    StrOutputParser</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 提示词模版</span></span><br><span class="line">    messages = ChatPromptTemplate.from_messages([</span><br><span class="line">        SystemMessage(content=<span class="string">&quot;你是一个翻译各种语言的助手&quot;</span>),</span><br><span class="line">        HumanMessagePromptTemplate.from_template(<span class="string">&quot;把&#123;poetry&#125;的原文翻译为英文&quot;</span>)</span><br><span class="line">    ])</span><br><span class="line">    <span class="comment"># 输出解析器，转换为字符串</span></span><br><span class="line">    parser = StrOutputParser()</span><br><span class="line">    <span class="comment"># 调用链， 使用输出解析器</span></span><br><span class="line">    chain_with_parser = messages | llm | parser</span><br><span class="line">    <span class="comment"># 发送请求</span></span><br><span class="line">    res = chain_with_parser.invoke(&#123;<span class="string">&#x27;poetry&#x27;</span>: <span class="string">&#x27;静夜思&#x27;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br></pre></td></tr></table></figure>
+<h3 id="Json解析器"><a href="#Json解析器" class="headerlink" title="Json解析器"></a>Json解析器</h3><p>当模型输出的内容是一个JSON格式时，LangChain也提供了相应的解析器JsonOutputParser。该解析器能够根据JSON结构的内容，将其转换为Python对应的字典格式的数据，使得用户能够更方便地处理和操作模型输出的结果。代码示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/6 10:43</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> JsonOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># ChatGPT模型调用对象</span></span><br><span class="line">llm = OpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">             openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">json_parser_demo</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Json解析器</span></span><br><span class="line"><span class="string">    JsonOutputParser</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 输出解析器，转换为Json</span></span><br><span class="line">    parser = JsonOutputParser()</span><br><span class="line">    <span class="comment"># 提示词模版，输出json格式的回答</span></span><br><span class="line">    prompt = PromptTemplate(</span><br><span class="line">        template=<span class="string">&quot;根据用户输入，给出一段中文宣传语 \n&#123;format_instructions&#125;\n&#123;ads&#125;\n&quot;</span>,</span><br><span class="line">        input_variables=[<span class="string">&quot;ads&quot;</span>],</span><br><span class="line">        partial_variables=&#123;<span class="string">&quot;format_instructions&quot;</span>: parser.get_format_instructions()&#125;</span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 调用链， 包含json输出解析器</span></span><br><span class="line">    chain_with_parser = prompt | llm | parser</span><br><span class="line">    <span class="comment"># 发送请求</span></span><br><span class="line">    res = chain_with_parser.invoke(&#123;<span class="string">&#x27;ads&#x27;</span>: <span class="string">&#x27;音乐节&#x27;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">type</span>(res))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="Pydantic解析器"><a href="#Pydantic解析器" class="headerlink" title="Pydantic解析器"></a>Pydantic解析器</h3><p>LangChain还提供了对Pydantic模型的解析器：PydanticOutputParser</p>
+<p>LangChain的Pydantic解析器可以将模型输出的内容解析为Pydantic模型所定义的数据结构。这使得用户可以更加方便的使用Pydantic的功能，例如数据验证、序列化和反序列化等，代码示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/6 10:43</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> PydanticOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAI</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># ChatGPT模型调用对象</span></span><br><span class="line">llm = OpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">             openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Translation</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    original_str: <span class="built_in">str</span> = Field(description=<span class="string">&quot;原始输入的值&quot;</span>)</span><br><span class="line">    trans_str: <span class="built_in">str</span> = Field(description=<span class="string">&quot;翻译后的值&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">pydantic_parser_demo</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Pydantic解析器</span></span><br><span class="line"><span class="string">    PydanticOutputParser</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 使用Pydantic输出解析器解析Translation类</span></span><br><span class="line">    parser = PydanticOutputParser(pydantic_object=Translation)</span><br><span class="line">    <span class="comment"># 提示词模版，</span></span><br><span class="line">    prompt = PromptTemplate(</span><br><span class="line">        template=<span class="string">&quot;翻译用户输入的内容为英文 \n&#123;format_instructions&#125;\n&#123;query&#125;\n&quot;</span>,</span><br><span class="line">        input_variables=[<span class="string">&quot;query&quot;</span>],</span><br><span class="line">        partial_variables=&#123;<span class="string">&quot;format_instructions&quot;</span>: parser.get_format_instructions()&#125;</span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 调用链</span></span><br><span class="line">    chain_with_parser = prompt | llm | parser</span><br><span class="line">    <span class="comment"># 发送请求</span></span><br><span class="line">    res = chain_with_parser.invoke(&#123;<span class="string">&#x27;query&#x27;</span>: <span class="string">&#x27;赏花&#x27;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">type</span>(res))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="结构化输出解析器"><a href="#结构化输出解析器" class="headerlink" title="结构化输出解析器"></a>结构化输出解析器</h3><p>LangChain提供了一种自定义解析方案，即使用schema结构。用户可以根据需要定义自己的schema，并使用LangChain的StructuredOutputParser类来解析符合该schema的数据。</p>
+<p>这种方式让用户能够更灵活地处理各种类型的模型输出数据，而无需依赖特定的数据验证库或框架。StructuredOutputParser为用户提供了一种通用的解析方式，使他们能够简单地将模型输出的数据转换为符合自定义schema的数据对象。代码如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/6 10:43</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain.output_parsers <span class="keyword">import</span> ResponseSchema, StructuredOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line"><span class="comment"># ChatGPT模型调用对象</span></span><br><span class="line">llm = OpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">             openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">structured_parser_demo</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    结构化数据解析器</span></span><br><span class="line"><span class="string">    StructuredOutputParser</span></span><br><span class="line"><span class="string">    :return: </span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 定义schema对象</span></span><br><span class="line">    response_schema = [</span><br><span class="line">        ResponseSchema(name=<span class="string">&quot;slogan&quot;</span>, description=<span class="string">&quot;宣传语内容&quot;</span>),</span><br><span class="line">        ResponseSchema(name=<span class="string">&quot;req&quot;</span>, description=<span class="string">&quot;宣传语限制在10个字符内&quot;</span>)</span><br><span class="line">    ]</span><br><span class="line">    output_parser = StructuredOutputParser.from_response_schemas(response_schema)</span><br><span class="line">    <span class="comment"># 提示词模版，</span></span><br><span class="line">    prompt = PromptTemplate(</span><br><span class="line">        template=<span class="string">&quot;根据用户输入的商品给出宣传语\n&#123;format_instructions&#125;\n&#123;topic&#125;\n&quot;</span>,</span><br><span class="line">        input_variables=[<span class="string">&quot;topic&quot;</span>],</span><br><span class="line">        partial_variables=&#123;<span class="string">&quot;format_instructions&quot;</span>: output_parser.get_format_instructions()&#125;</span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 调用链</span></span><br><span class="line">    chain_with_parser = prompt | llm | output_parser</span><br><span class="line">    <span class="comment"># 发送请求</span></span><br><span class="line">    res = chain_with_parser.invoke(&#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;音乐节&#x27;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">type</span>(res))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="OpenAI函数输出解析器"><a href="#OpenAI函数输出解析器" class="headerlink" title="OpenAI函数输出解析器"></a>OpenAI函数输出解析器</h3><p>LangChain支持解析OpenAI提供的函数调用，并提供了以下四种形式来处理输出结果：</p>
+<ul>
+<li>JsonOutputFunctionsParser:生成JSON格式的结果</li>
+<li>JsonKeyOutputFunctionsParser:指定JSON中某个key对应的value</li>
+<li>PydanticOutputFunctionsParser:解析Pydantic模型的结构</li>
+<li>PydanticAttrOutputFunctionsParser:直接输出模型中某个参数的值</li>
+</ul>
+<h4 id="Json格式"><a href="#Json格式" class="headerlink" title="Json格式"></a>Json格式</h4><p><strong>JsonOutputFunctionsParser 和 JsonKeyOutputFunctionsParser(key_name=”ad”)</strong> </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/6 10:43</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers.openai_functions <span class="keyword">import</span> JsonOutputFunctionsParser, JsonKeyOutputFunctionsParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line">model = ChatOpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                   openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">openai_json_demo</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    OpenAI函数输出解析器--JSON格式</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 自定函数</span></span><br><span class="line">    functions = [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;advertisement&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;一段广告词&quot;</span>,</span><br><span class="line">            <span class="string">&quot;parameters&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">                <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;goods&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>, <span class="string">&quot;description&quot;</span>: <span class="string">&quot;要进行广告的产品&quot;</span></span><br><span class="line">                    &#125;,</span><br><span class="line">                    <span class="string">&quot;ad&quot;</span>: &#123;</span><br><span class="line">                        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>, <span class="string">&quot;description&quot;</span>: <span class="string">&quot;广告词&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;goods&quot;</span>, <span class="string">&quot;ad&quot;</span>]</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">    <span class="comment"># 提示词模版</span></span><br><span class="line">    prompt = ChatPromptTemplate.from_template(<span class="string">&quot;给出一个关于&#123;goods&#125;的广告宣传语&quot;</span>)</span><br><span class="line">    <span class="comment"># 创建调用链，包含输出解析器</span></span><br><span class="line">    chain_json_with_parser = prompt | model.bind(function_call=&#123;<span class="string">&quot;name&quot;</span>: <span class="string">&quot;advertisement&quot;</span>&#125;,</span><br><span class="line">                                                 functions=functions) | JsonOutputFunctionsParser()</span><br><span class="line">    res = chain_json_with_parser.invoke(&#123;<span class="string">&quot;goods&quot;</span>: <span class="string">&quot;冰淇淋&quot;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">type</span>(res))</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;================================&quot;</span>)</span><br><span class="line"></span><br><span class="line">    chain_json_key_with_parser = prompt | model.bind(function_call=&#123;<span class="string">&quot;name&quot;</span>: <span class="string">&quot;advertisement&quot;</span>&#125;,</span><br><span class="line">                                                     functions=functions) | JsonKeyOutputFunctionsParser(key_name=<span class="string">&quot;ad&quot;</span>)</span><br><span class="line">    res_key = chain_json_key_with_parser.invoke(&#123;<span class="string">&quot;goods&quot;</span>: <span class="string">&quot;冰淇淋&quot;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(res_key)</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">type</span>(res_key))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="Pydantic模型"><a href="#Pydantic模型" class="headerlink" title="Pydantic模型"></a>Pydantic模型</h4><p><strong>PydanticOutputFunctionsParser(pydantic_schema=Advertisement) 和 PydanticAttrOutputFunctionsParser(pydantic_schema=Advertisement, attr_name=”ads”)</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/6 10:43</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers.openai_functions <span class="keyword">import</span> PydanticOutputFunctionsParser, \</span><br><span class="line">    PydanticAttrOutputFunctionsParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_core.utils.function_calling <span class="keyword">import</span> convert_to_openai_function</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"></span><br><span class="line">model = ChatOpenAI(openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                   openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Advertisement</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Pydantic模型</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    goods: <span class="built_in">str</span> = Field(description=<span class="string">&quot;物品&quot;</span>)</span><br><span class="line">    ads: <span class="built_in">str</span> = Field(description=<span class="string">&quot;宣传语&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">pydantic_json_demo</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    OpenAI函数输出解析器--Pydantic模型</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 定义解析器</span></span><br><span class="line">    parser = PydanticOutputFunctionsParser(pydantic_schema=Advertisement)</span><br><span class="line">    <span class="comment"># 创建调用函数(转换为列表)</span></span><br><span class="line">    openai_functions = [convert_to_openai_function(Advertisement)]</span><br><span class="line">    <span class="comment"># 提示词模版</span></span><br><span class="line">    prompt = ChatPromptTemplate.from_template(<span class="string">&quot;给出一个关于&#123;goods&#125;的广告宣传语&quot;</span>)</span><br><span class="line">    <span class="comment"># 创建调用链</span></span><br><span class="line">    chain_pydantic_parser = prompt | model.bind(functions=openai_functions) | parser</span><br><span class="line">    res = chain_pydantic_parser.invoke(&#123;<span class="string">&quot;goods&quot;</span>: <span class="string">&quot;饮料&quot;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">type</span>(res))</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;================================&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 定义解析器</span></span><br><span class="line">    parser_attr = PydanticAttrOutputFunctionsParser(pydantic_schema=Advertisement, attr_name=<span class="string">&quot;ads&quot;</span>)</span><br><span class="line">    <span class="comment"># 创建调用链</span></span><br><span class="line">    chain_pydantic_parser_attr = prompt | model.bind(functions=openai_functions) | parser_attr</span><br><span class="line">    res_attr = chain_pydantic_parser_attr.invoke(&#123;<span class="string">&quot;goods&quot;</span>: <span class="string">&quot;饮料&quot;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(res_attr)</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">type</span>(res_attr))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/01/08/ai/ai-basic/1-introduce/" rel="prev" title="人工智能概念基础">
+      <i class="fa fa-chevron-left"></i> 人工智能概念基础
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/02/05/ai/langchain/2-langchain-prompt-llm/" rel="next" title="LangChain提示词+大语言模型应用">
+      LangChain提示词+大语言模型应用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Models-I-O%E7%9A%84%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">Models I&#x2F;O的应用场景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Models-I-O-%E4%B8%BB%E8%A6%81%E6%A8%A1%E5%9D%97"><span class="nav-number">3.</span> <span class="nav-text">Models I&#x2F;O 主要模块</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Prompts"><span class="nav-number">3.1.</span> <span class="nav-text">Prompts</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Models"><span class="nav-number">3.2.</span> <span class="nav-text">Models</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Message%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.2.1.</span> <span class="nav-text">Message类型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Output-Parsers"><span class="nav-number">3.3.</span> <span class="nav-text">Output Parsers</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangChain-ModelsIO-Promopts"><span class="nav-number">4.</span> <span class="nav-text">LangChain ModelsIO Promopts</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Prompts%E7%9A%84%E4%BC%98%E7%82%B9"><span class="nav-number">4.1.</span> <span class="nav-text">Prompts的优点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E7%A4%BA%E4%BE%8B"><span class="nav-number">4.2.</span> <span class="nav-text">实战示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#PromptTemplate%E6%8F%90%E7%A4%BA%E6%A8%A1%E6%9D%BF%E7%9A%84%E7%94%A8%E6%B3%95"><span class="nav-number">4.2.1.</span> <span class="nav-text">PromptTemplate提示模板的用法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ChatPromptTemplate%E8%81%8A%E5%A4%A9%E6%8F%90%E7%A4%BA%E6%A8%A1%E7%89%88%E7%9A%84%E7%94%A8%E6%B3%95"><span class="nav-number">4.2.2.</span> <span class="nav-text">ChatPromptTemplate聊天提示模版的用法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangChain-ModelsIO-LLM"><span class="nav-number">5.</span> <span class="nav-text">LangChain ModelsIO LLM</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#LLMs%E6%A8%A1%E5%9D%97%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="nav-number">5.1.</span> <span class="nav-text">LLMs模块的优势</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">5.2.</span> <span class="nav-text">实战示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%A9%E5%B1%95%E7%94%A8%E6%B3%95"><span class="nav-number">5.3.</span> <span class="nav-text">扩展用法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangChain-ModelsIO-ChatModels"><span class="nav-number">6.</span> <span class="nav-text">LangChain ModelsIO ChatModels</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ChatModels%E4%B8%8EModels%E5%8C%BA%E5%88%AB"><span class="nav-number">6.1.</span> <span class="nav-text">ChatModels与Models区别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Messages%E7%B1%BB%E5%9E%8B"><span class="nav-number">6.2.</span> <span class="nav-text">Messages类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B"><span class="nav-number">6.3.</span> <span class="nav-text">代码示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#List-BaseMessage-%E5%BD%A2%E5%BC%8F"><span class="nav-number">6.3.1.</span> <span class="nav-text">List[BaseMessage]形式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E5%90%88%E6%8F%90%E7%A4%BA%E8%AF%8D%E6%A8%A1%E6%9D%BF"><span class="nav-number">6.3.2.</span> <span class="nav-text">结合提示词模板</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangChain-ModelsIO-OutputParsers"><span class="nav-number">7.</span> <span class="nav-text">LangChain ModelsIO OutputParsers</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#OutputParsers%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="nav-number">7.1.</span> <span class="nav-text">OutputParsers的优势</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90%E5%99%A8%E7%B1%BB%E5%9E%8B"><span class="nav-number">7.2.</span> <span class="nav-text">解析器类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E7%A4%BA%E4%BE%8B-2"><span class="nav-number">7.3.</span> <span class="nav-text">实战示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#String%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">7.3.1.</span> <span class="nav-text">String解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Json%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">7.3.2.</span> <span class="nav-text">Json解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Pydantic%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">7.3.3.</span> <span class="nav-text">Pydantic解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">7.3.4.</span> <span class="nav-text">结构化输出解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenAI%E5%87%BD%E6%95%B0%E8%BE%93%E5%87%BA%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">7.3.5.</span> <span class="nav-text">OpenAI函数输出解析器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Json%E6%A0%BC%E5%BC%8F"><span class="nav-number">7.3.5.1.</span> <span class="nav-text">Json格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Pydantic%E6%A8%A1%E5%9E%8B"><span class="nav-number">7.3.5.2.</span> <span class="nav-text">Pydantic模型</span></a></li></ol></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">124</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">23</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

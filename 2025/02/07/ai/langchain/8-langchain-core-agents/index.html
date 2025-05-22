@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第十三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain核心模块Agents">
+<meta property="og:url" content="https://jinglv.github.io/2025/02/07/ai/langchain/8-langchain-core-agents/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第十三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202502061715751.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202502061717873.png">
+<meta property="article:published_time" content="2025-02-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-02-07T02:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202502061715751.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/02/07/ai/langchain/8-langchain-core-agents/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain核心模块Agents | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/02/07/ai/langchain/8-langchain-core-agents/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain核心模块Agents
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-02-07 00:00:00 / 修改时间：10:30:00" itemprop="dateCreated datePublished" datetime="2025-02-07T00:00:00+08:00">2025-02-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第十三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>我们都知道四肢的绝大部分动作都是由大脑决定的，大脑通过中枢神经下发自己的操作指令，四肢就可以按照我们的需求进行动作。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202502061715751.png" alt="image-20250206171524671" style="zoom:50%;" /></p>
+<p>而大语言模型其实就相当于一个大脑的角色，其本身是无法直接进行任何操作的。那么就需要一个”中枢神经“，帮助它下发指令，传递反馈信息，这个中枢神经就是 Agent。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202502061717873.png" alt="image-20250206171727761" style="zoom:50%;" /></p>
+<p>在官方文档中，有这样的一句说明，讲出了 Agents 的核心。</p>
+<p><code>The core idea of agents is to use a language model to choose a sequence of actions to take.</code></p>
+<p>v0.1官方文档：<a target="_blank" rel="noopener" href="https://python.langchain.com/v0.1/docs/modules/agents/">https://python.langchain.com/v0.1/docs/modules/agents/</a></p>
+<p>如果在前面学习的过程中，通过 LangChain 让大模型了解的是“怎么思考”。那 Agents 的作用就是让大模型自己去决定“怎么做”。其实就是基于<strong>ReaAct</strong>理念的一种实践方式。</p>
+<h1 id="Agents的核心概念"><a href="#Agents的核心概念" class="headerlink" title="Agents的核心概念"></a>Agents的核心概念</h1><p>Agents 的核心思想是使用语言模型来选择要采取的一系列操作。语言模型所起到的作用为，被用作<strong>推理引擎</strong>来确定要采取哪些操作以及按什么顺序。在这个过程里面主要包含以下核心组件:</p>
+<ul>
+<li>Schema - 结构<ul>
+<li>AgentAction - 代理动作</li>
+<li>AgentFinish - 代理完成</li>
+<li>Intermediate Steps - 中间步骤</li>
+</ul>
+</li>
+<li>Agent - 代理<ul>
+<li>Agent Inputs - 输入</li>
+<li>Agent Outputs - 输出</li>
+</ul>
+</li>
+<li>AgentExecutor - 代理执行程序</li>
+<li>Tools - 工具<ul>
+<li>Considerations</li>
+</ul>
+</li>
+<li>Toolkits - 工具包</li>
+</ul>
+<p>v0.1 LangChain Agents核心概念的地址：<a target="_blank" rel="noopener" href="https://python.langchain.com/v0.1/docs/modules/agents/concepts/">https://python.langchain.com/v0.1/docs/modules/agents/concepts/</a></p>
+<h1 id="Agent-的多种代理类型"><a href="#Agent-的多种代理类型" class="headerlink" title="Agent 的多种代理类型"></a>Agent 的多种代理类型</h1><p>v0.1 LangChain Agents代理类型的地址：<a target="_blank" rel="noopener" href="https://python.langchain.com/v0.1/docs/modules/agents/agent_types/">https://python.langchain.com/v0.1/docs/modules/agents/agent_types/</a></p>
+<h1 id="Agent-与-Tools"><a href="#Agent-与-Tools" class="headerlink" title="Agent 与 Tools"></a>Agent 与 Tools</h1><p>agent 通常与 tools 的应用结合非常紧密，在创建一个 agent 的时候，tools 是一个必填参数信息。</p>
+<p>如何构造 tools ，见 tools章节。</p>
+<h1 id="实战案例"><a href="#实战案例" class="headerlink" title="实战案例"></a>实战案例</h1><h2 id="需求说明"><a href="#需求说明" class="headerlink" title="需求说明"></a>需求说明</h2><p>通过 Agent 实现调用 Selenium 打开、退出浏览器、获取当前 URL 等操作。</p>
+<h2 id="实现思路"><a href="#实现思路" class="headerlink" title="实现思路"></a>实现思路</h2><ol>
+<li>实现工具包</li>
+<li>初始化Agent</li>
+</ol>
+<h2 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h2><h3 id="工具包"><a href="#工具包" class="headerlink" title="工具包"></a>工具包</h3><ol>
+<li><p>封装 Selenium 工具： 将会使用到的行为操作，提前封装起来</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/7 09:57</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> selenium <span class="keyword">import</span> webdriver</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">WebAutoFramework</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    selenium工具基础封装</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>.driver = <span class="literal">None</span></span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.driver <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="variable language_">self</span>.driver = webdriver.Chrome()</span><br><span class="line">            <span class="variable language_">self</span>.driver.implicitly_wait(<span class="number">5</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">open</span>(<span class="params">self, url</span>):</span><br><span class="line">        <span class="variable language_">self</span>.driver.get(url)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">quit</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>.driver.quit()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_title</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.driver.title</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>定义工具池：将所有的行为操作，按照要求的tools规范定义清楚</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/7 09:59</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_demo.core.agents_demo.web_auto_selenium <span class="keyword">import</span> WebAutoFramework</span><br><span class="line"></span><br><span class="line">web = WebAutoFramework()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">open_web</span>(<span class="params">url</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    打开一个网页</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    web.<span class="built_in">open</span>(url)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">quit_browser</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    退出浏览器</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    web.quit()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_title</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取网页标题</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="built_in">print</span>(web.get_title())</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">tools = [open_web, quit_browser, get_title]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="初始化Agent"><a href="#初始化Agent" class="headerlink" title="初始化Agent"></a>初始化Agent</h3><p>初始化 Agent 并执行， 将封装好的 tools 传入 agent 中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time: 2025/2/7 10:01</span></span><br><span class="line"><span class="comment"># @Author: lvjing</span></span><br><span class="line"><span class="keyword">from</span> langchain <span class="keyword">import</span> hub</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_openai_functions_agent, AgentExecutor</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> config_info <span class="keyword">import</span> get_config_info</span><br><span class="line"><span class="keyword">from</span> langchain_demo.core.agents_demo.create_selenium_tool <span class="keyword">import</span> tools</span><br><span class="line"></span><br><span class="line">prompt = hub.pull(<span class="string">&quot;hwchase17/openai-functions-agent&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(model=<span class="string">&quot;gpt-3.5-turbo&quot;</span>,</span><br><span class="line">                 openai_api_key=get_config_info().get(<span class="string">&#x27;key&#x27;</span>),</span><br><span class="line">                 openai_api_base=get_config_info().get(<span class="string">&#x27;base&#x27;</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化 Agent</span></span><br><span class="line">agent = create_openai_functions_agent(llm, tools, prompt)</span><br><span class="line"><span class="comment"># 初始化 Agent 的配置</span></span><br><span class="line">agent_executor = AgentExecutor(agent=agent,</span><br><span class="line">                               tools=tools,</span><br><span class="line">                               verbose=<span class="literal">True</span>,</span><br><span class="line">                               return_intermediate_steps=<span class="literal">True</span>,</span><br><span class="line">                               handle_parsing_errors=<span class="literal">True</span>)</span><br><span class="line">agent_executor.invoke(&#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">                        请打开 https://ceshiren.com/ 网站</span></span><br><span class="line"><span class="string">                     返回当前的网页的标题，再退出浏览器。&quot;&quot;&quot;</span>&#125;)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/02/06/ai/langchain/5-langchain-core-chains/" rel="prev" title="LangChain核心模块Chains">
+      <i class="fa fa-chevron-left"></i> LangChain核心模块Chains
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/02/08/ai/langchain/11-langchain-action-db/" rel="next" title="LangChain实战-实现数据库操作的智能体">
+      LangChain实战-实现数据库操作的智能体 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Agents%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">Agents的核心概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Agent-%E7%9A%84%E5%A4%9A%E7%A7%8D%E4%BB%A3%E7%90%86%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">Agent 的多种代理类型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Agent-%E4%B8%8E-Tools"><span class="nav-number">4.</span> <span class="nav-text">Agent 与 Tools</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B"><span class="nav-number">5.</span> <span class="nav-text">实战案例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9C%80%E6%B1%82%E8%AF%B4%E6%98%8E"><span class="nav-number">5.1.</span> <span class="nav-text">需求说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF"><span class="nav-number">5.2.</span> <span class="nav-text">实现思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.3.</span> <span class="nav-text">具体实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E5%8C%85"><span class="nav-number">5.3.1.</span> <span class="nav-text">工具包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96Agent"><span class="nav-number">5.3.2.</span> <span class="nav-text">初始化Agent</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">124</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">23</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
