@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Jacoco学习笔记第三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="圈复杂度">
+<meta property="og:url" content="https://jinglv.github.io/2020/09/15/jacoco/3-cycl/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Jacoco学习笔记第三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141712779.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141712738.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141713414.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141713788.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141714579.png">
+<meta property="article:published_time" content="2020-09-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-09-15T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="Jacoco">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141712779.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2020/09/15/jacoco/3-cycl/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>圈复杂度 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2020/09/15/jacoco/3-cycl/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          圈复杂度
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-09-15 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2020-09-15T00:00:00+08:00">2020-09-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Jacoco/" itemprop="url" rel="index"><span itemprop="name">Jacoco</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Jacoco学习笔记第三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="圈复杂度"><a href="#圈复杂度" class="headerlink" title="圈复杂度"></a>圈复杂度</h1><p>在学习Jacoco覆盖率的时候，看到一项圈复杂度（Cyclomatic Complexity）的统计维度，对此感到不适很理解，因此在查找文章后，进行对圈复杂度的讲解。</p>
+<h2 id="什么是圈复杂度"><a href="#什么是圈复杂度" class="headerlink" title="什么是圈复杂度"></a>什么是圈复杂度</h2><p>圈复杂度（Cyclomatic complexity，简写CC）也称为<strong>条件复杂度</strong>，是一种代码复杂度的衡量标准。由托马斯·J·麦凯布（Thomas J. McCabe, Sr.）于1976年提出，用来表示<strong>程序的复杂度</strong>，其符号为VG或是M。它可以用来衡量一个模块判定结构的复杂程度，数量上表现为独立现行路径条数，也可理解为覆盖所有的可能情况最少使用的测试用例数。圈复杂度大说明程序代码的判断逻辑复杂，可能质量低且难于测试和 维护。程序的可能错误和高的圈复杂度有着很大关系。</p>
+<h2 id="圈复杂度计算方法"><a href="#圈复杂度计算方法" class="headerlink" title="圈复杂度计算方法"></a>圈复杂度计算方法</h2><h3 id="点边计算法"><a href="#点边计算法" class="headerlink" title="点边计算法"></a>点边计算法</h3><p>计算公式为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">V(G) = E - N + 2</span><br></pre></td></tr></table></figure>
+<p>其中，E表示控制流图中边的数量，N表示控制流图中节点的数量。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141712779.png" alt="image-20220714171205745" style="zoom:50%;" /></p>
+<p>几个节点通过边连接。以下是典型的控制流程，如if-else,while,for,switch-case和正常的流程顺序：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141712738.png" alt="image-20220714171233709" style="zoom:50%;" /></p>
+<h3 id="节点判定法"><a href="#节点判定法" class="headerlink" title="节点判定法"></a>节点判定法</h3><p>圈复杂度的计算还有更直观的方法，因为圈复杂度所反映的是“判定条件”的数量，所以圈复杂度实际上就是等于判定节点的数量再加上1，也即控制流图的区域数，对应的计算公式为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">V(G) = P + 1</span><br></pre></td></tr></table></figure>
+<p>其中P为判定节点数，判定节点举例：</p>
+<ul>
+<li><p><code>if</code>语句</p>
+</li>
+<li><p><code>while</code>语句</p>
+</li>
+<li><p><code>for</code>语句</p>
+</li>
+<li><p><code>case</code>语句</p>
+</li>
+<li><p><code>catch</code>语句</p>
+</li>
+<li><p><code>and</code>和<code>or</code>布尔操作</p>
+</li>
+<li><p><code>?:</code>三元运算符</p>
+</li>
+</ul>
+<p>对于多分支的case结构或if-elseif-else结构，统计判定节点的个数时需要特别注意一点，要求必须统计全部的判定节点数，即每个else if语句，以及每个case语句，都应该算为一个判定节点。</p>
+<p>判定节点在模块的控制流图中很容易被识别出来，所以，针对程序的控制流图计算圈复杂度V(G)时，一般采用点边计算法，也即V(G)=e-n+2；而针对模块的控制流图时，可以直接使用统计判定节点数，这样更为简单。</p>
+<h2 id="圈复杂度计算实例"><a href="#圈复杂度计算实例" class="headerlink" title="圈复杂度计算实例"></a>圈复杂度计算实例</h2><h3 id="实例一"><a href="#实例一" class="headerlink" title="实例一"></a>实例一</h3><p>以冒泡排序为例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span>[] bubbleSort(<span class="type">int</span>[] arr) &#123;</span><br><span class="line">  <span class="comment">// 数组的长度</span></span><br><span class="line">  <span class="type">int</span> <span class="variable">l</span> <span class="operator">=</span> arr.length;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 外层循环是排序的趟数</span></span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; l - <span class="number">1</span>; i++) &#123; </span><br><span class="line">    <span class="comment">// 内层循环是当前趟数需要⽐较的次数</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; l - i - <span class="number">1</span>; j++) &#123;</span><br><span class="line">      <span class="comment">//前⼀位与后⼀位与前⼀位⽐较，如果前⼀位⽐后⼀位要⼤，那么交换</span></span><br><span class="line">      <span class="keyword">if</span> (arr[j] &gt; arr[j + <span class="number">1</span>]) &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">temp</span> <span class="operator">=</span> arr[j];</span><br><span class="line">        arr[j+<span class="number">1</span>] = arr[j];</span><br><span class="line">        arr[j] = temp;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> arr; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>根据上面所述的计算方式：</p>
+<ul>
+<li><p>第一种：点边计算法，一个for循环是3个点，代码中有两个for循环，一个if是1个点，因此点数为7，一个for循环的边是4，两个for循环是8，一个if判断边是1，则边的数量是9，带入公式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">V(G) = 9 - 7 + 2 = 4</span><br></pre></td></tr></table></figure>
+<p>点边计算法绘出控制流图：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141713414.png" alt="image-20220714171313385" style="zoom:50%;" /></p>
+</li>
+<li><p>第二种：节点判定法，一个for循环一个节点，有两个for循环节点为2，一个if为一个节点，在带入公式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">V(G) = 3 + 1 = 4</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>从上面两个公式看，发现节点判定法和点边计算法相比起来，节点判定法更容易些。</p>
+<h3 id="实例二"><a href="#实例二" class="headerlink" title="实例二"></a>实例二</h3><p>代码如下，代码逻辑简单，主要查看if嵌套的情况</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> String <span class="title function_">demo</span><span class="params">(<span class="type">int</span> index, String str)</span> &#123;</span><br><span class="line">  <span class="type">String</span> <span class="variable">result</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">  <span class="keyword">if</span> (index &lt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IndexOutOfBoundsException</span>(<span class="string">&quot;exception&lt;0&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (index == <span class="number">1</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (str.length() &lt; <span class="number">2</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> str;</span><br><span class="line">    &#125;</span><br><span class="line">    result = <span class="string">&quot;return str1&quot;</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (index == <span class="number">2</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (str.length() &lt; <span class="number">5</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> str;</span><br><span class="line">    &#125;</span><br><span class="line">    result = <span class="string">&quot;return str2&quot;</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IndexOutOfBoundsException</span>(<span class="string">&quot;exception&gt;2&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>控制流程图如下：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141713788.png" alt="image-20220714171344759" style="zoom:50%;" /></p>
+<p>还是根据两种公式来计算</p>
+<ul>
+<li><p>第一种：点边计算法，根据上面的流程图，数边边和点点啦，数得的点数是11个（注意：throw、return这样的节点为end节点，因此每种只能记作一个，有4个throw记作1个，有2个return记作1个，因此点数因为8），边得的数是12，带入公式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">V(G) = 12 - 8 + 2 = 6</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p>第二种：节点判定法，这个就根据代码中的判定节点数啦，只需关注 if 、if-else即可，数到的节点为5个，带入公式如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">V(G) = 5 + 1 = 6</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="为什么要关注圈复杂度呢？"><a href="#为什么要关注圈复杂度呢？" class="headerlink" title="为什么要关注圈复杂度呢？"></a>为什么要关注圈复杂度呢？</h2><p>一般来说圈复杂度大于10的话，就存在很大的出错风险。圈复杂度和缺陷个数有高度的正相关：<strong>圈复杂度最高的模块和方法，其缺陷个数也可能最多。</strong>因此，在成为缺陷前就要捕获它们。</p>
+<h2 id="圈复杂度与软件质量"><a href="#圈复杂度与软件质量" class="headerlink" title="圈复杂度与软件质量"></a>圈复杂度与软件质量</h2><h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><p>为测试设计提供很好的参考。一个好的测试用例设计经验是：<strong>创建数量与被测试代码圈复杂度值相等的测试用例</strong>，以此提升用例对代码的分支覆盖率。</p>
+<h3 id="软件质量"><a href="#软件质量" class="headerlink" title="软件质量"></a>软件质量</h3><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>圈复杂度</th>
+<th>代码状况</th>
+<th>可测性</th>
+<th>维护成本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1-10</td>
+<td>清洗、结构化</td>
+<td>高</td>
+<td>低</td>
+</tr>
+<tr>
+<td>10-20</td>
+<td>复杂</td>
+<td>中</td>
+<td>中</td>
+</tr>
+<tr>
+<td>20-30</td>
+<td>非常复杂</td>
+<td>低</td>
+<td>高</td>
+</tr>
+<tr>
+<td><code>&gt;30</code></td>
+<td>不可读</td>
+<td>不可测</td>
+<td>非常高</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="圈复杂度与开发"><a href="#圈复杂度与开发" class="headerlink" title="圈复杂度与开发"></a>圈复杂度与开发</h2><h3 id="TDD"><a href="#TDD" class="headerlink" title="TDD"></a>TDD</h3><p>TDD（测试驱动的开发，test-driven development)和低<strong>CC</strong>值之间存在着紧密联系。在编写测试时，开发人员会考虑代码的可测试性，倾向于编写简单的代码，因为复杂的代码难以测试。因此TDD的“代码、测试、代码、测试” 循环将导致频繁重构，驱使非复杂代码的开发。</p>
+<h3 id="遗留代码（代码优化）"><a href="#遗留代码（代码优化）" class="headerlink" title="遗留代码（代码优化）"></a>遗留代码（代码优化）</h3><p>对于遗留代码的维护或重构，测量圈复杂度特别有价值。一般使用圈复杂度作为提升代码质量的切入点。</p>
+<h2 id="圈复杂度检测工具"><a href="#圈复杂度检测工具" class="headerlink" title="圈复杂度检测工具"></a>圈复杂度检测工具</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>常用工具</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jacoco</td>
+<td>Java语言，生成的报告有圈复杂度的维度统计，直观查看</td>
+</tr>
+<tr>
+<td>checkstyle</td>
+<td>配置规则，进行代码的扫描</td>
+</tr>
+<tr>
+<td>SonarQube</td>
+<td>一个用于代码质量管理的开源平台，支持20多种语言。通过插件机制可集成不同的测试工具，代码分析工具及持续集成工具</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>以上整理内容来源于以下文章：</p>
+<p><a target="_blank" rel="noopener" href="http://kaelzhang81.github.io/2017/06/18/详解圈复杂度/">http://kaelzhang81.github.io/2017/06/18/详解圈复杂度/</a></p>
+<h2 id="降低圈复杂度的方法"><a href="#降低圈复杂度的方法" class="headerlink" title="降低圈复杂度的方法"></a>降低圈复杂度的方法</h2><p><strong>把子程序的一部分提取成另一个子程序，不会降低整个程序的复杂度，只是把决策点移到其他地方</strong>，但是这样做可以降低你在同一时间必须关注的复杂度水平。由于重点是要降低你需要在头脑中同时考虑的项目的数量，所以降低一个给定程序的复杂度是有价值的。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141714579.png" alt="image-20220714171415550"></p>
+<h3 id="重新组织函数"><a href="#重新组织函数" class="headerlink" title="重新组织函数"></a>重新组织函数</h3><ul>
+<li><p>提炼函数</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">test</span><span class="params">(<span class="type">int</span> number)</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> (number &lt; minNumber) &#123;</span><br><span class="line">    number = minNumber;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>;i&lt;number;i++) &#123;</span><br><span class="line">    <span class="comment">// some code</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以替换为以下代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">test</span><span class="params">(<span class="type">int</span> number)</span> &#123;</span><br><span class="line">  number = getMin(number);</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i=<span class="number">0</span>;i&lt;number;i++) &#123;</span><br><span class="line">    <span class="comment">// some code</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">getMin</span><span class="params">(<span class="type">int</span> number)</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> (number &lt; minNumber) &#123;</span><br><span class="line">    <span class="keyword">return</span> minNumber;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> number;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li>替换算法（把复杂算法替换为另一个更清晰的算法）</li>
+</ul>
+<h3 id="简化条件表达式"><a href="#简化条件表达式" class="headerlink" title="简化条件表达式"></a>简化条件表达式</h3><ul>
+<li><p>逆向表达（调换条件表达顺序达到简化复杂度）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>((条件<span class="number">1</span> &amp;&amp; 条件<span class="number">2</span>) || !条件<span class="number">1</span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>变成这样：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(条件<span class="number">1</span> &amp;&amp; !条件<span class="number">2</span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> <span class="literal">true</span>;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p>分解条件（对复杂条件表达式（if、else）进行分解并提取成独立函数）</p>
+</li>
+<li><p>合并条件（将这些判断合并为一个条件式，并提取成独立函数）</p>
+</li>
+<li><p>移除控制标记（可以使用break和return取代控制标记。）</p>
+</li>
+<li><p>以多态取代条件式（将整个条件式的每个分支放进一个子类的重载方法中，然后将原始函数声明为抽象方法。由于php是弱类型语言，这里体现的有点模糊）</p>
+</li>
+</ul>
+<h3 id="简化函数调用"><a href="#简化函数调用" class="headerlink" title="简化函数调用"></a>简化函数调用</h3><ul>
+<li>参数化方法（建立单一函数，以参数表达那些不同的值）</li>
+<li>明确函数取代参数（针对该参数的每一个可能值，建立一个独立函数）</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Jacoco/" rel="tag"># Jacoco</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/09/15/jacoco/4-maven/" rel="prev" title="Jacoco Maven集成">
+      <i class="fa fa-chevron-left"></i> Jacoco Maven集成
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/09/15/jacoco/2-analysis/" rel="next" title="Jacoco代码覆盖率报告分析">
+      Jacoco代码覆盖率报告分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%88%E5%A4%8D%E6%9D%82%E5%BA%A6"><span class="nav-number">1.</span> <span class="nav-text">圈复杂度</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%9C%88%E5%A4%8D%E6%9D%82%E5%BA%A6"><span class="nav-number">1.1.</span> <span class="nav-text">什么是圈复杂度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%88%E5%A4%8D%E6%9D%82%E5%BA%A6%E8%AE%A1%E7%AE%97%E6%96%B9%E6%B3%95"><span class="nav-number">1.2.</span> <span class="nav-text">圈复杂度计算方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%82%B9%E8%BE%B9%E8%AE%A1%E7%AE%97%E6%B3%95"><span class="nav-number">1.2.1.</span> <span class="nav-text">点边计算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E5%88%A4%E5%AE%9A%E6%B3%95"><span class="nav-number">1.2.2.</span> <span class="nav-text">节点判定法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%88%E5%A4%8D%E6%9D%82%E5%BA%A6%E8%AE%A1%E7%AE%97%E5%AE%9E%E4%BE%8B"><span class="nav-number">1.3.</span> <span class="nav-text">圈复杂度计算实例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E4%BE%8B%E4%B8%80"><span class="nav-number">1.3.1.</span> <span class="nav-text">实例一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E4%BE%8B%E4%BA%8C"><span class="nav-number">1.3.2.</span> <span class="nav-text">实例二</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%85%B3%E6%B3%A8%E5%9C%88%E5%A4%8D%E6%9D%82%E5%BA%A6%E5%91%A2%EF%BC%9F"><span class="nav-number">1.4.</span> <span class="nav-text">为什么要关注圈复杂度呢？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%88%E5%A4%8D%E6%9D%82%E5%BA%A6%E4%B8%8E%E8%BD%AF%E4%BB%B6%E8%B4%A8%E9%87%8F"><span class="nav-number">1.5.</span> <span class="nav-text">圈复杂度与软件质量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">1.5.1.</span> <span class="nav-text">测试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E8%B4%A8%E9%87%8F"><span class="nav-number">1.5.2.</span> <span class="nav-text">软件质量</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%88%E5%A4%8D%E6%9D%82%E5%BA%A6%E4%B8%8E%E5%BC%80%E5%8F%91"><span class="nav-number">1.6.</span> <span class="nav-text">圈复杂度与开发</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#TDD"><span class="nav-number">1.6.1.</span> <span class="nav-text">TDD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%81%97%E7%95%99%E4%BB%A3%E7%A0%81%EF%BC%88%E4%BB%A3%E7%A0%81%E4%BC%98%E5%8C%96%EF%BC%89"><span class="nav-number">1.6.2.</span> <span class="nav-text">遗留代码（代码优化）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%88%E5%A4%8D%E6%9D%82%E5%BA%A6%E6%A3%80%E6%B5%8B%E5%B7%A5%E5%85%B7"><span class="nav-number">1.7.</span> <span class="nav-text">圈复杂度检测工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%8D%E4%BD%8E%E5%9C%88%E5%A4%8D%E6%9D%82%E5%BA%A6%E7%9A%84%E6%96%B9%E6%B3%95"><span class="nav-number">1.8.</span> <span class="nav-text">降低圈复杂度的方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E6%96%B0%E7%BB%84%E7%BB%87%E5%87%BD%E6%95%B0"><span class="nav-number">1.8.1.</span> <span class="nav-text">重新组织函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E5%8C%96%E6%9D%A1%E4%BB%B6%E8%A1%A8%E8%BE%BE%E5%BC%8F"><span class="nav-number">1.8.2.</span> <span class="nav-text">简化条件表达式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E5%8C%96%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8"><span class="nav-number">1.8.3.</span> <span class="nav-text">简化函数调用</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

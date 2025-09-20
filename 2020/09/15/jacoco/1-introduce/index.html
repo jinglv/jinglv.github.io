@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Jacoco学习笔记第一讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jacoco简介">
+<meta property="og:url" content="https://jinglv.github.io/2020/09/15/jacoco/1-introduce/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Jacoco学习笔记第一讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141650551.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141651259.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141725089.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141725119.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141651091.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141652041.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141652986.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141653019.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141654426.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141656218.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141657635.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141657923.png">
+<meta property="article:published_time" content="2020-09-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-09-15T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="Jacoco">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141650551.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2020/09/15/jacoco/1-introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Jacoco简介 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2020/09/15/jacoco/1-introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Jacoco简介
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-09-15 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2020-09-15T00:00:00+08:00">2020-09-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Jacoco/" itemprop="url" rel="index"><span itemprop="name">Jacoco</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Jacoco学习笔记第一讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="浅谈覆盖率"><a href="#浅谈覆盖率" class="headerlink" title="浅谈覆盖率"></a>浅谈覆盖率</h1><p>在介绍Jacoco前，就是需要了解覆盖率是什么？现在开发在做单元测试时，问得更多的是：“覆盖率要多少？”以覆盖的达到的百分比作为衡量的标准，所以开发在写单测执行时，最多关注的是测试覆盖率达到了多少，这样将测试覆盖率作为指标意义不大，在我们做测试覆盖率更重要的是关注未被测试覆盖的代码。</p>
+<h2 id="代码覆盖率的意义"><a href="#代码覆盖率的意义" class="headerlink" title="代码覆盖率的意义"></a>代码覆盖率的意义</h2><ol>
+<li>分析未覆盖部分的代码，从而反推在前期测试设计是否充分，没有覆盖到的代码是否是测试设计的盲点，为什么没有考虑到？需求/设计不够清晰，测试设计的理解有误，工程方法应用后的造成的策略性放弃等等，之后进行补充测试用例设计。 </li>
+<li>检测出程序中的废代码，可以逆向反推在代码设计中思维混乱点，提醒设计/开发人员理清代码逻辑关系，提升代码质量。 </li>
+<li>代码覆盖率高不能说明代码质量高，但是反过来看，代码覆盖率低，代码质量不会高到哪里去，可以作为测试自我审视的重要工具之一。</li>
+</ol>
+<h2 id="代码覆盖率工具"><a href="#代码覆盖率工具" class="headerlink" title="代码覆盖率工具"></a>代码覆盖率工具</h2><p>目前基本针对于Java的覆盖率工具，最常用的是Jacoco，主要讲解的是Jacoco</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Jacoco</th>
+<th>Emma</th>
+<th>Cobertura</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>原理</td>
+<td>使用ASM修改字节码</td>
+<td>可以修改Jar文件、class文件字节码文件</td>
+<td>基于Jcoverage。基于ASM框架对class插桩</td>
+</tr>
+<tr>
+<td>覆盖粒度</td>
+<td>方法、类、行、分支、指令、圈</td>
+<td>行、块、方法、类</td>
+<td>行、分支</td>
+</tr>
+<tr>
+<td>插桩</td>
+<td>on-the-fly和offline</td>
+<td>on-the-fly和offline</td>
+<td>offline</td>
+</tr>
+<tr>
+<td>缺点</td>
+<td></td>
+<td>不支持JDK8</td>
+<td>关闭服务器才能获取覆盖率报告</td>
+</tr>
+<tr>
+<td>性能</td>
+<td>块</td>
+<td>较快</td>
+<td>较快</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="覆盖率工具工作流程"><a href="#覆盖率工具工作流程" class="headerlink" title="覆盖率工具工作流程"></a>覆盖率工具工作流程</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141650551.png" alt="image-20220714165038511"></p>
+<ol>
+<li>对Java字节码进行插桩，On-The-Fly和Offine两种方式。</li>
+<li>执行测试用例，收集程序执行轨迹信息，将其dump到内存。</li>
+<li>数据处理器结合程序执行轨迹信息和代码结构信息分析生成代码覆盖率报告。</li>
+<li>将代码覆盖率报告图形化展示出来，如html、xml等文件格式。</li>
+</ol>
+<h2 id="插桩原理"><a href="#插桩原理" class="headerlink" title="插桩原理"></a>插桩原理</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141651259.png" alt="image-20220714165106079"></p>
+<p>上图包含了几种不同的收集覆盖率信息的方法，每种方法的实现方法都不一样，带颜色的Jacoco中比较有特色的地方。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Code Coverage</th>
+<th>代码覆盖率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Runtime Profiling</td>
+<td>运行时分析</td>
+</tr>
+<tr>
+<td>JVMPI</td>
+<td>Java虚拟机监视程序接口</td>
+</tr>
+<tr>
+<td>JVMTI</td>
+<td>Java虚拟机工具接口</td>
+</tr>
+<tr>
+<td>Instrumentation</td>
+<td>注入</td>
+</tr>
+<tr>
+<td>Source</td>
+<td>源码注入</td>
+</tr>
+<tr>
+<td>Byte Code</td>
+<td>字节码注入</td>
+</tr>
+<tr>
+<td>Offline</td>
+<td>离线模式</td>
+</tr>
+<tr>
+<td>On-The-Fly</td>
+<td>在线模式</td>
+</tr>
+<tr>
+<td>Replace</td>
+<td>替换方式</td>
+</tr>
+<tr>
+<td>Inject</td>
+<td>注入方式</td>
+</tr>
+<tr>
+<td>Class Loader</td>
+<td>类加载</td>
+</tr>
+<tr>
+<td>Java Agent</td>
+<td>代理</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>主流代码覆盖率工具都采用<strong>字节码插桩模式</strong>，通过钩子的方式来记录代码执行轨迹信息。其中字节码插桩又分为两种模式On-The-Fly和Offine。On-The-Fly模式优点在于无需修改源代码，可以在系统不停机的情况下，实时收集代码覆盖率信息。Offine模式优点在于系统启动不需要额外开启代理，但是只能在系统停机的情况下才能获取代码覆盖率。 </p>
+<h3 id="On-The-Fly插桩-Java-Agent"><a href="#On-The-Fly插桩-Java-Agent" class="headerlink" title="On-The-Fly插桩 Java Agent"></a>On-The-Fly插桩 Java Agent</h3><ul>
+<li>JVM中通过-javaagent参数指定特定的jar文件启动Instrumentation的代理程序</li>
+<li>代理程序在每装载一个class文件前判断是否已经转换修改了该文件，如果没有则需要将探针插入class文件中。</li>
+<li>代码覆盖率就可以在JVM执行代码的时候实时获取。</li>
+<li>典型代表：Jacoco</li>
+</ul>
+<h3 id="On-The-Fly插桩-Class-Loader"><a href="#On-The-Fly插桩-Class-Loader" class="headerlink" title="On-The-Fly插桩 Class Loader"></a>On-The-Fly插桩 Class Loader</h3><ul>
+<li>自定义classloader实现自己的类装载策略，在类加载之前将探针插入class文件中</li>
+<li>典型代表：Emma</li>
+</ul>
+<h3 id="Offine插桩"><a href="#Offine插桩" class="headerlink" title="Offine插桩"></a>Offine插桩</h3><ul>
+<li>在测试之前先对文件进行插桩，生成插过桩的class文件或者jar包，执行插过桩的class文件或者jar包之后，会生成覆盖率信息到文件，最后统一对覆盖率信息进行处理，并生成报告。</li>
+<li>Offline插桩又分为两种：<ul>
+<li>Replace：修改字节码生成新的class文件</li>
+<li>Inject：在原有字节码文件上进行修改</li>
+</ul>
+</li>
+<li>典型代表：Cobertura</li>
+</ul>
+<h3 id="On-The-Fly和Offine比较"><a href="#On-The-Fly和Offine比较" class="headerlink" title="On-The-Fly和Offine比较"></a>On-The-Fly和Offine比较</h3><ul>
+<li>On-The-Fly模式更加方便的获取代码覆盖率，无需提前进行字节码插桩，可以实时获取代码覆盖率信息</li>
+<li>Offline模式适用于以下场景：<ul>
+<li>运行环境不支持java agent</li>
+<li>部署环境不允许设置JVM参数</li>
+<li>字节码需要被转换成其他虚拟机字节码，如Android Dalvik VM</li>
+<li>动态修改字节码过程中和其他agent冲突</li>
+<li>无法自定义用户加载类</li>
+</ul>
+</li>
+</ul>
+<h2 id="实践应用"><a href="#实践应用" class="headerlink" title="实践应用"></a>实践应用</h2><h3 id="单元测试覆盖率"><a href="#单元测试覆盖率" class="headerlink" title="单元测试覆盖率"></a>单元测试覆盖率</h3><p>开发任务中，开发人员编写单元测试用例，为了能够引入持续集成，我们采取的是Maven+Jacoco+SonarQube来获取单元测试覆盖率，将代码覆盖率绑定到代码编译阶段，每次代码编译就能够执行单元测试同时获取代码单元测试覆盖率。</p>
+<p>生成代码覆盖率文件以后，通过Jenkins SonarQube Scanner或者执行<code>mvn sonar:sonar</code>将该文件上传至Sonar 服务器，就可以解析该文件，生成图形化的界面。</p>
+<h3 id="集成测试覆盖率"><a href="#集成测试覆盖率" class="headerlink" title="集成测试覆盖率"></a>集成测试覆盖率</h3><p>测试人员执行集成测试测试用例时（包括手工执行和自动化执行），我们需要代码覆盖率来发现测试用例设计的遗漏，及时补充用例来覆盖未被覆盖到的代码。</p>
+<p>被测系统，在服务启动时，都会通过javaagent的方式做On-The-Fly插桩</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141725089.png" alt="image-20220714172519855"></p>
+<ul>
+<li>被测服务器启动之后，测试人员手工执行测试用例，Jacoco Agent会实时将代码覆盖率信息传输给Jacoco Prase Server，该服务器保存了被测代码源文件以及编译后的目标文件，服务器会结合源文件、目标文件以及代码覆盖率信息生成图表化的覆盖率文件。</li>
+<li>自动化执行测试用例完成之后，获取代码覆盖率信息，通过Jenkins Jacoco插件解析，获取图表化的覆盖率文件。</li>
+</ul>
+<p>获取代码覆盖率报告之后，结合git获取的本次代码变动信息，得到测试用例覆盖的变动文件的测试覆盖率统计信息。来分析是否有由于测试用例设计遗漏导致的代码没有覆盖或者是开发的无效代码导致该代码无法被覆盖，如果测试用例设计有所遗漏，可以对照的增加相应的用例；如果是无效代码可以删除。</p>
+<h3 id="自动化集成流程"><a href="#自动化集成流程" class="headerlink" title="自动化集成流程"></a>自动化集成流程</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141725119.png" alt="image-20220714172553085"></p>
+<ol>
+<li>业务开发完成之后，开发人员做单元测试，单元测试完成之后，保证单元测试全部通过同时单元测试代码覆盖率达到一定程度（这个需要开发和测试约定，理论上越高越好），开发提测。 </li>
+<li>测试人员根据测试用例进行测试（包括手工测试和自动化测试），结合git获取本次变动代码的覆盖率信息。行覆盖率需达到100%，分支达到50%以上，这个需要具体场景具体分析。 </li>
+<li>测试通过之后，代码合并至主干，进行自动化回归。 </li>
+<li>回归测试通过之后，代码可以上线。</li>
+</ol>
+<p>基于这套流程，我们可以将单元测试代码覆盖率和集成测试代码覆盖率整合到持续集成流程中，如果代码覆盖率达不到我们设置的某个值时，可以终止流程继续下去获取需要人工确认之后，继续流程。</p>
+<p>以上整理内容来源于以下文章：</p>
+<p><a target="_blank" rel="noopener" href="https://tech.youzan.com/code-coverage/">https://tech.youzan.com/code-coverage/</a></p>
+<p><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1038055">https://cloud.tencent.com/developer/article/1038055</a></p>
+<h1 id="Jacoco"><a href="#Jacoco" class="headerlink" title="Jacoco"></a>Jacoco</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>作为一个合格的测试人员，保证产品的软件质量是其工作首要目标，为了这个目标，测试人员常常会通过很多手段或工具来加以保证，覆盖率就是其中一环比较重要的环节。</p>
+<p>通常我们会将测试覆盖率分为两个部分：需求覆盖率、代码覆盖率。</p>
+<ul>
+<li>需求覆盖：指的是测试人员对需求的了解程度，根据需求的可测试性来拆分成各个子需求点，来编写相应的测试用例，最终建立一个需求和用例的映射关系，以用例的测试结果来验证需求的实现，可以理解为黑盒覆盖。</li>
+<li>代码覆盖：为了更加全面的覆盖，我们可能还需要理解被测程序的逻辑，需要考虑到每个函数的输入与输出，逻辑分支代码的执行情况，这个时候我们的测试执行情况就以代码覆盖率来衡量，可以理解为白盒覆盖。</li>
+</ul>
+<p>以上两者完全可以相辅相成，用代码覆盖结果反向的检查需求覆盖(用例)的测试是否充分完整</p>
+<h2 id="工具介绍"><a href="#工具介绍" class="headerlink" title="工具介绍"></a>工具介绍</h2><p>市场上java主要代码覆盖率工具：EMMA、JaCoCo。</p>
+<p>JaCoCo优势：</p>
+<ol>
+<li>JaCoCo支持分支覆盖、引入了Agent模式。</li>
+<li>EMMA官网已经不维护了，JaCoCo是其团队开发的，可以理解为一个升级版。</li>
+<li>JaCoCo社区比较活跃，官网也在不断的维护更新</li>
+</ol>
+<p><a target="_blank" rel="noopener" href="http://www.eclemma.org/jacoco/">jacoco官方网址</a></p>
+<ul>
+<li>Jacoco是一个开源的覆盖率工具。Jacoco可以嵌入到Ant 、Maven中，并提供了EclEmma Eclipse插件,也可以使用JavaAgent技术监控Java程序。很多第三方的工具提供了对Jacoco的集成，如sonar、Jenkins等。</li>
+<li>Jacoco包含了多种尺度的覆盖率计数器,包含指令级覆盖(Instructions,C0coverage)，分支（Branches,C1coverage）、圈复杂度(CyclomaticComplexity)、行覆盖(Lines)、方法覆盖(non-abstract methods)、类覆盖(classes)</li>
+</ul>
+<h2 id="覆盖率计数器"><a href="#覆盖率计数器" class="headerlink" title="覆盖率计数器"></a>覆盖率计数器</h2><ul>
+<li><p>行覆盖率</p>
+<p>所有类文件均携带debug信息编译，则每行的覆盖率可计算。当至少一个指令被指定到源码行且已执行时，该源码行被认为已执行。</p>
+<ul>
+<li><strong>全部未覆盖</strong>：该行中指令均未执行，<strong>红色</strong>标志</li>
+<li><strong>部分覆盖</strong>：该行中部分指令执行，<strong>黄色</strong>标志</li>
+<li><strong>全覆盖</strong>：该行中所有指令已执行，<strong>绿色</strong>标志</li>
+</ul>
+</li>
+<li><p>类覆盖率</p>
+<p>当类中至少有一个方法已执行，则该类被认为已执行。Jacoco中认为构造函数和静态初始化方法也当作被执行过的方法。Java接口类型若包含静态初始化方法，这种接口也被认为是可执行的类。</p>
+</li>
+<li><p>方法覆盖率</p>
+<p>每个非抽象方法至少包含一个指令。当至少一个指令被执行，该方法被认为已执行。由于Jacoco基于字节码级别的，构造函数和静态初始化方法也被当作方法计算。其中有些方法，可能无法直接对应到源码中，比如默认构造器或常量的初始化命令。</p>
+</li>
+<li><p>分支覆盖率</p>
+<p>Jacoco为if和switch语句计算分支覆盖率。这个指标计算一个方法中的分支总数，并决定已执行和未执行的分支的数量。分支覆盖率在class文件中缺少debug信息时也可使用。异常处理不在分支覆盖的统计范围内。</p>
+<ul>
+<li><strong>全部未覆盖</strong>：所有分支均未执行，<strong>红色</strong>标志</li>
+<li><strong>部分覆盖</strong>：只有部分分支被执行，<strong>黄色</strong>标志</li>
+<li><strong>全覆盖</strong>：所有分支均已执行，<strong>绿色</strong>标志</li>
+</ul>
+</li>
+<li><p>指令覆盖率</p>
+<p>Jacoco计数的最小单元是Java字节码指令，它为执行/未执行代码提供了大量的信息。这个指标完全独立于源格式，在类文件中缺少debug信息时也可以使用。</p>
+</li>
+<li><p>圈复杂度</p>
+<p>Jacoco对每个非抽象方法计算圈复杂度，总结类、包、组的复杂性。根据McCabe1996圈复杂度的定义：在（线性）组合中，计算在一个方法里面所有可能路径的最小数目。因此，复杂度的值可以作为表示单元测试用例是否有完全覆盖所有场景的一个依据。复杂度数字即使在类文件缺失调试信息的情况下也可以计算。</p>
+</li>
+<li><p>圈复杂度 v(G) 的正式定义基于方法的控制流程图作为有向图的表示：</p>
+<p><code>V(G) = E - N + 2</code></p>
+<p>E是边界数量，N是节点数量。</p>
+</li>
+<li><p>Jacoco基于下面方程来计算复杂度:</p>
+<p><code>V(G) = B - D + 1</code></p>
+<p>B是分支数量，D是决策点数量</p>
+<p>基于每个分支的被覆盖情况，Jacoco也未每个方法计算覆盖和缺失的复杂度。缺失复杂度同样表示测试案例没有完全覆盖到这个模块。注意Jacoco不将异常处理作为分支，try/catch块也同样不增加复杂度。</p>
+</li>
+</ul>
+<h2 id="Jacoco原理"><a href="#Jacoco原理" class="headerlink" title="Jacoco原理"></a>Jacoco原理</h2><p>Jacoco使用插桩的方式来记录覆盖率数据，是通过一个probe探针来注入。</p>
+<p>插桩模式有两种：</p>
+<ul>
+<li><p><strong>on-the-fly模式</strong></p>
+<p>JVM通过 -javaagent参数指定jar文件启动代理程序，代理程序在ClassLoader装载一个class前判断是否修改class文件，并将探针插入class文件，探针不改变原有方法的行为，只是记录是否已经执行。</p>
+</li>
+<li><p><strong>offline模式</strong></p>
+<p>在测试之前先对文件进行插桩，生成插过桩的class或jar包，测试插过桩的class和jar包，生成覆盖率信息到文件，最后统一处理，生成报告。</p>
+</li>
+</ul>
+<h2 id="Java方法的控制流分析"><a href="#Java方法的控制流分析" class="headerlink" title="Java方法的控制流分析"></a>Java方法的控制流分析</h2><p><a target="_blank" rel="noopener" href="https://www.jacoco.org/jacoco/trunk/doc/flow.html">官方文档控制流分析</a></p>
+<h3 id="Jacoco如何在字节码注入？引用官网的实例进行分析"><a href="#Jacoco如何在字节码注入？引用官网的实例进行分析" class="headerlink" title="Jacoco如何在字节码注入？引用官网的实例进行分析"></a>Jacoco如何在字节码注入？引用官网的实例进行分析</h3><ul>
+<li><p>java方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">example</span><span class="params">()</span> &#123;</span><br><span class="line">    a();</span><br><span class="line">    <span class="keyword">if</span> (cond()) &#123;</span><br><span class="line">        b();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        c();</span><br><span class="line">    &#125;</span><br><span class="line">    d();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p>编译后转换成字节码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="title function_">example</span><span class="params">()</span>V</span><br><span class="line">      INVOKESTATIC <span class="title function_">a</span><span class="params">()</span>V</span><br><span class="line">      INVOKESTATIC <span class="title function_">cond</span><span class="params">()</span>Z</span><br><span class="line">      IFEQ L1</span><br><span class="line">      INVOKESTATIC <span class="title function_">b</span><span class="params">()</span>V</span><br><span class="line">      GOTO L2</span><br><span class="line">  L1: INVOKESTATIC <span class="title function_">c</span><span class="params">()</span>V</span><br><span class="line">  L2: INVOKESTATIC <span class="title function_">d</span><span class="params">()</span>V</span><br><span class="line">      RETURN</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>Jacoco是字节码注入方式，通过一个probe探针的方式来注入的，探针是字节指令集插入到Java方法中，程序执行后可以被记录，它不会改变原有代码的行为。下图是探针前后插入的比较；</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141651091.png" alt="image-20220714165145031" style="zoom:50%;" /></p>
+<p>上图，黄色部分是探针注入的地方。</p>
+<h3 id="探针插入策略"><a href="#探针插入策略" class="headerlink" title="探针插入策略"></a>探针插入策略</h3><p>Jacoco是根据控制流Type来采用不同的探针插入策略的。</p>
+<p>一个用Java字节码定义的Java方法的控制流图可能有以下的type，每个type连接一个源指令与目标指令，type不同探针的注入策略也会不同，如下是type的定义：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141652041.png" alt="image-20220714165219008"></p>
+<p>探针可以在现有指令之间插入附加指令，他们不改变已有方法行为，只是去记录是否已经执行。可以认为探针放置在控制流图的边缘上，理论上讲，我们可以在控制流图的每个边缘插入一个探针，但这样会增加类文件大小，降低执行速度。事实上，我们每个方法只需要一些探针，具体取决于方法的控制流程。</p>
+<p>如果已经执行了探测，我们知道已经访问了相应的边缘，从这个边缘我们可以得出其他前面的节点和边：</p>
+<ul>
+<li>如果访问了边，我们知道该边的源节点已经被执行。</li>
+<li>如果节点已经被执行且节点是一个边缘的目标节点，则我们知道已经访问了该边。</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141652986.png" alt="image-20220714165251898"></p>
+<p>上述探针插入策略没有考虑到隐式异常，如果两个探针之间的控制流被未使用throw的语句显示创建的异常终端，则其间的所有指令都被视为未覆盖。因此，只要后续行包含至少一个方法调用，Jacoco就会在两行的指令间添加额外的探测。该方法仅使用于有debug信息的编译的类文件。且不考虑除方法调用之外的其他指令的隐式异常。</p>
+<h3 id="探针的实现"><a href="#探针的实现" class="headerlink" title="探针的实现"></a>探针的实现</h3><p>探针需要满足如下几点要求：</p>
+<ul>
+<li><p>记录执行</p>
+</li>
+<li><p>识别不同的探针</p>
+</li>
+<li>线程安全</li>
+<li>对应用程序无影响</li>
+<li>最小的运行时开销</li>
+</ul>
+<p>JaCoCo是用一个布尔数组来实现探针，每个探针对应于该数组中的项。当以下四个字节码指令触发时探针进行输入设置为true给每个类一个boolean[]数组实例，每个探针对应该数组中的一个条目。无论何时执行，都用下面4条字节码指令将条目设置为true。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ALOAD    probearray</span><br><span class="line">xPUSH    probeid</span><br><span class="line">ICONST_1</span><br><span class="line">BASTORE</span><br></pre></td></tr></table></figure>
+<h2 id="Jacoco的on-the-fly模式使用方式"><a href="#Jacoco的on-the-fly模式使用方式" class="headerlink" title="Jacoco的on-the-fly模式使用方式"></a>Jacoco的on-the-fly模式使用方式</h2><p><a target="_blank" rel="noopener" href="https://www.jacoco.org/jacoco/trunk/doc/agent.html">javaagent官网使用方式</a></p>
+<p>Jacoco的使用分为三部分:</p>
+<ul>
+<li>第一部分是注入并采集</li>
+<li>第二部分是导出</li>
+<li>第三部分是生成报告</li>
+</ul>
+<p>三部分可以分开执行。</p>
+<ol>
+<li><p>首先在被测程序的启动命令行中加上-javaagent选项，指定jacocoagent.jar作为代理程序。</p>
+<ul>
+<li>Jacoco agent搜集执行信息并且在请求或者JVM退出的时候导出数据。有三种不同的导出数据模式：<ul>
+<li>文件系统：JVM停止时，数据被导出到本地文件</li>
+<li>TCP socket Server：监听端口连接，通过socket连接获取到执行数据。在VM退出时，可选择进行数据重置和数据导出。</li>
+<li>TCP socket Client：启动时，Jacoco agent连接到一个给定的TCP端，请求时执行数据写到socket，在VM退出时，可选择进行数据重置和数据导出。</li>
+</ul>
+</li>
+<li>命令：<code>-javaagent:[yourpath/]jacocoagent.jar=[option1]=[value1],[option2]=[value2]</code></li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141653019.png" alt="image-20220714165325926"></p>
+</li>
+<li><p>导出数据，假如指定导出模式为tcpserver，那么我们需要启动一个client来请求覆盖率文件数据</p>
+<ul>
+<li><p>代码导出  Jacoco给出的example示例如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> org.jacoco.examples;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.FileOutputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.net.InetAddress;</span><br><span class="line"><span class="keyword">import</span> java.net.Socket;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.jacoco.core.data.ExecutionDataWriter;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.core.runtime.RemoteControlReader;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.core.runtime.RemoteControlWriter;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * This example connects to a coverage agent that run in output mode</span></span><br><span class="line"><span class="comment"> * &lt;code&gt;tcpserver&lt;/code&gt; and requests execution data. The collected data is</span></span><br><span class="line"><span class="comment"> * dumped to a local file.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">ExecutionDataClient</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">DESTFILE</span> <span class="operator">=</span> <span class="string">&quot;jacoco-client.exec&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">ADDRESS</span> <span class="operator">=</span> <span class="string">&quot;localhost&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">PORT</span> <span class="operator">=</span> <span class="number">6300</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Starts the execution data request.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> args</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> IOException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(<span class="keyword">final</span> String[] args)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="type">FileOutputStream</span> <span class="variable">localFile</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FileOutputStream</span>(DESTFILE);</span><br><span class="line">        <span class="keyword">final</span> <span class="type">ExecutionDataWriter</span> <span class="variable">localWriter</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ExecutionDataWriter</span>(</span><br><span class="line">                localFile);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Open a socket to the coverage agent:</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">Socket</span> <span class="variable">socket</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Socket</span>(InetAddress.getByName(ADDRESS), PORT);</span><br><span class="line">        <span class="keyword">final</span> <span class="type">RemoteControlWriter</span> <span class="variable">writer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">RemoteControlWriter</span>(</span><br><span class="line">                socket.getOutputStream());</span><br><span class="line">        <span class="keyword">final</span> <span class="type">RemoteControlReader</span> <span class="variable">reader</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">RemoteControlReader</span>(</span><br><span class="line">                socket.getInputStream());</span><br><span class="line">        reader.setSessionInfoVisitor(localWriter);</span><br><span class="line">        reader.setExecutionDataVisitor(localWriter);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Send a dump command and read the response:</span></span><br><span class="line">        writer.visitDumpCommand(<span class="literal">true</span>, <span class="literal">false</span>);</span><br><span class="line">        <span class="keyword">if</span> (!reader.read()) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IOException</span>(<span class="string">&quot;Socket closed unexpectedly.&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        socket.close();</span><br><span class="line">        localFile.close();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">ExecutionDataClient</span><span class="params">()</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ol>
+<ul>
+<li><p>命令行导出 (dump)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar jacococli.jar dump [--address &lt;address&gt;] --destfile &lt;path&gt; [--help] [--port &lt;port&gt;] [--quiet] [--reset] [--retry &lt;count&gt;]</span><br></pre></td></tr></table></figure>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141654426.png" alt="image-20220714165401384"></p>
+</li>
+</ul>
+<ol>
+<li><p>根据上面导出的exec文件，生成报告</p>
+<ul>
+<li><p>代码生成报告：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.File;</span><br><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.core.analysis.Analyzer;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.core.analysis.CoverageBuilder;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.core.analysis.IBundleCoverage;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.core.tools.ExecFileLoader;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.report.DirectorySourceFileLocator;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.report.FileMultiReportOutput;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.report.IReportVisitor;</span><br><span class="line"><span class="keyword">import</span> org.jacoco.report.html.HTMLFormatter;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * This example creates a HTML report for eclipse like projects based on a</span></span><br><span class="line"><span class="comment"> * single execution data store called jacoco.exec. The report contains no</span></span><br><span class="line"><span class="comment"> * grouping information.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The class files under test must be compiled with debug information, otherwise</span></span><br><span class="line"><span class="comment"> * source highlighting will not work.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ReportGenerator</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String title;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> File executionDataFile;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> File classesDirectory;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> File sourceDirectory;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> File reportDirectory;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> ExecFileLoader execFileLoader;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Create a new generator based for the given project.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> projectDirectory</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">ReportGenerator</span><span class="params">(<span class="keyword">final</span> File projectDirectory)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.title = projectDirectory.getName();</span><br><span class="line">        <span class="built_in">this</span>.executionDataFile = <span class="keyword">new</span> <span class="title class_">File</span>(projectDirectory, <span class="string">&quot;jacoco.exec&quot;</span>);</span><br><span class="line">        <span class="built_in">this</span>.classesDirectory = <span class="keyword">new</span> <span class="title class_">File</span>(projectDirectory, <span class="string">&quot;bin&quot;</span>);</span><br><span class="line">        <span class="built_in">this</span>.sourceDirectory = <span class="keyword">new</span> <span class="title class_">File</span>(projectDirectory, <span class="string">&quot;src&quot;</span>);</span><br><span class="line">        <span class="built_in">this</span>.reportDirectory = <span class="keyword">new</span> <span class="title class_">File</span>(projectDirectory, <span class="string">&quot;coveragereport&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Create the report.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> IOException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">create</span><span class="params">()</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Read the jacoco.exec file. Multiple data files could be merged</span></span><br><span class="line">        <span class="comment">// at this point</span></span><br><span class="line">        loadExecutionData();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Run the structure analyzer on a single class folder to build up</span></span><br><span class="line">        <span class="comment">// the coverage model. The process would be similar if your classes</span></span><br><span class="line">        <span class="comment">// were in a jar file. Typically you would create a bundle for each</span></span><br><span class="line">        <span class="comment">// class folder and each jar you want in your report. If you have</span></span><br><span class="line">        <span class="comment">// more than one bundle you will need to add a grouping node to your</span></span><br><span class="line">        <span class="comment">// report</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">IBundleCoverage</span> <span class="variable">bundleCoverage</span> <span class="operator">=</span> analyzeStructure();</span><br><span class="line"></span><br><span class="line">        createReport(bundleCoverage);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">createReport</span><span class="params">(<span class="keyword">final</span> IBundleCoverage bundleCoverage)</span></span><br><span class="line">            <span class="keyword">throws</span> IOException &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Create a concrete report visitor based on some supplied</span></span><br><span class="line">        <span class="comment">// configuration. In this case we use the defaults</span></span><br><span class="line">        <span class="keyword">final</span> <span class="type">HTMLFormatter</span> <span class="variable">htmlFormatter</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HTMLFormatter</span>();</span><br><span class="line">        <span class="keyword">final</span> <span class="type">IReportVisitor</span> <span class="variable">visitor</span> <span class="operator">=</span> htmlFormatter</span><br><span class="line">                .createVisitor(<span class="keyword">new</span> <span class="title class_">FileMultiReportOutput</span>(reportDirectory));</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Initialize the report with all of the execution and session</span></span><br><span class="line">        <span class="comment">// information. At this point the report doesn&#x27;t know about the</span></span><br><span class="line">        <span class="comment">// structure of the report being created</span></span><br><span class="line">        visitor.visitInfo(execFileLoader.getSessionInfoStore().getInfos(),</span><br><span class="line">                execFileLoader.getExecutionDataStore().getContents());</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Populate the report structure with the bundle coverage information.</span></span><br><span class="line">        <span class="comment">// Call visitGroup if you need groups in your report.</span></span><br><span class="line">        visitor.visitBundle(bundleCoverage,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">DirectorySourceFileLocator</span>(sourceDirectory, <span class="string">&quot;utf-8&quot;</span>, <span class="number">4</span>));</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Signal end of structure information to allow report to write all</span></span><br><span class="line">        <span class="comment">// information out</span></span><br><span class="line">        visitor.visitEnd();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">loadExecutionData</span><span class="params">()</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        execFileLoader = <span class="keyword">new</span> <span class="title class_">ExecFileLoader</span>();</span><br><span class="line">        execFileLoader.load(executionDataFile);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> IBundleCoverage <span class="title function_">analyzeStructure</span><span class="params">()</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="type">CoverageBuilder</span> <span class="variable">coverageBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">CoverageBuilder</span>();</span><br><span class="line">        <span class="keyword">final</span> <span class="type">Analyzer</span> <span class="variable">analyzer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Analyzer</span>(</span><br><span class="line">                execFileLoader.getExecutionDataStore(), coverageBuilder);</span><br><span class="line"></span><br><span class="line">        analyzer.analyzeAll(classesDirectory);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> coverageBuilder.getBundle(title);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Starts the report generation process</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> args</span></span><br><span class="line"><span class="comment">     *            Arguments to the application. This will be the location of the</span></span><br><span class="line"><span class="comment">     *            eclipse projects that will be used to generate reports for</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> IOException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(<span class="keyword">final</span> String[] args)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; args.length; i++) &#123;</span><br><span class="line">            <span class="keyword">final</span> <span class="type">ReportGenerator</span> <span class="variable">generator</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ReportGenerator</span>(</span><br><span class="line">                    <span class="keyword">new</span> <span class="title class_">File</span>(args[i]));</span><br><span class="line">            generator.create();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>命令行生成报告：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar jacococli.jar report [&lt;execfiles&gt; ...] --classfiles &lt;path&gt; [--csv &lt;file&gt;] [--encoding &lt;charset&gt;] [--help] [--html &lt;dir&gt;] [--name &lt;name&gt;] [--quiet] [--sourcefiles &lt;path&gt;] [--tabwith &lt;n&gt;] [--xml &lt;file&gt;]</span><br></pre></td></tr></table></figure>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141656218.png" alt="image-20220714165643170" style="zoom:50%;" /></p>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h2><h3 id="合并多个exec文件信息"><a href="#合并多个exec文件信息" class="headerlink" title="合并多个exec文件信息"></a>合并多个exec文件信息</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar jacococli.jar merge [&lt;execfiles&gt; ...] --destfile &lt;path&gt; [--help] [--quiet]</span><br></pre></td></tr></table></figure>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141657635.png" alt="image-20220714165718593" style="zoom:50%;" /></p>
+<h3 id="查看exec文件信息"><a href="#查看exec文件信息" class="headerlink" title="查看exec文件信息"></a>查看exec文件信息</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar jacococli.jar execinfo [&lt;execfiles&gt; ...] [--help] [--quiet]</span><br></pre></td></tr></table></figure>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141657923.png" alt="image-20220714165742880" style="zoom:50%;" /></p>
+<h2 id="支持的集成工具"><a href="#支持的集成工具" class="headerlink" title="支持的集成工具"></a>支持的集成工具</h2><p>Jacoco团队提供了如下的一些集成工具的支持：</p>
+<ul>
+<li>Java API：　　　　　　　　 　　<a target="_blank" rel="noopener" href="http://www.eclemma.org/jacoco/trunk/doc/api/index.html">http://www.eclemma.org/jacoco/trunk/doc/api/index.html</a></li>
+<li>Command Line：　　　　　　   <a target="_blank" rel="noopener" href="http://www.eclemma.org/jacoco/trunk/doc/agent.html">http://www.eclemma.org/jacoco/trunk/doc/agent.html</a></li>
+<li>Apache Ant：　　　　　　　 　 <a target="_blank" rel="noopener" href="http://www.eclemma.org/jacoco/trunk/doc/ant.html">http://www.eclemma.org/jacoco/trunk/doc/ant.html</a></li>
+<li>Apache Maven：　　　　　　　<a target="_blank" rel="noopener" href="http://www.eclemma.org/jacoco/trunk/doc/maven.html">http://www.eclemma.org/jacoco/trunk/doc/maven.html</a></li>
+<li>Eclipse EclDmma Plugin：　　   <a target="_blank" rel="noopener" href="http://www.eclemma.org/">http://www.eclemma.org/</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Jacoco/" rel="tag"># Jacoco</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/09/15/jacoco/2-analysis/" rel="prev" title="Jacoco代码覆盖率报告分析">
+      <i class="fa fa-chevron-left"></i> Jacoco代码覆盖率报告分析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/05/system/docker/6-volume/" rel="next" title="Docker数据卷">
+      Docker数据卷 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%85%E8%B0%88%E8%A6%86%E7%9B%96%E7%8E%87"><span class="nav-number">1.</span> <span class="nav-text">浅谈覆盖率</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E8%A6%86%E7%9B%96%E7%8E%87%E7%9A%84%E6%84%8F%E4%B9%89"><span class="nav-number">1.1.</span> <span class="nav-text">代码覆盖率的意义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E8%A6%86%E7%9B%96%E7%8E%87%E5%B7%A5%E5%85%B7"><span class="nav-number">1.2.</span> <span class="nav-text">代码覆盖率工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A6%86%E7%9B%96%E7%8E%87%E5%B7%A5%E5%85%B7%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="nav-number">1.3.</span> <span class="nav-text">覆盖率工具工作流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E6%A1%A9%E5%8E%9F%E7%90%86"><span class="nav-number">1.4.</span> <span class="nav-text">插桩原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#On-The-Fly%E6%8F%92%E6%A1%A9-Java-Agent"><span class="nav-number">1.4.1.</span> <span class="nav-text">On-The-Fly插桩 Java Agent</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#On-The-Fly%E6%8F%92%E6%A1%A9-Class-Loader"><span class="nav-number">1.4.2.</span> <span class="nav-text">On-The-Fly插桩 Class Loader</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Offine%E6%8F%92%E6%A1%A9"><span class="nav-number">1.4.3.</span> <span class="nav-text">Offine插桩</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#On-The-Fly%E5%92%8COffine%E6%AF%94%E8%BE%83"><span class="nav-number">1.4.4.</span> <span class="nav-text">On-The-Fly和Offine比较</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E8%B7%B5%E5%BA%94%E7%94%A8"><span class="nav-number">1.5.</span> <span class="nav-text">实践应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95%E8%A6%86%E7%9B%96%E7%8E%87"><span class="nav-number">1.5.1.</span> <span class="nav-text">单元测试覆盖率</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E6%88%90%E6%B5%8B%E8%AF%95%E8%A6%86%E7%9B%96%E7%8E%87"><span class="nav-number">1.5.2.</span> <span class="nav-text">集成测试覆盖率</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E5%8C%96%E9%9B%86%E6%88%90%E6%B5%81%E7%A8%8B"><span class="nav-number">1.5.3.</span> <span class="nav-text">自动化集成流程</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Jacoco"><span class="nav-number">2.</span> <span class="nav-text">Jacoco</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">2.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.2.</span> <span class="nav-text">工具介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A6%86%E7%9B%96%E7%8E%87%E8%AE%A1%E6%95%B0%E5%99%A8"><span class="nav-number">2.3.</span> <span class="nav-text">覆盖率计数器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jacoco%E5%8E%9F%E7%90%86"><span class="nav-number">2.4.</span> <span class="nav-text">Jacoco原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Java%E6%96%B9%E6%B3%95%E7%9A%84%E6%8E%A7%E5%88%B6%E6%B5%81%E5%88%86%E6%9E%90"><span class="nav-number">2.5.</span> <span class="nav-text">Java方法的控制流分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Jacoco%E5%A6%82%E4%BD%95%E5%9C%A8%E5%AD%97%E8%8A%82%E7%A0%81%E6%B3%A8%E5%85%A5%EF%BC%9F%E5%BC%95%E7%94%A8%E5%AE%98%E7%BD%91%E7%9A%84%E5%AE%9E%E4%BE%8B%E8%BF%9B%E8%A1%8C%E5%88%86%E6%9E%90"><span class="nav-number">2.5.1.</span> <span class="nav-text">Jacoco如何在字节码注入？引用官网的实例进行分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A2%E9%92%88%E6%8F%92%E5%85%A5%E7%AD%96%E7%95%A5"><span class="nav-number">2.5.2.</span> <span class="nav-text">探针插入策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A2%E9%92%88%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.5.3.</span> <span class="nav-text">探针的实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jacoco%E7%9A%84on-the-fly%E6%A8%A1%E5%BC%8F%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="nav-number">2.6.</span> <span class="nav-text">Jacoco的on-the-fly模式使用方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%A9%E5%B1%95"><span class="nav-number">2.7.</span> <span class="nav-text">扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%88%E5%B9%B6%E5%A4%9A%E4%B8%AAexec%E6%96%87%E4%BB%B6%E4%BF%A1%E6%81%AF"><span class="nav-number">2.7.1.</span> <span class="nav-text">合并多个exec文件信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8Bexec%E6%96%87%E4%BB%B6%E4%BF%A1%E6%81%AF"><span class="nav-number">2.7.2.</span> <span class="nav-text">查看exec文件信息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E9%9B%86%E6%88%90%E5%B7%A5%E5%85%B7"><span class="nav-number">2.8.</span> <span class="nav-text">支持的集成工具</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

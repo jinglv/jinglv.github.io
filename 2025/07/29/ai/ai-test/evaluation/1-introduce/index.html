@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="大模型评估学习笔记第一讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="大语言模型（LLM）与检索增强生成（RAG）评估介绍">
+<meta property="og:url" content="https://jinglv.github.io/2025/07/29/ai/ai-test/evaluation/1-introduce/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="大模型评估学习笔记第一讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-07-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-07-29T02:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型评估学习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/07/29/ai/ai-test/evaluation/1-introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>大语言模型（LLM）与检索增强生成（RAG）评估介绍 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/07/29/ai/ai-test/evaluation/1-introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          大语言模型（LLM）与检索增强生成（RAG）评估介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-07-29 00:00:00 / 修改时间：10:30:00" itemprop="dateCreated datePublished" datetime="2025-07-29T00:00:00+08:00">2025-07-29</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">大模型评估学习</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">大模型评估学习笔记第一讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在人工智能的浪潮之巅，大型语言模型（LLM）无疑是最耀眼的明星之一。它们以其强大的自然语言理解和生成能力，正在重塑我们与技术交互的方式。然而，为了充分释放LLM的潜力并确保其输出的可靠性，评估变得至关重要。特别是对于结合了外部知识库的检索增强生成（RAG）系统，评估的维度和复杂性更是与日俱增。</p>
+<p>本篇技术博客将深入探讨LLM和RAG的评估，从基本概念入手，详细介绍各自的评估维度、具体评估方法，并对现有的主流评估框架进行梳理和介绍，旨在为开发者和研究人员提供一份详尽的评估实践指南。</p>
+<h1 id="什么是LLM和RAG？"><a href="#什么是LLM和RAG？" class="headerlink" title="什么是LLM和RAG？"></a>什么是LLM和RAG？</h1><h2 id="大型语言模型（Large-Language-Model-LLM）"><a href="#大型语言模型（Large-Language-Model-LLM）" class="headerlink" title="大型语言模型（Large Language Model, LLM）"></a>大型语言模型（Large Language Model, LLM）</h2><p>大型语言模型（LLM）是一种基于深度学习的人工智能模型，通过在海量文本数据上进行训练，学习语言的模式、结构和知识。这使得它们能够执行广泛的自然语言处理（NLP）任务，如文本生成、翻译、摘要、问答等。常见的LLM包括GPT系列（如GPT-4）、LLaMA、Gemini等。它们的核心能力在于理解输入提示（Prompt）并生成连贯、相关的文本。</p>
+<h2 id="检索增强生成（Retrieval-Augmented-Generation-RAG）"><a href="#检索增强生成（Retrieval-Augmented-Generation-RAG）" class="headerlink" title="检索增强生成（Retrieval-Augmented Generation, RAG）"></a>检索增强生成（Retrieval-Augmented Generation, RAG）</h2><p>尽管LLM功能强大，但它们也存在一些固有的局限性，例如知识截止日期（训练数据之外的新知识无法获知）和可能产生“幻觉”（生成不符合事实的内容）。</p>
+<p>为了克服这些问题，<strong>检索增强生成（RAG）</strong> 技术应运而生。RAG是一种将LLM与外部知识库（如公司的内部文档、数据库或实时更新的网站）相结合的架构。其工作流程通常如下：</p>
+<ol>
+<li><strong>检索（Retrieval）</strong>：当用户提出问题时，RAG系统首先会从外部知识库中检索与问题最相关的信息片段。</li>
+<li><strong>增强（Augmentation）</strong>：系统将检索到的信息作为上下文（Context）与用户的原始问题一起提供给LLM。</li>
+<li><strong>生成（Generation）</strong>：LLM基于增强后的提示（原始问题+检索到的上下文）来生成答案。</li>
+</ol>
+<p>通过这种方式，RAG系统能够生成更准确、更具时效性且有据可查的回答。</p>
+<h1 id="LLM评估：衡量语言模型的“智慧”"><a href="#LLM评估：衡量语言模型的“智慧”" class="headerlink" title="LLM评估：衡量语言模型的“智慧”"></a>LLM评估：衡量语言模型的“智慧”</h1><p>对LLM的评估旨在量化其在各种任务上的表现，并确保其输出的质量和安全性。</p>
+<h2 id="评估哪些方面？"><a href="#评估哪些方面？" class="headerlink" title="评估哪些方面？"></a>评估哪些方面？</h2><p>对LLM的评估通常涵盖以下几个核心方面：</p>
+<ul>
+<li><strong>准确性（Accuracy）与事实性（Factuality）</strong>：模型生成的内容是否符合事实，能否准确回答知识性问题。</li>
+<li><strong>流畅性（Fluency）</strong>：生成的文本是否语法正确、自然流畅，符合人类语言习惯。</li>
+<li><strong>连贯性（Coherence）</strong>：文本的各个部分之间逻辑是否清晰，上下文是否一致。</li>
+<li><strong>相关性（Relevance）</strong>：生成的回答是否与用户提出的问题或指令紧密相关。</li>
+<li><strong>有用性（Helpfulness）</strong>：模型提供的答案是否能有效解决用户的问题。</li>
+<li><strong>安全性（Safety）与无害性（Harmlessness）</strong>：评估模型是否会生成有偏见、有毒、歧视性或其他有害内容。</li>
+<li><strong>鲁棒性（Robustness）</strong>：模型在面对有噪声、对抗性或不常见的输入时，其性能是否稳定。</li>
+<li><strong>效率（Efficiency）</strong>：模型的响应速度（延迟）和计算资源消耗。</li>
+</ul>
+<h2 id="如何进行评估？"><a href="#如何进行评估？" class="headerlink" title="如何进行评估？"></a>如何进行评估？</h2><p>评估LLM的方法可以分为两大类：<strong>人工评估</strong>和<strong>自动化评估</strong>。</p>
+<h3 id="人工评估"><a href="#人工评估" class="headerlink" title="人工评估"></a>人工评估</h3><p>人工评估被认为是评估语言质量（如流畅性、连贯性）的“黄金标准”。评估人员根据预先定义的标准对模型输出进行打分。</p>
+<ul>
+<li><strong>优点</strong>：能够捕捉自动化指标难以衡量的细微差别，更符合人类的主观感受。</li>
+<li><strong>缺点</strong>：成本高、耗时长、可扩展性差，且评估结果可能受评估员主观性的影响。</li>
+</ul>
+<h3 id="自动化评估"><a href="#自动化评估" class="headerlink" title="自动化评估"></a>自动化评估</h3><p>自动化评估使用各种指标和基准测试集来快速、大规模地衡量模型性能。</p>
+<ul>
+<li><p><strong>传统NLP指标</strong>：</p>
+<ul>
+<li><strong>BLEU (Bilingual Evaluation Understudy)</strong>：常用于机器翻译，通过比较生成文本和参考文本中n-gram的重叠度来评估相似性。</li>
+<li><strong>ROUGE (Recall-Oriented Understudy for Gisting Evaluation)</strong>：常用于文本摘要，通过比较生成摘要和参考摘要的n-gram召回率来评估。</li>
+<li><strong>Perplexity (PPL)</strong>：衡量语言模型对其预测样本的惊讶程度。困惑度越低，表示模型对文本的预测能力越好。</li>
+</ul>
+</li>
+<li><p>基于基准（Benchmark）的评估：</p>
+<p>使用标准化的数据集来测试模型在特定任务上的表现。常见的基准包括：</p>
+<ul>
+<li><strong>MMLU (Massive Multitask Language Understanding)</strong>：涵盖57个学科的知识问答，测试模型的通识知识和解决问题的能力。</li>
+<li><strong>HellaSwag</strong>：评估模型在给定上下文后选择最合理续写的能力，考验常识推理。</li>
+<li><strong>TruthfulQA</strong>：专门用于评估模型生成真实、无误导性答案的能力。</li>
+</ul>
+</li>
+<li><p>基于模型的评估（LLM-as-a-Judge）：</p>
+<p>这是一种新兴的评估方法，即利用一个更强大或专门微调过的LLM（作为“裁判”）来评估另一个LLM的输出质量。通过精心设计的提示，裁判LLM可以对被评估模型的输出进行打分或比较。</p>
+</li>
+</ul>
+<h1 id="RAG评估：深入“检索”与“生成”的双重考验"><a href="#RAG评估：深入“检索”与“生成”的双重考验" class="headerlink" title="RAG评估：深入“检索”与“生成”的双重考验"></a>RAG评估：深入“检索”与“生成”的双重考验</h1><p>RAG系统的评估比标准LLM更为复杂，因为它包含<strong>检索</strong>和<strong>生成</strong>两个核心组件。一个环节的失败都可能导致最终输出的质量下降。因此，我们需要对这两个部分分别进行评估，同时也要评估它们的协同效果。</p>
+<h2 id="评估哪些方面？-1"><a href="#评估哪些方面？-1" class="headerlink" title="评估哪些方面？"></a>评估哪些方面？</h2><h3 id="针对“检索”组件的评估"><a href="#针对“检索”组件的评估" class="headerlink" title="针对“检索”组件的评估"></a>针对“检索”组件的评估</h3><p>检索器的目标是从知识库中准确、全面地找到与用户查询相关的信息。</p>
+<ul>
+<li><strong>上下文精确率（Context Precision）</strong>：检索到的上下文中，与问题相关的比例有多高？这个指标关注检索结果的信噪比。</li>
+<li><strong>上下文召回率（Context Recall）</strong>：所有相关的上下文信息中，有多大比例被成功检索出来了？这个指标关注检索结果是否全面。</li>
+<li><strong>命中率（Hit Rate）</strong>：对于一个问题，检索器返回的文档中是否至少包含一个相关文档。</li>
+<li><strong>平均倒数排名（Mean Reciprocal Rank, MRR）</strong>：衡量系统将第一个相关文档排在结果列表靠前位置的能力。对于问答场景尤其重要。</li>
+</ul>
+<h3 id="针对“生成”组件的评估"><a href="#针对“生成”组件的评估" class="headerlink" title="针对“生成”组件的评估"></a>针对“生成”组件的评估</h3><p>生成器的评估不仅要看其语言能力，更要看其利用检索到的上下文的能力。</p>
+<ul>
+<li><strong>忠实度（Faithfulness）</strong>：生成的答案是否完全基于所提供的上下文信息？这是衡量RAG系统是否产生幻觉的关键指标。一个忠实的答案不应包含上下文中未提及或与之相悖的信息。</li>
+<li><strong>答案相关性（Answer Relevancy）</strong>：生成的答案在多大程度上回应了用户的原始问题？即使答案是忠实的，如果它偏离了问题核心，其价值也会大打折扣。</li>
+<li><strong>答案正确性（Answer Correctness）</strong>：将生成的答案与一个“标准答案”（Ground Truth）进行比较，评估其事实上的正确性。</li>
+</ul>
+<h2 id="如何进行评估？-1"><a href="#如何进行评估？-1" class="headerlink" title="如何进行评估？"></a>如何进行评估？</h2><p>评估RAG系统通常需要一个包含<strong>（问题，上下文，标准答案）</strong>三元组的评估数据集。</p>
+<ol>
+<li><strong>评估检索器</strong>：<ul>
+<li>对于给定的问题，运行检索器获取上下文。</li>
+<li>计算<code>Context Precision</code>和<code>Context Recall</code>。这通常需要人工标注或使用强大的LLM来判断检索到的上下文与问题的相关性。</li>
+</ul>
+</li>
+<li><strong>评估生成器</strong>：<ul>
+<li>对于给定的“问题+检索到的上下文”，让生成器生成答案。</li>
+<li><strong>评估忠实度</strong>：利用LLM作为裁判，判断生成的答案中的每一句话是否都能在提供的上下文中找到依据。</li>
+<li><strong>评估答案相关性</strong>：利用LLM作为裁判，判断生成的答案与原始问题的相关程度。</li>
+<li><strong>评估答案正确性</strong>：将生成的答案与标准答案进行比较，可以通过语义相似度或LLM打分来完成。</li>
+</ul>
+</li>
+</ol>
+<h1 id="示例：如何根据提问得出的答案是否符合我的预期"><a href="#示例：如何根据提问得出的答案是否符合我的预期" class="headerlink" title="示例：如何根据提问得出的答案是否符合我的预期"></a>示例：如何根据提问得出的答案是否符合我的预期</h1><p>这部分主要依赖于<strong>人工评估</strong>和<strong>用户反馈</strong>，因为“预期”往往是主观的，很难完全自动化。</p>
+<p><strong>具体步骤：</strong></p>
+<ol>
+<li><strong>明确你的“预期”：</strong> 在进行评估之前，你需要非常清楚你希望模型如何回答你的问题。你的预期可能包括：<ul>
+<li><strong>内容准确性：</strong> 答案是否完全正确，没有错误信息。</li>
+<li><strong>完整性：</strong> 答案是否包含了你关心的所有要点。</li>
+<li><strong>简洁性：</strong> 答案是否冗长，是否有不必要的信息。</li>
+<li><strong>语气和风格：</strong> 答案的语气（正式、非正式、幽默等）是否符合你的要求。</li>
+<li><strong>结构：</strong> 答案的组织方式是否清晰，易于阅读。</li>
+<li><strong>可溯源性：</strong> 如果是RAG系统，是否能指出信息来源。</li>
+<li><strong>无“幻觉”：</strong> 答案中是否没有虚假信息。</li>
+</ul>
+</li>
+<li><strong>构建评估问题集：</strong> 准备一组能代表你实际使用场景的测试问题。这些问题应该覆盖你的“预期”所涉及的各个方面。</li>
+<li><strong>人工审查答案并打分：</strong><ul>
+<li>对于每个问题，让一个或多个评估者（最好是领域专家或了解你预期的人）独立审查LLM/RAG系统给出的答案。</li>
+<li>针对上述“明确的预期”中的每个维度，为答案打分（例如，1-5分制）。</li>
+<li>允许评估者添加详细的文字评论，解释为什么打这个分数，以及答案哪里符合预期，哪里不符合预期。</li>
+</ul>
+</li>
+<li><strong>聚合和分析结果：</strong><ul>
+<li>汇总所有问题的分数，计算每个维度的平均分。</li>
+<li>分析评分较低的问题和维度，找出系统存在的主要问题。</li>
+<li>阅读所有文字评论，从中发现共性的问题模式和潜在的改进点。例如，发现RAG系统经常检索到不相关的信息，或者LLM没有充分利用检索到的上下文。</li>
+</ul>
+</li>
+<li><strong>迭代和改进：</strong><ul>
+<li>根据评估结果，调整RAG系统的检索策略、知识库分块方式、嵌入模型、LLM的提示词工程，甚至考虑更换LLM模型。</li>
+<li>重新进行评估，观察改进效果。</li>
+</ul>
+</li>
+</ol>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">问题编号</th>
+<th style="text-align:left">用户问题</th>
+<th style="text-align:left">RAG/LLM答案</th>
+<th style="text-align:left">检索到的上下文 (RAG)</th>
+<th style="text-align:left">准确性 (1-5)</th>
+<th style="text-align:left">完整性 (1-5)</th>
+<th style="text-align:left">流畅性 (1-5)</th>
+<th style="text-align:left">幻觉? (Y/N)</th>
+<th style="text-align:left">溯源性 (Y/N)</th>
+<th style="text-align:left">备注/原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:left">…</td>
+<td style="text-align:left">…</td>
+<td style="text-align:left">…</td>
+<td style="text-align:left">4</td>
+<td style="text-align:left">3</td>
+<td style="text-align:left">5</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">缺少一些细节。</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:left">…</td>
+<td style="text-align:left">…</td>
+<td style="text-align:left">…</td>
+<td style="text-align:left">2</td>
+<td style="text-align:left">1</td>
+<td style="text-align:left">4</td>
+<td style="text-align:left">Y</td>
+<td style="text-align:left">N</td>
+<td style="text-align:left">答案与事实不符，且没有引用来源。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="主流评估框架概览"><a href="#主流评估框架概览" class="headerlink" title="主流评估框架概览"></a>主流评估框架概览</h1><p>为了简化和标准化评估流程，社区开发了许多优秀的评估框架。</p>
+<h2 id="通用LLM评估框架"><a href="#通用LLM评估框架" class="headerlink" title="通用LLM评估框架"></a>通用LLM评估框架</h2><ul>
+<li><strong>Hugging Face Evaluate</strong>：一个提供各种NLP评估指标（如BLEU, ROUGE）实现和便捷加载标准数据集（如GLUE, SQuAD）的库。</li>
+<li><strong>LM Evaluation Harness</strong>：一个用于在数百个基准上对LLM进行零样本（zero-shot）和少样本（few-shot）评估的统一框架。</li>
+<li><strong>OpenAI Evals</strong>：OpenAI开源的评估框架，允许开发者创建和运行评估，以衡量模型在不同任务上的性能，并支持自定义评估逻辑。</li>
+</ul>
+<h2 id="专注于RAG的评估框架"><a href="#专注于RAG的评估框架" class="headerlink" title="专注于RAG的评估框架"></a>专注于RAG的评估框架</h2><ul>
+<li><p><strong>RAGAs (RAG Assessment)</strong>：</p>
+<ul>
+<li><strong>特点</strong>：一个专门为RAG管道评估设计的轻量级框架。它的突出优势在于许多评估指标是“无参考”的，即不需要预先准备好的标准答案，仅利用问题、检索到的上下文和生成的答案即可进行评估。</li>
+<li><strong>核心指标</strong>：<code>Faithfulness</code>, <code>Answer Relevancy</code>, <code>Context Precision</code>, <code>Context Recall</code>。</li>
+<li><strong>工作方式</strong>：RAGAs在底层大量使用LLM作为裁判来计算这些指标得分。</li>
+</ul>
+</li>
+<li><p><strong>DeepEval</strong>：</p>
+<ul>
+<li><strong>特点</strong>：一个专为LLM应用设计的单元测试框架，类似于<code>Pytest</code>。它将评估视为测试用例，并集成了多种最先进的评估指标。</li>
+<li><strong>适用场景</strong>：非常适合在开发流程中进行持续的、自动化的回归测试，以确保对RAG管道的修改（如更换模型、调整Prompt）不会导致性能下降。</li>
+<li><strong>核心指标</strong>：除了RAGAs中的核心指标外，还包括<code>G-Eval</code>（一个更通用的LLM评估方法）、<code>Bias</code>、<code>Toxicity</code>等。</li>
+</ul>
+</li>
+<li><p><strong>TruLens</strong>：</p>
+<ul>
+<li><strong>特点</strong>：一个开源的评估和追踪工具，专注于LLM应用的可解释性和透明度。它不仅评估输出结果，还深入到RAG管道的中间步骤（如检索结果、中间Prompt）进行追踪和分析。</li>
+<li><strong>核心理念</strong>：通过“三元组”（输入、输出、中间结果）的评估方式，帮助开发者理解模型的决策过程。</li>
+</ul>
+</li>
+</ul>
+<h1 id="总结与展望"><a href="#总结与展望" class="headerlink" title="总结与展望"></a>总结与展望</h1><p>对大型语言模型（LLM）和检索增强生成（RAG）系统进行严谨的评估，是构建可信、可靠、高性能AI应用不可或缺的一环。</p>
+<ul>
+<li>对于<strong>LLM</strong>，评估的重点在于其核心的语言能力、知识准确性和安全性。</li>
+<li>对于<strong>RAG</strong>，评估则需要深入到“检索”和“生成”两个层面，特别关注上下文的质量以及生成答案对上下文的忠实度。</li>
+</ul>
+<p>随着LLM-as-a-Judge等新评估范式的兴起，以及RAGAs、DeepEval等专用框架的成熟，我们正拥有越来越强大和便捷的工具来量化和提升模型性能。</p>
+<p>未来，评估技术将向着更自动化、更全面、更贴近真实应用场景的方向发展。对多模态能力、Agent能力以及长期记忆能力的评估将成为新的研究热点。对于开发者而言，将评估深度整合到应用的整个生命周期中，将是打造卓越AI产品的关键。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E5%AD%A6%E4%B9%A0/" rel="tag"># 大模型评估学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/07/23/ai/ai-basic/5-data-quality/" rel="prev" title="数据质量">
+      <i class="fa fa-chevron-left"></i> 数据质量
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/01/ai/rag/3-optimal-rag/" rel="next" title="RAG系统如何优化">
+      RAG系统如何优化 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFLLM%E5%92%8CRAG%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">什么是LLM和RAG？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%A7%E5%9E%8B%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B%EF%BC%88Large-Language-Model-LLM%EF%BC%89"><span class="nav-number">1.1.</span> <span class="nav-text">大型语言模型（Large Language Model, LLM）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E7%B4%A2%E5%A2%9E%E5%BC%BA%E7%94%9F%E6%88%90%EF%BC%88Retrieval-Augmented-Generation-RAG%EF%BC%89"><span class="nav-number">1.2.</span> <span class="nav-text">检索增强生成（Retrieval-Augmented Generation, RAG）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LLM%E8%AF%84%E4%BC%B0%EF%BC%9A%E8%A1%A1%E9%87%8F%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B%E7%9A%84%E2%80%9C%E6%99%BA%E6%85%A7%E2%80%9D"><span class="nav-number">2.</span> <span class="nav-text">LLM评估：衡量语言模型的“智慧”</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0%E5%93%AA%E4%BA%9B%E6%96%B9%E9%9D%A2%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">评估哪些方面？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%BF%9B%E8%A1%8C%E8%AF%84%E4%BC%B0%EF%BC%9F"><span class="nav-number">2.2.</span> <span class="nav-text">如何进行评估？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%BA%E5%B7%A5%E8%AF%84%E4%BC%B0"><span class="nav-number">2.2.1.</span> <span class="nav-text">人工评估</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E5%8C%96%E8%AF%84%E4%BC%B0"><span class="nav-number">2.2.2.</span> <span class="nav-text">自动化评估</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#RAG%E8%AF%84%E4%BC%B0%EF%BC%9A%E6%B7%B1%E5%85%A5%E2%80%9C%E6%A3%80%E7%B4%A2%E2%80%9D%E4%B8%8E%E2%80%9C%E7%94%9F%E6%88%90%E2%80%9D%E7%9A%84%E5%8F%8C%E9%87%8D%E8%80%83%E9%AA%8C"><span class="nav-number">3.</span> <span class="nav-text">RAG评估：深入“检索”与“生成”的双重考验</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0%E5%93%AA%E4%BA%9B%E6%96%B9%E9%9D%A2%EF%BC%9F-1"><span class="nav-number">3.1.</span> <span class="nav-text">评估哪些方面？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%92%88%E5%AF%B9%E2%80%9C%E6%A3%80%E7%B4%A2%E2%80%9D%E7%BB%84%E4%BB%B6%E7%9A%84%E8%AF%84%E4%BC%B0"><span class="nav-number">3.1.1.</span> <span class="nav-text">针对“检索”组件的评估</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%92%88%E5%AF%B9%E2%80%9C%E7%94%9F%E6%88%90%E2%80%9D%E7%BB%84%E4%BB%B6%E7%9A%84%E8%AF%84%E4%BC%B0"><span class="nav-number">3.1.2.</span> <span class="nav-text">针对“生成”组件的评估</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%BF%9B%E8%A1%8C%E8%AF%84%E4%BC%B0%EF%BC%9F-1"><span class="nav-number">3.2.</span> <span class="nav-text">如何进行评估？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%EF%BC%9A%E5%A6%82%E4%BD%95%E6%A0%B9%E6%8D%AE%E6%8F%90%E9%97%AE%E5%BE%97%E5%87%BA%E7%9A%84%E7%AD%94%E6%A1%88%E6%98%AF%E5%90%A6%E7%AC%A6%E5%90%88%E6%88%91%E7%9A%84%E9%A2%84%E6%9C%9F"><span class="nav-number">4.</span> <span class="nav-text">示例：如何根据提问得出的答案是否符合我的预期</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E6%B5%81%E8%AF%84%E4%BC%B0%E6%A1%86%E6%9E%B6%E6%A6%82%E8%A7%88"><span class="nav-number">5.</span> <span class="nav-text">主流评估框架概览</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E7%94%A8LLM%E8%AF%84%E4%BC%B0%E6%A1%86%E6%9E%B6"><span class="nav-number">5.1.</span> <span class="nav-text">通用LLM评估框架</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%93%E6%B3%A8%E4%BA%8ERAG%E7%9A%84%E8%AF%84%E4%BC%B0%E6%A1%86%E6%9E%B6"><span class="nav-number">5.2.</span> <span class="nav-text">专注于RAG的评估框架</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E4%B8%8E%E5%B1%95%E6%9C%9B"><span class="nav-number">6.</span> <span class="nav-text">总结与展望</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

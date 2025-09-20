@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Python学习笔记第十七讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python多线程和协程">
+<meta property="og:url" content="https://jinglv.github.io/2022/04/25/language/python/17-thread/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Python学习笔记第十七讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-04-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-04-25T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2022/04/25/language/python/17-thread/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Python多线程和协程 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2022/04/25/language/python/17-thread/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Python多线程和协程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-04-25 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2022-04-25T00:00:00+08:00">2022-04-25</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Python学习笔记第十七讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="多线程初识"><a href="#多线程初识" class="headerlink" title="多线程初识"></a>多线程初识</h1><h2 id="多线程前置"><a href="#多线程前置" class="headerlink" title="多线程前置"></a>多线程前置</h2><p>一般的，一个程序或者一个App，默认只在一个进程的一个线程中执行，这个线程称为主线程。如果需要开启至少另外一个线程做任务，那么就要用到今天的学习的——多线程，及高效的协程技术。</p>
+<p>下面，先看一个线程相关的例子，需要导入线程相关的模块threading：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> threading</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>t = threading.current_thread()</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>t</span><br><span class="line">&lt;_MainThread(MainThread, started <span class="number">4553221632</span>)&gt;</span><br></pre></td></tr></table></figure>
+<p>所以，验证了程序默认是在MainThread中执行。</p>
+<p>t.getName()获得这个线程的名字；其他常用方法，getName()获得线程id，is_alive()(注意：is_alive()是在3.9以后的版本支持的方法，isAlive()是在3.9版本之前)判断线程是否存活。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>t.getName()</span><br><span class="line"><span class="string">&#x27;MainThread&#x27;</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>t.ident</span><br><span class="line"><span class="number">4553221632</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>t.is_alive()</span><br><span class="line"><span class="literal">True</span></span><br></pre></td></tr></table></figure>
+<p>从上面看到，有且仅有一个“干活”的主线程，下面就要创建自己的一个线程了。</p>
+<h2 id="创建线程"><a href="#创建线程" class="headerlink" title="创建线程"></a>创建线程</h2><ol>
+<li><p>创建一个线程</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>my_thread = threading.Thread()</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>创建一个名为my_thread的线程</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>my_thread = threading.Thread(name=<span class="string">&#x27;my_thread&#x27;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>创建线程，需要告诉这个线程，能帮助我们做什么。“做什么”是通过参数target传入，参数类型为callable。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>my_thread = threading.Thread(target=print_i, args=(<span class="number">1</span>,))</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>启动线程，my_thread线程已经准备完毕，那么就启动start()</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>my_thread.start()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>执行结果如下，其中args指定函数print_i需要的参数i，类型为元组。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">打印i:<span class="number">1</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>以上就是多线的基本知识点。</p>
+<h1 id="多线程本质"><a href="#多线程本质" class="headerlink" title="多线程本质"></a>多线程本质</h1><h2 id="交替获得CPU时间片"><a href="#交替获得CPU时间片" class="headerlink" title="交替获得CPU时间片"></a>交替获得CPU时间片</h2><p>为了更好理解多线程，下面以一个例子说明。</p>
+<p>假定计算机是单核的（尽管对于CPython，这个假定有些多余），开辟3个线程，装载到threads中：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> time</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> threading</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">def</span> <span class="title function_">print_time</span>():</span><br><span class="line"><span class="meta">... </span>    <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line"><span class="meta">... </span>        time.sleep(<span class="number">0.1</span>)</span><br><span class="line"><span class="meta">... </span>        <span class="built_in">print</span>(<span class="string">&#x27;当前线程%s,打印结束时间为：%s&#x27;</span>%(threading.current_thread().getName(),time.time()))</span><br><span class="line">...</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>threads = [threading.Thread(name=<span class="string">&#x27;t%d&#x27;</span>%(i,),target=print_time) <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">3</span>)]</span><br></pre></td></tr></table></figure>
+<p>启动3个线程：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>[t.start() <span class="keyword">for</span> t <span class="keyword">in</span> threads]</span><br><span class="line">[<span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>]</span><br></pre></td></tr></table></figure>
+<p>打印结果，如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>当前线程t0,打印结束时间为：<span class="number">1650855307.181777</span></span><br><span class="line">当前线程t1,打印结束时间为：<span class="number">1650855307.1826298</span></span><br><span class="line">当前线程t2,打印结束时间为：<span class="number">1650855307.182664</span></span><br><span class="line">当前线程t0,打印结束时间为：<span class="number">1650855307.286497</span></span><br><span class="line">当前线程t1,打印结束时间为：<span class="number">1650855307.286579</span></span><br><span class="line">当前线程t2,打印结束时间为：<span class="number">1650855307.286609</span></span><br><span class="line">当前线程t0,打印结束时间为：<span class="number">1650855307.390517</span></span><br><span class="line">当前线程t2,打印结束时间为：<span class="number">1650855307.3905768</span></span><br><span class="line">当前线程t1,打印结束时间为：<span class="number">1650855307.390622</span></span><br><span class="line">当前线程t2,打印结束时间为：<span class="number">1650855307.491287</span></span><br><span class="line">当前线程t0,打印结束时间为：<span class="number">1650855307.491333</span></span><br><span class="line">当前线程t1,打印结束时间为：<span class="number">1650855307.495244</span></span><br><span class="line">当前线程t2,打印结束时间为：<span class="number">1650855307.5935402</span></span><br><span class="line">当前线程t0,打印结束时间为：<span class="number">1650855307.593628</span></span><br><span class="line">当前线程t1,打印结束时间为：<span class="number">1650855307.59603</span></span><br></pre></td></tr></table></figure>
+<p>从上面的打印输出的结果规律，根据操作系统的调度算法，t0、t1、t2三个线程，轮询获得CPU时间片。</p>
+<h2 id="抢夺全局变量"><a href="#抢夺全局变量" class="headerlink" title="抢夺全局变量"></a>抢夺全局变量</h2><p>全局变量，被当前进程中所有存货线程共享。这就意味着，抢夺全局变量的问题。</p>
+<p>比如下面的例子，创建10个线程，它们都会竞争全局变量a：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> threading</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>a = <span class="number">0</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">def</span> <span class="title function_">add1</span>():</span><br><span class="line"><span class="meta">... </span>    <span class="keyword">global</span> a</span><br><span class="line"><span class="meta">... </span>    a += <span class="number">1</span></span><br><span class="line"><span class="meta">... </span>    <span class="built_in">print</span>(<span class="string">&#x27;%s adds a to 1: %d&#x27;</span>%(threading.current_thread().getName(), a))</span><br><span class="line">...</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>threads = [threading.Thread(name=<span class="string">&#x27;t%d&#x27;</span>%(i,), target=add1) <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>)]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>[t.start() <span class="keyword">for</span> t <span class="keyword">in</span> threads]</span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">t0 adds a to <span class="number">1</span>: <span class="number">1</span></span><br><span class="line">t1 adds a to <span class="number">1</span>: <span class="number">2</span></span><br><span class="line">t2 adds a to <span class="number">1</span>: <span class="number">3</span></span><br><span class="line">t3 adds a to <span class="number">1</span>: <span class="number">4</span></span><br><span class="line">t4 adds a to <span class="number">1</span>: <span class="number">5</span></span><br><span class="line">t5 adds a to <span class="number">1</span>: <span class="number">6</span></span><br><span class="line">t6 adds a to <span class="number">1</span>: <span class="number">7</span></span><br><span class="line">t7 adds a to <span class="number">1</span>: <span class="number">8</span></span><br><span class="line">t8 adds a to <span class="number">1</span>: <span class="number">9</span></span><br><span class="line">t9 adds a to <span class="number">1</span>: <span class="number">10</span></span><br><span class="line">[<span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>]</span><br></pre></td></tr></table></figure>
+<p>每个线程执行一次，a的值被加1，最后a变为10，结果看起来一切正常。</p>
+<p>运行上面代码十几遍，看起来一切正常。那么，就能下结论：这段代码是线程安全的么？</p>
+<p>在编写多线程程序中，只要有读取和修改全局变的情况，如果不采取措施，那么就一定不是线程安全的。</p>
+<p>尽管，有时某些情况的资源竞争，暴露出问题的概率极低。乳沟某个线程修改全局变量a后，其他线程获取的，还是未修改前的值，问题就会暴露。但是，a=a+1这种修改操作，花费的时间太短，短到我们无法想象。线程间轮询执行时，都能获取到最新的、修改后的值。所以，暴露问题的概率就变得很低。</p>
+<p>不过，现实中使用多线程，目的也不会仅仅就是为了跑一个a=a+1这种操作。更大可能，线程中执行任务，会消耗一定的时间。所以，怎样编写线程安全的代码，变得非常重要。</p>
+<h2 id="暴露问题"><a href="#暴露问题" class="headerlink" title="暴露问题"></a>暴露问题</h2><p>数据写入数据库操作，一般会耗费可以感知的时间。为模拟数据写库动作，简化起见，等效地，延长修改变量a的时间，问题很快的暴露出来。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> threading</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> time</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>a = <span class="number">0</span></span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">def</span> <span class="title function_">add1</span>():</span><br><span class="line"><span class="meta">... </span>    <span class="keyword">global</span> a</span><br><span class="line"><span class="meta">... </span>    tmp = a+<span class="number">1</span></span><br><span class="line"><span class="meta">... </span>    time.sleep(<span class="number">0.2</span>)  <span class="comment"># 延迟0.2秒，模拟写入所需要时间</span></span><br><span class="line"><span class="meta">... </span>    a = tmp</span><br><span class="line"><span class="meta">... </span>    <span class="built_in">print</span>(<span class="string">&#x27;%s adds a to 1:%d&#x27;</span>%(threading.current_thread().getName(),a))</span><br><span class="line">...</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>threads = [threading.Thread(name=<span class="string">&#x27;t%d&#x27;</span>%(i,), target=add1) <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>)]</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>[t.start() <span class="keyword">for</span> t <span class="keyword">in</span> threads]</span><br><span class="line">[<span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>, <span class="literal">None</span>]</span><br></pre></td></tr></table></figure>
+<p>运行代码，仅仅一次，问题就很快完全暴露，结果如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span>t0 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t1 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t2 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t3 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t4 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t5 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t7 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t6 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t8 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t9 adds a to <span class="number">1</span>:<span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>看到10个线程全部运行后，a的值只想当与一个线程执行的结果。为什么？</p>
+<p>修改a前，有0.2秒的休眠时间。某个线程被延迟后，CPU立即分配计算资源给其他线程。直到所有线程被分配到计算资源，已经运行玩a=a+1后，根据结果反映出，0.2秒的休眠时间还没耗尽，这样每个线程获取到的a值都是0，所有才出现上面的结果。</p>
+<p>以上最核心的三行代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">tmp = a + <span class="number">1</span></span><br><span class="line">time.sleep(<span class="number">0.2</span>)  <span class="comment"># 延迟0.2秒，模拟写入所需要时间</span></span><br><span class="line">a = tmp</span><br></pre></td></tr></table></figure>
+<h2 id="加锁"><a href="#加锁" class="headerlink" title="加锁"></a>加锁</h2><p>Python提供的锁机制，是解决上面问题的方法之一。</p>
+<p>某段代码只能单线程执行时，加上锁，其他线程等待，直到被释放后，其他线程再争锁，竞争到所得线程执行代码，再释放锁，重复此过程，直到所有线程都走过一遍竞争和释放锁的过程。</p>
+<ol>
+<li>创建一把锁locka</li>
+<li>通过locka.acquire()获得锁，通过locka.release()释放锁。获得锁和释放锁之间的代码，只能单线程执行。</li>
+<li>创建和开始线程并执行</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="comment"># 1.创建一把锁</span></span><br><span class="line">locka = threading.Lock()</span><br><span class="line"></span><br><span class="line">a = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 获得锁和释放锁</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add1</span>():</span><br><span class="line">    <span class="keyword">global</span> a</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        locka.acquire()  <span class="comment"># 获得锁</span></span><br><span class="line">        tmp = a + <span class="number">1</span></span><br><span class="line">        time.sleep(<span class="number">0.2</span>)  <span class="comment"># 演示0.2秒。模拟写入所需时间</span></span><br><span class="line">        a = tmp</span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        locka.release()  <span class="comment"># 释放锁</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;%s adds a to 1:%d&#x27;</span> % (threading.currentThread().getName(), a))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 3.创建和开始线程</span></span><br><span class="line">threads = [threading.Thread(name=<span class="string">&#x27;t%d&#x27;</span> % (i,), target=add1) <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>)]</span><br><span class="line">[t.start() <span class="keyword">for</span> t <span class="keyword">in</span> threads]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/<span class="built_in">bin</span>/python /Users/lvjing/PycharmProjects/python_base_project/thread_sample_01.py</span><br><span class="line">t0 adds a to <span class="number">1</span>:<span class="number">1</span></span><br><span class="line">t1 adds a to <span class="number">1</span>:<span class="number">2</span></span><br><span class="line">t2 adds a to <span class="number">1</span>:<span class="number">3</span></span><br><span class="line">t3 adds a to <span class="number">1</span>:<span class="number">4</span></span><br><span class="line">t4 adds a to <span class="number">1</span>:<span class="number">5</span></span><br><span class="line">t5 adds a to <span class="number">1</span>:<span class="number">6</span></span><br><span class="line">t6 adds a to <span class="number">1</span>:<span class="number">7</span></span><br><span class="line">t7 adds a to <span class="number">1</span>:<span class="number">8</span></span><br><span class="line">t8 adds a to <span class="number">1</span>:<span class="number">9</span></span><br><span class="line">t9 adds a to <span class="number">1</span>:<span class="number">10</span></span><br><span class="line"></span><br><span class="line">Process finished <span class="keyword">with</span> exit code <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>打印结果一切正常。</p>
+<p>但是，仔细想想，这已经是单线程顺序执行，就本案例而言，已经失去多线程的价值。并且，还带来了因为线程创建开销，浪费时间的副作用。除此之外，还有一个很大风险。当程序中只有一把锁，通过<code>try...finally</code>还能确保不发生死锁。但是，当程序中启用多把锁，很容易发生死锁。</p>
+<p>考虑使用场合，避免死锁，是多线程开发，需要格外注意一些问题。</p>
+<h1 id="高效的协程"><a href="#高效的协程" class="headerlink" title="高效的协程"></a>高效的协程</h1><p>在同一个线程中，如果发生以下事情：</p>
+<ul>
+<li>A函数执行时被中断，传递一些数据给B函数；</li>
+<li>B函数拿到这些数据后开始执行，执行一段时间后，发送一些数据到A函数；</li>
+<li>就这样交替执行……</li>
+</ul>
+<p>这种执行调用模式，被称为<strong>协程</strong>。</p>
+<p>可以看到，协程是在同一个线程中函数间的切换，而不是线程间的切换，因此执行效率更优，Python的异步操作正式基于高效的协程机制。</p>
+<p>下面通过一个例子，加深对协程的理解。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">A</span>():</span><br><span class="line">    a_list = [<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;2&#x27;</span>, <span class="string">&#x27;3&#x27;</span>]</span><br><span class="line">    <span class="keyword">for</span> to_b <span class="keyword">in</span> a_list:</span><br><span class="line">        from_b = <span class="keyword">yield</span> to_b</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&#x27;receive %s from B&#x27;</span> % (from_b,))</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&#x27;do some complex process for A during 200ms&#x27;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">B</span>(<span class="params">a</span>):</span><br><span class="line">    from_a = a.send(<span class="literal">None</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;response %s from A&#x27;</span> % (from_a))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;B is analysising data from A&#x27;</span>)</span><br><span class="line">    b_list = [<span class="string">&#x27;x&#x27;</span>, <span class="string">&#x27;y&#x27;</span>, <span class="string">&#x27;z&#x27;</span>]</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">for</span> to_a <span class="keyword">in</span> b_list:</span><br><span class="line">            from_a = a.send(to_a)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&#x27;receive %s from B&#x27;</span> % (from_a,))</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&#x27;B is analysising data from A&#x27;</span>)</span><br><span class="line">    <span class="keyword">except</span> StopIteration:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&#x27;----from a done----&#x27;</span>)</span><br><span class="line">    <span class="keyword">finally</span>:</span><br><span class="line">        a.close()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用</span></span><br><span class="line">a = A()</span><br><span class="line">B(a)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/<span class="built_in">bin</span>/python /Users/lvjing/PycharmProjects/python_base_project/thread_sample_02.py</span><br><span class="line">response <span class="number">1</span> <span class="keyword">from</span> A</span><br><span class="line">B <span class="keyword">is</span> analysising data <span class="keyword">from</span> A</span><br><span class="line">receive x <span class="keyword">from</span> B</span><br><span class="line">do some <span class="built_in">complex</span> process <span class="keyword">for</span> A during 200ms</span><br><span class="line">receive <span class="number">2</span> <span class="keyword">from</span> B</span><br><span class="line">B <span class="keyword">is</span> analysising data <span class="keyword">from</span> A</span><br><span class="line">receive y <span class="keyword">from</span> B</span><br><span class="line">do some <span class="built_in">complex</span> process <span class="keyword">for</span> A during 200ms</span><br><span class="line">receive <span class="number">3</span> <span class="keyword">from</span> B</span><br><span class="line">B <span class="keyword">is</span> analysising data <span class="keyword">from</span> A</span><br><span class="line">receive z <span class="keyword">from</span> B</span><br><span class="line">do some <span class="built_in">complex</span> process <span class="keyword">for</span> A during 200ms</span><br><span class="line">----<span class="keyword">from</span> a done----</span><br><span class="line"></span><br><span class="line">Process finished <span class="keyword">with</span> exit code <span class="number">0</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>通过执行结果看到，线程是在同一个线程中，不同函数间交替、协作的执行完成任务。下面，分析下执行过程：</p>
+<ol>
+<li>a.send(None)激活A函数，并执行到yield to_b，把变量to_b传递给B函数，A函数中断；</li>
+<li>from_a就是上步A函数返回的to_b值，然后执行分析这个值；</li>
+<li>当执行到a.send(to_a)时，B函数将加工后的to_a值发送给A函数；</li>
+<li>from_b变量接收来自B函数的发送，然后使用此值做分析200ms后，又将to_b传递给B函数，A函数中断；</li>
+<li>重复2、3、4；</li>
+<li>直到from_a获取不到响应值，函数触发StopIteration异常，程序执行结束。</li>
+</ol>
+<p>多线程是抢占时间片的编程模型，通过上面多线程的本质中提到的获得锁和释放锁的机制控制全局变量的读取和修改，容易出现死锁。</p>
+<p>但是协程无需使用锁，也就不会发生死锁。同时，利用协程的协作这一特点，高效地完成了原编程模型只能通过多个线程才能完成的任务。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/24/language/python/16-high-function/" rel="prev" title="Python 5个常用的高阶函数，3个创建迭代器的函数">
+      <i class="fa fa-chevron-left"></i> Python 5个常用的高阶函数，3个创建迭代器的函数
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/26/language/python/18-yield-generator-sample/" rel="next" title="Python应用迭代器和生成器的9个案例">
+      Python应用迭代器和生成器的9个案例 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%88%9D%E8%AF%86"><span class="nav-number">1.</span> <span class="nav-text">多线程初识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%89%8D%E7%BD%AE"><span class="nav-number">1.1.</span> <span class="nav-text">多线程前置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">创建线程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%9C%AC%E8%B4%A8"><span class="nav-number">2.</span> <span class="nav-text">多线程本质</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%A4%E6%9B%BF%E8%8E%B7%E5%BE%97CPU%E6%97%B6%E9%97%B4%E7%89%87"><span class="nav-number">2.1.</span> <span class="nav-text">交替获得CPU时间片</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%A2%E5%A4%BA%E5%85%A8%E5%B1%80%E5%8F%98%E9%87%8F"><span class="nav-number">2.2.</span> <span class="nav-text">抢夺全局变量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9A%B4%E9%9C%B2%E9%97%AE%E9%A2%98"><span class="nav-number">2.3.</span> <span class="nav-text">暴露问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E9%94%81"><span class="nav-number">2.4.</span> <span class="nav-text">加锁</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%AB%98%E6%95%88%E7%9A%84%E5%8D%8F%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">高效的协程</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

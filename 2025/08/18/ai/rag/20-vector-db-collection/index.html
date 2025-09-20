@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第二十讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--向量数据库集合">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/18/ai/rag/20-vector-db-collection/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第二十讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818180534338.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250819110839640.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250819111346793.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250819160329230.png">
+<meta property="article:published_time" content="2025-08-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-18T10:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818180534338.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/18/ai/rag/20-vector-db-collection/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--向量数据库集合 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/18/ai/rag/20-vector-db-collection/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--向量数据库集合
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-18 00:00:00 / 修改时间：18:30:00" itemprop="dateCreated datePublished" datetime="2025-08-18T00:00:00+08:00">2025-08-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第二十讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="向量数据库基本处理流程"><a href="#向量数据库基本处理流程" class="headerlink" title="向量数据库基本处理流程"></a>向量数据库基本处理流程</h1><p>以Milvus向量数据库为例</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818180534338.png" alt="image-20250818180534338" style="zoom:67%;" /></p>
+<ul>
+<li>核心指标：向量数据库处理需平衡三个关键指标：准确率（逼近模型上限）、检索速度、内存消耗</li>
+<li>完整流程：<ul>
+<li>数据准备：游戏数据/医疗数据等原始数据</li>
+<li>向量化处理：使用OpenAI Embedding Model等模型生成向量</li>
+<li>数据库操作：<ul>
+<li>创建Collection并定义Schema</li>
+<li>创建索引（索引类型直接影响检索效率）</li>
+<li>批量插入向量数据形成实体</li>
+</ul>
+</li>
+<li>检索功能：<ul>
+<li>相似度搜索</li>
+<li>条件过滤</li>
+<li>向量距离计算</li>
+<li>属性筛选</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>关键因素：<ul>
+<li>模型能力：Embedding模型质量决定准确率上限</li>
+<li>索引优化：需根据数据量和内存情况选择最优索引参数</li>
+<li>工程考量：不能简单使用AUTOINDEX，需了解不同索引方式的适用场景</li>
+</ul>
+</li>
+</ul>
+<h1 id="数据库"><a href="#数据库" class="headerlink" title="数据库"></a>数据库</h1><p>Milvus官方网址：<a target="_blank" rel="noopener" href="https://milvus.io/">https://milvus.io/</a></p>
+<p>在 Milvus 中，数据库是组织和管理数据的逻辑单元。多租户创建多个数据库，为不同的应用程序或租户从逻辑上隔离数据。例如，创建一个数据库用于存储用户 A 的数据，另一个数据库用于存储用户 B 的数据。</p>
+<ul>
+<li><p>逻辑单元：数据库是组织管理数据的逻辑单元，支持多租户隔离</p>
+</li>
+<li><p>创建方法，参考代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient</span><br><span class="line"></span><br><span class="line">client = MilvusClient(</span><br><span class="line">	uri=<span class="string">&quot;http://localhost:19530&quot;</span>,</span><br><span class="line">	token=<span class="string">&quot;root:Milvus&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">client.create_database(</span><br><span class="line">	db_name=<span class="string">&quot;my_database_1&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li>版本要求：需使用Standalone版（Local版功能受限，不支持量化索引等高级功能）</li>
+</ul>
+<h2 id="数据库操作"><a href="#数据库操作" class="headerlink" title="数据库操作"></a>数据库操作</h2><ol>
+<li><p>连接Milvus客户端</p>
+<ul>
+<li><p>uri: 协议+地址+端口，默认为 <a target="_blank" rel="noopener" href="http://localhost:19530">http://localhost:19530</a></p>
+</li>
+<li><p>token: “用户名:密码”，默认 root:Milvus (注：也可以为空)</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient, exceptions</span><br><span class="line"></span><br><span class="line">client = MilvusClient(</span><br><span class="line">    uri=<span class="string">&quot;http://localhost:19530&quot;</span>,</span><br><span class="line">    <span class="comment"># token=&quot;root:Milvus&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ol>
+<ol>
+<li><p>创建数据库</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> exceptions</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    client.create_database(db_name=<span class="string">&quot;test_vector_db&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;✓ test_vector_db创建成功&quot;</span>)</span><br><span class="line"><span class="keyword">except</span> exceptions.AlreadyExistError:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;ℹ test_vector_db 已存在&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>列出所有数据库</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">db_list = client.list_databases()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;当前所有数据库：&quot;</span>, db_list)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>查看数据库详情</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">default_info = client.describe_database(db_name=<span class="string">&quot;default&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;默认数据库详情：&quot;</span>, default_info)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>修改数据库属性：限制最大集合数为10</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">client.alter_database_properties(</span><br><span class="line">    db_name=<span class="string">&quot;test_vector_db&quot;</span>,</span><br><span class="line">    properties=&#123;<span class="string">&quot;database.max.collections&quot;</span>: <span class="number">10</span>&#125;</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已为 test_vector_db 限制最大集合数为 10&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>删除数据最大集合限制</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">client.drop_database_properties(</span><br><span class="line">    db_name=<span class="string">&quot;test_vector_db&quot;</span>,</span><br><span class="line">    property_keys=[<span class="string">&quot;database.max.collections&quot;</span>]</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已移除 test_vector_db 的最大集合数限制&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>切换数据库</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">client.use_database(db_name=<span class="string">&quot;dev_vector_db&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已切换当前数据库为 dev_vector_db&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>删除数据库</p>
+<ul>
+<li>注意：如果库内有 Collection，需先 client.drop_collection() 将其清空</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">client.drop_database(db_name=<span class="string">&quot;test_vector_db&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ test_vector_db 已删除&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="集合：Collection"><a href="#集合：Collection" class="headerlink" title="集合：Collection"></a>集合：Collection</h2><ul>
+<li>基本概念：Collection是管理数据的容器，可以创建多个Collections来组织数据，类似于关系数据库中的表。</li>
+<li>数据结构：采用二维表结构，具有固定的列（字段）和变化的行（实体），每列代表一个字段，每行代表一个实体。</li>
+<li>类比关系：Collections对应数据库表，实体(Entity)对应表中的记录</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250819110839640.png" alt="image-20250819110839640" style="zoom:80%;" /></p>
+<h3 id="集合的Schema"><a href="#集合的Schema" class="headerlink" title="集合的Schema"></a>集合的Schema</h3><p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient, DataType</span><br><span class="line"></span><br><span class="line">client = MilvusClient(</span><br><span class="line">  uri=<span class="string">&quot;http://localhost:19530&quot;</span>,</span><br><span class="line">  token=<span class="string">&quot;root:Milvus&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create schema</span></span><br><span class="line">schema = MilvusClient.create_schema(</span><br><span class="line">  auto_id=<span class="literal">False</span>,</span><br><span class="line">  enable_dynamic_field=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Add fields to schema</span></span><br><span class="line">schema.add_field(field_name=<span class="string">&quot;my_id&quot;</span>, datatype=DataType.INT64, is_primary=<span class="literal">True</span>)</span><br><span class="line">schema.add_field(field_name=<span class="string">&quot;my_vector&quot;</span>, datatype=DataType.FLOAT_VECTOR, dim=<span class="number">5</span>)</span><br><span class="line">schema.add_field(field_name=<span class="string">&quot;my_varchar&quot;</span>, datatype=DataType.VARCHAR, max_length=<span class="number">512</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<ul>
+<li>定义：Schema规定了集合的数据结构，在创建集合时必须明确设计。</li>
+<li>核心字段：<ul>
+<li>ID字段：必须存在的主键字段，支持整数或字符串类型</li>
+<li>Vector字段：存储向量数据的核心字段</li>
+<li>Text字段：与向量对应的原始文本字段</li>
+</ul>
+</li>
+<li>动态字段：可通过设置enable_dynamic_field=True允许后续添加未定义的字段</li>
+</ul>
+<h3 id="集合的字段架构"><a href="#集合的字段架构" class="headerlink" title="集合的字段架构"></a>集合的字段架构</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250819111346793.png" alt="image-20250819111346793" style="zoom:67%;" /></p>
+<ul>
+<li>字段限制：<ul>
+<li>必须包含1个主键字段</li>
+<li>最多支持4个向量字段</li>
+</ul>
+</li>
+<li>多向量应用：<ul>
+<li>支持混合检索（密集向量+稀疏向量）</li>
+<li>支持多模态检索（文本+图像等）</li>
+</ul>
+</li>
+</ul>
+<h3 id="主键和Auto-ID"><a href="#主键和Auto-ID" class="headerlink" title="主键和Auto ID"></a>主键和Auto ID</h3><p>与关系数据库中的主字段类似，Collection 也有一个主字段，用于将实体与其他实体区分开来。主字段中的每个值都是全局唯一的，并与一个特定实体相对应。</p>
+<p>名为id的字段是主字段。主字段只接受整数或字符串。</p>
+<ul>
+<li>插入实体时，默认情况下应包含主字段值。</li>
+<li>如果在创建 Collections 时启用了AutoId，Milvus 将在插入数据时生成这些值。此时，从要插入的实体中排除主字段值。</li>
+</ul>
+<p>总结：</p>
+<ul>
+<li>主键特性：<ul>
+<li>每个值全局唯一</li>
+<li>支持整数或字符串类型</li>
+<li>用于精确查询而非向量检索</li>
+</ul>
+</li>
+<li>Auto ID：<ul>
+<li>创建集合时可启用自动生成主键功能</li>
+<li>启用后插入数据时无需指定主键值</li>
+<li>系统会自动分配唯一ID值</li>
+</ul>
+</li>
+</ul>
+<h3 id="集合的操作"><a href="#集合的操作" class="headerlink" title="集合的操作"></a>集合的操作</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient</span><br><span class="line"></span><br><span class="line"><span class="comment"># 连接Miilvus</span></span><br><span class="line">client = MilvusClient(</span><br><span class="line">    uri=<span class="string">&quot;http://localhost:19530&quot;</span>,</span><br><span class="line">    <span class="comment"># token=&quot;root:Milvus&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>创建 Collection</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 检查并删除已存在的集合</span></span><br><span class="line">collection_name = <span class="string">&quot;quick_setup&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> collection_name <span class="keyword">in</span> client.list_collections():</span><br><span class="line">    client.drop_collection(collection_name=collection_name)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;✓ 已删除已存在的集合 <span class="subst">&#123;collection_name&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建新集合,</span></span><br><span class="line">client.create_collection(</span><br><span class="line">    collection_name=collection_name,</span><br><span class="line">    dimension=<span class="number">5</span></span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;✓ <span class="subst">&#123;collection_name&#125;</span> 已创建&quot;</span>) <span class="comment"># 没有指定数据库创建集合，则集合会创建在default下</span></span><br></pre></td></tr></table></figure>
+<p>使用默认设置立即创建集合时，将应用以下设置：</p>
+<ul>
+<li>将主要字段和向量字段添加到模式（id和矢量）中。</li>
+<li>主字段接受整数并禁用AutoId。</li>
+<li>向量字段接受浮点向量嵌入。</li>
+<li>AUTOINDEX用于在矢量字段上创建索引。</li>
+<li>COSINE用于测量向量嵌入之间的相似性。</li>
+<li>启用名为$meta的保留动态字段，以键值对的形式保存非模式定义的字段及其值。</li>
+<li>该集合在创建时自动加载。</li>
+</ul>
+</li>
+</ol>
+<p>   创建了包含索引参数的集合，Milvus 会在创建时自动加载该集合。在这种情况下，索引参数中提到的所有字段都会被索引。</p>
+   <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">client.create_collection(</span><br><span class="line">  collection_name=<span class="string">&quot;customized_setup_1&quot;</span>,</span><br><span class="line">  schema=schema,</span><br><span class="line">  index_params=index_params</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>列出所有 Collections</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cols = client.list_collections()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;当前所有集合：&quot;</span>, cols)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>查看 Collection 详情</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">info = client.describe_collection(collection_name=collection_name)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;collection_name&#125;</span> 详情：&quot;</span>, info)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>重命名 Collection</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">new_collection_name = <span class="string">&quot;quick_renamed&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> new_collection_name <span class="keyword">in</span> client.list_collections():</span><br><span class="line">    client.drop_collection(collection_name=new_collection_name)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;✓ 已删除已存在的集合 <span class="subst">&#123;new_collection_name&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">client.rename_collection(</span><br><span class="line">    old_name=collection_name,</span><br><span class="line">    new_name=new_collection_name</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;✓ <span class="subst">&#123;collection_name&#125;</span> 已重命名为 <span class="subst">&#123;new_collection_name&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>修改 Collection 属性（设置 TTL 60 秒）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">client.alter_collection_properties(</span><br><span class="line">    collection_name=new_collection_name,</span><br><span class="line">    properties=&#123;<span class="string">&quot;collection.ttl.seconds&quot;</span>: <span class="number">60</span>&#125;</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;✓ 已为 <span class="subst">&#123;new_collection_name&#125;</span> 设置 TTL=60s&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>删除 Collection 属性（TTL）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">client.drop_collection_properties(</span><br><span class="line">    collection_name=new_collection_name,</span><br><span class="line">    property_keys=[<span class="string">&quot;collection.ttl.seconds&quot;</span>]</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;✓ 已删除 <span class="subst">&#123;new_collection_name&#125;</span> 的 TTL 属性&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>加载 &amp; 检查加载状态</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">client.load_collection(collection_name=new_collection_name)</span><br><span class="line">state = client.get_load_state(collection_name=new_collection_name)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;加载状态：&quot;</span>, state)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>释放 &amp; 检查释放状态</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">client.release_collection(collection_name=new_collection_name)</span><br><span class="line">state = client.get_load_state(collection_name=new_collection_name)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;释放后状态：&quot;</span>, state)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>管理 Partition(分区)</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 9.1 列出 Partition（默认只有 &quot;_default&quot;）</span></span><br><span class="line"></span><br><span class="line">parts = client.list_partitions(collection_name=new_collection_name)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Partition 列表：&quot;</span>, parts)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 9.2 创建新 Partition</span></span><br><span class="line"></span><br><span class="line">client.create_partition(</span><br><span class="line">    collection_name=new_collection_name,</span><br><span class="line">    partition_name=<span class="string">&quot;partA&quot;</span></span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已创建 partition partA&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;更新后 Partition 列表：&quot;</span>, client.list_partitions(new_collection_name))</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 9.3 检查 Partition 是否存在</span></span><br><span class="line"></span><br><span class="line">exists = client.has_partition(</span><br><span class="line">    collection_name=new_collection_name,</span><br><span class="line">    partition_name=<span class="string">&quot;partA&quot;</span></span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;partA 存在？&quot;</span>, exists)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 9.4 加载 &amp; 释放 指定 Partition</span></span><br><span class="line"></span><br><span class="line">client.load_partitions(</span><br><span class="line">    collection_name=new_collection_name,</span><br><span class="line">    partition_names=[<span class="string">&quot;partA&quot;</span>]</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;partA 加载状态：&quot;</span>, client.get_load_state(new_collection_name, partition_name=<span class="string">&quot;partA&quot;</span>))</span><br><span class="line"></span><br><span class="line">client.release_partitions(</span><br><span class="line">    collection_name=new_collection_name,</span><br><span class="line">    partition_names=[<span class="string">&quot;partA&quot;</span>]</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;partA 释放后状态：&quot;</span>, client.get_load_state(new_collection_name, partition_name=<span class="string">&quot;partA&quot;</span>))</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 9.5 删除 Partition（需先 release）</span></span><br><span class="line"></span><br><span class="line">client.drop_partition(</span><br><span class="line">    collection_name=new_collection_name,</span><br><span class="line">    partition_name=<span class="string">&quot;partA&quot;</span></span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已删除 partition partA&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;最终 Partition 列表：&quot;</span>, client.list_partitions(new_collection_name))</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>管理 Alias(别名)</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 10.1 创建 Alias</span></span><br><span class="line"></span><br><span class="line">client.create_alias(collection_name=new_collection_name, alias=<span class="string">&quot;alias3&quot;</span>)</span><br><span class="line">client.create_alias(collection_name=new_collection_name, alias=<span class="string">&quot;alias4&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已创建 alias3, alias4&quot;</span>)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 10.2 列出 Alias</span></span><br><span class="line"></span><br><span class="line">aliases = client.list_aliases(collection_name=new_collection_name)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;当前 aliases：&quot;</span>, aliases)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 10.3 查看 Alias 详情</span></span><br><span class="line"></span><br><span class="line">desc = client.describe_alias(alias=<span class="string">&quot;alias3&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;alias3 详情：&quot;</span>, desc)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 10.4 重新分配 Alias</span></span><br><span class="line"></span><br><span class="line">client.alter_alias(collection_name=new_collection_name, alias=<span class="string">&quot;alias4&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已将 alias4 重新分配给 quick_renamed&quot;</span>)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 10.5 删除 Alias</span></span><br><span class="line"></span><br><span class="line">client.drop_alias(alias=<span class="string">&quot;alias4&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已删除 alias4&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;剩余 aliases：&quot;</span>, client.list_aliases(new_collection_name))</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>删除 Collection</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">client.drop_collection(collection_name=new_collection_name) <span class="comment"># 注：集合中的Alias也要删干净，否则集合也不会删除成功</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;✓ 集合 <span class="subst">&#123;new_collection_name&#125;</span> 已删除&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="Schema操作"><a href="#Schema操作" class="headerlink" title="Schema操作"></a>Schema操作</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient, DataType</span><br><span class="line"></span><br><span class="line"><span class="comment"># 连接Miilvus</span></span><br><span class="line">client = MilvusClient(</span><br><span class="line">    uri=<span class="string">&quot;http://localhost:19530&quot;</span>,</span><br><span class="line">    <span class="comment"># token=&quot;root:Milvus&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>创建基本 Schema</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">schema = MilvusClient.create_schema()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已创建空 Schema&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>添加主键字段（Primary Field）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 2.1 INT64类型主键（手动指定ID）</span></span><br><span class="line"></span><br><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;id&quot;</span>,</span><br><span class="line">    datatype=DataType.INT64,</span><br><span class="line">    is_primary=<span class="literal">True</span>,  <span class="comment"># 设置为主键</span></span><br><span class="line">    auto_id=<span class="literal">False</span>     <span class="comment"># 不自动生成ID</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 2.2 VARCHAR类型主键（自动生成ID）</span></span><br><span class="line"></span><br><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;doc_id&quot;</span>,</span><br><span class="line">    datatype=DataType.VARCHAR,</span><br><span class="line">    is_primary=<span class="literal">True</span>,  <span class="comment"># 设置为主键</span></span><br><span class="line">    auto_id=<span class="literal">True</span>,     <span class="comment"># 自动生成ID</span></span><br><span class="line">    max_length=<span class="number">100</span>    <span class="comment"># VARCHAR类型需要指定最大长度</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>添加向量字段（Vector Field）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 3.1 Dense Vector (浮点向量)</span></span><br><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;text_vector&quot;</span>,</span><br><span class="line">    datatype=DataType.FLOAT_VECTOR,  <span class="comment"># 32位浮点向量</span></span><br><span class="line">    dim=<span class="number">768</span>                          <span class="comment"># 向量维度</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 3.2 Binary Vector (二进制向量)</span></span><br><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;image_vector&quot;</span>,</span><br><span class="line">    datatype=DataType.BINARY_VECTOR,  <span class="comment"># 二进制向量</span></span><br><span class="line">    dim=<span class="number">256</span>                           <span class="comment"># 维度必须是8的倍数</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>添加标量字段（Scalar Field）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 4.1 字符串字段</span></span><br><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;title&quot;</span>,</span><br><span class="line">    datatype=DataType.VARCHAR,</span><br><span class="line">    max_length=<span class="number">200</span>,</span><br><span class="line">    <span class="comment"># 可以为空且有默认值</span></span><br><span class="line">    is_nullable=<span class="literal">True</span>,</span><br><span class="line">    default_value=<span class="string">&quot;untitled&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 4.2 数值字段</span></span><br><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;age&quot;</span>,</span><br><span class="line">    datatype=DataType.INT32,</span><br><span class="line">    is_nullable=<span class="literal">False</span>  <span class="comment"># 不可为空</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 4.3 布尔字段</span></span><br><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;is_active&quot;</span>,</span><br><span class="line">    datatype=DataType.BOOL,</span><br><span class="line">    default_value=<span class="literal">True</span>  <span class="comment"># 默认值为True</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 4.4 JSON字段</span></span><br><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;metadata&quot;</span>,</span><br><span class="line">    datatype=DataType.JSON</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 4.5 数组字段</span></span><br><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;tags&quot;</span>,</span><br><span class="line">    datatype=DataType.ARRAY,</span><br><span class="line">    element_type=DataType.VARCHAR,  <span class="comment"># 数组元素类型</span></span><br><span class="line">    max_capacity=<span class="number">10</span>,                <span class="comment"># 数组最大容量</span></span><br><span class="line">    max_length=<span class="number">50</span>                   <span class="comment"># 每个元素最大长度</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>添加动态字段（Dynamic Field）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">schema.add_field(</span><br><span class="line">    field_name=<span class="string">&quot;dynamic_field&quot;</span>,</span><br><span class="line">    datatype=DataType.VARCHAR,</span><br><span class="line">    is_dynamic=<span class="literal">True</span>,    <span class="comment"># 设置为动态字段</span></span><br><span class="line">    max_length=<span class="number">500</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>使用Schema创建Collection</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">collection_name = <span class="string">&quot;document_store10&quot;</span></span><br><span class="line">client.create_collection(</span><br><span class="line">    collection_name=collection_name,</span><br><span class="line">    schema=schema</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>修改Collection字段</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 添加新字段</span></span><br><span class="line">client.alter_collection_field(</span><br><span class="line">    collection_name=collection_name,</span><br><span class="line">    field_name=<span class="string">&quot;tags&quot;</span>,</span><br><span class="line">    field_params=&#123;</span><br><span class="line">        <span class="string">&quot;max_capacity&quot;</span>: <span class="number">64</span></span><br><span class="line">    &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>查看Collection详情</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">info = client.describe_collection(collection_name=collection_name)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Collection详情：&quot;</span>, info)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>清理（删除集合）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">client.drop_collection(collection_name=collection_name)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;✓ 已删除测试集合&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><ul>
+<li>必要性：向量字段必须创建索引才能高效检索</li>
+<li>索引参数：<ul>
+<li>向量字段需指定索引类型和度量类型</li>
+<li>标量字段只需指定索引类型</li>
+</ul>
+</li>
+<li>度量类型：包括余弦相似度(COSINE)、内积(IP)、欧式距离(L2)等</li>
+</ul>
+<p>创建索引示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Prepare index parameters</span></span><br><span class="line">index_params = client.prepare_index_params()</span><br><span class="line"></span><br><span class="line"><span class="comment"># Add indexes</span></span><br><span class="line">index_params.add_index(</span><br><span class="line">  field_name=<span class="string">&quot;my_id&quot;</span>,</span><br><span class="line">  index_type=<span class="string">&quot;AUTOINDEX&quot;</span></span><br><span class="line">)</span><br><span class="line">index_params.add_index(</span><br><span class="line">  field_name=<span class="string">&quot;my_vector&quot;</span>,</span><br><span class="line">  index_type=<span class="string">&quot;AUTOINDEX&quot;</span>,</span><br><span class="line">  metric_type=<span class="string">&quot;COSINE&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h2 id="实体：Entity"><a href="#实体：Entity" class="headerlink" title="实体：Entity"></a>实体：Entity</h2><p>在 Milvus 中，Entity是指Collection中共享同一个Schema的数据记录，一行中每个字段的数据构成一个 Entity。因此，同一个 Collection 内的 Entity 具有相同的属性（例如字段名、数据类型和其他约束）。</p>
+<p>将实体插入集合 (Collection) 时，只有包含 Schema 中定义的所有字段，插入的实体才能成功添加。插入的实体将按插入顺序进入名为_default的分区 (Partition )。如果存在某个分区 (Partition)，您也可以通过在插入请求中指定分区名称，将实体插入到该分区 (Partition) 中。</p>
+<h3 id="实体：Upsert"><a href="#实体：Upsert" class="headerlink" title="实体：Upsert"></a>实体：Upsert</h3><p>当你需要更新集合中的实体，或者不确定是更新还是插入时，可以尝试使用 Upsert 操作。务必确保 Upsert 请求中包含的实体包含主键，否则会报错。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250819160329230.png" alt="image-20250819160329230" style="zoom:50%;" /></p>
+<ol>
+<li>检查Collection的主字段是否启用了AutoId。<ul>
+<li>如果是，Milvus 会将实体中的主键替换为自动生成的主键，并插入数据。</li>
+<li>如果没有，Milvus 将使用实体携带的主键来插入数据。</li>
+</ul>
+</li>
+<li>根据Upsert请求中包含的Entity的主键值执行删除操作。</li>
+</ol>
+<ul>
+<li>Upsert操作:<ul>
+<li>结合insert和update功能</li>
+<li>检查AutoID设置决定主键处理方式</li>
+<li>存在相同主键时先删除再插入</li>
+</ul>
+</li>
+</ul>
+<h3 id="实体Entity操作"><a href="#实体Entity操作" class="headerlink" title="实体Entity操作"></a>实体Entity操作</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient</span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"></span><br><span class="line"><span class="comment"># 连接Miilvus</span></span><br><span class="line">client = MilvusClient(</span><br><span class="line">    uri=<span class="string">&quot;http://localhost:19530&quot;</span>,</span><br><span class="line">    <span class="comment"># token=&quot;root:Milvus&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建集合</span></span><br><span class="line"><span class="comment"># 检查集合是否存在，如果存在则删除</span></span><br><span class="line"><span class="keyword">if</span> client.has_collection(<span class="string">&quot;quick_setup&quot;</span>):</span><br><span class="line">    client.drop_collection(<span class="string">&quot;quick_setup&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建集合</span></span><br><span class="line">client.create_collection(</span><br><span class="line">    collection_name=<span class="string">&quot;quick_setup&quot;</span>,</span><br><span class="line">    dimension=<span class="number">5</span>,  <span class="comment"># vector 维度</span></span><br><span class="line">    primary_field_name=<span class="string">&quot;id&quot;</span>,</span><br><span class="line">    vector_field_name=<span class="string">&quot;vector&quot;</span>,</span><br><span class="line">    id_type=<span class="string">&quot;int&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>插入实体</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">data=[</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">0</span>, <span class="string">&quot;vector&quot;</span>: [<span class="number">0.3580376395471989</span>, -<span class="number">0.6023495712049978</span>, <span class="number">0.18414012509913835</span>, -<span class="number">0.26286205330961354</span>, <span class="number">0.9029438446296592</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;pink_8682&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>, <span class="string">&quot;vector&quot;</span>: [<span class="number">0.19886812562848388</span>, <span class="number">0.06023560599112088</span>, <span class="number">0.6976963061752597</span>, <span class="number">0.2614474506242501</span>, <span class="number">0.838729485096104</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;red_7025&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">2</span>, <span class="string">&quot;vector&quot;</span>: [<span class="number">0.43742130801983836</span>, -<span class="number">0.5597502546264526</span>, <span class="number">0.6457887650909682</span>, <span class="number">0.7894058910881185</span>, <span class="number">0.20785793220625592</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;orange_6781&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">3</span>, <span class="string">&quot;vector&quot;</span>: [<span class="number">0.3172005263489739</span>, <span class="number">0.9719044792798428</span>, -<span class="number">0.36981146090600725</span>, -<span class="number">0.4860894583077995</span>, <span class="number">0.95791889146345</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;pink_9298&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">4</span>, <span class="string">&quot;vector&quot;</span>: [<span class="number">0.4452349528804562</span>, -<span class="number">0.8757026943054742</span>, <span class="number">0.8220779437047674</span>, <span class="number">0.46406290649483184</span>, <span class="number">0.30337481143159106</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;red_4794&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">5</span>, <span class="string">&quot;vector&quot;</span>: [<span class="number">0.985825131989184</span>, -<span class="number">0.8144651566660419</span>, <span class="number">0.6299267002202009</span>, <span class="number">0.1206906911183383</span>, -<span class="number">0.1446277761879955</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;yellow_4222&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">6</span>, <span class="string">&quot;vector&quot;</span>: [<span class="number">0.8371977790571115</span>, -<span class="number">0.015764369584852833</span>, -<span class="number">0.31062937026679327</span>, -<span class="number">0.562666951622192</span>, -<span class="number">0.8984947637863987</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;red_9392&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">7</span>, <span class="string">&quot;vector&quot;</span>: [-<span class="number">0.33445148015177995</span>, -<span class="number">0.2567135004164067</span>, <span class="number">0.8987539745369246</span>, <span class="number">0.9402995886420709</span>, <span class="number">0.5378064918413052</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;grey_8510&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">8</span>, <span class="string">&quot;vector&quot;</span>: [<span class="number">0.39524717779832685</span>, <span class="number">0.4000257286739164</span>, -<span class="number">0.5890507376891594</span>, -<span class="number">0.8650502298996872</span>, -<span class="number">0.6140360785406336</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;white_9381&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">9</span>, <span class="string">&quot;vector&quot;</span>: [<span class="number">0.5718280481994695</span>, <span class="number">0.24070317428066512</span>, -<span class="number">0.3737913482606834</span>, -<span class="number">0.06726932177492717</span>, -<span class="number">0.6980531615588608</span>], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;purple_4976&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">res = client.insert(</span><br><span class="line">    collection_name=<span class="string">&quot;quick_setup&quot;</span>,</span><br><span class="line">    data=data</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(res)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>更新实体</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">update_data = [</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">0</span>, <span class="string">&quot;vector&quot;</span>: [random.random() <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>)], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;updated_pink_8682&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>, <span class="string">&quot;vector&quot;</span>: [random.random() <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>)], <span class="string">&quot;color&quot;</span>: <span class="string">&quot;updated_red_7025&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">res = client.upsert(</span><br><span class="line">    collection_name=<span class="string">&quot;quick_setup&quot;</span>,</span><br><span class="line">    data=update_data</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n更新结果:&quot;</span>, res)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>删除实体</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">res = client.delete(</span><br><span class="line">    collection_name=<span class="string">&quot;quick_setup&quot;</span>,</span><br><span class="line">    ids=[<span class="number">0</span>]</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n删除结果:&quot;</span>, res)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>查询实体</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">client.flush(collection_name=<span class="string">&quot;quick_setup&quot;</span>) <span class="comment"># 刷新内存</span></span><br><span class="line"></span><br><span class="line">res = client.query(</span><br><span class="line">    collection_name=<span class="string">&quot;quick_setup&quot;</span>,</span><br><span class="line">    <span class="built_in">filter</span>=<span class="string">&quot;id in [1,2]&quot;</span>,</span><br><span class="line">    output_fields=[<span class="string">&quot;id&quot;</span>, <span class="string">&quot;color&quot;</span>]</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n查询结果:&quot;</span>, res)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h1 id="其它概念"><a href="#其它概念" class="headerlink" title="其它概念"></a>其它概念</h1><ul>
+<li><strong>Partition</strong> - 分区是集合的子集，与其父集合共享相同的字段集，每个分区包含一个实体子集。通过将实体分配到不同的分区，您可以创建实体组。您可以在特定分区内进行搜索和查询，让Milvus 忽略其他分区中的实体，从而提高搜索效率。</li>
+<li><strong>Shard</strong> - 分片是集合的水平切片。每个分片对应一个数据输入通道。每个集合默认都有一个分片。您可以根据预期吞吐量和要插入到集合中的数据量，在创建集合时设置适当的分片数量。。</li>
+<li><strong>Alias</strong> - 您可以为集合创建别名。一个集合可以有多个别名，但集合之间不能共享一个别名。收到针对某个集合的请求后，Milvus 会根据提供的名称查找该集合。</li>
+<li><strong>Function</strong> - 您可以在 Milvus 创建集合时设置函数来导出字段。例如，全文搜索功能使用用户自定义函数从特定的 varchar 字段导出稀疏向量字段。</li>
+<li><strong>Consistency Leve</strong>l - 分布式数据库系统通常使用一致性级别来定义跨数据节点和副本的数据相同性。可以在创建集合或在集合内进行相似性搜索时设置单独的一致性级别。适用的一致性级别包括<strong>Strong</strong>, <strong>Bounded Staleness</strong>, <strong>Session</strong>, <strong>Eventually</strong></li>
+</ul>
+<h1 id="数据一致性"><a href="#数据一致性" class="headerlink" title="数据一致性"></a>数据一致性</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>一致性级别</th>
+<th>含义</th>
+<th>特性</th>
+<th>典型场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Strong（一致性）</td>
+<td>任何读操作都能立刻看到所有已完成写操作的最新数据，保证“线性化”</td>
+<td>• 最高读写一致性<br>• 延迟和吞吐可能受限于副本同步速度</td>
+<td>• 对数据准确性要求极高的业务，如金融交易、订单支付<br>• 写入与读取强耦合的场景</td>
+</tr>
+<tr>
+<td>Bounded Staleness（有界时滞一致性）</td>
+<td>读操作可能看到最新写操作之前的旧数据，但“落后量”可控</td>
+<td>• 最长时延或版本差可配置（如最多滞后5秒或3个版本）<br>• 在可接受延迟范围内兼顾性能与一致性</td>
+<td>• 社交媒体时序数据显示，只要误差在几秒以内可接受<br>• 仪表盘、监控类场景</td>
+</tr>
+<tr>
+<td>Session（会话一致性）</td>
+<td>同一客户端会话内，读写操作按照客户端顺序一致；跨会话可见性无保证</td>
+<td>• 保证“读已所写”、“读后写”、“写后读”<br>• 不同客户端之间可能看到不同版本</td>
+<td>• 用户个性化操作：自己写入的数据自己即刻可见<br>• 聊天、个人设置等场景</td>
+</tr>
+<tr>
+<td>Eventually（最终一致性）</td>
+<td>写操作会被异步传播到所有副本，短期内读到旧数据，最终收敛到一致</td>
+<td>• 写入延迟最低、吞吐最高<br>• 不保证任何时刻的一致性，只保证最终一致</td>
+<td>• 海量日志收集、埋点数据、离线分析场景<br>• 缓存回源、CDN数据分发</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>Strong(强一致性):<ul>
+<li>任何读都能看到最新写结果</li>
+<li>适用于金融交易等高要求场景</li>
+</ul>
+</li>
+<li>Bounded Staleness(有界时滞):<ul>
+<li>默认级别，落后量可控(如5秒内)</li>
+<li>兼顾性能与一致性</li>
+</ul>
+</li>
+<li>Session(会话一致性):<ul>
+<li>保证同一会话内的读写顺序</li>
+<li>适用于个性化操作场景</li>
+</ul>
+</li>
+<li>Eventually(最终一致性):<ul>
+<li>写入延迟最低，最终收敛一致</li>
+<li>适用于日志收集等场景</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/15/ai/rag/17-embedding-technology/" rel="prev" title="RAG组件--向量嵌入之稀疏嵌入、密集嵌入、混合检索">
+      <i class="fa fa-chevron-left"></i> RAG组件--向量嵌入之稀疏嵌入、密集嵌入、混合检索
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/18/ai/rag/19-vector-db/" rel="next" title="RAG组件--向量数据库介绍">
+      RAG组件--向量数据库介绍 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E6%95%B0%E6%8D%AE%E5%BA%93%E5%9F%BA%E6%9C%AC%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">向量数据库基本处理流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">2.</span> <span class="nav-text">数据库</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E6%93%8D%E4%BD%9C"><span class="nav-number">2.1.</span> <span class="nav-text">数据库操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E5%90%88%EF%BC%9ACollection"><span class="nav-number">2.2.</span> <span class="nav-text">集合：Collection</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E5%90%88%E7%9A%84Schema"><span class="nav-number">2.2.1.</span> <span class="nav-text">集合的Schema</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E5%90%88%E7%9A%84%E5%AD%97%E6%AE%B5%E6%9E%B6%E6%9E%84"><span class="nav-number">2.2.2.</span> <span class="nav-text">集合的字段架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E9%94%AE%E5%92%8CAuto-ID"><span class="nav-number">2.2.3.</span> <span class="nav-text">主键和Auto ID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E5%90%88%E7%9A%84%E6%93%8D%E4%BD%9C"><span class="nav-number">2.2.4.</span> <span class="nav-text">集合的操作</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Schema%E6%93%8D%E4%BD%9C"><span class="nav-number">2.3.</span> <span class="nav-text">Schema操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95"><span class="nav-number">2.4.</span> <span class="nav-text">索引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E4%BD%93%EF%BC%9AEntity"><span class="nav-number">2.5.</span> <span class="nav-text">实体：Entity</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E4%BD%93%EF%BC%9AUpsert"><span class="nav-number">2.5.1.</span> <span class="nav-text">实体：Upsert</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E4%BD%93Entity%E6%93%8D%E4%BD%9C"><span class="nav-number">2.5.2.</span> <span class="nav-text">实体Entity操作</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E6%A6%82%E5%BF%B5"><span class="nav-number">3.</span> <span class="nav-text">其它概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E4%B8%80%E8%87%B4%E6%80%A7"><span class="nav-number">4.</span> <span class="nav-text">数据一致性</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

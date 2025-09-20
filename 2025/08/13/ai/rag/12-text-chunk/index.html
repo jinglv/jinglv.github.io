@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第十二讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--文本分块之方法和实现">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/13/ai/rag/12-text-chunk/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第十二讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250813133708333.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250813134158833.png">
+<meta property="article:published_time" content="2025-08-12T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-13T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250813133708333.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/13/ai/rag/12-text-chunk/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--文本分块之方法和实现 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/13/ai/rag/12-text-chunk/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--文本分块之方法和实现
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-13 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2025-08-13T00:00:00+08:00">2025-08-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第十二讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="CharacterTextSplitter-按固定字符数分块"><a href="#CharacterTextSplitter-按固定字符数分块" class="headerlink" title="CharacterTextSplitter - 按固定字符数分块"></a>CharacterTextSplitter - 按固定字符数分块</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250813133708333.png" alt="image-20250813133708333" style="zoom:67%;" /></p>
+<ul>
+<li>实现方式：通过CharacterTextSplitter指定chunk_size（如1000字符）和chunk_overlap（重叠字符数）</li>
+<li>特点：<ul>
+<li>简单粗暴，直接按字符数切割</li>
+<li>默认以段落（\n\n）为分隔符，也可指定逗号、句号等</li>
+<li>若段落超过设定值（如2000字符），会保持原段落不分块</li>
+</ul>
+</li>
+<li>局限性：不够智能，可能破坏语义完整性</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> TextLoader</span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> CharacterTextSplitter</span><br><span class="line"></span><br><span class="line">loader = TextLoader(<span class="string">&quot;../data/山西文旅/云冈石窟.txt&quot;</span>)</span><br><span class="line">documents = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置分块器，指定块的大小为50个字符，无重叠</span></span><br><span class="line">text_splitter = CharacterTextSplitter(</span><br><span class="line">    chunk_size=<span class="number">100</span>,  <span class="comment"># 每个文本块的大小为50个字符</span></span><br><span class="line">    chunk_overlap=<span class="number">0</span>,  <span class="comment"># 文本块之间没有重叠部分</span></span><br><span class="line">)</span><br><span class="line">chunks = text_splitter.split_documents(documents)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 文档分块结果 ===&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> i, chunk <span class="keyword">in</span> <span class="built_in">enumerate</span>(chunks, <span class="number">1</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;\n--- 第 <span class="subst">&#123;i&#125;</span> 个文档块 ---&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;内容: <span class="subst">&#123;chunk.page_content&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;元数据: <span class="subst">&#123;chunk.metadata&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">=== 文档分块结果 ===</span><br><span class="line"></span><br><span class="line">--- 第 1 个文档块 ---</span><br><span class="line">内容: 云冈石窟</span><br><span class="line">云冈石窟位于中国北部山西省大同市西郊17公里处的武周山南麓，石窟依山开凿，东西绵延1公里。存有主要洞窟45个，大小窟龛252个，石雕造像51000余躯，为中国规模最大的古代石窟群之一，与敦煌莫高窟、洛阳龙门石窟和天水麦积山石窟并称为中国四大石窟艺术宝库。 1961年被国务院公布为全国首批重点文物保护单位，2001年12月14日被联合国教科文组织列入世界遗产名录，2007年5月8日被国家旅游局评为首批国家5A级旅游景区。</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line"></span><br><span class="line">--- 第 2 个文档块 ---</span><br><span class="line">内容: 云冈五华洞</span><br><span class="line">位于云冈石窟中部的第 9——13窟。这五窟因清代施泥彩绘云冈石窟景观而得名。五华洞雕饰绮丽，丰富多彩，是研究北魏历史、艺术、音乐、舞蹈、书法和建筑的珍贵资料，为云冈石窟群的重要组成部分。</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line"></span><br><span class="line">--- 第 3 个文档块 ---</span><br><span class="line">内容: 塔洞</span><br><span class="line">云冈东部窟群，指云冈石窟东端1——4，均为塔洞。第1、2窟为同期开的一组，凿于孝文帝迁洛前，窟内中央雕造方形塔柱，四面开龛造像。第一窟主像是弥勒，塔南面下层雕释迦多宝像，上层雕释迦像。浮雕五层小塔，是研究北魏建筑的形象资料。第二窟是释迦像，塔南面下层雕释迦多宝像，上层雕三世佛。两窟南壁窟门两侧都雕有维摩、文殊。第三窟为云冈石窟中规模最大的洞窟，前立壁高约25米，传为昙曜译经楼。</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line"></span><br><span class="line">--- 第 4 个文档块 ---</span><br><span class="line">内容: 武州山</span><br><span class="line">武周山，亦名武州山，在大同城西山中。宋《太平寰宇记》引《冀州图》云：“武周山在郡西北，东西数百里，南北五十里。山之南面，千仞壁立。”云冈石窟即因武周山南缘斩山开凿。</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br><span class="line">...</span><br><span class="line">--- 第 11 个文档块 ---</span><br><span class="line">内容: 1、咨询电话：0352-3206805，景区电瓶车10元/人。 2、优惠群体： （1）60周岁（含60周岁）以上老人，持本人身份证或老年证免票； （2）6周岁（含6周岁）以下或 1.2米以下儿童免票； （3）6周岁（不含6周岁）——18周岁（含18周岁）的未成年人，全日制大学本科及以下学历的学生，凭本人身份证、学生证享受半价票优惠。 （4）全日制大学本科及以学历学生，凭本人身份证、学生证享受半价票优惠。 （5）残疾人持本人身份证和第二代《中华人民共和国残疾证》免票；伤残军人持伤残军人证及本人身份证免票。 （6）现役军人凭军人保障卡免票进入。 （7）导游人员免票，需持本人导游证（不含导游资格证、经理资格证）、派团单、行程计划单。</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="RecursiveCharacterTextSplitter-–-递归分块"><a href="#RecursiveCharacterTextSplitter-–-递归分块" class="headerlink" title="RecursiveCharacterTextSplitter – 递归分块"></a>RecursiveCharacterTextSplitter – 递归分块</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250813134158833.png" alt="image-20250813134158833" style="zoom:50%;" /></p>
+<ul>
+<li>实现原理：<ul>
+<li>定义优先级分隔符列表（如[“\n\n”, “.”, “,”, “ “]）</li>
+<li>先尝试第一个分隔符，若块过大则尝试下一个</li>
+</ul>
+</li>
+<li>优势：<ul>
+<li>切割更精细（可细化到句子、短语级别）</li>
+<li>通过多级分隔符保证块大小接近设定值</li>
+</ul>
+</li>
+<li>注意事项：<ul>
+<li>分隔符不宜过细（如空格），否则会破坏语义</li>
+<li>英文中”.”需注意区分小数点和句号</li>
+</ul>
+</li>
+<li>对比固定分块：<ul>
+<li>相同设定下，递归分块数更多（如100字符设定产生22块 vs 固定分块11块）</li>
+<li>但过度分割可能导致关键信息断裂（如价格”1.5元”被拆分为”1”和”.5元”）</li>
+</ul>
+</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> TextLoader</span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveCharacterTextSplitter</span><br><span class="line"></span><br><span class="line">loader = TextLoader(<span class="string">&quot;../data/山西文旅/云冈石窟.txt&quot;</span>)</span><br><span class="line">documents = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义分割符列表，按优先级依次使用</span></span><br><span class="line">separators = [<span class="string">&quot;\n\n&quot;</span>, <span class="string">&quot;.&quot;</span>, <span class="string">&quot;，&quot;</span>, <span class="string">&quot; &quot;</span>] <span class="comment"># . 是句号，， 是逗号， 是空格</span></span><br><span class="line"><span class="comment"># 创建递归分块器，并传入分割符列表</span></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(</span><br><span class="line">    chunk_size=<span class="number">100</span>,</span><br><span class="line">    chunk_overlap=<span class="number">10</span>,</span><br><span class="line">    separators=separators</span><br><span class="line">)</span><br><span class="line">chunks = text_splitter.split_documents(documents)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 文档分块结果 ===&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> i, chunk <span class="keyword">in</span> <span class="built_in">enumerate</span>(chunks, <span class="number">1</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;\n--- 第 <span class="subst">&#123;i&#125;</span> 个文档块 ---&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;内容: <span class="subst">&#123;chunk.page_content&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;元数据: <span class="subst">&#123;chunk.metadata&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">=== 文档分块结果 ===</span><br><span class="line"></span><br><span class="line">--- 第 1 个文档块 ---</span><br><span class="line">内容: 云冈石窟</span><br><span class="line">云冈石窟位于中国北部山西省大同市西郊17公里处的武周山南麓，石窟依山开凿，东西绵延1公里。存有主要洞窟45个，大小窟龛252个，石雕造像51000余躯，为中国规模最大的古代石窟群之一</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line"></span><br><span class="line">--- 第 2 个文档块 ---</span><br><span class="line">内容: ，与敦煌莫高窟、洛阳龙门石窟和天水麦积山石窟并称为中国四大石窟艺术宝库。 1961年被国务院公布为全国首批重点文物保护单位，2001年12月14日被联合国教科文组织列入世界遗产名录</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line"></span><br><span class="line">--- 第 3 个文档块 ---</span><br><span class="line">内容: ，2007年5月8日被国家旅游局评为首批国家5A级旅游景区。</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line"></span><br><span class="line">--- 第 4 个文档块 ---</span><br><span class="line">内容: 云冈五华洞</span><br><span class="line">位于云冈石窟中部的第 9——13窟。这五窟因清代施泥彩绘云冈石窟景观而得名。五华洞雕饰绮丽，丰富多彩，是研究北魏历史、艺术、音乐、舞蹈、书法和建筑的珍贵资料</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line">...</span><br><span class="line">--- 第 22 个文档块 ---</span><br><span class="line">内容: ，需持本人导游证（不含导游资格证、经理资格证）、派团单、行程计划单。</span><br><span class="line">元数据: &#123;&#x27;source&#x27;: &#x27;../data/山西文旅/云冈石窟.txt&#x27;&#125;</span><br><span class="line">--------------------------------------------------</span><br></pre></td></tr></table></figure>
+<h1 id="分块的重要性"><a href="#分块的重要性" class="headerlink" title="分块的重要性"></a>分块的重要性</h1><p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv()   </span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> llama_index.llms.openai <span class="keyword">import</span> OpenAI</span><br><span class="line"><span class="keyword">from</span> llama_index.embeddings.openai <span class="keyword">import</span> OpenAIEmbedding</span><br><span class="line"><span class="keyword">from</span> llama_index.core <span class="keyword">import</span> VectorStoreIndex</span><br><span class="line"><span class="keyword">from</span> llama_index.core <span class="keyword">import</span> Settings</span><br><span class="line"><span class="keyword">from</span> llama_index.readers.file <span class="keyword">import</span> PDFReader</span><br><span class="line"><span class="keyword">from</span> llama_index.core.node_parser <span class="keyword">import</span> SentenceSplitter</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">embed_model = OpenAIEmbedding(model=<span class="string">&quot;text-embedding-3-small&quot;</span>)</span><br><span class="line">llm = OpenAI(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>),  <span class="comment"># DeepSeek API 支持的模型名称</span></span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),  <span class="comment"># 从环境变量加载API key</span></span><br><span class="line">    api_base=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">Settings.embed_model = embed_model</span><br><span class="line">Settings.llm = llm</span><br><span class="line">Settings.node_parser = SentenceSplitter(chunk_size=<span class="number">250</span>, chunk_overlap=<span class="number">20</span>) <span class="comment"># 50, 100, 250将得到不同的结果，为什么？</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Load PDF using standard PDFReader</span></span><br><span class="line">loader = PDFReader()</span><br><span class="line">documents = loader.load_data(</span><br><span class="line">    file=<span class="string">&quot;../data/复杂PDF/uber_10q_march_2022_page26.pdf&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create index directly from documents</span></span><br><span class="line">index = VectorStoreIndex.from_documents(documents)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create query engine</span></span><br><span class="line">query_engine = index.as_query_engine(</span><br><span class="line">    similarity_top_k=<span class="number">3</span>,</span><br><span class="line">    verbose=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">query = <span class="string">&quot;how much is the Loss from operations for 2022?&quot;</span></span><br><span class="line"></span><br><span class="line">response = query_engine.query(query)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n************LlamaIndex Query Response************&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(response)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Display retrieved chunks</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n************Retrieved Text Chunks************&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> i, source_node <span class="keyword">in</span> <span class="built_in">enumerate</span>(response.source_nodes):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;\nChunk <span class="subst">&#123;i+<span class="number">1</span>&#125;</span>:&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Text content:&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(source_node.text)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+<p>调整块的大小</p>
+<ul>
+<li>关键发现：<ul>
+<li>100字符分块：返回错误答案$1.938B（无意义数值）</li>
+<li>150字符分块：返回$1.524B（2021年正确值，但非问题要求的2022年）</li>
+<li>250字符分块：正确返回$482M（2022年实际值）</li>
+</ul>
+</li>
+<li>原理分析：<ul>
+<li>过小分块割裂表格数据关联性</li>
+<li>适当分块保留完整表格结构，使模型能正确对应年份与数值</li>
+<li>过大分块（如2500字符）可能引入干扰信息</li>
+</ul>
+</li>
+</ul>
+<h1 id="基于特定格式（如代码）分块"><a href="#基于特定格式（如代码）分块" class="headerlink" title="基于特定格式（如代码）分块"></a>基于特定格式（如代码）分块</h1><ul>
+<li>普通分块问题：<ul>
+<li>函数定义被强行拆分</li>
+<li>类成员变量与方法分离</li>
+</ul>
+</li>
+<li>语言专用分块：<ul>
+<li>按class和def自然分割</li>
+<li>保留完整类结构（如CombatSystem类完整包含所有方法）</li>
+<li>支持多种语言（Python/Java/SQL等）的语法感知分割</li>
+</ul>
+</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveCharacterTextSplitter</span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> Language</span><br><span class="line"></span><br><span class="line">separators = RecursiveCharacterTextSplitter.get_separators_for_language(Language.JS)</span><br><span class="line"><span class="built_in">print</span>(separators)</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> (</span><br><span class="line">    Language,</span><br><span class="line">    RecursiveCharacterTextSplitter,</span><br><span class="line">)</span><br><span class="line">GAME_CODE = <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">class CombatSystem:</span></span><br><span class="line"><span class="string">   def __init__(self):</span></span><br><span class="line"><span class="string">       self.health = 100</span></span><br><span class="line"><span class="string">       self.stamina = 100</span></span><br><span class="line"><span class="string">       self.state = &quot;IDLE&quot;</span></span><br><span class="line"><span class="string">       self.attack_patterns = &#123;</span></span><br><span class="line"><span class="string">           &quot;NORMAL&quot;: 10,</span></span><br><span class="line"><span class="string">           &quot;SPECIAL&quot;: 30,</span></span><br><span class="line"><span class="string">           &quot;ULTIMATE&quot;: 50</span></span><br><span class="line"><span class="string">       &#125;</span></span><br><span class="line"><span class="string">   def update(self, delta_time):</span></span><br><span class="line"><span class="string">       self._update_stats(delta_time)</span></span><br><span class="line"><span class="string">       self._handle_combat()</span></span><br><span class="line"><span class="string">   def _update_stats(self, delta_time):</span></span><br><span class="line"><span class="string">       self.stamina = min(100, self.stamina + 5 * delta_time)</span></span><br><span class="line"><span class="string">   def _handle_combat(self):</span></span><br><span class="line"><span class="string">       if self.state == &quot;ATTACKING&quot;:</span></span><br><span class="line"><span class="string">           self._execute_attack()</span></span><br><span class="line"><span class="string">   def _execute_attack(self):</span></span><br><span class="line"><span class="string">       if self.stamina &gt;= self.attack_patterns[&quot;SPECIAL&quot;]:</span></span><br><span class="line"><span class="string">           damage = 50</span></span><br><span class="line"><span class="string">           self.stamina -= self.attack_patterns[&quot;SPECIAL&quot;]</span></span><br><span class="line"><span class="string">           return damage</span></span><br><span class="line"><span class="string">       return self.attack_patterns[&quot;NORMAL&quot;]</span></span><br><span class="line"><span class="string">class InventorySystem:</span></span><br><span class="line"><span class="string">   def __init__(self):</span></span><br><span class="line"><span class="string">       self.items = &#123;&#125;</span></span><br><span class="line"><span class="string">       self.capacity = 20</span></span><br><span class="line"><span class="string">       self.gold = 0</span></span><br><span class="line"><span class="string">   def add_item(self, item_id, quantity):</span></span><br><span class="line"><span class="string">       if len(self.items) &lt; self.capacity:</span></span><br><span class="line"><span class="string">           if item_id in self.items:</span></span><br><span class="line"><span class="string">               self.items[item_id] += quantity</span></span><br><span class="line"><span class="string">           else:</span></span><br><span class="line"><span class="string">               self.items[item_id] = quantity</span></span><br><span class="line"><span class="string">   def remove_item(self, item_id, quantity):</span></span><br><span class="line"><span class="string">       if item_id in self.items:</span></span><br><span class="line"><span class="string">           self.items[item_id] -= quantity</span></span><br><span class="line"><span class="string">           if self.items[item_id] &lt;= 0:</span></span><br><span class="line"><span class="string">               del self.items[item_id]</span></span><br><span class="line"><span class="string">   def get_item_count(self, item_id):</span></span><br><span class="line"><span class="string">       return self.items.get(item_id, 0)</span></span><br><span class="line"><span class="string">class QuestSystem:</span></span><br><span class="line"><span class="string">   def __init__(self):</span></span><br><span class="line"><span class="string">       self.active_quests = &#123;&#125;</span></span><br><span class="line"><span class="string">       self.completed_quests = set()</span></span><br><span class="line"><span class="string">       self.quest_log = []</span></span><br><span class="line"><span class="string">   def add_quest(self, quest_id, quest_data):</span></span><br><span class="line"><span class="string">       if quest_id not in self.active_quests:</span></span><br><span class="line"><span class="string">           self.active_quests[quest_id] = quest_data</span></span><br><span class="line"><span class="string">           self.quest_log.append(f&quot;Started quest: &#123;quest_data[&#x27;name&#x27;]&#125;&quot;)</span></span><br><span class="line"><span class="string">   def complete_quest(self, quest_id):</span></span><br><span class="line"><span class="string">       if quest_id in self.active_quests:</span></span><br><span class="line"><span class="string">           self.completed_quests.add(quest_id)</span></span><br><span class="line"><span class="string">           del self.active_quests[quest_id]</span></span><br><span class="line"><span class="string">   def get_active_quests(self):</span></span><br><span class="line"><span class="string">       return list(self.active_quests.keys())</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line">python_splitter = RecursiveCharacterTextSplitter.from_language(</span><br><span class="line">   language=Language.PYTHON,  <span class="comment"># 指定编程语言为Python</span></span><br><span class="line">   chunk_size=<span class="number">1000</span>,</span><br><span class="line">   chunk_overlap=<span class="number">0</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">python_docs = python_splitter.create_documents([GAME_CODE])</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 代码分块结果 ===&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> i, chunk <span class="keyword">in</span> <span class="built_in">enumerate</span>(python_docs, <span class="number">1</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;\n--- 第 <span class="subst">&#123;i&#125;</span> 个代码块 ---&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;内容:\n<span class="subst">&#123;chunk.page_content&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;元数据: <span class="subst">&#123;chunk.metadata&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line">[&#x27;\nfunction &#x27;, &#x27;\nconst &#x27;, &#x27;\nlet &#x27;, &#x27;\nvar &#x27;, &#x27;\nclass &#x27;, &#x27;\nif &#x27;, &#x27;\nfor &#x27;, &#x27;\nwhile &#x27;, &#x27;\nswitch &#x27;, &#x27;\ncase &#x27;, &#x27;\ndefault &#x27;, &#x27;\n\n&#x27;, &#x27;\n&#x27;, &#x27; &#x27;, &#x27;&#x27;]</span><br><span class="line"></span><br><span class="line">=== 代码分块结果 ===</span><br><span class="line"></span><br><span class="line">--- 第 1 个代码块 ---</span><br><span class="line">内容:</span><br><span class="line">class CombatSystem:</span><br><span class="line">   def __init__(self):</span><br><span class="line">       self.health = 100</span><br><span class="line">       self.stamina = 100</span><br><span class="line">       self.state = &quot;IDLE&quot;</span><br><span class="line">       self.attack_patterns = &#123;</span><br><span class="line">           &quot;NORMAL&quot;: 10,</span><br><span class="line">           &quot;SPECIAL&quot;: 30,</span><br><span class="line">           &quot;ULTIMATE&quot;: 50</span><br><span class="line">       &#125;</span><br><span class="line">   def update(self, delta_time):</span><br><span class="line">       self._update_stats(delta_time)</span><br><span class="line">       self._handle_combat()</span><br><span class="line">   def _update_stats(self, delta_time):</span><br><span class="line">       self.stamina = min(100, self.stamina + 5 * delta_time)</span><br><span class="line">   def _handle_combat(self):</span><br><span class="line">       if self.state == &quot;ATTACKING&quot;:</span><br><span class="line">           self._execute_attack()</span><br><span class="line">   def _execute_attack(self):</span><br><span class="line">       if self.stamina &gt;= self.attack_patterns[&quot;SPECIAL&quot;]:</span><br><span class="line">           damage = 50</span><br><span class="line">           self.stamina -= self.attack_patterns[&quot;SPECIAL&quot;]</span><br><span class="line">           return damage</span><br><span class="line">       return self.attack_patterns[&quot;NORMAL&quot;]</span><br><span class="line">元数据: &#123;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line"></span><br><span class="line">--- 第 2 个代码块 ---</span><br><span class="line">内容:</span><br><span class="line">class InventorySystem:</span><br><span class="line">   def __init__(self):</span><br><span class="line">       self.items = &#123;&#125;</span><br><span class="line">       self.capacity = 20</span><br><span class="line">       self.gold = 0</span><br><span class="line">   def add_item(self, item_id, quantity):</span><br><span class="line">       if len(self.items) &lt; self.capacity:</span><br><span class="line">           if item_id in self.items:</span><br><span class="line">               self.items[item_id] += quantity</span><br><span class="line">           else:</span><br><span class="line">               self.items[item_id] = quantity</span><br><span class="line">   def remove_item(self, item_id, quantity):</span><br><span class="line">       if item_id in self.items:</span><br><span class="line">           self.items[item_id] -= quantity</span><br><span class="line">           if self.items[item_id] &lt;= 0:</span><br><span class="line">               del self.items[item_id]</span><br><span class="line">   def get_item_count(self, item_id):</span><br><span class="line">       return self.items.get(item_id, 0)</span><br><span class="line">元数据: &#123;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line"></span><br><span class="line">--- 第 3 个代码块 ---</span><br><span class="line">内容:</span><br><span class="line">class QuestSystem:</span><br><span class="line">   def __init__(self):</span><br><span class="line">       self.active_quests = &#123;&#125;</span><br><span class="line">       self.completed_quests = set()</span><br><span class="line">       self.quest_log = []</span><br><span class="line">   def add_quest(self, quest_id, quest_data):</span><br><span class="line">       if quest_id not in self.active_quests:</span><br><span class="line">           self.active_quests[quest_id] = quest_data</span><br><span class="line">           self.quest_log.append(f&quot;Started quest: &#123;quest_data[&#x27;name&#x27;]&#125;&quot;)</span><br><span class="line">   def complete_quest(self, quest_id):</span><br><span class="line">       if quest_id in self.active_quests:</span><br><span class="line">           self.completed_quests.add(quest_id)</span><br><span class="line">           del self.active_quests[quest_id]</span><br><span class="line">   def get_active_quests(self):</span><br><span class="line">       return list(self.active_quests.keys())</span><br><span class="line">元数据: &#123;&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line">……</span><br></pre></td></tr></table></figure>
+<h1 id="语义分块"><a href="#语义分块" class="headerlink" title="语义分块"></a>语义分块</h1><p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> llama_index.core <span class="keyword">import</span> SimpleDirectoryReader</span><br><span class="line"><span class="keyword">from</span> llama_index.core.node_parser <span class="keyword">import</span> (</span><br><span class="line">    SentenceSplitter,</span><br><span class="line">    SemanticSplitterNodeParser,</span><br><span class="line">)</span><br><span class="line"><span class="comment"># from llama_index.embeddings.openai import OpenAIEmbedding </span></span><br><span class="line"><span class="keyword">from</span> llama_index.embeddings.huggingface <span class="keyword">import</span> HuggingFaceEmbedding </span><br><span class="line">embed_model = HuggingFaceEmbedding(model_name=<span class="string">&quot;BAAI/bge-small-zh&quot;</span>) <span class="comment"># 加载本地嵌入模型</span></span><br><span class="line"></span><br><span class="line">documents = SimpleDirectoryReader(input_files=[<span class="string">&quot;../data/黑悟空/黑悟空wiki.txt&quot;</span>]).load_data()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建语义分块器</span></span><br><span class="line">splitter = SemanticSplitterNodeParser(</span><br><span class="line">    buffer_size=<span class="number">3</span>,  <span class="comment"># 缓冲区大小</span></span><br><span class="line">    breakpoint_percentile_threshold=<span class="number">90</span>, <span class="comment"># 断点百分位阈值</span></span><br><span class="line">    embed_model=embed_model     <span class="comment"># 使用的嵌入模型</span></span><br><span class="line">)</span><br><span class="line"><span class="comment"># 创建基础句子分块器（作为对照）</span></span><br><span class="line">base_splitter = SentenceSplitter(</span><br><span class="line">    <span class="comment"># chunk_size=512</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用语义分块器对文档进行分块</span></span><br><span class="line">semantic_nodes = splitter.get_nodes_from_documents(documents)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 语义分块结果 ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;语义分块器生成的块数：<span class="subst">&#123;<span class="built_in">len</span>(semantic_nodes)&#125;</span>&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> i, node <span class="keyword">in</span> <span class="built_in">enumerate</span>(semantic_nodes, <span class="number">1</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;\n--- 第 <span class="subst">&#123;i&#125;</span> 个语义块 ---&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;内容:\n<span class="subst">&#123;node.text&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用基础句子分块器对文档进行分块</span></span><br><span class="line">base_nodes = base_splitter.get_nodes_from_documents(documents)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 基础句子分块结果 ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;基础句子分块器生成的块数：<span class="subst">&#123;<span class="built_in">len</span>(base_nodes)&#125;</span>&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> i, node <span class="keyword">in</span> <span class="built_in">enumerate</span>(base_nodes, <span class="number">1</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;\n--- 第 <span class="subst">&#123;i&#125;</span> 个句子块 ---&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;内容:\n<span class="subst">&#123;node.text&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>buffer_size参数:<ul>
+<li>默认值为1，控制评估语义相似度时组合的句子数量</li>
+<li>设置为1时每个句子单独考虑</li>
+<li>设置为3时每3个句子作为一组评估相似度</li>
+</ul>
+</li>
+<li>breakpoint_percentile_threshold参数:<ul>
+<li>默认值为95，控制创建分割点的阈值</li>
+<li>表示余弦不相似度的百分位数值</li>
+<li>数值越小生成的节点越多（更容易达到分割值）</li>
+<li>数值越大生成的节点越少（需要更大不相似度才会分割）</li>
+</ul>
+</li>
+</ul>
+<p>参数组合影响:</p>
+<ul>
+<li><p>buffer_size：默认值为1</p>
+<ul>
+<li>这个参数控制评估语义相似度时，将多少个句子组合在一起当设置为1时，每个句子会被单独考虑<br>当设置大于1时，会将多个句子组合在一起进行评估例如，如果设置为3，就会将每3个句子作为一个组来评估语义相似度</li>
+</ul>
+</li>
+<li><p>breakpoint_percentile_threshold：默认值为95</p>
+<ul>
+<li>这个参数控制何时在句子组之间创建分割点,它表示余弦不相似度的百分位数阈值,当句子组之间的不相似度超过这个阈值时，就会创建一个新的节点<ul>
+<li>数值越小，生成的节点就越多（因为更容易达到分割阈值）</li>
+<li>数值越大，生成的节点就越少（因为需要更大的不相似度才会分割）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>这两个参数共同影响文本的分割效果：</p>
+<ul>
+<li><p>buffer_size 决定了评估语义相似度的粒度</p>
+</li>
+<li><p>breakpoint_percentile_threshold 决定了分割的严格程度</p>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>例如：</p>
+<ul>
+<li>如果 buffer_size=2 且 breakpoint_percentile_threshold=90：每2个句子会被组合在一起,当组合之间的不相似度超过90%时就会分割,这会产生相对较多的节点</li>
+<li>如果 buffer_size=3 且 breakpoint_percentile_threshold=98：每3个句子会被组合在一起,需要更大的不相似度才会分割,这会产生相对较少的节点</li>
+</ul>
+</li>
+</ul>
+<h1 id="基础句子分块与语义分块特点"><a href="#基础句子分块与语义分块特点" class="headerlink" title="基础句子分块与语义分块特点"></a>基础句子分块与语义分块特点</h1><ul>
+<li>基础句子分块特点:<ul>
+<li>按固定字符数机械划分</li>
+<li>不考虑内容语义连贯性</li>
+<li>实现简单但可能切断语义关联</li>
+</ul>
+</li>
+<li>语义分块特点:<ul>
+<li>基于内容语义自动划分</li>
+<li>识别主题边界形成自然段落</li>
+<li>适合内容结构复杂的文档</li>
+</ul>
+</li>
+</ul>
+<h1 id="使用Unstructured基于文档结构分块"><a href="#使用Unstructured基于文档结构分块" class="headerlink" title="使用Unstructured基于文档结构分块"></a>使用Unstructured基于文档结构分块</h1><p>基于对文档语义结构的识别，而非简单地根据空行或换行符来拆分文本。</p>
+<ul>
+<li>Basic策略 将文本元素顺序合并到同一个分块内，直到达到最大字符数（max_characters）或软限制（new_after_n_chars）。如果单个元素（如一段特别长的正文或一张很大的表格）本身超过了最大字符数，则会对该元素进行二次拆分。表格元素会被视为独立的分块；如果表格过大，也会被拆分为多个TableChunk。可以通过overlap与overlap_all等参数设置分块重叠。</li>
+<li>By Title策略 在保留Basic策略的基础行为的同时，会在检测到新的标题（Title元素）后立刻关闭当前分块，并开启一个新的分块。可以通过multipage_sections和combine_text_under_n_chars等参数进一步控制如何合并或拆分跨页片段、短小片段等。</li>
+</ul>
+<p>通过API调用Unstructured时，还有以下两种额外的智能分块策略。</p>
+<ul>
+<li>lBy Page：确保每页的内容独立分块。</li>
+<li>lBy Similarity：利用嵌入模型将主题相似的元素组合成块。</li>
+</ul>
+<p>参考学习地址：<a target="_blank" rel="noopener" href="https://docs.unstructured.io/api-reference/partition/chunking">https://docs.unstructured.io/api-reference/partition/chunking</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/13/ai/rag/10-pdf-table-parsing/" rel="prev" title="RAG组件--数据导入之解析pdf中的表格数据">
+      <i class="fa fa-chevron-left"></i> RAG组件--数据导入之解析pdf中的表格数据
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/14/ai/rag/16-embedding-llm/" rel="next" title="RAG组件--向量嵌入之大模型时代的嵌入技术">
+      RAG组件--向量嵌入之大模型时代的嵌入技术 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#CharacterTextSplitter-%E6%8C%89%E5%9B%BA%E5%AE%9A%E5%AD%97%E7%AC%A6%E6%95%B0%E5%88%86%E5%9D%97"><span class="nav-number">1.</span> <span class="nav-text">CharacterTextSplitter - 按固定字符数分块</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#RecursiveCharacterTextSplitter-%E2%80%93-%E9%80%92%E5%BD%92%E5%88%86%E5%9D%97"><span class="nav-number">2.</span> <span class="nav-text">RecursiveCharacterTextSplitter – 递归分块</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%86%E5%9D%97%E7%9A%84%E9%87%8D%E8%A6%81%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">分块的重要性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E7%89%B9%E5%AE%9A%E6%A0%BC%E5%BC%8F%EF%BC%88%E5%A6%82%E4%BB%A3%E7%A0%81%EF%BC%89%E5%88%86%E5%9D%97"><span class="nav-number">4.</span> <span class="nav-text">基于特定格式（如代码）分块</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E5%88%86%E5%9D%97"><span class="nav-number">5.</span> <span class="nav-text">语义分块</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E5%8F%A5%E5%AD%90%E5%88%86%E5%9D%97%E4%B8%8E%E8%AF%AD%E4%B9%89%E5%88%86%E5%9D%97%E7%89%B9%E7%82%B9"><span class="nav-number">6.</span> <span class="nav-text">基础句子分块与语义分块特点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8Unstructured%E5%9F%BA%E4%BA%8E%E6%96%87%E6%A1%A3%E7%BB%93%E6%9E%84%E5%88%86%E5%9D%97"><span class="nav-number">7.</span> <span class="nav-text">使用Unstructured基于文档结构分块</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

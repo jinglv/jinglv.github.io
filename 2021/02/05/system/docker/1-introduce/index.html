@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Docker容器化技术第一讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker介绍">
+<meta property="og:url" content="https://jinglv.github.io/2021/02/05/system/docker/1-introduce/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Docker容器化技术第一讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131533656.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131535363.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131536472.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131537144.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131538295.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131539069.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131539002.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131540247.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131540718.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131541942.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207251133386.png">
+<meta property="article:published_time" content="2021-02-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-05-19T06:16:38.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="Docker">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131533656.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2021/02/05/system/docker/1-introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Docker介绍 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2021/02/05/system/docker/1-introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Docker介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-05 00:00:00" itemprop="dateCreated datePublished" datetime="2021-02-05T00:00:00+08:00">2021-02-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-05-19 14:16:38" itemprop="dateModified" datetime="2021-05-19T14:16:38+08:00">2021-05-19</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Docker/" itemprop="url" rel="index"><span itemprop="name">Docker</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Docker容器化技术第一讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131533656.png" alt="image-20220713153354622" style="zoom:50%;" /></p>
+<h1 id="什么是container-容器）？"><a href="#什么是container-容器）？" class="headerlink" title="什么是container(容器）？"></a>什么是container(容器）？</h1><p>容器是一种快速的打包技术</p>
+<p>Package Software into Standardized Units for Development, Shipment and Deployment</p>
+<ul>
+<li>标准化</li>
+<li>轻量级</li>
+<li>易移植</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131535363.png" alt="image-20220713153531314"> </p>
+<p>Linux Container容器技术的诞生（2008年）就解决了IT世界里“集装箱运输”的问题。Linux Container（简称LXC）它是一种内核轻量级的操作系统层虚拟化技术。Linux Container主要由Namespace和Cgroup两大机制来保证实现</p>
+<ul>
+<li>Namespace命名空间主要用于资源的隔离</li>
+<li>Cgroup就负责资源管理控制作用，比如进程组使用CPU/MEM的限制，进程组的优先级控制，进程组的挂起和恢复等等。</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131536472.png" alt="image-20220713153632395"></p>
+<h1 id="容器的标准化"><a href="#容器的标准化" class="headerlink" title="容器的标准化"></a>容器的标准化</h1><p><code>docker != container</code></p>
+<p>在2015年，由Google，Docker、红帽等厂商联合发起了OCI（Open Container Initiative）组织，致力于容器技术的标准化</p>
+<h2 id="容器运行时标准-（runtime-spec）"><a href="#容器运行时标准-（runtime-spec）" class="headerlink" title="容器运行时标准 （runtime spec）"></a>容器运行时标准 （runtime spec）</h2><p>简单来讲就是规定了容器的基本操作规范，比如如何下载镜像，创建容器，启动容器等。</p>
+<h2 id="容器镜像标准（image-spec）"><a href="#容器镜像标准（image-spec）" class="headerlink" title="容器镜像标准（image spec）"></a>容器镜像标准（image spec）</h2><p>主要定义镜像的基本格式。</p>
+<h1 id="容器是关乎“速度”"><a href="#容器是关乎“速度”" class="headerlink" title="容器是关乎“速度”"></a>容器是关乎“速度”</h1><ul>
+<li>容器会加速你的软件开发</li>
+<li>容器会加速你的程序编译和构建</li>
+<li>容器会加速你的测试</li>
+<li>容器会速度你的部署</li>
+<li>容器会加速你的更新</li>
+<li>容器会速度你的故障恢复</li>
+</ul>
+<h1 id="什么是Docker？"><a href="#什么是Docker？" class="headerlink" title="什么是Docker？"></a>什么是Docker？</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131537144.png" alt="image-20220713153730110"></p>
+<p>Docker学习的参考地址：</p>
+<ul>
+<li>官方文档地址:<a target="_blank" rel="noopener" href="https://www.docker.com/get-started">https://www.docker.com/get-started</a></li>
+<li>中文参考手册:<a target="_blank" rel="noopener" href="https://docker_practice.gitee.io/zh-cn/">https://docker_practice.gitee.io/zh-cn/</a></li>
+</ul>
+<h1 id="官方介绍"><a href="#官方介绍" class="headerlink" title="官方介绍"></a>官方介绍</h1><p><code>We help developers and development teams build and ship apps.</code></p>
+<ul>
+<li>翻译：我们帮助开发人员及开发团队构建和发布应用</li>
+</ul>
+<p><code>We have a complete container solution for you - no matter who you are and where you are on your containerization journey.</code></p>
+<ul>
+<li>翻译: 我们为你提供了一个完整的容器解决方案,不管你是谁,不管你在哪,你都可以开始容器的的旅程</li>
+</ul>
+<p><strong>总结</strong>: docker是一个容器技术，应用容器技术！</p>
+<h1 id="Docker的起源"><a href="#Docker的起源" class="headerlink" title="Docker的起源"></a>Docker的起源</h1><p>Docker 最初是 dotCloud 公司创始人 Solomon Hykes 在法国期间发起的一个公司内部项目，它是基于 dotCloud 公司多年云服务技术的一次革新，并于 2013 年 3 月以 Apache 2.0 授权协议开源，主要项目代码在 GitHub 上进行维护。Docker 项目后来还加入了 Linux 基金会，并成立推动 开放容器联盟（OCI）。</p>
+<p>Docker 自开源后受到广泛的关注和讨论，至今其 GitHub 项目 已经超过 5 万 7 千个星标和一万多个 fork。甚至由于 Docker 项目的火爆，在 2013 年底，dotCloud 公司决定改名为 Docker。Docker 最初是在 Ubuntu 12.04 上开发实现的；Red Hat 则从 RHEL 6.5 开始对 Docker 进行支持；Google 也在其 PaaS 产品中广泛应用 Docker。</p>
+<p>Docker 使用 Google 公司推出的 Go 语言 进行开发实现，基于 Linux 内核的 cgroup，namespace，以及 OverlayFS 类的 Union FS 等技术，对进程进行封装隔离，属于操作系统层面的虚拟化技术。由于隔离的进程独立于宿主和其它的隔离的进程，因此也称其为容器。</p>
+<h1 id="为什么是Docker"><a href="#为什么是Docker" class="headerlink" title="为什么是Docker"></a>为什么是Docker</h1><ul>
+<li><p><code>在开发的时候，在本机测试环境可以跑，生产环境跑不起来</code></p>
+<p>这里我们拿java Web应用程序举例，我们一个java Web应用程序涉及很多东西，比如jdk、tomcat、mysql等软件环境。当这些其中某一项版本不一致的时候，可能就会导致应用程序跑不起来这种情况。Docker则将程序以及使用软件环境直接打包在一起，无论在那个机器上保证了环境一致。</p>
+<p><strong>优势1:  一致的运行环境,更轻松的迁移</strong></p>
+</li>
+</ul>
+<ul>
+<li><p><code>服务器自己的程序挂了，结果发现是别人程序出了问题把内存吃完了，自己程序因为内存不够就挂了</code></p>
+<p>这种也是一种比较常见的情况，如果你的程序重要性不是特别高的话，公司基本上不可能让你的程序独享一台服务器的，这时候你的服务器就会跟公司其他人的程序共享一台服务器，所以不可避免地就会受到其他程序的干扰，导致自己的程序出现问题。Docker就很好解决了环境隔离的问题，别人程序不会影响到自己的程序。</p>
+<p><strong>优势2：对进程进行封装隔离,容器与容器之间互不影响,更高效的利用系统资源</strong></p>
+</li>
+</ul>
+<ul>
+<li><p><code>公司要弄一个活动，可能会有大量的流量进来，公司需要再多部署几十台服务器</code></p>
+<p>在没有Docker的情况下，要在几天内部署几十台服务器，这对运维来说是一件非常折磨人的事，而且每台服务器的环境还不一定一样，就会出现各种问题，最后部署地头皮发麻。用Docker的话，我只需要将程序打包到镜像，你要多少台服务，我就给力跑多少容器，极大地提高了部署效率。</p>
+<p><strong>优势3: 通过镜像复制N多个环境一致容器</strong></p>
+</li>
+</ul>
+<h1 id="Docker和虚拟机区别"><a href="#Docker和虚拟机区别" class="headerlink" title="Docker和虚拟机区别"></a>Docker和虚拟机区别</h1><h2 id="虚拟机技术"><a href="#虚拟机技术" class="headerlink" title="虚拟机技术"></a>虚拟机技术</h2><p>虚拟机（Virtual Machine）指通过软件模拟的具有完整硬件系统功能的、运行在一个完全隔离环境中的完整计算机系统。在实体计算机中能够完成的工作在虚拟机中都能够实现。在计算机中创建虚拟机时，需要将实体机的部分硬盘和内存容量作为虚拟机的硬盘和内存容量。每个虚拟机都有独立的CMOS、硬盘和操作系统，可以像使用实体机一样对虚拟机进行操作。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131538295.png" alt="image-20220713153839264" style="zoom:50%;" /></p>
+<p>虚拟机技术缺点：</p>
+<ol>
+<li>虚拟机运行软件环境之前必须自身携带操作系统，本身很小的应用程序却因为携带了操作系统而变得非常大，很笨重</li>
+<li>通过虚拟机在资源调度上经过很多步骤：另外在调用宿主机的CPU、磁盘等待这些资源的时候，以内存举例，虚拟机是利用Hypervisor去虚拟化内存，整个调用过程时：虚拟内存-&gt;虚拟物理内存-&gt;真正物理内存</li>
+<li>因为流程较多，启动慢</li>
+</ol>
+<h2 id="容器化技术"><a href="#容器化技术" class="headerlink" title="容器化技术"></a>容器化技术</h2><p>容器技术:有效的将单个操作系统的资源划分到孤立的组中，以便更好的在孤立的组之间平衡有冲突的资源使用需求，这种技术就是容器技术。</p>
+<ul>
+<li>容器化技术不是模拟的一个完整的操作系统</li>
+</ul>
+<p>Docker的logo看容器技术：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131539069.png" alt="image-20220713153912043" style="zoom:50%;" /></p>
+<ul>
+<li>docker英语翻译过来是码头工人</li>
+<li>docker的logo是一只鲸鱼，鲸鱼上有一个一个箱子，这些箱子代表着我们通过docker引擎启动一个一个软件环境MySQL，一个软件环境称之为一个容器，容器与容器之间隔离，互相之间不影响，对进程封装隔离，保持容器的独立性</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131539002.png" alt="image-20220713153948973" style="zoom:50%;" /></p>
+<h2 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131540247.png" alt="image-20220713154021218" style="zoom:50%;" /></p>
+<p><code>比较上面两张图，我们发现虚拟机是携带操作系统，本身很小的应用程序却因为携带了操作系统而变得非常大，很笨重</code>。Docker是不携带操作系统的，所以Docker的应用就非常的轻巧。另外在调用宿主机的CPU、磁盘等等这些资源的时候，拿内存举例，虚拟机是利用Hypervisor去虚拟化内存，整个调用过程是虚拟内存-&gt;虚拟物理内存-&gt;真正物理内存，但是Docker是利用Docker Engine去调用宿主的的资源，这时候过程是虚拟内存-&gt;真正物理内存。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>传统虚拟机</th>
+<th>Docker容器</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>磁盘占用</td>
+<td>几个GB到几十个GB左右</td>
+<td>几十MB到几百MB左右</td>
+</tr>
+<tr>
+<td>CPU内存占用</td>
+<td>虚拟操作系统非常占用CPU和内存</td>
+<td>Docker引擎占用极低</td>
+</tr>
+<tr>
+<td>启动速度</td>
+<td>（从开机到运行项目）几分钟</td>
+<td>（从开启容器到运行项目）几秒</td>
+</tr>
+<tr>
+<td>安装管理</td>
+<td>需要专门的运维技术</td>
+<td>安装、管理方便</td>
+</tr>
+<tr>
+<td>应用部署</td>
+<td>每次部署都费时费力</td>
+<td>从第二次部署开始轻松简捷</td>
+</tr>
+<tr>
+<td>耦合性</td>
+<td>多个应用服务安装到一起，容易互相影响</td>
+<td>每个应用服务一个容器，达成隔离</td>
+</tr>
+<tr>
+<td>系统依赖</td>
+<td>无</td>
+<td>需求相同或相似的内核，目前推荐是Linux</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="Docker-的核心架构"><a href="#Docker-的核心架构" class="headerlink" title="Docker 的核心架构"></a>Docker 的核心架构</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131540718.png" alt="image-20220713154058686"></p>
+<ul>
+<li><code>镜像(image/images):</code> 一个镜像代表一个应用环境,他是一个只读的文件,如 mysql镜像,tomcat镜像,nginx镜像等<ul>
+<li>特点：只读</li>
+</ul>
+</li>
+<li><code>容器(contrainer):</code> 基于某个镜像运行一次就是生产一个程序实例，一个程序实例称之为一个容器<ul>
+<li>特点：可读可写</li>
+</ul>
+</li>
+<li><p><code>仓库(respiratory):</code>用来存放镜像的位置，类似于maven仓库，也是镜像下载和上传的位置</p>
+<ul>
+<li><p>远程仓库：docker官方维护的仓库</p>
+<ul>
+<li>Docker官方的中央仓库：这个仓库是镜像最全的，但是下载最慢的<ul>
+<li><a target="_blank" rel="noopener" href="https://hub.docker.com">https://hub.docker.com</a></li>
+</ul>
+</li>
+<li><p>国内的镜像网站：</p>
+<ul>
+<li>网易蜂巢<ul>
+<li><a target="_blank" rel="noopener" href="https://c.163yun.com/hub#/home">https://c.163yun.com/hub#/home</a></li>
+</ul>
+</li>
+<li>daoCloud<ul>
+<li><a target="_blank" rel="noopener" href="http://hub.daocloud.io">http://hub.daocloud.io</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>本地仓库：本机存储镜像的位置</li>
+</ul>
+</li>
+<li><code>dockerFile:</code>docker生成镜像配置文件,用来书写自定义镜像的一些配置</li>
+<li><code>tar:</code>一个对镜像打包的文件,日后可以还原成镜像</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207131541942.png" alt="image-20220713154149866"></p>
+<h1 id="Image-vs-Container-镜像-vs-容器"><a href="#Image-vs-Container-镜像-vs-容器" class="headerlink" title="Image vs Container 镜像 vs 容器"></a>Image vs Container 镜像 vs 容器</h1><h2 id="image镜像"><a href="#image镜像" class="headerlink" title="image镜像"></a>image镜像</h2><ul>
+<li>Docker images是一个<code>read.only</code>文件</li>
+<li>这个文件包含文件系统，源码，库文件，依赖，工具等一些application所需要的文件</li>
+<li>可以理解成一个模板</li>
+<li>docker images具有分层的概念</li>
+</ul>
+<h2 id="container容器"><a href="#container容器" class="headerlink" title="container容器"></a>container容器</h2><ul>
+<li>一个运行中的docker image</li>
+<li>实质是复制image并在image最上层加一层<code>read.write</code>的层（称之为container layer容器层）</li>
+<li>基于同一个image可以创建躲我container</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207251133386.png" alt="image-20220725113350477" style="zoom:50%;" /></p>
+<h1 id="Docker-container-run背后发生了什么？"><a href="#Docker-container-run背后发生了什么？" class="headerlink" title="Docker container run背后发生了什么？"></a>Docker container run背后发生了什么？</h1><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">dcoker container run -d --publish 80:80 --name webhost nginx</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>在本地查找是否有nginx这个image镜像，如果没有继续下面的步骤</li>
+<li>去远程的image registry查找nginx镜像（默认是registry是Docker Hub）</li>
+<li>下载最新版本的nginx镜像（nginx:latest默认）</li>
+<li>基于nginx镜像来创建一个新的容器，并且准备运行</li>
+<li>docker engine分配给这个容器一个虚拟IP地址</li>
+<li>在宿主机上打开80端口并把容器的80端口转发到宿主机上</li>
+<li>启动容器，运行指定的命令（这里是一个shell脚本去启动nginx）</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Docker/" rel="tag"># Docker</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/05/system/docker/11-docker-proxy/" rel="prev" title="Docker配置网络代理">
+      <i class="fa fa-chevron-left"></i> Docker配置网络代理
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/05/git/" rel="next" title="Git分布式控制软件">
+      Git分布式控制软件 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFcontainer-%E5%AE%B9%E5%99%A8%EF%BC%89%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">什么是container(容器）？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E7%9A%84%E6%A0%87%E5%87%86%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text">容器的标准化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E8%BF%90%E8%A1%8C%E6%97%B6%E6%A0%87%E5%87%86-%EF%BC%88runtime-spec%EF%BC%89"><span class="nav-number">2.1.</span> <span class="nav-text">容器运行时标准 （runtime spec）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F%E6%A0%87%E5%87%86%EF%BC%88image-spec%EF%BC%89"><span class="nav-number">2.2.</span> <span class="nav-text">容器镜像标准（image spec）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E6%98%AF%E5%85%B3%E4%B9%8E%E2%80%9C%E9%80%9F%E5%BA%A6%E2%80%9D"><span class="nav-number">3.</span> <span class="nav-text">容器是关乎“速度”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFDocker%EF%BC%9F"><span class="nav-number">4.</span> <span class="nav-text">什么是Docker？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%98%E6%96%B9%E4%BB%8B%E7%BB%8D"><span class="nav-number">5.</span> <span class="nav-text">官方介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Docker%E7%9A%84%E8%B5%B7%E6%BA%90"><span class="nav-number">6.</span> <span class="nav-text">Docker的起源</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AFDocker"><span class="nav-number">7.</span> <span class="nav-text">为什么是Docker</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Docker%E5%92%8C%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%8C%BA%E5%88%AB"><span class="nav-number">8.</span> <span class="nav-text">Docker和虚拟机区别</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%8A%80%E6%9C%AF"><span class="nav-number">8.1.</span> <span class="nav-text">虚拟机技术</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E5%99%A8%E5%8C%96%E6%8A%80%E6%9C%AF"><span class="nav-number">8.2.</span> <span class="nav-text">容器化技术</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8C%BA%E5%88%AB"><span class="nav-number">8.3.</span> <span class="nav-text">区别</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Docker-%E7%9A%84%E6%A0%B8%E5%BF%83%E6%9E%B6%E6%9E%84"><span class="nav-number">9.</span> <span class="nav-text">Docker 的核心架构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Image-vs-Container-%E9%95%9C%E5%83%8F-vs-%E5%AE%B9%E5%99%A8"><span class="nav-number">10.</span> <span class="nav-text">Image vs Container 镜像 vs 容器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#image%E9%95%9C%E5%83%8F"><span class="nav-number">10.1.</span> <span class="nav-text">image镜像</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#container%E5%AE%B9%E5%99%A8"><span class="nav-number">10.2.</span> <span class="nav-text">container容器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Docker-container-run%E8%83%8C%E5%90%8E%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">11.</span> <span class="nav-text">Docker container run背后发生了什么？</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

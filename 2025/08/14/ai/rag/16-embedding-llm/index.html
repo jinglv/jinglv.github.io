@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第十六讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--向量嵌入之大模型时代的嵌入技术">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/14/ai/rag/16-embedding-llm/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第十六讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814090707154.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814092155178.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814092225655.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814092638532.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814093506745.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814095224872.png">
+<meta property="article:published_time" content="2025-08-13T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-14T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814090707154.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/14/ai/rag/16-embedding-llm/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--向量嵌入之大模型时代的嵌入技术 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/14/ai/rag/16-embedding-llm/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--向量嵌入之大模型时代的嵌入技术
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-14 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2025-08-14T00:00:00+08:00">2025-08-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第十六讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="MTEB排行榜"><a href="#MTEB排行榜" class="headerlink" title="MTEB排行榜"></a>MTEB排行榜</h1><p>Hugging Face MTEB地址：<a target="_blank" rel="noopener" href="https://huggingface.co/spaces/mteb/leaderboard">https://huggingface.co/spaces/mteb/leaderboard</a></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814090707154.png" alt="image-20250814090707154" style="zoom:67%;" /></p>
+<ul>
+<li>模型筛选工具: 在大语言时代嵌入模型选择过多的情况下，MTEB排行榜可作为基础过滤工具，帮助从开源嵌入模型中筛选合适的模型。</li>
+<li>四维度评估: 通过模型大小、能力分数、嵌入维度和最大token数四个维度进行综合评估。</li>
+</ul>
+<h2 id="模型大小维度"><a href="#模型大小维度" class="headerlink" title="模型大小维度"></a>模型大小维度</h2><ul>
+<li>参数规模范围: 从$1B$﻿到$100B$﻿不等，但主流模型多在$10B$﻿以下。</li>
+<li>硬件适配性: 中等GPU配置（如双卡4090+32GB内存）即可运行大多数主流嵌入模型。</li>
+<li>开源特性: MTEB排行榜仅评估开源嵌入模型，不包括闭源商业模型。</li>
+</ul>
+<h2 id="模型能力维度"><a href="#模型能力维度" class="headerlink" title="模型能力维度"></a>模型能力维度</h2><ul>
+<li>评分机制: 通过58个数据集在8大类NLP任务上的平均表现(MAP)计算得出。</li>
+<li>任务覆盖: 包括分类、聚类、检索等多种任务类型，反映模型综合能力。</li>
+<li>专业模型特点: 某些模型可能在特定任务上表现突出，但排行榜显示的是平均能力。</li>
+</ul>
+<h2 id="嵌入维度大小"><a href="#嵌入维度大小" class="headerlink" title="嵌入维度大小"></a>嵌入维度大小</h2><ul>
+<li>可视化表示: 通过气泡图大小展示，维度越大表示能捕捉更细微的特征差异。</li>
+<li>参数关系: 通常参数越大的模型支持更大的嵌入维度，但存在例外情况（如某些﻿$1B$﻿参数的模型嵌入维度特别大）。</li>
+<li>典型范围: 小模型家族嵌入维度偏小，大模型家族嵌入维度偏大。</li>
+</ul>
+<h2 id="Max-Tokens维度"><a href="#Max-Tokens维度" class="headerlink" title="Max Tokens维度"></a>Max Tokens维度</h2><ul>
+<li>颜色编码: 通过不同颜色区分模型支持的最大token数（如7K、10K等）。</li>
+<li>实际应用建议: 虽然支持长上下文，但建议将文本切分为1000token以内的段落进行嵌入，更利于语义把握。</li>
+<li>重要性: 长上下文支持能力对某些应用场景（如文档整体嵌入）很关键。</li>
+</ul>
+<h1 id="MTEB划分任务类别-（八大任务）"><a href="#MTEB划分任务类别-（八大任务）" class="headerlink" title="MTEB划分任务类别 （八大任务）"></a>MTEB划分任务类别 （八大任务）</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814092155178.png" alt="image-20250814092155178" style="zoom:50%;" /></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814092225655.png" alt="image-20250814092225655" style="zoom:50%;" /></p>
+<h2 id="聚类"><a href="#聚类" class="headerlink" title="聚类"></a>聚类</h2><ul>
+<li>核心目标: 将语义相似的文本无监督地聚在一起。</li>
+<li>典型应用: 文档组织、主题发现。</li>
+<li>数据集示例: Arxiv、Biorxiv、Medrxiv等学术论文数据集，测试P2P(论文对)、S2S(句对)等聚类能力。</li>
+</ul>
+<h2 id="分类"><a href="#分类" class="headerlink" title="分类"></a>分类</h2><ul>
+<li>监督学习: 基于已标注数据训练，预测新文本类别。</li>
+<li>应用场景: 情感分析（如IMDB影评）、意图识别、话题分类。</li>
+<li>数据集: AmazonPolarity、Emotion、Banking77等。</li>
+</ul>
+<h2 id="双语挖掘"><a href="#双语挖掘" class="headerlink" title="双语挖掘"></a>双语挖掘</h2><ul>
+<li>任务特点: 跨语言句子对齐，用于机器翻译训练数据自动生成。</li>
+<li>数据集: BUCC、Tatoeba等双语平行语料库。</li>
+</ul>
+<h2 id="STS"><a href="#STS" class="headerlink" title="STS"></a>STS</h2><ul>
+<li>回归任务: 评估两个句子语义相似度（0-5分）。</li>
+<li>应用: 相似问句匹配、客服问答对匹配。</li>
+<li>数据集: STS12-16、STSBenchmark等。</li>
+</ul>
+<h2 id="对分类"><a href="#对分类" class="headerlink" title="对分类"></a>对分类</h2><ul>
+<li>关系判断: 识别文本对间特定关系（如FAQ中的问题-答案对）。</li>
+<li>与大模型关系: 这类任务在大模型时代已变得相对简单。</li>
+</ul>
+<h2 id="检索"><a href="#检索" class="headerlink" title="检索"></a>检索</h2><ul>
+<li>核心应用: RAG系统、文档检索。</li>
+<li>数据集覆盖: HotpotQA、MSMARCO等，涵盖问答、科学文献多领域。</li>
+<li>任务整合: 可包含聚类、分类、STS等多种子任务。</li>
+</ul>
+<h2 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h2><ul>
+<li>评估方式: 通过嵌入相似度比较生成摘要与参考摘要的一致性。</li>
+<li>数据集: SummEval等摘要质量评估数据集。</li>
+</ul>
+<h2 id="重排序"><a href="#重排序" class="headerlink" title="重排序"></a>重排序</h2><ul>
+<li>RAG关键环节: 对候选答案进行相关性重排序。</li>
+<li>数据集: AskUbuntu、StackOverflow等社区问答数据。</li>
+</ul>
+<h1 id="嵌入式模型排行榜"><a href="#嵌入式模型排行榜" class="headerlink" title="嵌入式模型排行榜"></a>嵌入式模型排行榜</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814092638532.png" alt="image-20250814092638532" style="zoom:50%;" /></p>
+<ul>
+<li>榜单概况：展示当前领先的嵌入式模型排名，包含模型性能指标如Zero-shot准确率、内存使用量等关键参数</li>
+<li>商业与开源区别：榜首gemini-embedding-001(Google)为商业API调用模型，不提供开源下载</li>
+</ul>
+<p>其中的排名第六的gte-Qwen2-7B-instruct（千问系列的模型），基于290亿参数，支持4096维嵌入，Zero-shot准确率未标注(NA)</p>
+<h1 id="OpenAI嵌入式模型"><a href="#OpenAI嵌入式模型" class="headerlink" title="OpenAI嵌入式模型"></a>OpenAI嵌入式模型</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814093506745.png" alt="image-20250814093506745" style="zoom:50%;" /></p>
+<ul>
+<li>产品矩阵：<ul>
+<li>text-embedding-3-small：性价比高(62.5页/美元)，MTEB得分62.3%</li>
+<li>text-embedding-3-large：高性能(9.615页/美元)，MTEB得分64.6%</li>
+</ul>
+</li>
+<li>成本计算：处理100万行医学名词数据约需1美元(small版更便宜)</li>
+<li>技术优势：受益于GPT家族语料积累，支持8191 tokens长文本输入</li>
+</ul>
+<h1 id="BGE嵌入式模型"><a href="#BGE嵌入式模型" class="headerlink" title="BGE嵌入式模型"></a>BGE嵌入式模型</h1><p>Github地址：<a target="_blank" rel="noopener" href="https://github.com/FlagOpen/FlagEmbedding">https://github.com/FlagOpen/FlagEmbedding</a></p>
+<ul>
+<li>开发背景：由北京智源研究院(FlagOpen)推出的开源检索增强工具包</li>
+<li>核心功能：<ul>
+<li>支持向量/密集向量混合检索</li>
+<li>包含Embedder和Reranker双模型系统</li>
+<li>多语言支持(含专门优化中文的版本)</li>
+</ul>
+</li>
+<li>安装方式：</li>
+<li>最新进展：BGE-VL支持多模态嵌入，MIT许可证允许商业使用</li>
+</ul>
+<h1 id="Jina嵌入式模型"><a href="#Jina嵌入式模型" class="headerlink" title="Jina嵌入式模型"></a>Jina嵌入式模型</h1><p>官方网址：<a target="_blank" rel="noopener" href="https://jina.ai/models#catalog">https://jina.ai/models#catalog</a></p>
+<ul>
+<li>v3版本特性：<ul>
+<li>5.7亿参数</li>
+<li>支持8192 tokens长文本</li>
+<li>输出维度1024(可截断至32维)</li>
+</ul>
+</li>
+<li>商业授权：提供标准企业许可证(5000美元/季度)和定制训练服务</li>
+<li>技术亮点：采用LoRA适配器，针对不同任务(检索/聚类/分类)优化</li>
+</ul>
+<h1 id="其他Embedding模型的供应商"><a href="#其他Embedding模型的供应商" class="headerlink" title="其他Embedding模型的供应商"></a>其他Embedding模型的供应商</h1><ul>
+<li>Voyage AI：<a target="_blank" rel="noopener" href="https://docs.voyageai.com/docs/embeddings">https://docs.voyageai.com/docs/embeddings</a></li>
+<li>Cohere Embeddings：<a target="_blank" rel="noopener" href="https://docs.cohere.com/v2/docs/embeddings">https://docs.cohere.com/v2/docs/embeddings</a><ul>
+<li>产品定位：商业API服务，与OpenAI形成竞争</li>
+<li>典型应用：语义搜索/聚类/分类任务</li>
+<li>性能表现：处于行业前列但非顶尖水平</li>
+</ul>
+</li>
+<li>开源模型Stella：<a target="_blank" rel="noopener" href="https://huggingface.co/models?sort=trending&amp;search=Stella">https://huggingface.co/models?sort=trending&amp;search=Stella</a><ul>
+<li>核心优势：轻量化设计(400M/1.5B参数)</li>
+<li>训练基础：基于Alibaba-NLP/gte系列模型优化</li>
+<li>使用场景：适合资源受限环境下的检索任务</li>
+<li>开源协议：MIT许可证允许自由使用</li>
+</ul>
+</li>
+</ul>
+<h1 id="选型的Tips"><a href="#选型的Tips" class="headerlink" title="选型的Tips"></a>选型的Tips</h1><ul>
+<li>口碑重要性：网络口碑是首要考虑因素，用户基数大的模型通常社区支持更好，长期维护更有保障</li>
+<li>评估维度：<ul>
+<li>具体任务适配性：需考察模型在目标场景的实际表现</li>
+<li>实操体验：实际使用过程中的感受至关重要</li>
+<li>授权与成本：需权衡开源/商用、价格、计算资源需求、语言支持等因素</li>
+</ul>
+</li>
+<li>口碑验证方法：通过技术社区讨论热度、持续维护情况、用户反馈等维度综合判断</li>
+</ul>
+<h2 id="国外的讨论社区"><a href="#国外的讨论社区" class="headerlink" title="国外的讨论社区"></a>国外的讨论社区</h2><ul>
+<li><p>Reddit：<a target="_blank" rel="noopener" href="https://www.reddit.com/">https://www.reddit.com/</a></p>
+<ul>
+<li>例如查询模型r/LocalLLaMA等专业技术社区是获取真实使用反馈的重要渠道</li>
+<li>典型讨论方式：发起具体应用场景的技术咨询（如RAG场景下的embedding模型选择）</li>
+</ul>
+</li>
+<li><p>模型使用案例：</p>
+<ul>
+<li>all-mpnet-base-v2：早期经典选择，配合FAISS/KDTree效果稳定</li>
+<li>BGE系列：虽benchmark表现优异但可能存在过拟合MTEB数据集的问题</li>
+<li>千问/Qwen系列：部分用户反馈其实际表现优于benchmark指标</li>
+</ul>
+</li>
+<li>小型模型价值：<ul>
+<li>all-MiniLM-L6-v2等小型模型可作为baseline参考</li>
+<li>新模型需至少超越这些基础模型的性能表现</li>
+</ul>
+</li>
+<li>评估建议：<ul>
+<li>需结合具体业务场景测试（如新闻处理、客服知识库等不同场景需求差异大）</li>
+<li>注意chunk大小、查询生成方式等实施细节对效果的影响</li>
+<li>中文模型需特别注意benchmark分数与实际效果的差异</li>
+</ul>
+</li>
+<li>典型技术讨论：<ul>
+<li>维度问题：llama-2-7B的4096维可能因维度稀释导致近邻搜索效果下降</li>
+<li>模型类型：基础模型通常比对话模型更适合生成embedding</li>
+<li>规模影响：小规模测试(400条)与大规模应用(4万条)可能表现不同</li>
+</ul>
+</li>
+<li>实用工具链：<ul>
+<li>常用组合：SentenceTransformers+FAISS/Qdrant</li>
+<li>轻量方案：all-MiniLM-L6-v2+HyperDB适合文档量&lt;10万的场景</li>
+</ul>
+</li>
+</ul>
+<h2 id="文本嵌入模型评估与选择"><a href="#文本嵌入模型评估与选择" class="headerlink" title="文本嵌入模型评估与选择"></a>文本嵌入模型评估与选择</h2><p>网上公开的论文、文章等，例如：<a target="_blank" rel="noopener" href="https://www.datastax.com/blog/best-embedding-models-information-retrieval-2025">https://www.datastax.com/blog/best-embedding-models-information-retrieval-2025</a></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250814095224872.png" alt="image-20250814095224872" style="zoom:50%;" /></p>
+<ul>
+<li>评估背景：针对RAG(检索增强生成)任务，2025年最新研究对多种商业和开源嵌入模型进行了系统性评测</li>
+<li>测试对象：包含OpenAI、Gemini、Jina、Cohere、Voyage等商业模型，以及Stella、ModernBERT等开源模型</li>
+</ul>
+<p>从以上文章和内容，我们可以得出一些信息：</p>
+<h3 id="模型对比与评估方法"><a href="#模型对比与评估方法" class="headerlink" title="模型对比与评估方法"></a>模型对比与评估方法</h3><ul>
+<li>商业模型组：<ul>
+<li>OpenAI：text-embedding-3-large(3072维)和small(1536维)</li>
+<li>Gemini：text-embedding-004(768维，通过API获取)</li>
+<li>第三方模型：Jina v3、Cohere v3、Voyage系列</li>
+</ul>
+</li>
+<li>开源模型组：<ul>
+<li>Stella：测试400M和1.5B两个版本（MIT许可）</li>
+<li>ModernBERT：Base和Large变体，基于Answer.AI技术</li>
+</ul>
+</li>
+<li>评估创新点：<ul>
+<li>数据集构建：采用ViDoRe图像搜索基准，通过GeminiFlash 1.5进行OCR转换</li>
+<li>避免数据泄露：刻意不使用常见文本数据集，确保模型面对全新数据</li>
+<li>多语言测试：包含英语和法语数据，检验模型泛化能力</li>
+</ul>
+</li>
+</ul>
+<h3 id="Voyage-3-large的优势"><a href="#Voyage-3-large的优势" class="headerlink" title="Voyage-3-large的优势"></a>Voyage-3-large的优势</h3><ul>
+<li>显著优势：<ul>
+<li>在嵌入相关性任务中表现突出，明显优于其他商业模型</li>
+<li>支持2048维高精度输出，适合对质量要求严格的场景</li>
+</ul>
+</li>
+<li>团队背景：由马腾宇团队开发，在reranker技术上有深厚积累</li>
+<li>性价比选择：Voyage-3-lite(512维)在低成本端表现同样出色</li>
+</ul>
+<h3 id="Gemini-004的特点"><a href="#Gemini-004的特点" class="headerlink" title="Gemini 004的特点"></a>Gemini 004的特点</h3><ul>
+<li>核心优势：<ul>
+<li>价格接近免费，速率限制合理(1500RPM)</li>
+<li>768维输出平衡了性能与成本</li>
+</ul>
+</li>
+<li>局限性：<ul>
+<li>仅支持英语处理</li>
+<li>无法通过付费提升吞吐量</li>
+<li>企业版text-embedding-005尚未开放API访问</li>
+</ul>
+</li>
+</ul>
+<h3 id="开源模型表现"><a href="#开源模型表现" class="headerlink" title="开源模型表现"></a>开源模型表现</h3><ul>
+<li>Stella亮点：<ul>
+<li>400M版本在MTEB检索榜表现优异</li>
+<li>商业友好(MIT许可)，张盾团队提供详细白皮书</li>
+<li>1.5B版本未显著提升准确率，建议优先使用400M</li>
+</ul>
+</li>
+<li>ModernBERT不足：<ul>
+<li>实际表现低于预期</li>
+<li>期待下一代改进版本</li>
+</ul>
+</li>
+</ul>
+<h3 id="评估建议与实践方法"><a href="#评估建议与实践方法" class="headerlink" title="评估建议与实践方法"></a>评估建议与实践方法</h3><ul>
+<li>自制数据集：<ul>
+<li>重要性：避免公开数据集的训练泄露问题</li>
+<li>实践方案：即使少量数据(几十个样本)也能进行基本效果验证</li>
+</ul>
+</li>
+<li>评估维度：<ul>
+<li>准确性：使用未见过的测试数据</li>
+<li>成本效益：参数规模与价格比值</li>
+<li>语言支持：多语言场景下的表现</li>
+</ul>
+</li>
+<li>失败案例：<ul>
+<li>Jina v3和Cohere v3性价比不足</li>
+<li>相同预算可获得更好性能的其他模型</li>
+</ul>
+</li>
+</ul>
+<h1 id="向量嵌入应用案例"><a href="#向量嵌入应用案例" class="headerlink" title="向量嵌入应用案例"></a>向量嵌入应用案例</h1><h2 id="游戏推荐系统"><a href="#游戏推荐系统" class="headerlink" title="游戏推荐系统"></a>游戏推荐系统</h2><p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> openai</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line"><span class="keyword">from</span> sklearn.metrics.pairwise <span class="keyword">import</span> cosine_similarity</span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取用户评价数据集</span></span><br><span class="line">df = pd.read_csv(<span class="string">&quot;../data/灭神纪/用户评价.csv&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取游戏描述文件</span></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&quot;../data/灭神纪/游戏说明.json&quot;</span>, <span class="string">&quot;r&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    game_descriptions = json.load(f)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义函数获取嵌入向量，注：text-embedding-3-small模型需要付费使用</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_embedding</span>(<span class="params">text, model=<span class="string">&quot;text-embedding-3-small&quot;</span></span>):</span><br><span class="line">    response = openai.embeddings.create(</span><br><span class="line">        <span class="built_in">input</span>=[text],</span><br><span class="line">        model=model</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> response.data[<span class="number">0</span>].embedding</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取所有游戏的嵌入向量</span></span><br><span class="line">unique_games = df[<span class="string">&#x27;game_title&#x27;</span>].unique().tolist()</span><br><span class="line">target_game = <span class="string">&quot;Killing God: Hu Sun&quot;</span>  <span class="comment"># 目标游戏名称更改</span></span><br><span class="line"><span class="keyword">if</span> target_game <span class="keyword">not</span> <span class="keyword">in</span> unique_games:</span><br><span class="line">    unique_games.append(target_game)  <span class="comment"># 确保目标游戏在列表中</span></span><br><span class="line">game_embeddings = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> game <span class="keyword">in</span> unique_games:</span><br><span class="line">    description = game_descriptions[game]</span><br><span class="line">    game_embeddings[game] = np.array(get_embedding(description))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 计算用户评价的嵌入向量（该用户评价过的所有游戏描述嵌入向量的平均值）</span></span><br><span class="line">user_vectors = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> user_id, group <span class="keyword">in</span> df.groupby(<span class="string">&quot;user_id&quot;</span>):</span><br><span class="line">    user_game_vecs = []</span><br><span class="line">    <span class="keyword">for</span> idx, row <span class="keyword">in</span> group.iterrows():</span><br><span class="line">        g_title = row[<span class="string">&#x27;game_title&#x27;</span>]</span><br><span class="line">        g_vec = game_embeddings[g_title]</span><br><span class="line">        user_game_vecs.append(g_vec)</span><br><span class="line">    user_vectors[user_id] = np.mean(np.array(user_game_vecs), axis=<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取“灭神纪·猢狲”的嵌入向量</span></span><br><span class="line">target_vector = game_embeddings[target_game]</span><br><span class="line"><span class="comment"># 计算每个用户评价的嵌入向量与目标游戏的嵌入向量的余弦相似度</span></span><br><span class="line">results = []</span><br><span class="line"><span class="keyword">for</span> user_id, u_vec <span class="keyword">in</span> user_vectors.items():</span><br><span class="line">    u_vec_reshaped = u_vec.reshape(<span class="number">1</span>, -<span class="number">1</span>)</span><br><span class="line">    t_vec = target_vector.reshape(<span class="number">1</span>, -<span class="number">1</span>)</span><br><span class="line">    similarity = cosine_similarity(u_vec_reshaped, t_vec)[<span class="number">0</span>, <span class="number">0</span>]</span><br><span class="line">    results.append((user_id, similarity))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 排序并找出最可能喜欢“灭神纪·猢狲”的用户</span></span><br><span class="line">result_df = pd.DataFrame(results, columns=[<span class="string">&quot;user_id&quot;</span>, <span class="string">f&quot;similarity_to_<span class="subst">&#123;target_game&#125;</span>&quot;</span>])</span><br><span class="line">result_df = result_df.sort_values(by=<span class="string">f&quot;similarity_to_<span class="subst">&#123;target_game&#125;</span>&quot;</span>, ascending=<span class="literal">False</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;\n最可能喜欢<span class="subst">&#123;target_game&#125;</span>的前5位用户：&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result_df.head())</span><br></pre></td></tr></table></figure>
+<ul>
+<li>系统架构：基于OpenAI Embedding构建的游戏推荐系统，核心功能是找出最可能喜欢特定游戏的目标用户</li>
+<li>数据准备：<ul>
+<li>用户评论数据（CSV格式）：记录用户对各类游戏的评价</li>
+<li>游戏描述数据（JSON格式）：包含游戏详细说明，如案例中的”灭神纪”游戏</li>
+</ul>
+</li>
+<li>核心算法：<ul>
+<li>向量生成：使用OpenAI的text-embedding-3-small模型将文本转换为向量</li>
+<li>偏好建模：通过用户评价过的游戏描述向量的平均值表示用户偏好</li>
+<li>相似度计算：采用余弦相似度比较用户偏好向量与目标游戏向量</li>
+</ul>
+</li>
+<li>技术实现：<ul>
+<li>使用numpy进行向量运算和均值计算</li>
+<li>利用pandas进行数据处理和结果展示</li>
+<li>通过sklearn的cosine_similarity计算相似度</li>
+</ul>
+</li>
+<li>工作流程：<ul>
+<li>加载所有游戏描述并生成嵌入向量</li>
+<li>为每个用户计算偏好向量（评价游戏向量的均值）</li>
+<li>计算目标游戏与所有用户偏好的相似度</li>
+<li>按相似度排序输出前5位潜在用户</li>
+</ul>
+</li>
+<li>实践建议：<ul>
+<li>可替换OpenAI模型为国产开源模型（如支持中文的嵌入模型）</li>
+<li>类似思路可用于其他推荐场景（如电影、商品推荐）</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/13/ai/rag/12-text-chunk/" rel="prev" title="RAG组件--文本分块之方法和实现">
+      <i class="fa fa-chevron-left"></i> RAG组件--文本分块之方法和实现
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/15/ai/rag/18-embedding-multi/" rel="next" title="RAG组件--向量嵌入之多模态嵌入技术">
+      RAG组件--向量嵌入之多模态嵌入技术 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#MTEB%E6%8E%92%E8%A1%8C%E6%A6%9C"><span class="nav-number">1.</span> <span class="nav-text">MTEB排行榜</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E5%A4%A7%E5%B0%8F%E7%BB%B4%E5%BA%A6"><span class="nav-number">1.1.</span> <span class="nav-text">模型大小维度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E8%83%BD%E5%8A%9B%E7%BB%B4%E5%BA%A6"><span class="nav-number">1.2.</span> <span class="nav-text">模型能力维度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B5%8C%E5%85%A5%E7%BB%B4%E5%BA%A6%E5%A4%A7%E5%B0%8F"><span class="nav-number">1.3.</span> <span class="nav-text">嵌入维度大小</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Max-Tokens%E7%BB%B4%E5%BA%A6"><span class="nav-number">1.4.</span> <span class="nav-text">Max Tokens维度</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MTEB%E5%88%92%E5%88%86%E4%BB%BB%E5%8A%A1%E7%B1%BB%E5%88%AB-%EF%BC%88%E5%85%AB%E5%A4%A7%E4%BB%BB%E5%8A%A1%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">MTEB划分任务类别 （八大任务）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%81%9A%E7%B1%BB"><span class="nav-number">2.1.</span> <span class="nav-text">聚类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E7%B1%BB"><span class="nav-number">2.2.</span> <span class="nav-text">分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8C%E8%AF%AD%E6%8C%96%E6%8E%98"><span class="nav-number">2.3.</span> <span class="nav-text">双语挖掘</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#STS"><span class="nav-number">2.4.</span> <span class="nav-text">STS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E5%88%86%E7%B1%BB"><span class="nav-number">2.5.</span> <span class="nav-text">对分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E7%B4%A2"><span class="nav-number">2.6.</span> <span class="nav-text">检索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%91%98%E8%A6%81"><span class="nav-number">2.7.</span> <span class="nav-text">摘要</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E6%8E%92%E5%BA%8F"><span class="nav-number">2.8.</span> <span class="nav-text">重排序</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B5%8C%E5%85%A5%E5%BC%8F%E6%A8%A1%E5%9E%8B%E6%8E%92%E8%A1%8C%E6%A6%9C"><span class="nav-number">3.</span> <span class="nav-text">嵌入式模型排行榜</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#OpenAI%E5%B5%8C%E5%85%A5%E5%BC%8F%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.</span> <span class="nav-text">OpenAI嵌入式模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#BGE%E5%B5%8C%E5%85%A5%E5%BC%8F%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text">BGE嵌入式模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Jina%E5%B5%8C%E5%85%A5%E5%BC%8F%E6%A8%A1%E5%9E%8B"><span class="nav-number">6.</span> <span class="nav-text">Jina嵌入式模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B6%E4%BB%96Embedding%E6%A8%A1%E5%9E%8B%E7%9A%84%E4%BE%9B%E5%BA%94%E5%95%86"><span class="nav-number">7.</span> <span class="nav-text">其他Embedding模型的供应商</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%89%E5%9E%8B%E7%9A%84Tips"><span class="nav-number">8.</span> <span class="nav-text">选型的Tips</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%BD%E5%A4%96%E7%9A%84%E8%AE%A8%E8%AE%BA%E7%A4%BE%E5%8C%BA"><span class="nav-number">8.1.</span> <span class="nav-text">国外的讨论社区</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E6%9C%AC%E5%B5%8C%E5%85%A5%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E4%B8%8E%E9%80%89%E6%8B%A9"><span class="nav-number">8.2.</span> <span class="nav-text">文本嵌入模型评估与选择</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E5%AF%B9%E6%AF%94%E4%B8%8E%E8%AF%84%E4%BC%B0%E6%96%B9%E6%B3%95"><span class="nav-number">8.2.1.</span> <span class="nav-text">模型对比与评估方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Voyage-3-large%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="nav-number">8.2.2.</span> <span class="nav-text">Voyage-3-large的优势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Gemini-004%E7%9A%84%E7%89%B9%E7%82%B9"><span class="nav-number">8.2.3.</span> <span class="nav-text">Gemini 004的特点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E6%BA%90%E6%A8%A1%E5%9E%8B%E8%A1%A8%E7%8E%B0"><span class="nav-number">8.2.4.</span> <span class="nav-text">开源模型表现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0%E5%BB%BA%E8%AE%AE%E4%B8%8E%E5%AE%9E%E8%B7%B5%E6%96%B9%E6%B3%95"><span class="nav-number">8.2.5.</span> <span class="nav-text">评估建议与实践方法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E5%B5%8C%E5%85%A5%E5%BA%94%E7%94%A8%E6%A1%88%E4%BE%8B"><span class="nav-number">9.</span> <span class="nav-text">向量嵌入应用案例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B8%B8%E6%88%8F%E6%8E%A8%E8%8D%90%E7%B3%BB%E7%BB%9F"><span class="nav-number">9.1.</span> <span class="nav-text">游戏推荐系统</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

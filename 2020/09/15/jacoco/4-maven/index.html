@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Jacoco学习笔记第三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jacoco Maven集成">
+<meta property="og:url" content="https://jinglv.github.io/2020/09/15/jacoco/4-maven/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Jacoco学习笔记第三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141717474.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141718571.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141718856.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141719994.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141719589.png">
+<meta property="article:published_time" content="2020-09-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-09-15T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="Jacoco">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141717474.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2020/09/15/jacoco/4-maven/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Jacoco Maven集成 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2020/09/15/jacoco/4-maven/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Jacoco Maven集成
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-09-15 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2020-09-15T00:00:00+08:00">2020-09-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Jacoco/" itemprop="url" rel="index"><span itemprop="name">Jacoco</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Jacoco学习笔记第三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Jacoco-Maven集成"><a href="#Jacoco-Maven集成" class="headerlink" title="Jacoco Maven集成"></a>Jacoco Maven集成</h1><p>Maven是Java项目常用的一款<strong>项目管理工具</strong>，我们可以通过Maven进行项目的编译、测试、打包等操作。Jacoco与Maven的整合，通过Maven命令执行，获取Jacoco生成的覆盖率测试报告，也以便于与Jenkins集成，接下来对我们的Maven工程进行Jacoco的整合。</p>
+<h2 id="Maven工程中添加Jacoco插件"><a href="#Maven工程中添加Jacoco插件" class="headerlink" title="Maven工程中添加Jacoco插件"></a>Maven工程中添加Jacoco插件</h2><p><a target="_blank" rel="noopener" href="https://www.eclemma.org/jacoco/trunk/doc/maven.html">Jacoco Maven插件官网说明</a></p>
+<p>使用的必须条件：</p>
+<ul>
+<li>Maven的版本3.0以上</li>
+<li>Java的版本1.5以</li>
+</ul>
+<p>在我们maven项目的pom.xml中引入如下的模块与配置</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--jacoco的插件--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.jacoco<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jacoco-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">version</span>&gt;</span>0.8.7-SNAPSHOT<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>使用以下命令，可以查看Jacoco Maven的帮助文档</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn help:describe -Dplugin=org.jacoco:jacoco-maven-plugin -Ddetail</span><br></pre></td></tr></table></figure>
+<h2 id="Maven执行配置"><a href="#Maven执行配置" class="headerlink" title="Maven执行配置"></a>Maven执行配置</h2><p>以上是引入了Jacoco的插件，执行单元测试<code>mvn clean install</code>执行结束后，发现未生成Jacoco的测试报告，这时就要配置明确指定执行时的报告集：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!--这里的execution ,每一个执行的goal,对应的id必须是唯一的--&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">executions</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">id</span>&gt;</span>prepare-agent<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">goal</span>&gt;</span>prepare-agent<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">  <span class="comment">&lt;!--这个check:对代码进行检测，控制项目构建成功还是失败--&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">id</span>&gt;</span>check<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">goal</span>&gt;</span>check<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">  <span class="comment">&lt;!--report:对代码进行检测，然后生成index.html在 target/site/index.html中可以查看检测的详细结果--&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">id</span>&gt;</span>report<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">phase</span>&gt;</span>prepare-package<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">execution</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">id</span>&gt;</span>post-unit-test<span class="tag">&lt;/<span class="name">id</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">phase</span>&gt;</span>test<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">goals</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">goal</span>&gt;</span>report<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!--report:对代码进行检测，然后生成index.html在 target/site/index.html中可以查看检测的详细结果, 也可指定jacoco报告输出目录，报告在target/jacoco-ut/index.html查看--&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">dataFile</span>&gt;</span>target/jacoco.exec<span class="tag">&lt;/<span class="name">dataFile</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">outputDirectory</span>&gt;</span>target/jacoco-ut<span class="tag">&lt;/<span class="name">outputDirectory</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">executions</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>根据官网提供整理了以下插件提供的goal：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>调用</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>check</td>
+<td>org.jacoco.maven.CheckMojo</td>
+<td>Checks that the code coverage metrics are being met</td>
+</tr>
+<tr>
+<td>dump</td>
+<td>org.jacoco.maven.DumpMojo</td>
+<td>Request a dump over TCP/IP from a JaCoCo agent running in tcpserver mode.</td>
+</tr>
+<tr>
+<td>help</td>
+<td>org.jacoco.maven.HelpMojo</td>
+<td>Display help information on jacoco-maven-plugin</td>
+</tr>
+<tr>
+<td>instrument</td>
+<td>org.jacoco.maven.InstrumentMojo</td>
+<td>Performs offline instrumentation. Note that after execution of test you must restore original classes with help of &quot;restore-instrumented-classes&quot; goal</td>
+</tr>
+<tr>
+<td>merge</td>
+<td>org.jacoco.maven.MergeMojo</td>
+<td>Mojo for merging a set of execution data files (*.exec) into a single file</td>
+</tr>
+<tr>
+<td>prepare-agent</td>
+<td>org.jacoco.maven.AgentMojo</td>
+<td>Prepares a property pointing to the JaCoCo runtime agent that can be passed as a VM argument to the application under test.</td>
+</tr>
+<tr>
+<td>prepare-agent-integration</td>
+<td>org.jacoco.maven.AgentITMojo</td>
+<td>Same as code prepare-agent code, but provides default values suitable for integration-tests</td>
+</tr>
+<tr>
+<td>report</td>
+<td>org.jacoco.maven.ReportMojo</td>
+<td>Creates a code coverage report for tests of a single project in multiple formats (HTML, XML, and CSV).</td>
+</tr>
+<tr>
+<td>report-aggregate</td>
+<td>org.jacoco.maven.ReportAggregateMojo</td>
+<td>Creates a structured code coverage report (HTML, XML, and CSV) from multiple projects within reactor. The report is created from all modules this project depends on. From those projects class and source files as well as JaCoCo execution data files will be collected. In addition execution data is collected from the project itself. This also allows to create coverage reports when tests are in separate projects than the code under test, for example in case of integration tests.</td>
+</tr>
+<tr>
+<td>report-integration</td>
+<td>org.jacoco.maven.ReportITMojo</td>
+<td>Same as code report code, but provides default values suitable for integration-tests</td>
+</tr>
+<tr>
+<td>restore-instrumented-classes</td>
+<td>org.jacoco.maven.RestoreMojo</td>
+<td>Restores original classes as they were before offline instrumentation.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>根据提供的执行目标，根据需求进行配置。</p>
+<p>配置完成的执行目标，再次执行<code>mvn clean install</code>，这时查看工程执行后的target目录下就已生成jacoco.exec文件和jacoco-ut目录：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141717474.png" alt="image-20220714171747440"></p>
+<p>代码覆盖率报告如下：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141718571.png" alt="image-20220714171815488"></p>
+<p><a target="_blank" rel="noopener" href="https://www.eclemma.org/jacoco/trunk/doc/report-mojo.html#excludes">report官网说明</a></p>
+<h2 id="Maven包含-排除覆盖的文件"><a href="#Maven包含-排除覆盖的文件" class="headerlink" title="Maven包含/排除覆盖的文件"></a>Maven包含/排除覆盖的文件</h2><p>对于代码覆盖率，主要是执行逻辑代码的覆盖，对于Config、Entity、VO、文件等，这些配置、实体相关的就不会覆盖到，但是在统计代码覆盖情况时，又会将这些代码覆盖，因此在配置的时候，可将不需要的包配置排除或配置需要包含的包</p>
+<ul>
+<li>exclude 排除</li>
+<li>include 包含</li>
+</ul>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">  <span class="comment">&lt;!--排除不需要的覆盖的文件--&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">excludes</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">exclude</span>&gt;</span>com/spring/boot/demo/common/config/*<span class="tag">&lt;/<span class="name">exclude</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">exclude</span>&gt;</span>com/spring/boot/demo/mapper/*<span class="tag">&lt;/<span class="name">exclude</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">exclude</span>&gt;</span>com/spring/boot/demo/model/**/*<span class="tag">&lt;/<span class="name">exclude</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">excludes</span>&gt;</span></span><br><span class="line">  <span class="comment">&lt;!--包含需要覆盖的文件--&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">includes</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">include</span>&gt;</span>com/spring/boot/demo/controller/*<span class="tag">&lt;/<span class="name">include</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">includes</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>配置完成，执行测试，产生的报告就会根据对应配置的文件，进行覆盖率的统计</p>
+<p>排除字段的写法相对于目录(包)、类，使用标准的通配符语法编译后类的路径（而不是包名称）</p>
+<p><code>*</code>    Match zero or more characters<br><code>**</code>  Match zero or more directories<br><code>?</code>    Match a single character</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141718856.png" alt="image-20220714171840830" style="zoom:50%;" /></p>
+<p>根据配置统计不包含的文件后，得出的覆盖率报告，则不会统计及显示已排除的文件</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141719994.png" alt="image-20220714171907963"></p>
+<p>查看报告，覆盖率也有明显的提升。</p>
+<h2 id="Maven规则配置"><a href="#Maven规则配置" class="headerlink" title="Maven规则配置"></a>Maven规则配置</h2><p>根据代码里的注释可知，规则配置可对于对象类型，覆盖率维度，定义最大值、最小值的阈值</p>
+<ul>
+<li>对象类型，标签<code>&lt;element&gt;</code><ul>
+<li>BUNDLE 约束</li>
+<li>PACKAGE 包</li>
+<li>CLASS 类</li>
+<li>SOURCEFILE 源文件</li>
+<li>METHOD 方法</li>
+</ul>
+</li>
+<li>覆盖率维度，标签<code>&lt;counter&gt;</code><ul>
+<li>INSTRUCTION 指令</li>
+<li>LINE 行</li>
+<li>BRANCH 分支</li>
+<li>COMPLEXITY 复杂度</li>
+<li>METHOD 方法</li>
+<li>CLASS 类</li>
+</ul>
+</li>
+<li>统计覆盖率进行阈值的限制，覆盖率类型标签<code>&lt;value&gt;</code><ul>
+<li>TOTALCOUNT</li>
+<li>COVEREDCOUNT</li>
+<li>MISSEDCOUNT</li>
+<li>COVEREDRATIO</li>
+<li>MISSEDRATIO</li>
+</ul>
+</li>
+<li>数值的设置，最大值、最小值，标签<code>&lt;maximum&gt;</code> or <code>&lt;minimum&gt;</code><ul>
+<li>数值范围：必须在0.0到1.0的范围内</li>
+</ul>
+</li>
+</ul>
+<p>覆盖率执行的情况到什么程度，才是完成测试通过呢？这时可根据配置规则进行规则的限制。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">configuration</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">rules</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">rule</span> <span class="attr">implementation</span>=<span class="string">&quot;org.jacoco.maven.RuleConfiguration&quot;</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">element</span>&gt;</span>BUNDLE<span class="tag">&lt;/<span class="name">element</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">limits</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 指定方法覆盖到80% --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">limit</span> <span class="attr">implementation</span>=<span class="string">&quot;org.jacoco.report.check.Limit&quot;</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">counter</span>&gt;</span>METHOD<span class="tag">&lt;/<span class="name">counter</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">value</span>&gt;</span>COVEREDRATIO<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">minimum</span>&gt;</span>0.80<span class="tag">&lt;/<span class="name">minimum</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">limit</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 指定指令覆盖到80% --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">limit</span> <span class="attr">implementation</span>=<span class="string">&quot;org.jacoco.report.check.Limit&quot;</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">counter</span>&gt;</span>INSTRUCTION<span class="tag">&lt;/<span class="name">counter</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">value</span>&gt;</span>COVEREDRATIO<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">minimum</span>&gt;</span>0.80<span class="tag">&lt;/<span class="name">minimum</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">limit</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 指定行覆盖到80% --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">limit</span> <span class="attr">implementation</span>=<span class="string">&quot;org.jacoco.report.check.Limit&quot;</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">counter</span>&gt;</span>LINE<span class="tag">&lt;/<span class="name">counter</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">value</span>&gt;</span>COVEREDRATIO<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">minimum</span>&gt;</span>0.80<span class="tag">&lt;/<span class="name">minimum</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">limit</span>&gt;</span></span><br><span class="line">        <span class="comment">&lt;!-- 指定类覆盖到100%，不能遗失任何类 --&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">limit</span> <span class="attr">implementation</span>=<span class="string">&quot;org.jacoco.report.check.Limit&quot;</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">counter</span>&gt;</span>CLASS<span class="tag">&lt;/<span class="name">counter</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">value</span>&gt;</span>MISSEDCOUNT<span class="tag">&lt;/<span class="name">value</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">maximum</span>&gt;</span>0<span class="tag">&lt;/<span class="name">maximum</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">limit</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">limits</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">rule</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">rules</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>配置完成后，执行测试，如果达不到设置的覆盖率，则执行失败</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141719589.png" alt="image-20220714171942561"></p>
+<p>报错信息：Coverage checks have not been met. See log for details.</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Jacoco/" rel="tag"># Jacoco</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/03/24/language/java/base/1-introduce/" rel="prev" title="Java介绍">
+      <i class="fa fa-chevron-left"></i> Java介绍
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/09/15/jacoco/3-cycl/" rel="next" title="圈复杂度">
+      圈复杂度 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Jacoco-Maven%E9%9B%86%E6%88%90"><span class="nav-number">1.</span> <span class="nav-text">Jacoco Maven集成</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Maven%E5%B7%A5%E7%A8%8B%E4%B8%AD%E6%B7%BB%E5%8A%A0Jacoco%E6%8F%92%E4%BB%B6"><span class="nav-number">1.1.</span> <span class="nav-text">Maven工程中添加Jacoco插件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Maven%E6%89%A7%E8%A1%8C%E9%85%8D%E7%BD%AE"><span class="nav-number">1.2.</span> <span class="nav-text">Maven执行配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Maven%E5%8C%85%E5%90%AB-%E6%8E%92%E9%99%A4%E8%A6%86%E7%9B%96%E7%9A%84%E6%96%87%E4%BB%B6"><span class="nav-number">1.3.</span> <span class="nav-text">Maven包含&#x2F;排除覆盖的文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Maven%E8%A7%84%E5%88%99%E9%85%8D%E7%BD%AE"><span class="nav-number">1.4.</span> <span class="nav-text">Maven规则配置</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

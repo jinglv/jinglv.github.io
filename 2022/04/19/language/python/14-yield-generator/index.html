@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Python学习笔记第十四讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="yield关键字和生成器，nonlocal关键字和global关键字使用总结">
+<meta property="og:url" content="https://jinglv.github.io/2022/04/19/language/python/14-yield-generator/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Python学习笔记第十四讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/jinglv/oss/images/202204201207506.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/jinglv/oss/images/202204201312858.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/jinglv/oss/images/202204201331895.png">
+<meta property="article:published_time" content="2022-04-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2022-04-19T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/jinglv/oss/images/202204201207506.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2022/04/19/language/python/14-yield-generator/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>yield关键字和生成器，nonlocal关键字和global关键字使用总结 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2022/04/19/language/python/14-yield-generator/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          yield关键字和生成器，nonlocal关键字和global关键字使用总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-04-19 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2022-04-19T00:00:00+08:00">2022-04-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Python学习笔记第十四讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="yield关键字"><a href="#yield关键字" class="headerlink" title="yield关键字"></a>yield关键字</h1><p>要通俗理解yield，可结合函数的返回值关键字return，yield是一种特殊的return。说的特殊的return，是因为执行遇到yield时，立即返回，这与return的相似之处。不同之处在于：下次进入函数直接到yield的下一个语句，而return后在进入函数，还是从函数体的第一行代码开始执行。</p>
+<p>带yield的函数时生成器，通常与next函数结合用。下次进入函数，意思是使用next函数进入到函数体内。</p>
+<p>下面，举个例子说明yield的基本用法。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">def</span> <span class="title function_">f</span>():</span><br><span class="line"><span class="meta">... </span>    <span class="built_in">print</span>(<span class="string">&#x27;enter f...&#x27;</span>)</span><br><span class="line"><span class="meta">... </span>    <span class="keyword">return</span> <span class="string">&#x27;hello&#x27;</span></span><br><span class="line">...</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>ret = f()</span><br><span class="line">enter f...</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>ret</span><br><span class="line"><span class="string">&#x27;hello&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>上面定义了普通函数f，f()就会立即执行函数。但是，我们在新定义函数f，带有yield，是生成器函数f：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">def</span> <span class="title function_">f</span>():</span><br><span class="line"><span class="meta">... </span>    <span class="built_in">print</span>(<span class="string">&#x27;enter f...&#x27;</span>)</span><br><span class="line"><span class="meta">... </span>    <span class="keyword">yield</span> <span class="number">4</span></span><br><span class="line"><span class="meta">... </span>    <span class="built_in">print</span>(<span class="string">&#x27;i am next sentence of yield&#x27;</span>)</span><br><span class="line">...</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>g = f()</span><br><span class="line">&gt;&gt;&gt;</span><br></pre></td></tr></table></figure>
+<p>执行f()，并未打印任何信息。但是得到了一个生成器对象g，再执行next(g)，输出下面信息：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">next</span>(g)</span><br><span class="line">enter f...</span><br><span class="line"><span class="number">4</span></span><br></pre></td></tr></table></figure>
+<p>再执行next(g)时，输出下面信息</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">next</span>(g)</span><br><span class="line">i am <span class="built_in">next</span> sentence of <span class="keyword">yield</span></span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File <span class="string">&quot;&lt;stdin&gt;&quot;</span>, line <span class="number">1</span>, <span class="keyword">in</span> &lt;module&gt;</span><br><span class="line">StopIteration</span><br></pre></td></tr></table></figure>
+<p>输出信息 <code>i am next sentence of yield</code>，表明它直接进入 yield 的下一句。</p>
+<p>同时，抛出一个异常 StopIteration，意思是已经迭代结束。</p>
+<p>此处确实已经迭代结束，所以此异常无需理会。还可以捕获此异常，以此为依据判断迭代结束。</p>
+<h2 id="yield与生成器"><a href="#yield与生成器" class="headerlink" title="yield与生成器"></a>yield与生成器</h2><p>函数带有yield，就是一个生成器，英文generator，它的重要优点之一<strong>节省内存</strong>。查看下面的例子：</p>
+<ol>
+<li><p>定义一个函数</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">myrange</span>(<span class="params">stop</span>):</span><br><span class="line">    start = <span class="number">0</span></span><br><span class="line">    <span class="keyword">while</span> start &lt; stop:</span><br><span class="line">        <span class="keyword">yield</span> start</span><br><span class="line">        start += <span class="number">1</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用生成器myrange</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> myrange(<span class="number">10</span>):</span><br><span class="line">    <span class="built_in">print</span>(i)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>返回结果</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/<span class="built_in">bin</span>/python /Users/lvjing/PycharmProjects/python_base_project/yield_sample_01.py</span><br><span class="line"><span class="number">0</span></span><br><span class="line"><span class="number">1</span></span><br><span class="line"><span class="number">2</span></span><br><span class="line"><span class="number">3</span></span><br><span class="line"><span class="number">4</span></span><br><span class="line"><span class="number">5</span></span><br><span class="line"><span class="number">6</span></span><br><span class="line"><span class="number">7</span></span><br><span class="line"><span class="number">8</span></span><br><span class="line"><span class="number">9</span></span><br><span class="line"></span><br><span class="line">Process finished <span class="keyword">with</span> exit code <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<p>整个过程空间复杂度都是O(1)，这得益于yield关键字，<strong>遇到就返回且再进入执行下一句</strong>的机制。</p>
+</li>
+</ol>
+<p>如果不使用yield，也就是使用普通方法，如下定义myrange：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">myrange</span>(<span class="params">stop</span>):</span><br><span class="line">    start = <span class="number">0</span></span><br><span class="line">    result = []</span><br><span class="line">    <span class="keyword">while</span> start &lt; stop:</span><br><span class="line">        result.append(start)</span><br><span class="line">        start += <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> myrange(<span class="number">10</span>):</span><br><span class="line">    <span class="built_in">print</span>(i)</span><br></pre></td></tr></table></figure>
+<p>不用yield关键字，创建一个序列myrange函数，空间复杂度都是O(n)。</p>
+<p>我们想查看下演示过程，可将代码贴到pythontutor中一步一步执行展示，网址：<a target="_blank" rel="noopener" href="https://pythontutor.com">https://pythontutor.com</a></p>
+<h2 id="send函数"><a href="#send函数" class="headerlink" title="send函数"></a>send函数</h2><p>带yield的生成器对象里还封装了一个send方法。下面的例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">f</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&#x27;enter f...&#x27;</span>)</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        result = <span class="keyword">yield</span> <span class="number">4</span></span><br><span class="line">        <span class="keyword">if</span> result:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&#x27;send me a value is:%d&#x27;</span> % (result,))</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&#x27;no send&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>如下调用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">g = f()</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">next</span>(g))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;ready to send&#x27;</span>)</span><br><span class="line"><span class="built_in">print</span>(g.send(<span class="number">10</span>))</span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/bin/python /Users/lvjing/PycharmProjects/python_base_project/yield_sample_03.py</span><br><span class="line">enter f...</span><br><span class="line">4</span><br><span class="line">ready to send</span><br><span class="line">send me a value is:10</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;/Users/lvjing/PycharmProjects/python_base_project/yield_sample_03.py&quot;, line 15, in &lt;module&gt;</span><br><span class="line">    print(g.send(10))</span><br><span class="line">StopIteration</span><br><span class="line"></span><br><span class="line">Process finished with exit code 1</span><br></pre></td></tr></table></figure>
+<p>分析输出的结果：</p>
+<ul>
+<li><code>g = f()</code>：创建生成器对象，什么都不打印</li>
+<li><code>print(next(g))</code>: 进入f，打印<code>enter f...</code>，并yield后返回值4，并打印4</li>
+<li><code>print(&#39;ready to send&#39;)</code></li>
+<li><code>print(g.send(10))</code>：send值10赋给result，执行到上一次yield语句的后一句打印出<code>send me a value is:10</code></li>
+<li>遇到return后返回，因为f是生成器，同时提示StopIteration</li>
+</ul>
+<p>通过以上分析，可以体会到send函数的用法：它传递给yield左侧的result变量。</p>
+<p>return后抛出迭代终止的异常，此处可看做是正常的提示。</p>
+<h2 id="更多使用yield案例"><a href="#更多使用yield案例" class="headerlink" title="更多使用yield案例"></a>更多使用yield案例</h2><h3 id="1-完全展开list"><a href="#1-完全展开list" class="headerlink" title="1.完全展开list"></a>1.完全展开list</h3><p>下面的函数deep_flatten定义中使用了yield关键字，实现嵌套list的完全展开。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">deep_flatten</span>(<span class="params">lst</span>):</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> lst:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">type</span>(i) == <span class="built_in">list</span>:</span><br><span class="line">            <span class="keyword">yield</span> <span class="keyword">from</span> deep_flatten(i)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">yield</span> i</span><br></pre></td></tr></table></figure>
+<p>deep_flatten函数，返回结果为生成器，如下所示：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/bin/python /Users/lvjing/PycharmProjects/python_base_project/yield_sample_04.py</span><br><span class="line">&lt;generator object deep_flatten at 0x10532d510&gt;</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br></pre></td></tr></table></figure>
+<p>返回的gen生成器，与for结合</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gen = deep_flatten([<span class="number">1</span>, [<span class="string">&#x27;s&#x27;</span>, <span class="number">3</span>], <span class="number">4</span>, <span class="number">5</span>])</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> gen:</span><br><span class="line">    <span class="built_in">print</span>(i)</span><br></pre></td></tr></table></figure>
+<p>打印结果为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/bin/python /Users/lvjing/PycharmProjects/python_base_project/yield_sample_04.py</span><br><span class="line">1</span><br><span class="line">s</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br></pre></td></tr></table></figure>
+<p><code>yield from</code>表示再进入到deep_flatten生成器。</p>
+<p>下面为返回值s的帧示意图：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/jinglv/oss/images/202204201207506.png" alt="image-20220420120738407"></p>
+<h3 id="2-列表分组"><a href="#2-列表分组" class="headerlink" title="2.列表分组"></a>2.列表分组</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> math <span class="keyword">import</span> ceil</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">divide_iter</span>(<span class="params">lst, n</span>):</span><br><span class="line">    <span class="keyword">if</span> n &lt;= <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">yield</span> lst</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    i, div = <span class="number">0</span>, ceil(<span class="built_in">len</span>(lst) / n)</span><br><span class="line">    <span class="keyword">while</span> i &lt; n:</span><br><span class="line">        <span class="keyword">yield</span> lst[i * div:(i + <span class="number">1</span>) * div]</span><br><span class="line">        i += <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>调用</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="built_in">list</span>(divide_iter([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>], <span class="number">0</span>)))</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">list</span>(divide_iter([<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>], <span class="number">2</span>)))</span><br></pre></td></tr></table></figure>
+<p>结果展示</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/bin/python /Users/lvjing/PycharmProjects/python_base_project/yield_sample_05.py</span><br><span class="line">[[1, 2, 3, 4, 5]]</span><br><span class="line">[[1, 2, 3], [4, 5]]</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br></pre></td></tr></table></figure>
+<p>这是一个很经典yield使用案例，优雅的节省内存，做到O(1)空间复杂度。</p>
+<h1 id="nonlocal关键字"><a href="#nonlocal关键字" class="headerlink" title="nonlocal关键字"></a>nonlocal关键字</h1><p>关键字nonlocal常用与函数嵌套中，声明变量为<strong>非局部变量</strong>。</p>
+<p>如下，函数f里嵌套一个函数auto_increase。实现功能：不大于10时自增，否则置零后，再从零自增。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">f</span>():</span><br><span class="line">    i = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">auto_increase</span>():</span><br><span class="line">        <span class="keyword">if</span> i &gt;= <span class="number">10</span>:</span><br><span class="line">            i = <span class="number">0</span></span><br><span class="line">        i += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    ret = []</span><br><span class="line">    <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">28</span>):</span><br><span class="line">        auto_increase()</span><br><span class="line">        ret.append(i)</span><br><span class="line">    <span class="built_in">print</span>(ret)</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">f()</span><br></pre></td></tr></table></figure>
+<p>调用函数 f，会报出如下异常：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/bin/python /Users/lvjing/PycharmProjects/python_base_project/nonlocal_sample_01.py</span><br><span class="line">Traceback (most recent call last):</span><br><span class="line">  File &quot;/Users/lvjing/PycharmProjects/python_base_project/nonlocal_sample_01.py&quot;, line 16, in &lt;module&gt;</span><br><span class="line">    f()</span><br><span class="line">  File &quot;/Users/lvjing/PycharmProjects/python_base_project/nonlocal_sample_01.py&quot;, line 11, in f</span><br><span class="line">    auto_increase()</span><br><span class="line">  File &quot;/Users/lvjing/PycharmProjects/python_base_project/nonlocal_sample_01.py&quot;, line 5, in auto_increase</span><br><span class="line">    if i &gt;= 10:</span><br><span class="line">UnboundLocalError: local variable &#x27;i&#x27; referenced before assignment</span><br><span class="line"></span><br><span class="line">Process finished with exit code 1</span><br></pre></td></tr></table></figure>
+<p>在IDE中，会直接提示报错</p>
+<p><img src="https://cdn.jsdelivr.net/gh/jinglv/oss/images/202204201312858.png" alt="image-20220420131240804"></p>
+<p>我们看到<code>if i &gt;= 10</code>折行报错，i引用前未被赋值。</p>
+<p>为什么会这样呢？明明i一开始已经就被定义！原来，最靠近变量的i的函数时auto_increase，而不是f，i并没有在auto_increase中赋值，所以报错。</p>
+<p>解决方法：使用nonlocal声明i不是auto_increase内的局部变量。</p>
+<p>因此修改方法，如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">f</span>():</span><br><span class="line">    i = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">auto_increase</span>():</span><br><span class="line">        <span class="comment"># 使用nonlocal告诉编译器，i不是局部变量</span></span><br><span class="line">        <span class="keyword">nonlocal</span> i</span><br><span class="line">        <span class="keyword">if</span> i &gt;= <span class="number">10</span>:</span><br><span class="line">            i = <span class="number">0</span></span><br><span class="line">        i += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    ret = []</span><br><span class="line">    <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">28</span>):</span><br><span class="line">        auto_increase()</span><br><span class="line">        ret.append(i)</span><br><span class="line">    <span class="built_in">print</span>(ret)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">f()</span><br></pre></td></tr></table></figure>
+<p>调用f()，正常输出结果。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/bin/python /Users/lvjing/PycharmProjects/python_base_project/nonlocal_sample_01.py</span><br><span class="line">[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5, 6, 7, 8]</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br></pre></td></tr></table></figure>
+<h1 id="global关键字"><a href="#global关键字" class="headerlink" title="global关键字"></a>global关键字</h1><p>为什么要有global关键字呢？一个变量被多个函数引用，想让全局变量被所有函数共享。可以这样写：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">i = <span class="number">5</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">f</span>():</span><br><span class="line">    <span class="built_in">print</span>(i)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">g</span>():</span><br><span class="line">    <span class="built_in">print</span>(i)</span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">f()</span><br><span class="line">g()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>f和g两个函数都能共享变量i，而且程序没有报错：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/Users/lvjing/PycharmProjects/python_base_project/venv/bin/python /Users/lvjing/PycharmProjects/python_base_project/global_sample_01.py</span><br><span class="line">5</span><br><span class="line">5</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br></pre></td></tr></table></figure>
+<p>从上面看出，全局变量这种方式是可以的，global的价值还没有看出来，但是我们在函数中将i的值进行修改，例如实现递增，如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">h</span>():</span><br><span class="line">    i += <span class="number">1</span></span><br><span class="line">    </span><br><span class="line">h()</span><br></pre></td></tr></table></figure>
+<p>此时执行程序，就会报错。我们使用IDE，就会提示错误信息</p>
+<p><img src="https://cdn.jsdelivr.net/gh/jinglv/oss/images/202204201331895.png" alt="image-20220420133102837"></p>
+<p>原来编译器在解释 <code>i+=1</code> 时，会解析 i 为函数 h() 内的局部变量。很显然，在此函数内，解释器找不到对变量 i 的定义，所以报错。</p>
+<p>这时，就要用上global关键字了。在函数h内，显示的告诉解释器i为全局变量，然后，解释器会在函数外面寻找i的定义，执行完<code>i+=1</code>后，i还为全局变量，值加1：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">h</span>():</span><br><span class="line">    <span class="keyword">global</span> i</span><br><span class="line">    i += <span class="number">1</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">h()</span><br><span class="line"><span class="built_in">print</span>(i)</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/12/language/python/13-object-compare/" rel="prev" title="Python对象间的相等性比较使用总结">
+      <i class="fa fa-chevron-left"></i> Python对象间的相等性比较使用总结
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/20/language/python/15-function/" rel="next" title="Python函数的5类参数使用详解">
+      Python函数的5类参数使用详解 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#yield%E5%85%B3%E9%94%AE%E5%AD%97"><span class="nav-number">1.</span> <span class="nav-text">yield关键字</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#yield%E4%B8%8E%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">1.1.</span> <span class="nav-text">yield与生成器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#send%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.</span> <span class="nav-text">send函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9B%B4%E5%A4%9A%E4%BD%BF%E7%94%A8yield%E6%A1%88%E4%BE%8B"><span class="nav-number">1.3.</span> <span class="nav-text">更多使用yield案例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E5%AE%8C%E5%85%A8%E5%B1%95%E5%BC%80list"><span class="nav-number">1.3.1.</span> <span class="nav-text">1.完全展开list</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%88%97%E8%A1%A8%E5%88%86%E7%BB%84"><span class="nav-number">1.3.2.</span> <span class="nav-text">2.列表分组</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#nonlocal%E5%85%B3%E9%94%AE%E5%AD%97"><span class="nav-number">2.</span> <span class="nav-text">nonlocal关键字</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#global%E5%85%B3%E9%94%AE%E5%AD%97"><span class="nav-number">3.</span> <span class="nav-text">global关键字</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

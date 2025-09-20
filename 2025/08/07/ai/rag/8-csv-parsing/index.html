@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第八讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--数据导入之csv解析">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/07/ai/rag/8-csv-parsing/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第八讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-08-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-07T09:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/07/ai/rag/8-csv-parsing/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--数据导入之csv解析 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/07/ai/rag/8-csv-parsing/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--数据导入之csv解析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-07 00:00:00 / 修改时间：17:00:00" itemprop="dateCreated datePublished" datetime="2025-08-07T00:00:00+08:00">2025-08-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第八讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="CSVLoader自动切分数据"><a href="#CSVLoader自动切分数据" class="headerlink" title="CSVLoader自动切分数据"></a>CSVLoader自动切分数据</h1><ul>
+<li>核心功能：CSVLoader能自动将CSV文件切分为多个文档，每行数据生成一个独立文档</li>
+<li>元数据结构：每个文档包含page_content和metadata两部分，metadata记录数据来源和行号</li>
+</ul>
+<h2 id="基本加载-CSV-文件并打印记录"><a href="#基本加载-CSV-文件并打印记录" class="headerlink" title="基本加载 CSV 文件并打印记录"></a>基本加载 CSV 文件并打印记录</h2><ul>
+<li>实现方式：使用加载数据</li>
+<li>自动解析：能智能识别CSV中的字段名（如Name、Description、PowerLevel）</li>
+<li>输出结构：<ul>
+<li>page_content包含分类、名称、描述和等级信息</li>
+<li>metadata包含源文件路径和行号信息</li>
+</ul>
+</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> CSVLoader</span><br><span class="line"></span><br><span class="line">file_path = <span class="string">&quot;../data/黑悟空/黑神话悟空.csv&quot;</span></span><br><span class="line"></span><br><span class="line">loader = CSVLoader(file_path=file_path)</span><br><span class="line">data = loader.load()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;示例 1: 基本加载 CSV 文件并打印前两条记录&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> record <span class="keyword">in</span> data[:<span class="number">2</span>]:</span><br><span class="line">    <span class="built_in">print</span>(record)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">80</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">示例 1: 基本加载 CSV 文件并打印前两条记录</span><br><span class="line">page_content=&#x27;﻿Category: 装备</span><br><span class="line">Name: 铜云棒</span><br><span class="line">Description: 一根结实的青铜棒，挥舞时能发出破空之声，适合近战攻击。</span><br><span class="line">PowerLevel: 85&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;../data/黑悟空/黑神话悟空.csv&#x27;, &#x27;row&#x27;: 0&#125;</span><br><span class="line">page_content=&#x27;﻿Category: 装备</span><br><span class="line">Name: 百戏衬钱衣</span><br><span class="line">Description: 一件精美的战斗铠甲，能够提供强大的防御并抵御剧毒伤害。</span><br><span class="line">PowerLevel: 90&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;../data/黑悟空/黑神话悟空.csv&#x27;, &#x27;row&#x27;: 1&#125;</span><br><span class="line">--------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<h2 id="跳过-CSV-文件的标题行并使用自定义列名"><a href="#跳过-CSV-文件的标题行并使用自定义列名" class="headerlink" title="跳过 CSV 文件的标题行并使用自定义列名"></a>跳过 CSV 文件的标题行并使用自定义列名</h2><ul>
+<li><p>参数配置：通过csv_args设置delimiter、quotechar和fieldnames</p>
+</li>
+<li><p>字段映射：可将原始字段映射为中文名称（如”种类”、”名称”、”说明”、”等级”）</p>
+</li>
+<li><p>注意事项：若保留标题行，第一行数据会被解析为字段定义行</p>
+</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> CSVLoader</span><br><span class="line"></span><br><span class="line">file_path = <span class="string">&quot;../data/黑悟空/黑神话悟空.csv&quot;</span></span><br><span class="line"></span><br><span class="line">loader = CSVLoader(</span><br><span class="line">    file_path=file_path,</span><br><span class="line">    csv_args=&#123;</span><br><span class="line">        <span class="string">&quot;delimiter&quot;</span>: <span class="string">&quot;,&quot;</span>,</span><br><span class="line">        <span class="string">&quot;quotechar&quot;</span>: <span class="string">&#x27;&quot;&#x27;</span>,</span><br><span class="line">        <span class="string">&quot;fieldnames&quot;</span>: [<span class="string">&quot;种类&quot;</span>, <span class="string">&quot;名称&quot;</span>, <span class="string">&quot;说明&quot;</span>, <span class="string">&quot;等级&quot;</span>],</span><br><span class="line">    &#125;,</span><br><span class="line">)</span><br><span class="line">data = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;示例 2: 跳过标题行并使用自定义列名&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> record <span class="keyword">in</span> data[:<span class="number">2</span>]:</span><br><span class="line">    <span class="built_in">print</span>(record)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">80</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">示例 2: 跳过标题行并使用自定义列名</span><br><span class="line">page_content=&#x27;种类: ﻿Category</span><br><span class="line">名称: Name</span><br><span class="line">说明: Description</span><br><span class="line">等级: PowerLevel&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;../data/黑悟空/黑神话悟空.csv&#x27;, &#x27;row&#x27;: 0&#125;</span><br><span class="line">page_content=&#x27;种类: 装备</span><br><span class="line">名称: 铜云棒</span><br><span class="line">说明: 一根结实的青铜棒，挥舞时能发出破空之声，适合近战攻击。</span><br><span class="line">等级: 85&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;../data/黑悟空/黑神话悟空.csv&#x27;, &#x27;row&#x27;: 1&#125;</span><br><span class="line">--------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<h2 id="指定-“Name”-列作为-source-column"><a href="#指定-“Name”-列作为-source-column" class="headerlink" title="指定 “Name” 列作为 source_column"></a>指定 “Name” 列作为 source_column</h2><ul>
+<li><p>功能作用：将指定列的值作为metadata中的source字段</p>
+</li>
+<li><p>应用场景：便于后续基于名称字段进行精确检索和过滤</p>
+</li>
+<li><p>实现效果：metadata中的source从文件路径变为该行Name列的具体值</p>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> CSVLoader</span><br><span class="line"></span><br><span class="line">file_path = <span class="string">&quot;../data/黑悟空/黑神话悟空.csv&quot;</span></span><br><span class="line"></span><br><span class="line">loader = CSVLoader(file_path=file_path, source_column=<span class="string">&quot;Name&quot;</span>)</span><br><span class="line">data = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;示例 3: 使用 &#x27;Name&#x27; 列作为主要内容来源&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> record <span class="keyword">in</span> data[:<span class="number">2</span>]:</span><br><span class="line">    <span class="built_in">print</span>(record)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">80</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">示例 3: 使用 &#x27;Name&#x27; 列作为主要内容来源</span><br><span class="line">page_content=&#x27;﻿Category: 装备</span><br><span class="line">Name: 铜云棒</span><br><span class="line">Description: 一根结实的青铜棒，挥舞时能发出破空之声，适合近战攻击。</span><br><span class="line">PowerLevel: 85&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;铜云棒&#x27;, &#x27;row&#x27;: 0&#125;</span><br><span class="line">page_content=&#x27;﻿Category: 装备</span><br><span class="line">Name: 百戏衬钱衣</span><br><span class="line">Description: 一件精美的战斗铠甲，能够提供强大的防御并抵御剧毒伤害。</span><br><span class="line">PowerLevel: 90&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;百戏衬钱衣&#x27;, &#x27;row&#x27;: 1&#125;</span><br><span class="line">--------------------------------------------------------------------------------</span><br></pre></td></tr></table></figure>
+<h2 id="使用-UnstructuredCSVLoader-加载-CSV-文件"><a href="#使用-UnstructuredCSVLoader-加载-CSV-文件" class="headerlink" title="使用 UnstructuredCSVLoader 加载 CSV 文件"></a>使用 UnstructuredCSVLoader 加载 CSV 文件</h2><ul>
+<li>CSVLoader特点：<ul>
+<li>按行切分数据，每行生成独立文档</li>
+<li>保留详细元数据（行号、源文件等）</li>
+<li>支持字段映射和源列指定</li>
+</ul>
+</li>
+<li>UnstructuredCSVLoader特点：<ul>
+<li>将整个CSV文件作为单个文档处理</li>
+<li>保持原始表格格式</li>
+<li>适合需要保留表格整体结构的场景</li>
+</ul>
+</li>
+<li>选择建议：根据是否需要行级细粒度控制选择合适loader</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> CSVLoader</span><br><span class="line"></span><br><span class="line">file_path = <span class="string">&quot;../data/黑悟空/黑神话悟空.csv&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> UnstructuredCSVLoader</span><br><span class="line"></span><br><span class="line">loader = UnstructuredCSVLoader(file_path=file_path)</span><br><span class="line">data = loader.load()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;示例 4: 使用 UnstructuredCSVLoader 加载文件&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(data)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">80</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">示例 4: 使用 UnstructuredCSVLoader 加载文件</span><br><span class="line">[Document(metadata=&#123;&#x27;source&#x27;: &#x27;../data/黑悟空/黑神话悟空.csv&#x27;&#125;, page_content=&#x27;Category Name Description PowerLevel 装备 铜云棒 一根结实的青铜棒，挥舞时能发出破空之声，适合近战攻击。 85 装备 百戏衬钱衣 一件精美的战斗铠甲，能够提供强大的防御并抵御剧毒伤害。 90 技能 天雷击 召唤天雷攻击敌人，造成大范围雷电伤害。 95 技能 火焰舞 施展火焰舞步，将敌人包围在炽热的火焰之中。 92 人物 悟空 主角，拥有七十二变和腾云驾雾的能力，行侠仗义。 100 人物 银角大王 强大的妖王之一，擅长操控各种法宝，具有极高的战斗力。 88&#x27;)]</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h1 id="CSVLoader与-UnstructuredCSVLoader的比较"><a href="#CSVLoader与-UnstructuredCSVLoader的比较" class="headerlink" title="CSVLoader与 UnstructuredCSVLoader的比较"></a>CSVLoader与 UnstructuredCSVLoader的比较</h1><h2 id="DirectoryLoader与CSVLoader结合使用"><a href="#DirectoryLoader与CSVLoader结合使用" class="headerlink" title="DirectoryLoader与CSVLoader结合使用"></a>DirectoryLoader与CSVLoader结合使用</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> DirectoryLoader</span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> CSVLoader</span><br><span class="line"></span><br><span class="line">loader = DirectoryLoader(</span><br><span class="line">    path=<span class="string">&quot;../data/黑悟空&quot;</span>,  <span class="comment"># Specify the directory containing your CSV files</span></span><br><span class="line">    glob=<span class="string">&quot;**/*.csv&quot;</span>,                <span class="comment"># Use a glob pattern to match CSV files</span></span><br><span class="line">    loader_cls=CSVLoader            <span class="comment"># Specify CSVLoader as the loader class</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">docs = loader.load()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;文档数：<span class="subst">&#123;<span class="built_in">len</span>(docs)&#125;</span>&quot;</span>)  <span class="comment"># 输出文档总数</span></span><br><span class="line"><span class="built_in">print</span>(docs[<span class="number">0</span>])</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">文档数：6</span><br><span class="line">page_content=&#x27;﻿Category: 装备</span><br><span class="line">Name: 铜云棒</span><br><span class="line">Description: 一根结实的青铜棒，挥舞时能发出破空之声，适合近战攻击。</span><br><span class="line">PowerLevel: 85&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;../data/黑悟空/黑神话悟空.csv&#x27;, &#x27;row&#x27;: 0&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="只使用DirectoryLoader（结构化保持的重要性）"><a href="#只使用DirectoryLoader（结构化保持的重要性）" class="headerlink" title="只使用DirectoryLoader（结构化保持的重要性）"></a>只使用DirectoryLoader（结构化保持的重要性）</h2><ul>
+<li>问题现象：使用通用加载器时，CSV的列数据（如Category/Name/Description/PowerLevel）会被合并为单个字符串字段</li>
+<li>关键缺陷：<ul>
+<li>字段混淆：所有列值混入page_content字段，失去原始表格结构</li>
+<li>查询困难：无法直接查询特定字段（如查询PowerLevel=100的装备）</li>
+<li>元数据单一：metadata仅保留文件路径，不包含列级元信息</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> DirectoryLoader</span><br><span class="line"></span><br><span class="line">loader = DirectoryLoader(</span><br><span class="line">    path=<span class="string">&quot;../data/黑悟空&quot;</span>,  <span class="comment"># Specify the directory containing your CSV files</span></span><br><span class="line">    glob=<span class="string">&quot;**/*.csv&quot;</span>,                <span class="comment"># Use a glob pattern to match CSV files</span></span><br><span class="line">    <span class="comment"># loader_cls=CSVLoader            # Specify CSVLoader as the loader class</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">docs = loader.load()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;文档数：<span class="subst">&#123;<span class="built_in">len</span>(docs)&#125;</span>&quot;</span>)  <span class="comment"># 输出文档总数</span></span><br><span class="line"><span class="built_in">print</span>(docs[<span class="number">0</span>])</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">文档数：1</span><br><span class="line">page_content=&#x27;Category Name Description PowerLevel 装备 铜云棒 一根结实的青铜棒，挥舞时能发出破空之声，适合近战攻击。 85 装备 百戏衬钱衣 一件精美的战斗铠甲，能够提供强大的防御并抵御剧毒伤害。 90 技能 天雷击 召唤天雷攻击敌人，造成大范围雷电伤害。 95 技能 火焰舞 施展火焰舞步，将敌人包围在炽热的火焰之中。 92 人物 悟空 主角，拥有七十二变和腾云驾雾的能力，行侠仗义。 100 人物 银角大王 强大的妖王之一，擅长操控各种法宝，具有极高的战斗力。 88&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;../data/黑悟空/黑神话悟空.csv&#x27;&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="UnstructuredCSVLoader的局限性"><a href="#UnstructuredCSVLoader的局限性" class="headerlink" title="UnstructuredCSVLoader的局限性"></a>UnstructuredCSVLoader的局限性</h2><ul>
+<li>核心问题：<ul>
+<li>数据扁平化：将CSV表格转换为纯文本字符串，示例中的装备属性（铜云棒/百戏衬钱衣）与数值（85/90）失去关联性</li>
+<li>解析障碍：需要手动拆分字符串才能获取特定字段值，增加后续处理复杂度</li>
+</ul>
+</li>
+</ul>
+<h2 id="加载器选择策略"><a href="#加载器选择策略" class="headerlink" title="加载器选择策略"></a>加载器选择策略</h2><ul>
+<li>优选方案：<ul>
+<li>CSVLoader：自动解析列结构，保留字段对应关系（如”百戏衬钱衣”与其防御值90保持绑定）</li>
+<li>指定加载场景：在DirectoryLoader中强制使用loader_cls=CSVLoader参数</li>
+</ul>
+</li>
+<li>避坑原则：<ul>
+<li>避免通用解析：不依赖UnstructuredCSVLoader的自动解析功能</li>
+<li>显式声明结构：对表格类数据必须指定专用加载器</li>
+</ul>
+</li>
+<li>实战示例：黑神话悟空CSV中的装备数据（铜云棒85攻击力/百戏衬钱衣90防御力）需要完整保留数值关联</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/06/ai/rag/7-pdf-parsing/" rel="prev" title="RAG组件--数据导入之pdf解析">
+      <i class="fa fa-chevron-left"></i> RAG组件--数据导入之pdf解析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/08/ai/rag/9-lamhub-database/" rel="next" title="RAG组件--数据导入llamhub databaseReader">
+      RAG组件--数据导入llamhub databaseReader <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#CSVLoader%E8%87%AA%E5%8A%A8%E5%88%87%E5%88%86%E6%95%B0%E6%8D%AE"><span class="nav-number">1.</span> <span class="nav-text">CSVLoader自动切分数据</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E5%8A%A0%E8%BD%BD-CSV-%E6%96%87%E4%BB%B6%E5%B9%B6%E6%89%93%E5%8D%B0%E8%AE%B0%E5%BD%95"><span class="nav-number">1.1.</span> <span class="nav-text">基本加载 CSV 文件并打印记录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B7%B3%E8%BF%87-CSV-%E6%96%87%E4%BB%B6%E7%9A%84%E6%A0%87%E9%A2%98%E8%A1%8C%E5%B9%B6%E4%BD%BF%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E5%88%97%E5%90%8D"><span class="nav-number">1.2.</span> <span class="nav-text">跳过 CSV 文件的标题行并使用自定义列名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%87%E5%AE%9A-%E2%80%9CName%E2%80%9D-%E5%88%97%E4%BD%9C%E4%B8%BA-source-column"><span class="nav-number">1.3.</span> <span class="nav-text">指定 “Name” 列作为 source_column</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-UnstructuredCSVLoader-%E5%8A%A0%E8%BD%BD-CSV-%E6%96%87%E4%BB%B6"><span class="nav-number">1.4.</span> <span class="nav-text">使用 UnstructuredCSVLoader 加载 CSV 文件</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CSVLoader%E4%B8%8E-UnstructuredCSVLoader%E7%9A%84%E6%AF%94%E8%BE%83"><span class="nav-number">2.</span> <span class="nav-text">CSVLoader与 UnstructuredCSVLoader的比较</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#DirectoryLoader%E4%B8%8ECSVLoader%E7%BB%93%E5%90%88%E4%BD%BF%E7%94%A8"><span class="nav-number">2.1.</span> <span class="nav-text">DirectoryLoader与CSVLoader结合使用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AA%E4%BD%BF%E7%94%A8DirectoryLoader%EF%BC%88%E7%BB%93%E6%9E%84%E5%8C%96%E4%BF%9D%E6%8C%81%E7%9A%84%E9%87%8D%E8%A6%81%E6%80%A7%EF%BC%89"><span class="nav-number">2.2.</span> <span class="nav-text">只使用DirectoryLoader（结构化保持的重要性）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UnstructuredCSVLoader%E7%9A%84%E5%B1%80%E9%99%90%E6%80%A7"><span class="nav-number">2.3.</span> <span class="nav-text">UnstructuredCSVLoader的局限性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E5%99%A8%E9%80%89%E6%8B%A9%E7%AD%96%E7%95%A5"><span class="nav-number">2.4.</span> <span class="nav-text">加载器选择策略</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

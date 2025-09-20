@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第十九讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--向量数据库介绍">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/18/ai/rag/19-vector-db/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第十九讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818104425937.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818111917272.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250815103626944.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818134520067.png">
+<meta property="article:published_time" content="2025-08-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-18T02:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818104425937.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/18/ai/rag/19-vector-db/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--向量数据库介绍 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/18/ai/rag/19-vector-db/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--向量数据库介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-18 00:00:00 / 修改时间：10:30:00" itemprop="dateCreated datePublished" datetime="2025-08-18T00:00:00+08:00">2025-08-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第十九讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="向量存储"><a href="#向量存储" class="headerlink" title="向量存储"></a>向量存储</h1><h2 id="结构化数据vs向量数据"><a href="#结构化数据vs向量数据" class="headerlink" title="结构化数据vs向量数据"></a>结构化数据vs向量数据</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818104425937.png" alt="image-20250818104425937" style="zoom:50%;" /></p>
+<ul>
+<li>结构化数据存储：通过数据库表结构存储，使用主键和外键相互链接形成复杂schema</li>
+<li>非结构化数据转换：文本/图片/音频等通过嵌入模型转化为数字形式的向量</li>
+<li>存储方式差异：<ul>
+<li>结构化：传统SQL数据库表形式（如SQL Server）</li>
+<li>向量数据：通过嵌入模型转换后存储在向量数据库</li>
+</ul>
+</li>
+</ul>
+<h2 id="简单的向量存储"><a href="#简单的向量存储" class="headerlink" title="简单的向量存储"></a>简单的向量存储</h2><p>使用LlamaIndex的index.storage_context.persist(persist_dir=”saved_index”) 将向量索引保存到磁盘</p>
+<p>代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> llama_index.core.node_parser <span class="keyword">import</span> SentenceSplitter</span><br><span class="line"></span><br><span class="line">text_splitter = SentenceSplitter(chunk_size=<span class="number">512</span>, chunk_overlap=<span class="number">10</span>)</span><br><span class="line">nodes = text_splitter.get_nodes_from_documents(documents)</span><br><span class="line">index = VectorStoreIndex(nodes, embed_model=embed_model) <span class="comment"># 从nodes中生成Index</span></span><br><span class="line"><span class="comment"># 保存索引到磁盘</span></span><br><span class="line">index.storage_context.persist(persist_dir=<span class="string">&quot;saved_index&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>此写法会在当前目录下创建一个目录为saved_index，将向量索引的内容存储到该目录下。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818111917272.png" alt="image-20250818111917272" style="zoom:67%;" /></p>
+<ul>
+<li>本地存储实现：<ul>
+<li>使用storage_context.persist(persist_dir=”saved_index”)语句</li>
+<li>生成5个核心文件：<ul>
+<li>default_vector_store.json（向量数据）</li>
+<li>docstore.json（文档关系）</li>
+<li>graph_store.json（图结构）</li>
+<li>image_vector_store.json（图像向量）</li>
+<li>index_store.json（索引结构）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>文件功能：<ul>
+<li>index_store.json：记录所有节点ID和索引元数据</li>
+<li>docstore.json：存储文档块间的前后关系（如relationship字段）</li>
+</ul>
+</li>
+<li>节点关系表示：<ul>
+<li>通过node_id和node_type字段建立关联</li>
+<li>示例：relationship “3”表示后续节点关系</li>
+<li>包含原始文档元数据（文件路径、创建时间等）</li>
+</ul>
+</li>
+</ul>
+<h1 id="从简单向量存储到商用向量数据库"><a href="#从简单向量存储到商用向量数据库" class="headerlink" title="从简单向量存储到商用向量数据库"></a>从简单向量存储到商用向量数据库</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250815103626944.png" alt="image-20250815103626944"></p>
+<p>Milvus提供3种部署模式，适用于从简单应用到管理数百亿向量的大规模Kubernetes集群的数据规模。</p>
+<ul>
+<li>Milvus Lite作为Milvus的轻量级版本，易于集成到应用程序中，本书将以它为例进行介绍。</li>
+<li>Milvus Standalone是Milvus的单机服务器版本，所有组件都打包在一个Docker镜像中，便于部署。</li>
+<li>Milvus Distributed可以部署在Kubernetes集群上，支持十亿级向量甚至更大规模场景的云原生架构。</li>
+</ul>
+<h1 id="商用向量数据库的核心功能"><a href="#商用向量数据库的核心功能" class="headerlink" title="商用向量数据库的核心功能"></a>商用向量数据库的核心功能</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>性能和容错</strong></td>
+<td>分片，在多个节点上对数据进行分区; 复制，在不同节点上创建多个数据副本。发生故障时启用容错机制，确保性能稳定</td>
+</tr>
+<tr>
+<td><strong>监测</strong></td>
+<td>监测资源使用情况、查询性能及系统运行状况，持续优化性能和容错性</td>
+</tr>
+<tr>
+<td><strong>访问控制</strong></td>
+<td>确保数据安全，提供合规性、问责制及审计能力; 保护数据免受未经授权访问，并记录用户活动</td>
+</tr>
+<tr>
+<td><strong>可扩展性与可调性</strong></td>
+<td>支持横向扩展，适应不同的插入率、查询率及硬件差异</td>
+</tr>
+<tr>
+<td><strong>多用户和数据隔离</strong></td>
+<td>支持多用户或多租户; 实现数据隔离，确保用户活动 (如插入、删除查询) 不影响其他用户的私密数据</td>
+</tr>
+<tr>
+<td><strong>备份</strong></td>
+<td>定期创建数据备份; 支持在数据丢失或损坏时恢复到之前的状态，减少中断时间</td>
+</tr>
+<tr>
+<td><strong>API和SDK</strong></td>
+<td>提供易于操作的API; 封装多个API，方便开发者在特定用例 (如语义搜索、推荐系统等) 中使用向量数据库，不需要关注底层结构</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>关键能力：<ul>
+<li>分片与复制：数据分区存储和容错机制</li>
+<li>访问控制：合规审计和安全防护</li>
+<li>横向扩展：适应不同硬件和负载</li>
+<li>多租户隔离：保证用户数据私密性</li>
+</ul>
+</li>
+<li>选型考量：<ul>
+<li>社区活跃度（如PyTorch式生态）</li>
+<li>API/SDK完善程度</li>
+<li>监控和备份能力</li>
+<li>检索算法多样性（哈希/量化/图搜索）</li>
+</ul>
+</li>
+</ul>
+<h1 id="主流向量数据库一览"><a href="#主流向量数据库一览" class="headerlink" title="主流向量数据库一览"></a>主流向量数据库一览</h1><h2 id="各种各样的向量数据库"><a href="#各种各样的向量数据库" class="headerlink" title="各种各样的向量数据库"></a>各种各样的向量数据库</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250818134520067.png" alt="image-20250818134520067" style="zoom:67%;" /></p>
+<p>市场现状: 目前市面上存在多种向量数据库选择，包括FAISS、Milvus、Weaviate、Qdrant、Elastic、Chroma等，选择时需要进行比较分析</p>
+<h3 id="1-Milvus"><a href="#1-Milvus" class="headerlink" title="1. Milvus"></a>1. Milvus</h3><p>核心功能：</p>
+<ul>
+<li>高性能分布式向量检索，支持IVF、HNSW、ANNOY、DiskANN等多种索引</li>
+<li>横向可扩展至1000+节点集群</li>
+<li>支持动态字段、分区和并行查询</li>
+</ul>
+<p>特点：</p>
+<ul>
+<li>横向可伸缩、支持 1000+ 节点集群</li>
+<li>丰富的 metric（COSINE/L2/IP）和索引类型</li>
+<li>支持动态字段、分区、并行查询</li>
+</ul>
+<p>优势：企业级 SLA，海量数据（10⁸+）性能出色；社区活跃，生态完善。</p>
+<p>劣势：运维相对复杂；对小规模单机部署略显重。</p>
+<p>适用场景：大规模、多并发检索；需要复杂过滤、实时增量写入的生产环境。</p>
+<p>选型建议：数据量 ≥1亿、对吞吐和可用性要求高时首选。</p>
+<h3 id="2-Weaviate"><a href="#2-Weaviate" class="headerlink" title="2. Weaviate"></a>2. Weaviate</h3><p>核心功能：Any-to-Any 多模态检索（nearText/nearImage/nearVector）。</p>
+<p>特点：</p>
+<ul>
+<li>原生 GraphQL 接口</li>
+<li>内置如 CLIP、ImageBind、OpenAI Embeddings 等模型</li>
+<li>自动 schema 管理与向量化管道</li>
+</ul>
+<p>优势：上手快、无需额外模型接入；多模态查询统一 API。</p>
+<p>劣势：集群扩展性弱于 Milvus；企业级性能需商业版。</p>
+<p>适用场景：PoC 验证、多模态实验、快速上线 MVP。</p>
+<p>选型建议：团队希望零运维，想“开箱即用”时推荐</p>
+<h3 id="3-Qdrant"><a href="#3-Qdrant" class="headerlink" title="3. Qdrant"></a>3. Qdrant</h3><p>核心功能：</p>
+<ul>
+<li>向量检索+高效过滤(Single-Stage Filtering/Hybrid Search)</li>
+<li>Rust内核，单节点或小集群性能优异</li>
+<li>支持多向量字段和分段索引</li>
+</ul>
+<p>特点：</p>
+<ul>
+<li>Rust 内核、单节点或小集群性能优</li>
+<li>支持多向量字段和分段索引</li>
+<li>丰富的二级过滤与布尔查询</li>
+</ul>
+<p>优势：延迟低、吞吐高；对复杂过滤条件性能友好。</p>
+<p>劣势：大规模分布式部署方案较新，需要自行打磨。</p>
+<p>适用场景：对过滤/布尔查询依赖度高的语义搜索；中小规模集群。</p>
+<p>选型建议：需要在语义召回与精确过滤间平衡时优选</p>
+<h3 id="4-Pinecone"><a href="#4-Pinecone" class="headerlink" title="4. Pinecone"></a>4. Pinecone</h3><p>核心功能：全托管、高可用向量数据库；支持 hybrid search、namespace 多租户。</p>
+<p>特点：</p>
+<ul>
+<li>Serverless，自动扩缩容</li>
+<li>支持稀疏+稠密混合检索</li>
+</ul>
+<p>优势：极低运维门槛；SDK 友好，企业级 SLA。</p>
+<p>劣势：成本随存储/QPS 增长；网络延迟依赖云厂商。</p>
+<p>适用场景：快速上线大规模检索服务；不想自建集群的业务。</p>
+<p>选型建议：项目初期或短期 PoC，及对运维团队少的公司优选。</p>
+<h3 id="5-Chroma"><a href="#5-Chroma" class="headerlink" title="5. Chroma"></a>5. Chroma</h3><p>核心功能：轻量级、本地化向量存储；适合开发者本地调试与小规模应用。</p>
+<p>特点：</p>
+<ul>
+<li>Python 原生，API 与文档友好</li>
+<li>支持 SQLite、DuckDB 等后端存储</li>
+</ul>
+<p>优势：零运维，直接内嵌到应用中；非常适合本地测试或桌面应用。</p>
+<p>劣势：不适合大规模、分布式场景；功能相对基础。</p>
+<p>适用场景：原型开发、Notebook 环境、桌面/小型服务。</p>
+<p>选型建议：数据量 &lt;10万，团队无运维成本时优选。</p>
+<h3 id="6-Faiss"><a href="#6-Faiss" class="headerlink" title="6. Faiss"></a>6. Faiss</h3><p>核心功能：Facebook 开源的高效向量近邻库；支持 CPU/GPU 算法。</p>
+<p>特点：</p>
+<ul>
+<li>丰富的索引类型（IVF、PQ、HNSW、LSH）</li>
+<li>代码级可控，适合集成到自研系统中</li>
+</ul>
+<p>优势：性能最优、算法前沿；GPU 加速效果显著。</p>
+<p>劣势：仅提供库，不含存储层；需要自行实现数据管理、分布式。</p>
+<p>适用场景：对算法调优有深度需求的科研或自研引擎。</p>
+<p>选型建议：具备 ML/算法团队，需极致性能且愿意自行封装存储时选。</p>
+<h3 id="7-Vespa"><a href="#7-Vespa" class="headerlink" title="7. Vespa"></a>7. Vespa</h3><p>核心功能：大规模分布式检索与实时计算；支持多向量字段、复杂 ranking。</p>
+<p>特点：</p>
+<ul>
+<li>内置机器学习模型部署（Java/Python）</li>
+<li>支持在线训练与在线推理</li>
+</ul>
+<p>优势：企业级特性完善；查询吞吐与排序能力强。</p>
+<p>劣势：学习曲线陡峭；集群部署与运维成本高。</p>
+<p>适用场景：电商推荐、新闻排序、广告排名等复杂检索与排序场景。</p>
+<p>选型建议：需要自定义复杂排名函数、在线模型服务的场景优选。</p>
+<h3 id="8-Elasticsearch"><a href="#8-Elasticsearch" class="headerlink" title="8. Elasticsearch"></a>8. Elasticsearch</h3><p>核心功能：全文检索＋向量检索混合；支持 BM25 + kNN。</p>
+<p>特点：</p>
+<ul>
+<li>兼容原有搜索引擎生态</li>
+<li>可在同一次查询中同时执行 sparse &amp; dense 检索</li>
+<li>插件式扩展（自定义脚本、rank_feature）</li>
+</ul>
+<p>优势：无缝接入已有日志/指标平台；社区和商业支持成熟。</p>
+<p>劣势：向量检索性能不及专用库；索引体积大，内存消耗高。</p>
+<p>适用场景：已有 ES 集群，想增量加密向量搜索；对全文与向量混合检索有需求。</p>
+<p>选型建议：已有 Elastic 部署，无需额外运维团队时可考虑。</p>
+<h3 id="9-MongoDB-Atlas-Vector-Search"><a href="#9-MongoDB-Atlas-Vector-Search" class="headerlink" title="9. MongoDB Atlas Vector Search"></a>9. MongoDB Atlas Vector Search</h3><p>核心功能：Atlas 托管的向量检索；集成全文索引与地理位置。</p>
+<p>特点：</p>
+<ul>
+<li>无缝与 MongoDB 文档数据联动</li>
+<li>Atlas Serverless 可按需扩展</li>
+</ul>
+<p>优势：完全托管，零运维；可以利用平台监控与安全特性。</p>
+<p>劣势：成本较高；检索性能略劣于专用库。</p>
+<p>适用场景：已经在 Atlas 上，想增量加向量搜索能力的团队。</p>
+<p>选型建议：对托管可信赖度要求高，且预算充足时可考虑。</p>
+<h3 id="10-PGVector-PostgreSQL-插件）"><a href="#10-PGVector-PostgreSQL-插件）" class="headerlink" title="10. PGVector(PostgreSQL 插件）"></a>10. PGVector(PostgreSQL 插件）</h3><p>核心功能：在 PostgreSQL 中原生存储与检索向量；支持 SQL+向量混合查询。</p>
+<p>特点：</p>
+<ul>
+<li>与关系数据无缝联表</li>
+<li>支持索引（IVF、HNSW）</li>
+</ul>
+<p>优势：无需额外数据库，利用成熟的事务与权限体系。</p>
+<p>劣势：单机性能有限；大规模时 PG 扩展复杂。</p>
+<p>适用场景：已有 PostgreSQL，想追加简单向量检索功能的业务。</p>
+<p>选型建议：关系型与向量混合场景，且数据量 &lt;千万级时优选。</p>
+<h3 id="11-Redis-Vector"><a href="#11-Redis-Vector" class="headerlink" title="11. Redis Vector"></a>11. Redis Vector</h3><p>核心功能：Redis Modules 提供向量检索；支持 HNSW、Flat。</p>
+<p>特点：</p>
+<ul>
+<li>结合 RedisStream、Pub/Sub 可做实时流式检索</li>
+<li>单实例延迟极低</li>
+</ul>
+<p>优势：适合集成到已有 Redis 缓存/消息体系；运维经验普遍。</p>
+<p>劣势：内存消耗大；分布式横向扩展需 Cluster+Slot 管理。</p>
+<p>适用场景：对实时性要求极高，且已有 Redis 集群的场景。</p>
+<p>选型建议：缓存/路由层即需做检索，且对高并发低延迟有严格要求时选。</p>
+<h2 id="分成这么几类"><a href="#分成这么几类" class="headerlink" title="分成这么几类"></a>分成这么几类</h2><h3 id="1-专用向量数据库-Self-managed-或-托管版"><a href="#1-专用向量数据库-Self-managed-或-托管版" class="headerlink" title="1. 专用向量数据库 (Self-managed 或 托管版)"></a>1. 专用向量数据库 (Self-managed 或 托管版)</h3><p><strong>特点</strong>: 从底层到协议全文支持向量检索, 性能与可伸缩性最佳。</p>
+<ul>
+<li>Milvus (自建/企业级集群)</li>
+<li>Qdrant (轻量 Rust 内核 + 高效过滤)</li>
+<li>Weaviate (自建或 Weaviate Cloud, Any-to-Any 多模态)</li>
+<li>Pinecone (全托管 Serverless)</li>
+</ul>
+<h3 id="2-通用搜索引擎增强-Search-first-平台"><a href="#2-通用搜索引擎增强-Search-first-平台" class="headerlink" title="2. 通用搜索引擎增强 (Search-first 平台)"></a>2. 通用搜索引擎增强 (Search-first 平台)</h3><p><strong>特点</strong>: 兼顾文本检索与向量检索, 适合已有 Elasticsearch/类似体系的扩展。</p>
+<ul>
+<li>Elasticsearch (+ kNN)</li>
+<li>Vespa (多向量字段 + 复杂 Ranking, 引擎级排序能力)</li>
+<li>MongoDB Atlas Vector Search (托管, 文档 + 向量混合)</li>
+</ul>
+<h3 id="3-数据库原生插件-SQL-NoSQL-向量"><a href="#3-数据库原生插件-SQL-NoSQL-向量" class="headerlink" title="3. 数据库原生插件 (SQL/NoSQL + 向量)"></a>3. 数据库原生插件 (SQL/NoSQL + 向量)</h3><p><strong>特点</strong>: 在现有关系或 KV 存储中叠加向量检索, 运维简单、数据联动强。</p>
+<ul>
+<li>Pgvector (PostgreSQL 插件)</li>
+<li>Redis Vector (Redis 模块)</li>
+</ul>
+<h3 id="4-嵌入式轻量库-Library-first"><a href="#4-嵌入式轻量库-Library-first" class="headerlink" title="4. 嵌入式轻量库 (Library-first)"></a>4. 嵌入式轻量库 (Library-first)</h3><p><strong>特点</strong>:  仅提供向量算法或本地存储, 适合嵌入式、桌面/小规模场景或深度定制。</p>
+<ul>
+<li>FAISS (CPU/GPU 高性能向量库)</li>
+<li>Chroma (Python 本地轻量存储)</li>
+<li>LanceDB (基于 Arrow/Parquet 文件存储)</li>
+</ul>
+<h1 id="问题仍然聚焦于：如何选择？"><a href="#问题仍然聚焦于：如何选择？" class="headerlink" title="问题仍然聚焦于：如何选择？"></a>问题仍然聚焦于：如何选择？</h1><p><a target="_blank" rel="noopener" href="https://python.langchain.com/docs/integrations/vectorstores/">https://python.langchain.com/docs/integrations/vectorstores/</a></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>向量数据库名称</th>
+<th>是否支持开源</th>
+<th>是否支持自托管</th>
+<th>是否支持云端管理</th>
+<th>是否专为向量搜索设计</th>
+<th>开发者体验</th>
+<th>每秒查询数</th>
+<th>延迟/ms</th>
+<th>支持索引类型</th>
+<th>是否支持混合搜索</th>
+<th>是否支持向量索引</th>
+<th>是否支持角色访问控制</th>
+<th>是否支持动态分片</th>
+<th>是否免费托管计划</th>
+<th>价格 (50K 向量) /美元</th>
+<th>价格 (20M向量)/美元</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pinecone</td>
+<td>否</td>
+<td>否</td>
+<td>是</td>
+<td>是</td>
+<td>较好</td>
+<td>150+ (扩展后更高)</td>
+<td>1</td>
+<td>未知</td>
+<td>是</td>
+<td>否</td>
+<td>否</td>
+<td>未知</td>
+<td>是</td>
+<td>70</td>
+<td>227 (高性能版为2074)</td>
+</tr>
+<tr>
+<td>Weaviate</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>较好</td>
+<td>791</td>
+<td>2</td>
+<td>HNSW</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+<td>否，静态分片</td>
+<td>是</td>
+<td>25起</td>
+<td>1536</td>
+</tr>
+<tr>
+<td>Milvus</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>很好</td>
+<td>2406</td>
+<td>1</td>
+<td>多种 (11种)</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>65起</td>
+<td>309 (高性能版为2291)</td>
+</tr>
+<tr>
+<td>Qdrant</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>较好</td>
+<td>326</td>
+<td>4</td>
+<td>HNSW</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+<td>是</td>
+<td>是</td>
+<td>9起</td>
+<td>281 (高性能版为820)</td>
+</tr>
+<tr>
+<td>Chroma</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+<td>是</td>
+<td>较好</td>
+<td>未知</td>
+<td>未知</td>
+<td>HNSW</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+<td>是</td>
+<td>自托管免费</td>
+<td>自托管免费</td>
+<td></td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td>否</td>
+<td>是</td>
+<td>否</td>
+<td>否</td>
+<td>一般</td>
+<td>700-100</td>
+<td>5-10</td>
+<td>HNSW</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+<td>是，静态分片</td>
+<td>自托管免费</td>
+<td>不定</td>
+<td>1225</td>
+</tr>
+<tr>
+<td>PGVector</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+<td>否</td>
+<td>一般</td>
+<td>141</td>
+<td>8</td>
+<td>HNSW/IVFFlat</td>
+<td>是</td>
+<td>是</td>
+<td>否</td>
+<td>-</td>
+<td>自托管免费</td>
+<td>不定</td>
+<td>不定</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>选型维度:<ul>
+<li>是否开源、是否支持自托管、是否支持云端管理</li>
+<li>专为向量搜索设计、开发者体验、每秒查询数</li>
+<li>延迟、支持索引类型、是否支持混合搜索</li>
+<li>是否支持磁盘索引、角色访问控制、动态分片</li>
+<li>价格等商业考量因素</li>
+</ul>
+</li>
+<li>典型数据:<ul>
+<li>Milvus支持多达11种索引类型</li>
+<li>Pinecone价格从70美元(50k向量)到2074美元(高性能版20M向量)不等</li>
+<li>Weaviate查询性能791 QPS，延迟2ms</li>
+</ul>
+</li>
+</ul>
+<h2 id="选型思路总结"><a href="#选型思路总结" class="headerlink" title="选型思路总结"></a>选型思路总结</h2><ul>
+<li>规模与性能:<ul>
+<li>超大规模($10^8+$﻿)、高并发：Milvus、Vespa、Pinecone</li>
+<li>中小规模($&lt;10^7$﻿): Qdrant、Weaviate、Redis</li>
+</ul>
+</li>
+<li>运维成本:<ul>
+<li>零运维：Pinecone、MongoDB Atlas、Weaviate(Cloud)</li>
+<li>自研可控：Milvus、FAISS、Vespa</li>
+</ul>
+</li>
+<li>功能侧重:<ul>
+<li>多模态Any-to-Any: Weaviate、OpenSearch</li>
+<li>复杂过滤&amp;混合检索：Qdrant、Elasticsearch</li>
+</ul>
+</li>
+<li>现有栈对接:<ul>
+<li>已有PostgreSQL/Redis: Pgvector、Redis Vector</li>
+<li>Elasticsearch生态：Elasticsearch(+kNN)</li>
+</ul>
+</li>
+</ul>
+<h1 id="一些开源测评工具"><a href="#一些开源测评工具" class="headerlink" title="一些开源测评工具"></a>一些开源测评工具</h1><p>工具：<a target="_blank" rel="noopener" href="https://ann-benchmarks.com/index.html">https://ann-benchmarks.com/index.html</a></p>
+<p>工具：<a target="_blank" rel="noopener" href="https://github.com/zilliztech/VectorDBBench">https://github.com/zilliztech/VectorDBBench</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/18/ai/rag/20-vector-db-collection/" rel="prev" title="RAG组件--向量数据库集合">
+      <i class="fa fa-chevron-left"></i> RAG组件--向量数据库集合
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/19/ai/rag/21-vector-db-index/" rel="next" title="RAG组件--向量数据库索引">
+      RAG组件--向量数据库索引 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E5%AD%98%E5%82%A8"><span class="nav-number">1.</span> <span class="nav-text">向量存储</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E5%8C%96%E6%95%B0%E6%8D%AEvs%E5%90%91%E9%87%8F%E6%95%B0%E6%8D%AE"><span class="nav-number">1.1.</span> <span class="nav-text">结构化数据vs向量数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E5%8D%95%E7%9A%84%E5%90%91%E9%87%8F%E5%AD%98%E5%82%A8"><span class="nav-number">1.2.</span> <span class="nav-text">简单的向量存储</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E%E7%AE%80%E5%8D%95%E5%90%91%E9%87%8F%E5%AD%98%E5%82%A8%E5%88%B0%E5%95%86%E7%94%A8%E5%90%91%E9%87%8F%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">2.</span> <span class="nav-text">从简单向量存储到商用向量数据库</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%95%86%E7%94%A8%E5%90%91%E9%87%8F%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD"><span class="nav-number">3.</span> <span class="nav-text">商用向量数据库的核心功能</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E6%B5%81%E5%90%91%E9%87%8F%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%80%E8%A7%88"><span class="nav-number">4.</span> <span class="nav-text">主流向量数据库一览</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%84%E7%A7%8D%E5%90%84%E6%A0%B7%E7%9A%84%E5%90%91%E9%87%8F%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">4.1.</span> <span class="nav-text">各种各样的向量数据库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Milvus"><span class="nav-number">4.1.1.</span> <span class="nav-text">1. Milvus</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Weaviate"><span class="nav-number">4.1.2.</span> <span class="nav-text">2. Weaviate</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-Qdrant"><span class="nav-number">4.1.3.</span> <span class="nav-text">3. Qdrant</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-Pinecone"><span class="nav-number">4.1.4.</span> <span class="nav-text">4. Pinecone</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-Chroma"><span class="nav-number">4.1.5.</span> <span class="nav-text">5. Chroma</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-Faiss"><span class="nav-number">4.1.6.</span> <span class="nav-text">6. Faiss</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-Vespa"><span class="nav-number">4.1.7.</span> <span class="nav-text">7. Vespa</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#8-Elasticsearch"><span class="nav-number">4.1.8.</span> <span class="nav-text">8. Elasticsearch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#9-MongoDB-Atlas-Vector-Search"><span class="nav-number">4.1.9.</span> <span class="nav-text">9. MongoDB Atlas Vector Search</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#10-PGVector-PostgreSQL-%E6%8F%92%E4%BB%B6%EF%BC%89"><span class="nav-number">4.1.10.</span> <span class="nav-text">10. PGVector(PostgreSQL 插件）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#11-Redis-Vector"><span class="nav-number">4.1.11.</span> <span class="nav-text">11. Redis Vector</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%88%90%E8%BF%99%E4%B9%88%E5%87%A0%E7%B1%BB"><span class="nav-number">4.2.</span> <span class="nav-text">分成这么几类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E4%B8%93%E7%94%A8%E5%90%91%E9%87%8F%E6%95%B0%E6%8D%AE%E5%BA%93-Self-managed-%E6%88%96-%E6%89%98%E7%AE%A1%E7%89%88"><span class="nav-number">4.2.1.</span> <span class="nav-text">1. 专用向量数据库 (Self-managed 或 托管版)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E9%80%9A%E7%94%A8%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E5%A2%9E%E5%BC%BA-Search-first-%E5%B9%B3%E5%8F%B0"><span class="nav-number">4.2.2.</span> <span class="nav-text">2. 通用搜索引擎增强 (Search-first 平台)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%95%B0%E6%8D%AE%E5%BA%93%E5%8E%9F%E7%94%9F%E6%8F%92%E4%BB%B6-SQL-NoSQL-%E5%90%91%E9%87%8F"><span class="nav-number">4.2.3.</span> <span class="nav-text">3. 数据库原生插件 (SQL&#x2F;NoSQL + 向量)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E5%B5%8C%E5%85%A5%E5%BC%8F%E8%BD%BB%E9%87%8F%E5%BA%93-Library-first"><span class="nav-number">4.2.4.</span> <span class="nav-text">4. 嵌入式轻量库 (Library-first)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E4%BB%8D%E7%84%B6%E8%81%9A%E7%84%A6%E4%BA%8E%EF%BC%9A%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%EF%BC%9F"><span class="nav-number">5.</span> <span class="nav-text">问题仍然聚焦于：如何选择？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E5%9E%8B%E6%80%9D%E8%B7%AF%E6%80%BB%E7%BB%93"><span class="nav-number">5.1.</span> <span class="nav-text">选型思路总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E5%BC%80%E6%BA%90%E6%B5%8B%E8%AF%84%E5%B7%A5%E5%85%B7"><span class="nav-number">6.</span> <span class="nav-text">一些开源测评工具</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

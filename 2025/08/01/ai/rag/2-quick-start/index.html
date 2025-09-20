@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第二讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG系统简单快速上手">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/01/ai/rag/2-quick-start/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第二讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250801134242847.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250801140040152.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250801142342987.png">
+<meta property="article:published_time" content="2025-07-31T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-01T03:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250801134242847.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/01/ai/rag/2-quick-start/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG系统简单快速上手 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/01/ai/rag/2-quick-start/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG系统简单快速上手
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-01 00:00:00 / 修改时间：11:30:00" itemprop="dateCreated datePublished" datetime="2025-08-01T00:00:00+08:00">2025-08-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第二讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>RAG的快速上手，可使用以下方式进行RAG的实现：</p>
+<ul>
+<li>使用框架<ul>
+<li>LIamaIndex的五步示例</li>
+<li>LangChain的直接实现</li>
+<li>LangChain的LCEL链重构</li>
+<li>LangGraph的重构</li>
+</ul>
+</li>
+<li>不使用框架<ul>
+<li>自选Embedding模型、向量数据库和LLM</li>
+</ul>
+</li>
+<li>使用可视化工具<ul>
+<li>Coze、Dify、RagFlow等</li>
+</ul>
+</li>
+</ul>
+<h1 id="使用框架快速上手RAG"><a href="#使用框架快速上手RAG" class="headerlink" title="使用框架快速上手RAG"></a>使用框架快速上手RAG</h1><h2 id="LIamaIndex"><a href="#LIamaIndex" class="headerlink" title="LIamaIndex"></a>LIamaIndex</h2><p>示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 第一行代码：导入相关的库</span></span><br><span class="line"><span class="keyword">from</span> llama_index.core <span class="keyword">import</span> VectorStoreIndex, SimpleDirectoryReader </span><br><span class="line"><span class="comment"># 第二行代码：加载数据</span></span><br><span class="line">documents = SimpleDirectoryReader(input_files=[<span class="string">&quot;data/黑悟空/设定.txt&quot;</span>]).load_data() </span><br><span class="line"><span class="comment"># 第三行代码：构建索引</span></span><br><span class="line">index = VectorStoreIndex.from_documents(documents)</span><br><span class="line"><span class="comment"># 第四行代码：创建问答引擎</span></span><br><span class="line">query_engine = index.as_query_engine()</span><br><span class="line"><span class="comment"># 第五行代码: 开始问答</span></span><br><span class="line"><span class="built_in">print</span>(query_engine.query(<span class="string">&quot;黑神话悟空中有哪些战斗工具?&quot;</span>))</span><br></pre></td></tr></table></figure>
+<p>以上是简单的五步代码，代码中没有看到使用的大模型和嵌入模型，是LIamaIndex已经内置了Open AI的模型，因此在运行该代码时要在本地的环境变量中设置OpenAI API密钥</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">在Linux/Mac系统中，可以通过以下命令设置：</span><br><span class="line">export OPENAI_API_KEY=&#x27;your-api-key&#x27;</span><br><span class="line"></span><br><span class="line">在Windows系统中，可以通过以下命令设置：</span><br><span class="line">set OPENAI_API_KEY=your-api-key</span><br></pre></td></tr></table></figure>
+<p>默认的模型是<code>gpt-3.5-turbo</code></p>
+<p>下面我们也可以使用国产大模型DeepSeek进行替换<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/8/1 10:43</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="comment"># 1.导入相关的库</span></span><br><span class="line"><span class="keyword">from</span> llama_index.core <span class="keyword">import</span> VectorStoreIndex, SimpleDirectoryReader</span><br><span class="line"><span class="keyword">from</span> llama_index.embeddings.huggingface <span class="keyword">import</span> HuggingFaceEmbedding</span><br><span class="line"><span class="keyword">from</span> llama_index.llms.deepseek <span class="keyword">import</span> DeepSeek</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载本地嵌入模型，如果本地没有该模型，则首次执行代码，会从huggingface下载该模型（需要科学上网），下载到本地的.cache目录下</span></span><br><span class="line">embed_model = HuggingFaceEmbedding(model_name=<span class="string">&quot;BAAI/bge-small-zh&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 Deepseek LLM</span></span><br><span class="line">llm = DeepSeek(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>),</span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),</span><br><span class="line">    api_base=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第二行代码：加载数据</span></span><br><span class="line">documents = SimpleDirectoryReader(input_files=[<span class="string">&quot;../data/黑悟空/设定.txt&quot;</span>]).load_data()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第三行代码：构建索引</span></span><br><span class="line">index = VectorStoreIndex.from_documents(</span><br><span class="line">    documents,</span><br><span class="line">    embed_model=embed_model</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第四行代码：创建问答引擎</span></span><br><span class="line">query_engine = index.as_query_engine(</span><br><span class="line">    llm=llm</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第五行代码: 开始问答</span></span><br><span class="line"><span class="built_in">print</span>(query_engine.query(<span class="string">&quot;黑神话悟空中有哪些战斗工具?&quot;</span>))</span><br></pre></td></tr></table></figure></p>
+<p>执行结果，输出内容</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">《黑神话：悟空》中并未明确提及具体的战斗工具信息。根据设定，游戏融合了中国文化和自然地标，并包含佛教与道教哲学元素，但关于武器或战斗系统的细节在提供的上下文中没有具体说明。</span><br></pre></td></tr></table></figure>
+<p>简单说明，RAG系统中需要使用LLM大语言模型、Embedding嵌入模型、向量数据库等……，从以上代码看，已经有使用大语言模型、嵌入模型，没有使用到常用的向量数据库，为什么还可以成功执行呢，从官网有下面一段话</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">LlamaIndex provides a in-memory vector database allowing you to run it locally, when you have a large amount of documents vector databases provides more features and better scalability and less memory constraints depending of your hardware.</span><br><span class="line">LlamaIndex 提供了一个内存中矢量数据库，允许您在本地运行它，当您有大量文档时，矢量数据库提供了更多的功能和更好的可扩展性，并且根据您的硬件，可以减少内存限制。</span><br></pre></td></tr></table></figure>
+<p>从上面介绍，我们了解到，原来LIamaIndex提供了一个内存向量数据库呀。</p>
+<p>以上代码中使用到的LIamaIndex介绍：</p>
+<p>Vector Database LIamaIndex官方地址：<a target="_blank" rel="noopener" href="https://docs.llamaindex.ai/en/stable/community/faq/vector_database/">https://docs.llamaindex.ai/en/stable/community/faq/vector_database/</a></p>
+<p>LIamaIndex中存储组件中的向量存储官方地址：<a target="_blank" rel="noopener" href="https://docs.llamaindex.ai/en/stable/module_guides/storing/vector_stores/#vector-store-options--feature-support">https://docs.llamaindex.ai/en/stable/module_guides/storing/vector_stores/#vector-store-options--feature-support</a></p>
+<p>LIamaIndex中查询组件中的Query Engine官方地址：<a target="_blank" rel="noopener" href="https://docs.llamaindex.ai/en/stable/module_guides/deploying/query_engine/">https://docs.llamaindex.ai/en/stable/module_guides/deploying/query_engine/</a></p>
+<h2 id="LangChain"><a href="#LangChain" class="headerlink" title="LangChain"></a>LangChain</h2><p>示例代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/8/1 11:27</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="comment"># 1. 加载文档</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> WebBaseLoader <span class="comment"># pip install langchain-community</span></span><br><span class="line"></span><br><span class="line">loader = WebBaseLoader(</span><br><span class="line">    web_paths=(<span class="string">&quot;https://zh.wikipedia.org/wiki/黑神话：悟空&quot;</span>,)</span><br><span class="line">)</span><br><span class="line">docs = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 文档分块</span></span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveCharacterTextSplitter</span><br><span class="line"></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(chunk_size=<span class="number">1000</span>, chunk_overlap=<span class="number">200</span>)</span><br><span class="line">all_splits = text_splitter.split_documents(docs)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 设置嵌入模型</span></span><br><span class="line"><span class="keyword">from</span> langchain_huggingface <span class="keyword">import</span> HuggingFaceEmbeddings <span class="comment"># pip install langchain-huggingface</span></span><br><span class="line"></span><br><span class="line">embeddings = HuggingFaceEmbeddings(</span><br><span class="line">    model_name=<span class="string">&quot;BAAI/bge-small-zh&quot;</span>,</span><br><span class="line">    model_kwargs=&#123;<span class="string">&#x27;device&#x27;</span>: <span class="string">&#x27;cpu&#x27;</span>&#125;,</span><br><span class="line">    encode_kwargs=&#123;<span class="string">&#x27;normalize_embeddings&#x27;</span>: <span class="literal">True</span>&#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 创建向量存储</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.vectorstores <span class="keyword">import</span> InMemoryVectorStore</span><br><span class="line"></span><br><span class="line">vector_store = InMemoryVectorStore(embeddings)</span><br><span class="line">vector_store.add_documents(all_splits)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 构建用户查询</span></span><br><span class="line">question = <span class="string">&quot;黑悟空有哪些游戏场景？&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 6. 在向量存储中搜索相关文档，并准备上下文内容</span></span><br><span class="line">retrieved_docs = vector_store.similarity_search(question, k=<span class="number">3</span>)</span><br><span class="line">docs_content = <span class="string">&quot;\n\n&quot;</span>.join(doc.page_content <span class="keyword">for</span> doc <span class="keyword">in</span> retrieved_docs)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 7. 构建提示模板</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line">prompt = ChatPromptTemplate.from_template(<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">                基于以下上下文，回答问题。如果上下文中没有相关信息，</span></span><br><span class="line"><span class="string">                请说&quot;我无法从提供的上下文中找到相关信息&quot;。</span></span><br><span class="line"><span class="string">                上下文: &#123;context&#125;</span></span><br><span class="line"><span class="string">                问题: &#123;question&#125;</span></span><br><span class="line"><span class="string">                回答:&quot;&quot;&quot;</span></span><br><span class="line">                                          )</span><br><span class="line"></span><br><span class="line"><span class="comment"># 8. 使用大语言模型生成答案</span></span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>),  <span class="comment"># DeepSeek API 支持的模型名称</span></span><br><span class="line">    temperature=<span class="number">0.7</span>,        <span class="comment"># 控制输出的随机性</span></span><br><span class="line">    max_tokens=<span class="number">2048</span>,        <span class="comment"># 最大输出长度</span></span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),  <span class="comment"># 从环境变量加载API key</span></span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>)</span><br><span class="line">)</span><br><span class="line">answer = llm.invoke(prompt.<span class="built_in">format</span>(question=question, context=docs_content))</span><br><span class="line"><span class="built_in">print</span>(answer)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>调用特点：<ul>
+<li>会显示大模型调用过程中的详细交互信息</li>
+<li>包括token使用情况(prompt tokens/completion tokens)</li>
+<li>最终回答存储在content元素中</li>
+</ul>
+</li>
+<li>参数设置：<ul>
+<li>temperature控制输出随机性(0-1)</li>
+<li>max_tokens限制最大输出长度</li>
+<li>top_p控制输出多样性(0-1)</li>
+<li>presence_penalty防止重复(-2.0到2.0)</li>
+<li>frequency_penalty减少重复内容(-2.0到2.0)</li>
+</ul>
+</li>
+</ul>
+<p>执行结果，输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">content=&#x27;根据提供的上下文，以下是《黑神话：悟空》中提到的游戏场景及相关取景地信息：\n\n1. **中国古建筑取景地**  \n   - 游戏中的场景大量借鉴了中国传统古建筑，尤其是山西的古建（36个取景地中有27个位于山西），例如晋祠、悬空寺等（来源：文博日历丨《黑神话：悟空》里的中国古建取景地、36个取景地27个在山西）。\n\n2. **具体场景示例**  \n   - 游戏中出现的“古刹丛林”“荒原雪岭”等场景，均以实景古建为原型设计，并通过幕后花絮展示了拍摄过程（来源：IGN中国取景地幕后花絮）。\n\n3. **文化符号融入**  \n   - 场景中融入了石窟造像、壁画等元素，如云冈石窟、永乐宫壁画等（来源：Game8关于中国文化 treasures 的报道）。\n\n若需更具体的场景名称或关卡设计细节，上下文中未明确列出，可能需要参考游戏内的探索攻略或官方完整资料。&#x27; additional_kwargs=&#123;&#x27;refusal&#x27;: None&#125; response_metadata=&#123;&#x27;token_usage&#x27;: &#123;&#x27;completion_tokens&#x27;: 228, &#x27;prompt_tokens&#x27;: 1331, &#x27;total_tokens&#x27;: 1559, &#x27;completion_tokens_details&#x27;: None, &#x27;prompt_tokens_details&#x27;: None&#125;, &#x27;model_name&#x27;: &#x27;deepseek-ai/DeepSeek-V3&#x27;, &#x27;system_fingerprint&#x27;: &#x27;&#x27;, &#x27;id&#x27;: &#x27;019863b18528f5d950a772c8bc3216a0&#x27;, &#x27;service_tier&#x27;: None, &#x27;finish_reason&#x27;: &#x27;stop&#x27;, &#x27;logprobs&#x27;: None&#125; id=&#x27;run--5f5f3ff4-d693-4835-b03a-64c291f55f9f-0&#x27; usage_metadata=&#123;&#x27;input_tokens&#x27;: 1331, &#x27;output_tokens&#x27;: 228, &#x27;total_tokens&#x27;: 1559, &#x27;input_token_details&#x27;: &#123;&#125;, &#x27;output_token_details&#x27;: &#123;&#125;&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="LangChain调用大模型的不同方式"><a href="#LangChain调用大模型的不同方式" class="headerlink" title="LangChain调用大模型的不同方式"></a>LangChain调用大模型的不同方式</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250801134242847.png" alt="image-20250801134242847" style="zoom:67%;" /></p>
+<h3 id="LangChain重构LCEL"><a href="#LangChain重构LCEL" class="headerlink" title="LangChain重构LCEL"></a>LangChain重构LCEL</h3><ul>
+<li>组件式设计</li>
+<li>管道式（Pipeline）数据流</li>
+<li>高度可组合性</li>
+<li>兼容异步执行</li>
+<li>易于调试和扩展</li>
+</ul>
+<h4 id="LCEL链的构建与特点"><a href="#LCEL链的构建与特点" class="headerlink" title="LCEL链的构建与特点"></a>LCEL链的构建与特点</h4><ul>
+<li>核心优势：相比传统瀑布式开发，LCEL采用类似Unix命令管道的设计理念，通过”|”符号串联不同处理逻辑组件</li>
+<li>典型组件：包含提示模板(ChatPromptTemplate)、语言模型(ChatOpenAI)、输出解析器(StrOutputParser)等模块</li>
+<li>重构差异：将原本分步执行的文档加载、分块、嵌入、存储等流程整合为统一管道</li>
+</ul>
+<h4 id="组件化设计与管道式数据流"><a href="#组件化设计与管道式数据流" class="headerlink" title="组件化设计与管道式数据流"></a>组件化设计与管道式数据流</h4><ul>
+<li>组件式设计：各功能模块如提示模板、LLM、输出解析器等可像乐高积木自由组合</li>
+<li>管道式数据流：数据通过<code>chain = (\&#123;&quot;context&quot;: retriever | lambda..., &quot;question&quot;: RunnablePassthrough()\&#125; | prompt | llm | StrOutputParser())</code>形式流动</li>
+<li>开发体验：部分开发者认为比传统分步执行更清晰，但也存在适应成本</li>
+</ul>
+<h4 id="高度可组合性与异步执行"><a href="#高度可组合性与异步执行" class="headerlink" title="高度可组合性与异步执行"></a>高度可组合性与异步执行</h4><ul>
+<li>组合灵活性：支持任意调整组件位置（但RAG等固定流程需保持顺序）</li>
+<li>异步支持：所有chain天然支持异步调用模式，可通过简单切换实现同步/异步转换</li>
+<li>调试集成：与LangSmith深度集成，可追踪token消耗、调用次数等指标</li>
+</ul>
+<h4 id="LCEL与LangChain的集成"><a href="#LCEL与LangChain的集成" class="headerlink" title="LCEL与LangChain的集成"></a>LCEL与LangChain的集成</h4><ul>
+<li>工具兼容：保留原有LangChain的tracing等调试功能</li>
+<li>平滑过渡：开发者可从传统LangChain逐步迁移到LCEL</li>
+<li>特有优势：主要改进在于提供更直观的管道式编程体验</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/8/1 13:52</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="comment"># 1. 加载文档</span></span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> WebBaseLoader</span><br><span class="line"></span><br><span class="line">loader = WebBaseLoader(</span><br><span class="line">    web_paths=(<span class="string">&quot;https://zh.wikipedia.org/wiki/黑神话：悟空&quot;</span>,)</span><br><span class="line">)</span><br><span class="line">docs = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 分割文档</span></span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveCharacterTextSplitter</span><br><span class="line"></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(chunk_size=<span class="number">1000</span>, chunk_overlap=<span class="number">200</span>)</span><br><span class="line">all_splits = text_splitter.split_documents(docs)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 设置嵌入模型</span></span><br><span class="line"><span class="keyword">from</span> langchain_huggingface <span class="keyword">import</span> HuggingFaceEmbeddings  <span class="comment"># pip install langchain-huggingface</span></span><br><span class="line"></span><br><span class="line">embeddings = HuggingFaceEmbeddings(</span><br><span class="line">    model_name=<span class="string">&quot;BAAI/bge-small-zh&quot;</span>,</span><br><span class="line">    model_kwargs=&#123;<span class="string">&#x27;device&#x27;</span>: <span class="string">&#x27;cpu&#x27;</span>&#125;,</span><br><span class="line">    encode_kwargs=&#123;<span class="string">&#x27;normalize_embeddings&#x27;</span>: <span class="literal">True</span>&#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 创建向量存储</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.vectorstores <span class="keyword">import</span> InMemoryVectorStore</span><br><span class="line"></span><br><span class="line">vectorstore = InMemoryVectorStore(embeddings)</span><br><span class="line">vectorstore.add_documents(all_splits)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 创建检索器</span></span><br><span class="line">retriever = vectorstore.as_retriever(search_kwargs=&#123;<span class="string">&quot;k&quot;</span>: <span class="number">3</span>&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 6. 创建提示模板</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line">prompt = ChatPromptTemplate.from_template(<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">基于以下上下文，回答问题。如果上下文中没有相关信息，</span></span><br><span class="line"><span class="string">请说&quot;我无法从提供的上下文中找到相关信息&quot;。</span></span><br><span class="line"><span class="string">上下文: &#123;context&#125;</span></span><br><span class="line"><span class="string">问题: &#123;question&#125;</span></span><br><span class="line"><span class="string">回答:&quot;&quot;&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 7. 设置语言模型和输出解析器</span></span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> StrOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnablePassthrough</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>),  <span class="comment"># DeepSeek API 支持的模型名称</span></span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),  <span class="comment"># 从环境变量加载API key</span></span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 8. 构建 LCEL 链</span></span><br><span class="line"><span class="comment"># 管道式数据流像使用 Unix 命令管道 (|) 一样，将不同的处理逻辑串联在一起</span></span><br><span class="line">chain = (</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;context&quot;</span>: retriever | (<span class="keyword">lambda</span> docs: <span class="string">&quot;\n\n&quot;</span>.join(doc.page_content <span class="keyword">for</span> doc <span class="keyword">in</span> docs)),</span><br><span class="line">            <span class="string">&quot;question&quot;</span>: RunnablePassthrough()</span><br><span class="line">        &#125;</span><br><span class="line">        | prompt</span><br><span class="line">        | llm</span><br><span class="line">        | StrOutputParser()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看每个阶段的输入输出</span></span><br><span class="line">question = <span class="string">&quot;黑悟空有哪些游戏场景？&quot;</span></span><br><span class="line"><span class="comment"># 1. 检索器阶段</span></span><br><span class="line">retriever_output = retriever.invoke(question)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;检索器输出:&quot;</span>, retriever_output)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 合并文档阶段</span></span><br><span class="line">context = <span class="string">&quot;\n\n&quot;</span>.join(doc.page_content <span class="keyword">for</span> doc <span class="keyword">in</span> retriever_output)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;合并文档输出:&quot;</span>, context)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 提示模板阶段</span></span><br><span class="line">prompt_output = prompt.invoke(&#123;<span class="string">&quot;context&quot;</span>: context, <span class="string">&quot;question&quot;</span>: question&#125;)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;提示模板输出:&quot;</span>, prompt_output)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. LLM阶段</span></span><br><span class="line">llm_output = llm.invoke(prompt_output)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;LLM输出:&quot;</span>, llm_output)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 解析器阶段</span></span><br><span class="line">final_output = StrOutputParser().invoke(llm_output)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;最终输出:&quot;</span>, final_output)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 9. 执行查询</span></span><br><span class="line">question = <span class="string">&quot;黑悟空有哪些游戏场景？&quot;</span></span><br><span class="line">response = chain.invoke(question)  <span class="comment"># 同步，可以换成异步执行</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<ul>
+<li>检索阶段：<ul>
+<li>输入：问题字符串</li>
+<li>输出：Document列表</li>
+</ul>
+</li>
+<li>Lambda处理：<ul>
+<li>输入：Document列表</li>
+<li>输出：合并后的文本字符串</li>
+</ul>
+</li>
+<li>RunnablePassthrough：<ul>
+<li>输入：原始问题</li>
+<li>输出：原样传递问题</li>
+</ul>
+</li>
+<li>提示模板：<ul>
+<li>输入：字典{“context”:文本, “question”:问题}</li>
+<li>输出：格式化后的提示字符串</li>
+</ul>
+</li>
+<li>LLM阶段：<ul>
+<li>输入：提示模板字符串</li>
+<li>输出：ChatMessage对象</li>
+</ul>
+</li>
+<li>输出解析：<ul>
+<li>输入：ChatMessage对象</li>
+<li>输出：纯文本回答</li>
+</ul>
+</li>
+</ul>
+<h3 id="重构之LangGraph"><a href="#重构之LangGraph" class="headerlink" title="重构之LangGraph"></a>重构之LangGraph</h3><ul>
+<li>基于状态（State）驱动的执行模型</li>
+<li>DAG（有向无环图）任务流</li>
+<li>任务模块化</li>
+<li>灵活的控制流</li>
+<li>并行执行</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250801140040152.png" alt="image-20250801140040152" style="zoom:67%;" /></p>
+<p>适用场景：特别适合需要复杂控制流（如循环判断）的RAG系统和Agent开发</p>
+<p>示例代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/8/1 14:19</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="comment"># 1. 加载文档</span></span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> WebBaseLoader</span><br><span class="line"></span><br><span class="line">loader = WebBaseLoader(</span><br><span class="line">    web_paths=(<span class="string">&quot;https://zh.wikipedia.org/wiki/黑神话：悟空&quot;</span>,)</span><br><span class="line">)</span><br><span class="line">docs = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 文档分块</span></span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveCharacterTextSplitter</span><br><span class="line"></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(chunk_size=<span class="number">1000</span>, chunk_overlap=<span class="number">200</span>)</span><br><span class="line">all_splits = text_splitter.split_documents(docs)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 设置嵌入模型</span></span><br><span class="line"><span class="keyword">from</span> langchain_huggingface <span class="keyword">import</span> HuggingFaceEmbeddings</span><br><span class="line"></span><br><span class="line">embeddings = HuggingFaceEmbeddings(</span><br><span class="line">    model_name=<span class="string">&quot;BAAI/bge-small-zh&quot;</span>,</span><br><span class="line">    model_kwargs=&#123;<span class="string">&#x27;device&#x27;</span>: <span class="string">&#x27;cpu&#x27;</span>&#125;,</span><br><span class="line">    encode_kwargs=&#123;<span class="string">&#x27;normalize_embeddings&#x27;</span>: <span class="literal">True</span>&#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 创建向量存储aa</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.vectorstores <span class="keyword">import</span> InMemoryVectorStore</span><br><span class="line"></span><br><span class="line">vector_store = InMemoryVectorStore(embeddings)</span><br><span class="line">vector_store.add_documents(all_splits)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 定义RAG提示词</span></span><br><span class="line"><span class="keyword">from</span> langchain <span class="keyword">import</span> hub</span><br><span class="line"></span><br><span class="line">prompt = hub.pull(<span class="string">&quot;rlm/rag-prompt&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 6. 定义应用状态</span></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> langchain_core.documents <span class="keyword">import</span> Document</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    question: <span class="built_in">str</span></span><br><span class="line">    context: <span class="type">List</span>[Document]</span><br><span class="line">    answer: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 7. 定义检索步骤</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">retrieve</span>(<span class="params">state: State</span>):</span><br><span class="line">    retrieved_docs = vector_store.similarity_search(state[<span class="string">&quot;question&quot;</span>])</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;context&quot;</span>: retrieved_docs&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 8. 定义生成步骤</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>),  <span class="comment"># DeepSeek API 支持的模型名称</span></span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),  <span class="comment"># 从环境变量加载API key</span></span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate</span>(<span class="params">state: State</span>):</span><br><span class="line">    docs_content = <span class="string">&quot;\n\n&quot;</span>.join(doc.page_content <span class="keyword">for</span> doc <span class="keyword">in</span> state[<span class="string">&quot;context&quot;</span>])</span><br><span class="line">    messages = prompt.invoke(&#123;<span class="string">&quot;question&quot;</span>: state[<span class="string">&quot;question&quot;</span>], <span class="string">&quot;context&quot;</span>: docs_content&#125;)</span><br><span class="line">    response = llm.invoke(messages)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;answer&quot;</span>: response.content&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 9. 构建和编译应用</span></span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> START, StateGraph  <span class="comment"># pip install langgraph</span></span><br><span class="line"></span><br><span class="line">graph = (</span><br><span class="line">    StateGraph(State)</span><br><span class="line">    .add_sequence([retrieve, generate])</span><br><span class="line">    .add_edge(START, <span class="string">&quot;retrieve&quot;</span>)</span><br><span class="line">    .<span class="built_in">compile</span>()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 10. 运行查询</span></span><br><span class="line">question = <span class="string">&quot;黑悟空有哪些游戏场景？&quot;</span></span><br><span class="line">response = graph.invoke(&#123;<span class="string">&quot;question&quot;</span>: question&#125;)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;\n问题: <span class="subst">&#123;question&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;答案: <span class="subst">&#123;response[<span class="string">&#x27;answer&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>代码详解：</p>
+<ul>
+<li><p>DAG基本概念与特点</p>
+<ul>
+<li>定义：DAG(有向无环图)是由节点和有向边组成的图结构，不能形成循环路径</li>
+<li>核心特性：<ul>
+<li>有向性：边具有明确方向，如A→B表示从A到B的单向流动</li>
+<li>无环性：不能出现A→B→C→A这样的循环路径</li>
+<li>状态传递：每个节点都有明确的输入输出状态，保证数据流顺序性</li>
+</ul>
+</li>
+<li>应用价值：特别适合Agent工作流排程和复杂RAG流程设计</li>
+</ul>
+</li>
+<li><p>RAG流程与节点设置</p>
+<ul>
+<li>标准流程节点：<ul>
+<li>Start：流程起始节点</li>
+<li>Retrieve：检索相关文档片段</li>
+<li>Generate：生成最终回答</li>
+</ul>
+</li>
+<li>状态传递机制：<ul>
+<li>问题状态(question)：用户原始提问</li>
+<li>上下文状态(context)：检索到的文档片段列表</li>
+<li>回答状态(answer)：生成的最终答案</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>应用状态与图构建 </p>
+<ul>
+<li>状态定义</li>
+<li>图构建方法<ul>
+<li>使用StateGraph初始化图结构</li>
+<li>通过add_sequence添加节点执行顺序</li>
+<li>用add_edge明确节点间流向</li>
+<li>最终调用compile完成编译</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>复杂查询与多路径检索</p>
+<ul>
+<li><p>扩展性设计：</p>
+<ul>
+<li><p>可设置多个检索路径，如retrieve_vector_db1和retrieve_vector_db2</p>
+</li>
+<li><p>根据问题类型路由到不同向量数据库（如按地域划分）</p>
+</li>
+</ul>
+</li>
+<li><p>优势对比：</p>
+<ul>
+<li>简单RAG：5行代码即可实现基础功能</li>
+<li>复杂RAG：需要图结构处理错误纠正和多路检索</li>
+</ul>
+</li>
+<li>典型案例：游戏《黑神话：悟空》场景查询，涉及重庆大足石刻、山西小西天等多个地点</li>
+</ul>
+</li>
+<li><p>解决方案选择与需求匹配</p>
+<ul>
+<li>LlamaIndex：适合简单检索场景（5行代码实现）<ul>
+<li>LangChain：适合中等复杂度流程控制</li>
+<li>LangGraph：适合需要状态管理和多路径的复杂场景</li>
+</ul>
+</li>
+<li>开发建议：<ul>
+<li>从简单方案开始，按需升级复杂度</li>
+<li>预留扩展接口应对未来需求变化</li>
+<li>复杂系统可能需要结合多种框架优势</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="LangGraph-vs-传统-LangChain"><a href="#LangGraph-vs-传统-LangChain" class="headerlink" title="LangGraph vs. 传统 LangChain"></a>LangGraph vs. 传统 LangChain</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250801142342987.png" alt="image-20250801142342987" style="zoom:50%;" /></p>
+<ul>
+<li>执行方式:<ul>
+<li>LangChain采用线性执行(pipeline)，适合简单任务</li>
+<li>LangGraph采用DAG(有向无环图)执行，支持并行和条件分支，适合复杂任务</li>
+</ul>
+</li>
+<li>状态管理:<ul>
+<li>LangChain需要手动管理变量传递</li>
+<li>LangGraph通过统一State对象自动传递状态</li>
+</ul>
+</li>
+<li>任务复用:<ul>
+<li>LangChain组件化但流程固定</li>
+<li>LangGraph各步骤可单独测试和替换</li>
+</ul>
+</li>
+<li>分支逻辑:<ul>
+<li>LangChain需要手动编写if-else</li>
+<li>LangGraph通过add_conditional_edges()方法实现</li>
+</ul>
+</li>
+<li>并行执行:<ul>
+<li>LangChain需要手动编写async/await</li>
+<li>LangGraph通过add_parallel()自动实现并行</li>
+</ul>
+</li>
+<li>适用场景:<ul>
+<li>LangChain适用于简单任务</li>
+<li>LangGraph适用于需要并行检索多数据源(如同时检索关系数据库和向量数据库)的复杂任务</li>
+</ul>
+</li>
+</ul>
+<h2 id="不使用框架，手工构建RAG"><a href="#不使用框架，手工构建RAG" class="headerlink" title="不使用框架，手工构建RAG"></a>不使用框架，手工构建RAG</h2><ol>
+<li>手工设置嵌入模型</li>
+<li>手工设置向量数据库</li>
+<li>手工构建提示词</li>
+<li>手工调用LLM API</li>
+</ol>
+<p>示例代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/8/1 14:29</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="comment"># 1. 准备文档数据</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">docs = [</span><br><span class="line">    <span class="string">&quot;黑神话悟空的战斗如同武侠小说活过来一般，当金箍棒与妖魔碰撞时，火星四溅，招式行云流水。悟空可随心切换狂猛或灵动的战斗风格，一棒横扫千军，或是腾挪如蝴蝶戏花。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;72变神通不只是变化形态，更是开启新世界的钥匙。化身飞鼠可以潜入妖魔巢穴打探军情，变作金鱼能够探索深海遗迹的秘密，每一种变化都是一段独特的冒险。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;每场BOSS战都是一场惊心动魄的较量。或是与身躯庞大的九头蟒激战于瀑布之巅，或是在雷电交织的云海中与雷公电母比拼法术，招招险象环生。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;驾着筋斗云翱翔在这片神话世界，瑰丽的场景令人屏息。云雾缭绕的仙山若隐若现，古老的妖兽巢穴中藏着千年宝物，月光下的古寺钟声回荡在山谷。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;这不是你熟悉的西游记。当悟空踏上寻找身世之谜的旅程，他将遇见各路神仙妖魔。有的是旧识，如同样桀骜不驯的哪吒；有的是劲敌，如手持三尖两刃刀的二郎神。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;作为齐天大圣，悟空的神通不止于金箍棒。火眼金睛可洞察妖魔真身，一个筋斗便是十万八千里。而这些能力还可以通过收集天外陨铁、悟道石等材料来强化升级。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;世界的每个角落都藏着故事。你可能在山洞中发现上古大能的遗迹，云端天宫里寻得昔日天兵的宝库，或是在凡间集市偶遇卖人参果的狐妖。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;故事发生在大唐之前的蛮荒世界，那时天庭还未定鼎三界，各路妖王割据称雄。这是一个神魔混战、群雄逐鹿的动荡年代，也是悟空寻找真相的起点。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;游戏的音乐如同一首跨越千年的史诗。古琴与管弦交织出战斗的激昂，笛萧与木鱼谱写禅意空灵。而当悟空踏入重要场景时，古风配乐更是让人仿佛穿越回那个神话的年代。&quot;</span></span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 设置嵌入模型</span></span><br><span class="line"><span class="keyword">from</span> sentence_transformers <span class="keyword">import</span> SentenceTransformer</span><br><span class="line"></span><br><span class="line">model = SentenceTransformer(<span class="string">&#x27;sentence-transformers/all-MiniLM-L6-v2&#x27;</span>)</span><br><span class="line">doc_embeddings = model.encode(docs)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;文档向量维度: <span class="subst">&#123;doc_embeddings.shape&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 创建向量存储</span></span><br><span class="line"><span class="keyword">import</span> faiss</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line">dimension = doc_embeddings.shape[<span class="number">1</span>]</span><br><span class="line">index = faiss.IndexFlatL2(dimension)</span><br><span class="line">index.add(doc_embeddings.astype(<span class="string">&#x27;float32&#x27;</span>))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;向量数据库中的文档数量: <span class="subst">&#123;index.ntotal&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 执行相似度检索</span></span><br><span class="line">question = <span class="string">&quot;黑神话悟空的战斗系统有什么特点?&quot;</span></span><br><span class="line">query_embedding = model.encode([question])[<span class="number">0</span>]</span><br><span class="line">distances, indices = index.search(</span><br><span class="line">    np.array([query_embedding]).astype(<span class="string">&#x27;float32&#x27;</span>),</span><br><span class="line">    k=<span class="number">3</span></span><br><span class="line">)</span><br><span class="line">context = [docs[idx] <span class="keyword">for</span> idx <span class="keyword">in</span> indices[<span class="number">0</span>]]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n检索到的相关文档:&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> i, doc <span class="keyword">in</span> <span class="built_in">enumerate</span>(context, <span class="number">1</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;i&#125;</span>] <span class="subst">&#123;doc&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 构建提示词</span></span><br><span class="line">prompt = <span class="string">f&quot;&quot;&quot;根据以下参考信息回答问题，并给出信息源编号。</span></span><br><span class="line"><span class="string">如果无法从参考信息中找到答案，请说明无法回答。</span></span><br><span class="line"><span class="string">参考信息:</span></span><br><span class="line"><span class="string"><span class="subst">&#123;<span class="built_in">chr</span>(<span class="number">10</span>).join(<span class="string">f&quot;[<span class="subst">&#123;i + <span class="number">1</span>&#125;</span>] <span class="subst">&#123;doc&#125;</span>&quot;</span> <span class="keyword">for</span> i, doc <span class="keyword">in</span> <span class="built_in">enumerate</span>(context))&#125;</span></span></span><br><span class="line"><span class="string">问题: <span class="subst">&#123;question&#125;</span></span></span><br><span class="line"><span class="string">答案:&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 6. 使用DeepSeek生成答案</span></span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),  <span class="comment"># 从环境变量加载API key</span></span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response = client.chat.completions.create(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>),</span><br><span class="line">    messages=[&#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: prompt</span><br><span class="line">    &#125;],</span><br><span class="line">    max_tokens=<span class="number">1024</span></span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;\n生成的答案: <span class="subst">&#123;response.choices[<span class="number">0</span>].message.content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<ul>
+<li>嵌入模型设置：直接调用SentenceTransformer等库，如SentenceTransformer(‘sentence-transformers/all-MiniLM-LG-v2’)</li>
+<li>向量数据库构建：<ul>
+<li>使用FAISS创建索引：faiss.IndexFlatL2(dimension)</li>
+<li>添加文档向量：index.add(doc_embeddings.astype(‘float32’))</li>
+</ul>
+</li>
+<li>检索实现：<ul>
+<li>问题编码：model.encode([question])</li>
+<li>相似度搜索：distances, indices = index.search(np.array([query_embedding]).astype(‘float32’), k)</li>
+</ul>
+</li>
+<li>提示词构建：需包含参考信息整合逻辑，如[f”[{i+1}] {doc}” for i, doc in enumerate(context)]</li>
+<li>LLM调用：直接调用API如DeepSeek，注意设置max_tokens等参数</li>
+<li>适用场景：当项目需求简单明确时，手工构建比使用框架更轻量高效，可避免不必要的框架依赖</li>
+<li>核心优势：完全掌控每个环节，适合需要深度定制的场景，如特殊数据处理流程或非标准评估需求</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/01/ai/rag/3-optimal-rag/" rel="prev" title="RAG系统如何优化">
+      <i class="fa fa-chevron-left"></i> RAG系统如何优化
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/01/ai/rag/1-introduce/" rel="next" title="RAG系统介绍">
+      RAG系统介绍 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%A1%86%E6%9E%B6%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8BRAG"><span class="nav-number">1.</span> <span class="nav-text">使用框架快速上手RAG</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#LIamaIndex"><span class="nav-number">1.1.</span> <span class="nav-text">LIamaIndex</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain"><span class="nav-number">1.2.</span> <span class="nav-text">LangChain</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#LangChain%E8%B0%83%E7%94%A8%E5%A4%A7%E6%A8%A1%E5%9E%8B%E7%9A%84%E4%B8%8D%E5%90%8C%E6%96%B9%E5%BC%8F"><span class="nav-number">1.2.1.</span> <span class="nav-text">LangChain调用大模型的不同方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LangChain%E9%87%8D%E6%9E%84LCEL"><span class="nav-number">1.2.2.</span> <span class="nav-text">LangChain重构LCEL</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#LCEL%E9%93%BE%E7%9A%84%E6%9E%84%E5%BB%BA%E4%B8%8E%E7%89%B9%E7%82%B9"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">LCEL链的构建与特点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%84%E4%BB%B6%E5%8C%96%E8%AE%BE%E8%AE%A1%E4%B8%8E%E7%AE%A1%E9%81%93%E5%BC%8F%E6%95%B0%E6%8D%AE%E6%B5%81"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">组件化设计与管道式数据流</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AB%98%E5%BA%A6%E5%8F%AF%E7%BB%84%E5%90%88%E6%80%A7%E4%B8%8E%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C"><span class="nav-number">1.2.2.3.</span> <span class="nav-text">高度可组合性与异步执行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#LCEL%E4%B8%8ELangChain%E7%9A%84%E9%9B%86%E6%88%90"><span class="nav-number">1.2.2.4.</span> <span class="nav-text">LCEL与LangChain的集成</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E6%9E%84%E4%B9%8BLangGraph"><span class="nav-number">1.2.3.</span> <span class="nav-text">重构之LangGraph</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LangGraph-vs-%E4%BC%A0%E7%BB%9F-LangChain"><span class="nav-number">1.2.4.</span> <span class="nav-text">LangGraph vs. 传统 LangChain</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8D%E4%BD%BF%E7%94%A8%E6%A1%86%E6%9E%B6%EF%BC%8C%E6%89%8B%E5%B7%A5%E6%9E%84%E5%BB%BARAG"><span class="nav-number">1.3.</span> <span class="nav-text">不使用框架，手工构建RAG</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

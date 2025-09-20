@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Redis数据库笔记第二讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis数据库操作相关指令">
+<meta property="og:url" content="https://jinglv.github.io/2021/07/29/database/redis/2-operation/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Redis数据库笔记第二讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141046389.png">
+<meta property="article:published_time" content="2021-07-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-07-29T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="数据库">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141046389.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2021/07/29/database/redis/2-operation/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Redis数据库操作相关指令 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2021/07/29/database/redis/2-operation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Redis数据库操作相关指令
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-07-29 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2021-07-29T00:00:00+08:00">2021-07-29</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Redis数据库笔记第二讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="数据库操作指令"><a href="#数据库操作指令" class="headerlink" title="数据库操作指令"></a>数据库操作指令</h1><h2 id="Redis中库说明"><a href="#Redis中库说明" class="headerlink" title="Redis中库说明"></a>Redis中库说明</h2><ul>
+<li><p>库：database用来存放数据一个基本单元，一个库可以存放key-value键值对redis中每一个都有一个唯一名称|编号，从0开始</p>
+</li>
+<li><p>默认库的个数：16个库，库的编号：0-15，默认使用的是0号库，注意：库的个数可以在redis.conf中修改</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># Set the number of databases. The default database is DB 0, you can select</span><br><span class="line"># a different one on a per-connection basis using SELECT &lt;dbid&gt; where</span><br><span class="line"># dbid is a number between 0 and &#x27;databases&#x27;-1</span><br><span class="line">databases 16</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="Redis库的操作"><a href="#Redis库的操作" class="headerlink" title="Redis库的操作"></a>Redis库的操作</h2><ul>
+<li><p>切换库指令：<code>select 库的编号</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost bin]# ./redis-cli -h localhost -p 6379</span><br><span class="line">localhost:6379&gt; <span class="keyword">select</span> 0</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; <span class="keyword">select</span> 1</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>清除库指令</p>
+<ul>
+<li>清空当前的库  FLUSHDB</li>
+<li>清空全部的库  FLUSHALL</li>
+</ul>
+</li>
+<li><p>客户端显示中文</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost bin]# ./redis-cli -h localhost -p 6379 --raw</span><br><span class="line">localhost:6379&gt;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h1 id="操作key相关指令"><a href="#操作key相关指令" class="headerlink" title="操作key相关指令"></a>操作key相关指令</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141046389.png" alt="image-20220714104657350"></p>
+<h2 id="DEL指令"><a href="#DEL指令" class="headerlink" title="DEL指令"></a>DEL指令</h2><ul>
+<li>语法 :  DEL key [key …] </li>
+<li>作用 :  删除给定的一个或多个key ,不存在的key 会被忽略</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 被删除key 的数量</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; <span class="built_in">set</span> name zhangsan</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> age 19</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> bir 2021-03-25</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> content 北京市丰台区</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">age</span><br><span class="line">content</span><br><span class="line">name</span><br><span class="line">bir</span><br><span class="line">localhost:6379&gt; del bir age</span><br><span class="line">2</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">content</span><br><span class="line">name</span><br></pre></td></tr></table></figure>
+<h2 id="EXISTS指令"><a href="#EXISTS指令" class="headerlink" title="EXISTS指令"></a>EXISTS指令</h2><ul>
+<li>语法:  EXISTS key</li>
+<li>作用:  检查给定key 是否存在</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 若key 存在，返回1 ，否则返回0</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; exists name</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; exists age</span><br><span class="line">0</span><br><span class="line">localhost:6379&gt; exists name age bir (只要有一个存在，就返回1)</span><br><span class="line">1</span><br></pre></td></tr></table></figure>
+<h2 id="EXPIRE"><a href="#EXPIRE" class="headerlink" title="EXPIRE"></a>EXPIRE</h2><ul>
+<li>语法:  EXPIRE key seconds</li>
+<li>作用:  为给定key 设置生存时间，当key 过期时(生存时间为0 )，它会被自动删除。</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>时间复杂度： O(1)</li>
+<li>返回值：设置成功返回1 </li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; keys *</span><br><span class="line">content</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; expire name 10</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">content</span><br></pre></td></tr></table></figure>
+<h2 id="KEYS"><a href="#KEYS" class="headerlink" title="KEYS"></a>KEYS</h2><ul>
+<li>语法 :  KEYS pattern</li>
+<li>作用 :  查找所有符合给定模式pattern 的key 。</li>
+<li>语法:<ul>
+<li><code>KEYS *</code>匹配数据库中所有key</li>
+<li><code>KEYS h?llo</code> 匹配hello ，hallo 和hxllo 等</li>
+<li><code>KEYS h*llo</code> 匹配hllo 和heeeeello 等</li>
+<li><code>KEYS h[ae]llo</code> 匹配hello 和hallo ，但不匹配hillo 。特殊符号用 “\” 隔开</li>
+</ul>
+</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 符合给定模式的key 列表。</li>
+</ul>
+<h2 id="MOVE"><a href="#MOVE" class="headerlink" title="MOVE"></a>MOVE</h2><ul>
+<li>语法 :  MOVE key db</li>
+<li>作用 :  将当前数据库的key 移动到给定的数据库db当中</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 移动成功返回1 ，失败则返回0 </li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; <span class="keyword">select</span> 0</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">name</span><br><span class="line">content</span><br><span class="line">localhost:6379&gt; <span class="keyword">select</span> 1</span><br><span class="line">OK</span><br><span class="line">localhost:6379[1]&gt; keys *</span><br><span class="line"></span><br><span class="line">localhost:6379[1]&gt; <span class="keyword">select</span> 0</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; move content 1</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; <span class="keyword">select</span> 1</span><br><span class="line">OK</span><br><span class="line">localhost:6379[1]&gt; keys *</span><br><span class="line">content</span><br><span class="line">localhost:6379[1]&gt; get content</span><br><span class="line">北京市丰台区</span><br></pre></td></tr></table></figure>
+<h2 id="PEXPIRE"><a href="#PEXPIRE" class="headerlink" title="PEXPIRE"></a>PEXPIRE</h2><ul>
+<li>语法 :  PEXPIRE key milliseconds</li>
+<li>作用 :  这个命令和EXPIRE 命令的作用类似，但是它以<strong>毫秒</strong>为单位设置key 的生存时间，而不像EXPIRE 命令那样，以秒为单位</li>
+<li>可用版本： &gt;= 2.6.0</li>
+<li>时间复杂度： O(1)</li>
+<li>返回值：设置成功，返回1  key 不存在或设置失败，返回0</li>
+</ul>
+<h2 id="PEXPIREAT"><a href="#PEXPIREAT" class="headerlink" title="PEXPIREAT"></a>PEXPIREAT</h2><ul>
+<li>语法 :  PEXPIREAT key milliseconds-timestamp</li>
+<li>作用 :  这个命令和EXPIREAT 命令类似，但它以毫秒为单位设置key 的过期unix 时间戳，而不是像EXPIREAT那样，以秒为单位</li>
+<li>可用版本： &gt;= 2.6.0</li>
+<li>返回值：如果生存时间设置成功，返回1 。当key 不存在或没办法设置生存时间时，返回0 。(查看EXPIRE 命令获取更多信息)</li>
+</ul>
+<h2 id="TTL"><a href="#TTL" class="headerlink" title="TTL"></a>TTL</h2><ul>
+<li>语法 :   TTL key</li>
+<li>作用 :   以<strong>秒</strong>为单位，返回给定key 的剩余生存时间(TTL, time to live)</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值：<ul>
+<li>当key 不存在时，返回-2 </li>
+<li>当key 存在但没有设置剩余生存时间时，返回-1 </li>
+<li>否则，以秒为单位，返回key 的剩余生存时间</li>
+</ul>
+</li>
+<li>Note : 在Redis 2.8 以前，当key 不存在，或者key 没有设置剩余生存时间时，命令都返回-1</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; keys *</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; ttl name</span><br><span class="line">-1</span><br><span class="line">localhost:6379&gt; ttl content</span><br><span class="line">-2</span><br><span class="line">localhost:6379&gt; <span class="built_in">set</span> address 北京市</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; expire address 100</span><br><span class="line">1</span><br><span class="line">localhost:6379&gt; ttl address</span><br><span class="line">94</span><br></pre></td></tr></table></figure>
+<h2 id="PTTL"><a href="#PTTL" class="headerlink" title="PTTL"></a>PTTL</h2><ul>
+<li>语法 :  PTTL key</li>
+<li>作用 :  这个命令类似于TTL 命令，但它以<strong>毫秒</strong>为单位返回key 的剩余生存时间，而不是像TTL 命令那样，以秒为单位</li>
+<li>可用版本： &gt;= 2.6.0</li>
+<li>返回值： <ul>
+<li>当key 不存在时，返回-2 </li>
+<li>当key 存在但没有设置剩余生存时间时，返回-1</li>
+<li>否则，以毫秒为单位，返回key 的剩余生存时间</li>
+</ul>
+</li>
+<li>注意 : 在Redis 2.8 以前，当key 不存在，或者key 没有设置剩余生存时间时，命令都返回-1 </li>
+</ul>
+<h2 id="RANDOMKEY"><a href="#RANDOMKEY" class="headerlink" title="RANDOMKEY"></a>RANDOMKEY</h2><ul>
+<li>语法 :  RANDOMKEY</li>
+<li>作用 :  从当前数据库中随机返回(不删除) 一个key</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值：当数据库不为空时，返回一个key 。当数据库为空时，返回nil </li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; randomkey</span><br><span class="line">address</span><br><span class="line">localhost:6379&gt; randomkey</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; randomkey</span><br><span class="line">address</span><br></pre></td></tr></table></figure>
+<h2 id="RENAME"><a href="#RENAME" class="headerlink" title="RENAME"></a>RENAME</h2><ul>
+<li>语法 :  RENAME key newkey</li>
+<li>作用 :  将key 改名为newkey 。当key 和newkey 相同，或者key 不存在时，返回一个错误。当newkey 已经存在时，RENAME 命令将覆盖旧值</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值： 改名成功时提示OK ，失败时候返回一个错误</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; keys *</span><br><span class="line">name</span><br><span class="line">localhost:6379&gt; rename name username</span><br><span class="line">OK</span><br><span class="line">localhost:6379&gt; keys *</span><br><span class="line">username</span><br></pre></td></tr></table></figure>
+<h2 id="TYPE"><a href="#TYPE" class="headerlink" title="TYPE"></a>TYPE</h2><ul>
+<li>语法 :  TYPE key</li>
+<li>作用 :  返回key 所储存的值的类型。</li>
+<li>可用版本： &gt;= 1.0.0</li>
+<li>返回值：<ul>
+<li>none (key 不存在)</li>
+<li>string (字符串)</li>
+<li>list (列表)</li>
+<li>set (集合)</li>
+<li>zset (有序集)</li>
+<li>hash (哈希表)</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">localhost:6379&gt; <span class="built_in">type</span> username</span><br><span class="line">string</span><br><span class="line">localhost:6379&gt; <span class="built_in">type</span> age</span><br><span class="line">string</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/07/29/database/redis/3-data-type/" rel="prev" title="Redis基础数据类型">
+      <i class="fa fa-chevron-left"></i> Redis基础数据类型
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/07/29/database/redis/1-introduce/" rel="next" title="Redis介绍">
+      Redis介绍 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E6%93%8D%E4%BD%9C%E6%8C%87%E4%BB%A4"><span class="nav-number">1.</span> <span class="nav-text">数据库操作指令</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis%E4%B8%AD%E5%BA%93%E8%AF%B4%E6%98%8E"><span class="nav-number">1.1.</span> <span class="nav-text">Redis中库说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis%E5%BA%93%E7%9A%84%E6%93%8D%E4%BD%9C"><span class="nav-number">1.2.</span> <span class="nav-text">Redis库的操作</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%93%8D%E4%BD%9Ckey%E7%9B%B8%E5%85%B3%E6%8C%87%E4%BB%A4"><span class="nav-number">2.</span> <span class="nav-text">操作key相关指令</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#DEL%E6%8C%87%E4%BB%A4"><span class="nav-number">2.1.</span> <span class="nav-text">DEL指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#EXISTS%E6%8C%87%E4%BB%A4"><span class="nav-number">2.2.</span> <span class="nav-text">EXISTS指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#EXPIRE"><span class="nav-number">2.3.</span> <span class="nav-text">EXPIRE</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#KEYS"><span class="nav-number">2.4.</span> <span class="nav-text">KEYS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MOVE"><span class="nav-number">2.5.</span> <span class="nav-text">MOVE</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PEXPIRE"><span class="nav-number">2.6.</span> <span class="nav-text">PEXPIRE</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PEXPIREAT"><span class="nav-number">2.7.</span> <span class="nav-text">PEXPIREAT</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TTL"><span class="nav-number">2.8.</span> <span class="nav-text">TTL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PTTL"><span class="nav-number">2.9.</span> <span class="nav-text">PTTL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RANDOMKEY"><span class="nav-number">2.10.</span> <span class="nav-text">RANDOMKEY</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RENAME"><span class="nav-number">2.11.</span> <span class="nav-text">RENAME</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TYPE"><span class="nav-number">2.12.</span> <span class="nav-text">TYPE</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

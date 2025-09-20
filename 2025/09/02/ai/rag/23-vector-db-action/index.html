@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第二十三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--向量数据库检索（搜索）、度量类型和条件过滤">
+<meta property="og:url" content="https://jinglv.github.io/2025/09/02/ai/rag/23-vector-db-action/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第二十三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902090321879.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902090518281.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902090551605.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902090904917.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902091114481.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902093817419.png">
+<meta property="article:published_time" content="2025-09-01T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-09-02T01:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902090321879.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/09/02/ai/rag/23-vector-db-action/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--向量数据库检索（搜索）、度量类型和条件过滤 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/09/02/ai/rag/23-vector-db-action/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--向量数据库检索（搜索）、度量类型和条件过滤
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-09-02 00:00:00 / 修改时间：09:00:00" itemprop="dateCreated datePublished" datetime="2025-09-02T00:00:00+08:00">2025-09-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第二十三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Milvus混合检索实战"><a href="#Milvus混合检索实战" class="headerlink" title="Milvus混合检索实战"></a>Milvus混合检索实战</h1><h2 id="稠密向量"><a href="#稠密向量" class="headerlink" title="稠密向量"></a>稠密向量</h2><p>稠密向量通常表示为<strong>具有固定长度的浮点数数组</strong>，例如[0.2, 0.7, 0.1, 0.8, 0.3, …, 0.5]。这些向量的维数通常在数百到数千之间，例如 128、256、768 或 1024。每个维度都捕获对象的特定语义特征，使其通过相似度计算适用于各种场景。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902090321879.png" alt="image-20250902090321879" style="zoom:50%;" /></p>
+<ul>
+<li>定义：由固定长度的浮点数数组表示，如﻿$[0.2,0.7,0.1,0.8,0.3,…,0.5]$﻿</li>
+<li>维度范围：通常在数百到数千之间（如128/256/768/1024维）</li>
+<li>特性：每个维度捕获对象的特定语义特征，通过相似度计算适用于多种场景</li>
+<li>语义表示：坐标值表示语义维度强度，点间距反映语义相似度（越近越相似）</li>
+</ul>
+<h2 id="稀疏向量"><a href="#稀疏向量" class="headerlink" title="稀疏向量"></a>稀疏向量</h2><p>稀疏向量的特点是<strong>向量维数高且非零值较少</strong>。这种结构使其特别适合传统的信息检索应用。在大多数情况下，稀疏向量中使用的维度数对应于一种或多种语言中的不同标记。每个维度都被赋予一个值，该值指示该标记在文档中的相对重要性。这种布局对于涉及文本匹配的任务非常有利。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902090518281.png" alt="image-20250902090518281" style="zoom:80%;" /></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902090551605.png" alt="image-20250902090551605" style="zoom:67%;" /></p>
+<ul>
+<li>特点：维度数高但非零值少，传统信息检索中常用</li>
+<li>表示方式：<ul>
+<li>早期：二进制表示（0/1）</li>
+<li>现代：通过机器学习习得的实数值（如﻿$\{2:0.2,…,9997:0.5,9999:0.7\}$﻿）</li>
+</ul>
+</li>
+<li>适用场景：文本匹配任务，维度对应语言中的不同标记，值表示标记在文档中的相对重要性</li>
+</ul>
+<h2 id="混合检索"><a href="#混合检索" class="headerlink" title="混合检索"></a>混合检索</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902090904917.png" alt="image-20250902090904917" style="zoom:67%;" /></p>
+<p>工作流程：</p>
+<ol>
+<li>通过嵌入模型（如BERT和Transformers）生成密集向量。</li>
+<li>通过BM25、BGE-M3、SPLADE等嵌入模型生成稀疏向量。（可以使用 Function生成稀疏向量）</li>
+<li>创建一个集合并定义包含密集和稀疏矢量场的集合模式。</li>
+<li>将稀疏密集向量插入到上一步刚刚创建的集合中。</li>
+<li>进行混合搜索：对密集向量进行 ANN 搜索将返回一组前 K 个最相似的结果，对稀疏向量进行文本匹配也将返回一组前 K 个结果。</li>
+<li>归一化：将两组top-K结果的得分进行归一化，将得分转换到[0,1]之间的范围。</li>
+<li>选择合适的<strong>重排序</strong>策略，对两组top-K结果进行合并、重排序，最终返回一组top-K结果。</li>
+</ol>
+<p>重排序</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902091114481.png" alt="image-20250902091114481" style="zoom:67%;" /></p>
+<p>优势：同时保留密集向量的语义相似度和稀疏向量的关键字查询优势</p>
+<h2 id="实战代码（说明）"><a href="#实战代码（说明）" class="headerlink" title="实战代码（说明）"></a>实战代码（说明）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br><span class="line">287</span><br><span class="line">288</span><br><span class="line">289</span><br><span class="line">290</span><br><span class="line">291</span><br><span class="line">292</span><br><span class="line">293</span><br><span class="line">294</span><br><span class="line">295</span><br><span class="line">296</span><br><span class="line">297</span><br><span class="line">298</span><br><span class="line">299</span><br><span class="line">300</span><br><span class="line">301</span><br><span class="line">302</span><br><span class="line">303</span><br><span class="line">304</span><br><span class="line">305</span><br><span class="line">306</span><br><span class="line">307</span><br><span class="line">308</span><br><span class="line">309</span><br><span class="line">310</span><br><span class="line">311</span><br><span class="line">312</span><br><span class="line">313</span><br><span class="line">314</span><br><span class="line">315</span><br><span class="line">316</span><br><span class="line">317</span><br><span class="line">318</span><br><span class="line">319</span><br><span class="line">320</span><br><span class="line">321</span><br><span class="line">322</span><br><span class="line">323</span><br><span class="line">324</span><br><span class="line">325</span><br><span class="line">326</span><br><span class="line">327</span><br><span class="line">328</span><br><span class="line">329</span><br><span class="line">330</span><br><span class="line">331</span><br><span class="line">332</span><br><span class="line">333</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/9/2 09:15</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> (</span><br><span class="line">    connections,</span><br><span class="line">    utility,</span><br><span class="line">    FieldSchema,</span><br><span class="line">    CollectionSchema,</span><br><span class="line">    DataType,</span><br><span class="line">    Collection,</span><br><span class="line">    AnnSearchRequest,</span><br><span class="line">    WeightedRanker</span><br><span class="line">)</span><br><span class="line"><span class="keyword">from</span> pymilvus.exceptions <span class="keyword">import</span> MilvusException</span><br><span class="line"><span class="keyword">from</span> pymilvus.model.hybrid <span class="keyword">import</span> BGEM3EmbeddingFunction  <span class="comment"># pip install &quot;pymilvus[model]&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 0. 配置 (方便修改)</span></span><br><span class="line">DATA_PATH = <span class="string">&quot;../../../data/灭神纪/战斗场景.json&quot;</span></span><br><span class="line">COLLECTION_NAME = <span class="string">&quot;wukong_hybrid_v4&quot;</span>  <span class="comment"># 使用新的集合名以避免旧数据冲突</span></span><br><span class="line">MILVUS_URI = <span class="string">&quot;http://82.157.193.65:19530&quot;</span>  <span class="comment"># 使用新的数据库文件</span></span><br><span class="line">BATCH_SIZE = <span class="number">50</span>  <span class="comment"># 可以尝试减小批次大小，例如 10 或 20，进行测试</span></span><br><span class="line">DEVICE = <span class="string">&quot;cpu&quot;</span>  <span class="comment"># 或者 &quot;cuda&quot; 如果有GPU并已正确配置</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;脚本开始执行...&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 加载数据</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;1. 正在从 <span class="subst">&#123;DATA_PATH&#125;</span> 加载数据...&quot;</span>)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(DATA_PATH, <span class="string">&#x27;r&#x27;</span>, encoding=<span class="string">&#x27;utf-8&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        dataset = json.load(f)</span><br><span class="line"><span class="keyword">except</span> FileNotFoundError:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;错误: 数据文件 <span class="subst">&#123;DATA_PATH&#125;</span> 未找到。请检查路径。&quot;</span>)</span><br><span class="line">    exit()</span><br><span class="line"><span class="keyword">except</span> json.JSONDecodeError:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;错误: 数据文件 <span class="subst">&#123;DATA_PATH&#125;</span> JSON 格式错误。&quot;</span>)</span><br><span class="line">    exit()</span><br><span class="line"></span><br><span class="line">docs = []</span><br><span class="line">metadata = []</span><br><span class="line"><span class="keyword">for</span> item <span class="keyword">in</span> dataset.get(<span class="string">&#x27;data&#x27;</span>, []):  <span class="comment"># 使用 .get 避免 &#x27;data&#x27; 键不存在的错误</span></span><br><span class="line">    text_parts = [item.get(<span class="string">&#x27;title&#x27;</span>, <span class="string">&#x27;&#x27;</span>), item.get(<span class="string">&#x27;description&#x27;</span>, <span class="string">&#x27;&#x27;</span>)]</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&#x27;combat_details&#x27;</span> <span class="keyword">in</span> item <span class="keyword">and</span> <span class="built_in">isinstance</span>(item[<span class="string">&#x27;combat_details&#x27;</span>], <span class="built_in">dict</span>):</span><br><span class="line">        text_parts.extend(item[<span class="string">&#x27;combat_details&#x27;</span>].get(<span class="string">&#x27;combat_style&#x27;</span>, []))</span><br><span class="line">        text_parts.extend(item[<span class="string">&#x27;combat_details&#x27;</span>].get(<span class="string">&#x27;abilities_used&#x27;</span>, []))</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&#x27;scene_info&#x27;</span> <span class="keyword">in</span> item <span class="keyword">and</span> <span class="built_in">isinstance</span>(item[<span class="string">&#x27;scene_info&#x27;</span>], <span class="built_in">dict</span>):</span><br><span class="line">        text_parts.extend([</span><br><span class="line">            item[<span class="string">&#x27;scene_info&#x27;</span>].get(<span class="string">&#x27;location&#x27;</span>, <span class="string">&#x27;&#x27;</span>),</span><br><span class="line">            item[<span class="string">&#x27;scene_info&#x27;</span>].get(<span class="string">&#x27;environment&#x27;</span>, <span class="string">&#x27;&#x27;</span>),</span><br><span class="line">            item[<span class="string">&#x27;scene_info&#x27;</span>].get(<span class="string">&#x27;time_of_day&#x27;</span>, <span class="string">&#x27;&#x27;</span>)</span><br><span class="line">        ])</span><br><span class="line">    <span class="comment"># 过滤掉 None 和空字符串，然后连接</span></span><br><span class="line">    docs.append(<span class="string">&#x27; &#x27;</span>.join(<span class="built_in">filter</span>(<span class="literal">None</span>, [<span class="built_in">str</span>(part).strip() <span class="keyword">for</span> part <span class="keyword">in</span> text_parts <span class="keyword">if</span> part])))</span><br><span class="line">    metadata.append(item)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> docs:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;错误: 未能从数据文件中加载任何文档。请检查文件内容和结构。&quot;</span>)</span><br><span class="line">    exit()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;数据加载完成，共 <span class="subst">&#123;<span class="built_in">len</span>(docs)&#125;</span> 条文档。&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 生成向量</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;2. 正在生成向量...&quot;</span>)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    ef = BGEM3EmbeddingFunction(use_fp16=<span class="literal">False</span>, device=DEVICE)</span><br><span class="line">    docs_to_embed = docs</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;将为 <span class="subst">&#123;<span class="built_in">len</span>(docs_to_embed)&#125;</span> 条文档生成向量...&quot;</span>)</span><br><span class="line">    docs_embeddings = ef(docs_to_embed)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;向量生成完成。&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;  密集向量维度: <span class="subst">&#123;ef.dim[<span class="string">&#x27;dense&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;sparse&quot;</span> <span class="keyword">in</span> docs_embeddings <span class="keyword">and</span> docs_embeddings[<span class="string">&quot;sparse&quot;</span>].shape[<span class="number">0</span>] &gt; <span class="number">0</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  稀疏向量类型 (整体): <span class="subst">&#123;<span class="built_in">type</span>(docs_embeddings[<span class="string">&#x27;sparse&#x27;</span>])&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="comment">#  打印第一个稀疏向量的形状和部分内容以供检查</span></span><br><span class="line">        first_sparse_vector_row_obj = docs_embeddings[<span class="string">&#x27;sparse&#x27;</span>][<span class="number">0</span>]  <span class="comment"># 这会得到一个表示单行的稀疏数组对象</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  第一个稀疏向量 (行对象类型): <span class="subst">&#123;<span class="built_in">type</span>(first_sparse_vector_row_obj)&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  第一个稀疏向量 (行对象形状): <span class="subst">&#123;first_sparse_vector_row_obj.shape&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">hasattr</span>(first_sparse_vector_row_obj, <span class="string">&#x27;col&#x27;</span>) <span class="keyword">and</span> <span class="built_in">hasattr</span>(first_sparse_vector_row_obj, <span class="string">&#x27;data&#x27;</span>):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;  第一个稀疏向量 (部分列索引/col): <span class="subst">&#123;first_sparse_vector_row_obj.col[:<span class="number">5</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;  第一个稀疏向量 (部分数据/data): <span class="subst">&#123;first_sparse_vector_row_obj.data[:<span class="number">5</span>]&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">hasattr</span>(first_sparse_vector_row_obj, <span class="string">&#x27;indices&#x27;</span>) <span class="keyword">and</span> <span class="built_in">hasattr</span>(first_sparse_vector_row_obj,</span><br><span class="line">                                                                         <span class="string">&#x27;data&#x27;</span>):  <span class="comment"># Fallback for other types</span></span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;  第一个稀疏向量 (部分索引/indices): <span class="subst">&#123;first_sparse_vector_row_obj.indices[:<span class="number">5</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;  第一个稀疏向量 (部分数据/data): <span class="subst">&#123;first_sparse_vector_row_obj.data[:<span class="number">5</span>]&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;  无法直接获取第一个稀疏向量的列索引和数据属性。&quot;</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;警告: 未生成稀疏向量或稀疏向量为空。&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;生成向量时发生错误: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">    exit()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 连接Milvus</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;3. 正在连接 Milvus (URI: <span class="subst">&#123;MILVUS_URI&#125;</span>)...&quot;</span>)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    connections.connect(uri=MILVUS_URI)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;成功连接到 Milvus。&quot;</span>)</span><br><span class="line"><span class="keyword">except</span> MilvusException <span class="keyword">as</span> e:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;连接 Milvus 失败: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">    exit()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 创建集合</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;4. 正在准备集合 &#x27;<span class="subst">&#123;COLLECTION_NAME&#125;</span>&#x27;...&quot;</span>)</span><br><span class="line">fields = [</span><br><span class="line">    FieldSchema(name=<span class="string">&quot;pk&quot;</span>, dtype=DataType.VARCHAR, is_primary=<span class="literal">True</span>, auto_id=<span class="literal">True</span>, max_length=<span class="number">100</span>),</span><br><span class="line">    FieldSchema(name=<span class="string">&quot;text&quot;</span>, dtype=DataType.VARCHAR, max_length=<span class="number">65535</span>),</span><br><span class="line">    FieldSchema(name=<span class="string">&quot;id&quot;</span>, dtype=DataType.VARCHAR, max_length=<span class="number">100</span>),</span><br><span class="line">    FieldSchema(name=<span class="string">&quot;title&quot;</span>, dtype=DataType.VARCHAR, max_length=<span class="number">512</span>),</span><br><span class="line">    FieldSchema(name=<span class="string">&quot;category&quot;</span>, dtype=DataType.VARCHAR, max_length=<span class="number">128</span>),</span><br><span class="line">    FieldSchema(name=<span class="string">&quot;location&quot;</span>, dtype=DataType.VARCHAR, max_length=<span class="number">256</span>),</span><br><span class="line">    FieldSchema(name=<span class="string">&quot;environment&quot;</span>, dtype=DataType.VARCHAR, max_length=<span class="number">128</span>),</span><br><span class="line">    FieldSchema(name=<span class="string">&quot;sparse_vector&quot;</span>, dtype=DataType.SPARSE_FLOAT_VECTOR),</span><br><span class="line">    FieldSchema(name=<span class="string">&quot;dense_vector&quot;</span>, dtype=DataType.FLOAT_VECTOR, dim=ef.dim[<span class="string">&quot;dense&quot;</span>])</span><br><span class="line">]</span><br><span class="line">schema = CollectionSchema(fields, description=<span class="string">&quot;Wukong Hybrid Search Collection v4&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    <span class="keyword">if</span> utility.has_collection(COLLECTION_NAME):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;集合 &#x27;<span class="subst">&#123;COLLECTION_NAME&#125;</span>&#x27; 已存在，正在删除...&quot;</span>)</span><br><span class="line">        utility.drop_collection(COLLECTION_NAME)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;集合 &#x27;<span class="subst">&#123;COLLECTION_NAME&#125;</span>&#x27; 删除成功。&quot;</span>)</span><br><span class="line">        time.sleep(<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;正在创建集合 &#x27;<span class="subst">&#123;COLLECTION_NAME&#125;</span>&#x27;...&quot;</span>)</span><br><span class="line">    collection = Collection(name=COLLECTION_NAME, schema=schema, consistency_level=<span class="string">&quot;Strong&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;集合 &#x27;<span class="subst">&#123;COLLECTION_NAME&#125;</span>&#x27; 创建成功。&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;正在为 sparse_vector 创建索引 (SPARSE_INVERTED_INDEX, IP)...&quot;</span>)</span><br><span class="line">    collection.create_index(<span class="string">&quot;sparse_vector&quot;</span>, &#123;<span class="string">&quot;index_type&quot;</span>: <span class="string">&quot;SPARSE_INVERTED_INDEX&quot;</span>, <span class="string">&quot;metric_type&quot;</span>: <span class="string">&quot;IP&quot;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;sparse_vector 索引创建成功。&quot;</span>)</span><br><span class="line">    time.sleep(<span class="number">0.5</span>)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;正在为 dense_vector 创建索引 (AUTOINDEX, IP)...&quot;</span>)</span><br><span class="line">    collection.create_index(<span class="string">&quot;dense_vector&quot;</span>, &#123;<span class="string">&quot;index_type&quot;</span>: <span class="string">&quot;AUTOINDEX&quot;</span>, <span class="string">&quot;metric_type&quot;</span>: <span class="string">&quot;IP&quot;</span>&#125;)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;dense_vector 索引创建成功。&quot;</span>)</span><br><span class="line">    time.sleep(<span class="number">0.5</span>)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;正在加载集合 &#x27;<span class="subst">&#123;COLLECTION_NAME&#125;</span>&#x27;...&quot;</span>)</span><br><span class="line">    collection.load()</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;集合 &#x27;<span class="subst">&#123;COLLECTION_NAME&#125;</span>&#x27; 加载成功。&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">except</span> MilvusException <span class="keyword">as</span> e:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;创建或加载集合/索引时发生 Milvus 错误: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">    exit()</span><br><span class="line"><span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;创建或加载集合/索引时发生未知错误: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">    exit()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 插入数据</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;5. 正在准备插入数据...&quot;</span>)</span><br><span class="line">num_docs_to_insert = <span class="built_in">len</span>(docs_to_embed)</span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, num_docs_to_insert, BATCH_SIZE):</span><br><span class="line">        end_idx = <span class="built_in">min</span>(i + BATCH_SIZE, num_docs_to_insert)</span><br><span class="line">        batch_data = []</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  正在准备批次 <span class="subst">&#123;i // BATCH_SIZE + <span class="number">1</span>&#125;</span> (索引 <span class="subst">&#123;i&#125;</span> 到 <span class="subst">&#123;end_idx - <span class="number">1</span>&#125;</span>)...&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(i, end_idx):</span><br><span class="line">            item_metadata = metadata[j]</span><br><span class="line"></span><br><span class="line">            <span class="comment"># 关键：转换稀疏向量格式</span></span><br><span class="line">            <span class="comment"># 当从 csr_array 索引一行时，可能得到 coo_array 或其他稀疏格式</span></span><br><span class="line">            sparse_row_obj = docs_embeddings[<span class="string">&quot;sparse&quot;</span>][j]</span><br><span class="line">            <span class="comment"># coo_array 使用 .col 和 .data</span></span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">hasattr</span>(sparse_row_obj, <span class="string">&#x27;col&#x27;</span>) <span class="keyword">and</span> <span class="built_in">hasattr</span>(sparse_row_obj, <span class="string">&#x27;data&#x27;</span>):</span><br><span class="line">                milvus_sparse_vector = &#123;<span class="built_in">int</span>(idx_col): <span class="built_in">float</span>(val) <span class="keyword">for</span> idx_col, val <span class="keyword">in</span></span><br><span class="line">                                        <span class="built_in">zip</span>(sparse_row_obj.col, sparse_row_obj.data)&#125;</span><br><span class="line">            <span class="comment"># csr_array (如果直接是行 csr_array) 使用 .indices 和 .data</span></span><br><span class="line">            <span class="keyword">elif</span> <span class="built_in">hasattr</span>(sparse_row_obj, <span class="string">&#x27;indices&#x27;</span>) <span class="keyword">and</span> <span class="built_in">hasattr</span>(sparse_row_obj, <span class="string">&#x27;data&#x27;</span>):</span><br><span class="line">                milvus_sparse_vector = &#123;<span class="built_in">int</span>(idx_col): <span class="built_in">float</span>(val) <span class="keyword">for</span> idx_col, val <span class="keyword">in</span></span><br><span class="line">                                        <span class="built_in">zip</span>(sparse_row_obj.indices, sparse_row_obj.data)&#125;</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;警告: 无法识别的稀疏行对象类型 <span class="subst">&#123;<span class="built_in">type</span>(sparse_row_obj)&#125;</span> 在索引 <span class="subst">&#123;j&#125;</span>。跳过此条。&quot;</span>)</span><br><span class="line">                <span class="keyword">continue</span>  <span class="comment"># 或者引发错误</span></span><br><span class="line"></span><br><span class="line">            doc_text = docs_to_embed[j]</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">len</span>(doc_text) &gt; <span class="number">65530</span>:</span><br><span class="line">                doc_text = doc_text[:<span class="number">65530</span>]</span><br><span class="line"></span><br><span class="line">            title_text = item_metadata.get(<span class="string">&quot;title&quot;</span>, <span class="string">&quot;N/A&quot;</span>)</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">len</span>(title_text) &gt; <span class="number">500</span>:</span><br><span class="line">                title_text = title_text[:<span class="number">500</span>]</span><br><span class="line"></span><br><span class="line">            batch_data.append(&#123;</span><br><span class="line">                <span class="string">&quot;text&quot;</span>: doc_text,</span><br><span class="line">                <span class="string">&quot;id&quot;</span>: <span class="built_in">str</span>(item_metadata.get(<span class="string">&quot;id&quot;</span>, <span class="string">f&quot;unknown_id_<span class="subst">&#123;j&#125;</span>&quot;</span>)),</span><br><span class="line">                <span class="string">&quot;title&quot;</span>: title_text,</span><br><span class="line">                <span class="string">&quot;category&quot;</span>: item_metadata.get(<span class="string">&quot;category&quot;</span>, <span class="string">&quot;N/A&quot;</span>),</span><br><span class="line">                <span class="string">&quot;location&quot;</span>: item_metadata.get(<span class="string">&quot;scene_info&quot;</span>, &#123;&#125;).get(<span class="string">&quot;location&quot;</span>, <span class="string">&quot;N/A&quot;</span>),</span><br><span class="line">                <span class="string">&quot;environment&quot;</span>: item_metadata.get(<span class="string">&quot;scene_info&quot;</span>, &#123;&#125;).get(<span class="string">&quot;environment&quot;</span>, <span class="string">&quot;N/A&quot;</span>),</span><br><span class="line">                <span class="string">&quot;sparse_vector&quot;</span>: milvus_sparse_vector,</span><br><span class="line">                <span class="string">&quot;dense_vector&quot;</span>: docs_embeddings[<span class="string">&quot;dense&quot;</span>][j].tolist()</span><br><span class="line">            &#125;)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> batch_data:  <span class="comment"># 如果批次中所有稀疏向量都无法处理</span></span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;  批次 <span class="subst">&#123;i // BATCH_SIZE + <span class="number">1</span>&#125;</span> 为空，跳过插入。&quot;</span>)</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  正在插入批次 <span class="subst">&#123;i // BATCH_SIZE + <span class="number">1</span>&#125;</span> (<span class="subst">&#123;<span class="built_in">len</span>(batch_data)&#125;</span> 条记录)...&quot;</span>)</span><br><span class="line">        insert_result = collection.insert(batch_data)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  批次 <span class="subst">&#123;i // BATCH_SIZE + <span class="number">1</span>&#125;</span> 插入成功, 主键: <span class="subst">&#123;insert_result.primary_keys[:<span class="number">5</span>]&#125;</span>...&quot;</span>)</span><br><span class="line">        collection.flush()</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  批次 <span class="subst">&#123;i // BATCH_SIZE + <span class="number">1</span>&#125;</span> flush 完成。&quot;</span>)</span><br><span class="line">        time.sleep(<span class="number">0.5</span>)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;所有数据插入完成。总共 <span class="subst">&#123;collection.num_entities&#125;</span> 条实体。&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">except</span> MilvusException <span class="keyword">as</span> e:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;插入数据时发生 Milvus 错误: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&#x27;batch_data&#x27;</span> <span class="keyword">in</span> <span class="built_in">locals</span>() <span class="keyword">and</span> batch_data:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;问题批次的第一条数据（部分）:&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  Text: <span class="subst">&#123;batch_data[<span class="number">0</span>][<span class="string">&#x27;text&#x27;</span>][:<span class="number">100</span>]&#125;</span>...&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  ID: <span class="subst">&#123;batch_data[<span class="number">0</span>][<span class="string">&#x27;id&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  Title: <span class="subst">&#123;batch_data[<span class="number">0</span>][<span class="string">&#x27;title&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">    exit()</span><br><span class="line"><span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;插入数据时发生未知错误: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&#x27;batch_data&#x27;</span> <span class="keyword">in</span> <span class="built_in">locals</span>() <span class="keyword">and</span> batch_data:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;问题批次的第一条数据（部分）:&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  Text: <span class="subst">&#123;batch_data[<span class="number">0</span>][<span class="string">&#x27;text&#x27;</span>][:<span class="number">100</span>]&#125;</span>...&quot;</span>)</span><br><span class="line">    exit()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 6. 混合搜索 (示例)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hybrid_search</span>(<span class="params">query, category=<span class="literal">None</span>, environment=<span class="literal">None</span>, limit=<span class="number">5</span>, weights=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="keyword">if</span> weights <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        weights = &#123;<span class="string">&quot;sparse&quot;</span>: <span class="number">0.5</span>, <span class="string">&quot;dense&quot;</span>: <span class="number">0.5</span>&#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;\n6. 执行混合搜索: &#x27;<span class="subst">&#123;query&#125;</span>&#x27;&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;   Category: <span class="subst">&#123;category&#125;</span>, Environment: <span class="subst">&#123;environment&#125;</span>, Limit: <span class="subst">&#123;limit&#125;</span>, Weights: <span class="subst">&#123;weights&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        query_embeddings = ef([query])</span><br><span class="line"></span><br><span class="line">        conditions = []</span><br><span class="line">        <span class="keyword">if</span> category:</span><br><span class="line">            conditions.append(<span class="string">f&#x27;category == &quot;<span class="subst">&#123;category&#125;</span>&quot;&#x27;</span>)</span><br><span class="line">        <span class="keyword">if</span> environment:</span><br><span class="line">            conditions.append(<span class="string">f&#x27;environment == &quot;<span class="subst">&#123;environment&#125;</span>&quot;&#x27;</span>)</span><br><span class="line">        expr = <span class="string">&quot; &amp;&amp; &quot;</span>.join(conditions) <span class="keyword">if</span> conditions <span class="keyword">else</span> <span class="literal">None</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;   过滤表达式: <span class="subst">&#123;expr&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">        search_params_dense = &#123;<span class="string">&quot;metric_type&quot;</span>: <span class="string">&quot;IP&quot;</span>, <span class="string">&quot;params&quot;</span>: &#123;&#125;&#125;</span><br><span class="line">        search_params_sparse = &#123;<span class="string">&quot;metric_type&quot;</span>: <span class="string">&quot;IP&quot;</span>, <span class="string">&quot;params&quot;</span>: &#123;&#125;&#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> expr:</span><br><span class="line">            search_params_dense[<span class="string">&quot;expr&quot;</span>] = expr</span><br><span class="line">            search_params_sparse[<span class="string">&quot;expr&quot;</span>] = expr</span><br><span class="line"></span><br><span class="line">        dense_req = AnnSearchRequest(</span><br><span class="line">            data=[query_embeddings[<span class="string">&quot;dense&quot;</span>][<span class="number">0</span>].tolist()],</span><br><span class="line">            anns_field=<span class="string">&quot;dense_vector&quot;</span>,</span><br><span class="line">            param=search_params_dense,</span><br><span class="line">            limit=limit</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 转换查询稀疏向量格式</span></span><br><span class="line">        query_sparse_row_obj = query_embeddings[<span class="string">&quot;sparse&quot;</span>][<span class="number">0</span>]  <span class="comment"># 索引返回单行稀疏对象</span></span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">hasattr</span>(query_sparse_row_obj, <span class="string">&#x27;col&#x27;</span>) <span class="keyword">and</span> <span class="built_in">hasattr</span>(query_sparse_row_obj, <span class="string">&#x27;data&#x27;</span>):</span><br><span class="line">            query_milvus_sparse_vector = &#123;<span class="built_in">int</span>(idx): <span class="built_in">float</span>(val) <span class="keyword">for</span> idx, val <span class="keyword">in</span></span><br><span class="line">                                          <span class="built_in">zip</span>(query_sparse_row_obj.col, query_sparse_row_obj.data)&#125;</span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">hasattr</span>(query_sparse_row_obj, <span class="string">&#x27;indices&#x27;</span>) <span class="keyword">and</span> <span class="built_in">hasattr</span>(query_sparse_row_obj, <span class="string">&#x27;data&#x27;</span>):</span><br><span class="line">            query_milvus_sparse_vector = &#123;<span class="built_in">int</span>(idx): <span class="built_in">float</span>(val) <span class="keyword">for</span> idx, val <span class="keyword">in</span></span><br><span class="line">                                          <span class="built_in">zip</span>(query_sparse_row_obj.indices, query_sparse_row_obj.data)&#125;</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;错误: 无法识别的查询稀疏向量类型 <span class="subst">&#123;<span class="built_in">type</span>(query_sparse_row_obj)&#125;</span>。&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> []</span><br><span class="line"></span><br><span class="line">        sparse_req = AnnSearchRequest(</span><br><span class="line">            data=[query_milvus_sparse_vector],</span><br><span class="line">            anns_field=<span class="string">&quot;sparse_vector&quot;</span>,</span><br><span class="line">            param=search_params_sparse,</span><br><span class="line">            limit=limit</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        rerank = WeightedRanker(weights[<span class="string">&quot;sparse&quot;</span>], weights[<span class="string">&quot;dense&quot;</span>])</span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;   发送混合搜索请求到 Milvus...&quot;</span>)</span><br><span class="line">        results = collection.hybrid_search(</span><br><span class="line">            reqs=[sparse_req, dense_req],</span><br><span class="line">            rerank=rerank,</span><br><span class="line">            limit=limit,</span><br><span class="line">            output_fields=[<span class="string">&quot;text&quot;</span>, <span class="string">&quot;id&quot;</span>, <span class="string">&quot;title&quot;</span>, <span class="string">&quot;category&quot;</span>, <span class="string">&quot;location&quot;</span>, <span class="string">&quot;environment&quot;</span>, <span class="string">&quot;pk&quot;</span>]</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;   搜索完成。结果:&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> results <span class="keyword">or</span> <span class="keyword">not</span> results[<span class="number">0</span>]:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;   未找到结果。&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> []</span><br><span class="line"></span><br><span class="line">        processed_results = []</span><br><span class="line">        <span class="keyword">for</span> hit <span class="keyword">in</span> results[<span class="number">0</span>]:</span><br><span class="line">            processed_results.append(&#123;</span><br><span class="line">                <span class="string">&quot;id&quot;</span>: hit.entity.get(<span class="string">&quot;id&quot;</span>),</span><br><span class="line">                <span class="string">&quot;pk&quot;</span>: hit.<span class="built_in">id</span>,</span><br><span class="line">                <span class="string">&quot;title&quot;</span>: hit.entity.get(<span class="string">&quot;title&quot;</span>),</span><br><span class="line">                <span class="string">&quot;text_preview&quot;</span>: hit.entity.get(<span class="string">&quot;text&quot;</span>, <span class="string">&quot;&quot;</span>)[:<span class="number">200</span>] + <span class="string">&quot;...&quot;</span>,</span><br><span class="line">                <span class="string">&quot;category&quot;</span>: hit.entity.get(<span class="string">&quot;category&quot;</span>),</span><br><span class="line">                <span class="string">&quot;location&quot;</span>: hit.entity.get(<span class="string">&quot;location&quot;</span>),</span><br><span class="line">                <span class="string">&quot;environment&quot;</span>: hit.entity.get(<span class="string">&quot;environment&quot;</span>),</span><br><span class="line">                <span class="string">&quot;distance&quot;</span>: hit.distance</span><br><span class="line">            &#125;)</span><br><span class="line">        <span class="keyword">return</span> processed_results</span><br><span class="line"></span><br><span class="line">    <span class="keyword">except</span> MilvusException <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;混合搜索时发生 Milvus 错误: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> []</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;混合搜索时发生未知错误: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> []</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例搜索调用</span></span><br><span class="line"><span class="keyword">if</span> collection.num_entities &gt; <span class="number">0</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n开始示例搜索...&quot;</span>)</span><br><span class="line">    search_results = hybrid_search(<span class="string">&quot;孙悟空的战斗技巧&quot;</span>, category=<span class="string">&quot;神魔大战&quot;</span>, limit=<span class="number">3</span>)</span><br><span class="line">    <span class="keyword">if</span> search_results:</span><br><span class="line">        <span class="keyword">for</span> res <span class="keyword">in</span> search_results:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;  - PK: <span class="subst">&#123;res[<span class="string">&#x27;pk&#x27;</span>]&#125;</span>, Title: <span class="subst">&#123;res[<span class="string">&#x27;title&#x27;</span>]&#125;</span>, Distance: <span class="subst">&#123;res[<span class="string">&#x27;distance&#x27;</span>]:<span class="number">.4</span>f&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;    Category: <span class="subst">&#123;res[<span class="string">&#x27;category&#x27;</span>]&#125;</span>, Location: <span class="subst">&#123;res[<span class="string">&#x27;location&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;    Preview: <span class="subst">&#123;res[<span class="string">&#x27;text_preview&#x27;</span>]&#125;</span>\n&quot;</span>)</span><br><span class="line"></span><br><span class="line">    search_results_filtered = hybrid_search(<span class="string">&quot;火焰山的战斗&quot;</span>, environment=<span class="string">&quot;火山&quot;</span>, limit=<span class="number">2</span>)</span><br><span class="line">    <span class="keyword">if</span> search_results_filtered:</span><br><span class="line">        <span class="keyword">for</span> res <span class="keyword">in</span> search_results_filtered:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;  - PK: <span class="subst">&#123;res[<span class="string">&#x27;pk&#x27;</span>]&#125;</span>, Title: <span class="subst">&#123;res[<span class="string">&#x27;title&#x27;</span>]&#125;</span>, Distance: <span class="subst">&#123;res[<span class="string">&#x27;distance&#x27;</span>]:<span class="number">.4</span>f&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;    Category: <span class="subst">&#123;res[<span class="string">&#x27;category&#x27;</span>]&#125;</span>, Location: <span class="subst">&#123;res[<span class="string">&#x27;location&#x27;</span>]&#125;</span>, Environment: <span class="subst">&#123;res[<span class="string">&#x27;environment&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;    Preview: <span class="subst">&#123;res[<span class="string">&#x27;text_preview&#x27;</span>]&#125;</span>\n&quot;</span>)</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n集合中没有实体，跳过示例搜索。&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n脚本执行完毕。&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>使用BGE-M3嵌入：</p>
+<ul>
+<li>特点：多任务整合模型，可生成密集向量和稀疏向量</li>
+<li>实现：BGEM3EmbeddingFunction(use_fp16=False, device=”cpu”)</li>
+</ul>
+<p>混合检索逻辑</p>
+<ul>
+<li>关键组件<ul>
+<li>AnnSearchRequest：处理两种向量类型的检索请求</li>
+<li>字段定义：需包含sparse_vector和dense_vector字段</li>
+</ul>
+</li>
+<li>索引创建</li>
+<li>权重参数设计<ul>
+<li>设计原则：权重值为相对比例而非百分比（如{“sparse”:0.7,”dense”:1.0}）</li>
+<li>调整策略：<ul>
+<li>密集向量效果更好时增加dense权重</li>
+<li>稀疏向量效果更好时增加sparse权重</li>
+<li>效果相当时设置相近权重</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="Milvus多模态检索实战"><a href="#Milvus多模态检索实战" class="headerlink" title="Milvus多模态检索实战"></a>Milvus多模态检索实战</h1><h2 id="多模态检索"><a href="#多模态检索" class="headerlink" title="多模态检索"></a>多模态检索</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902093817419.png" alt="image-20250902093817419" style="zoom:80%;" /></p>
+<ul>
+<li>本质理解: 多模态检索可理解为混合检索，即在原有检索基础上增加一种向量表示方式。</li>
+<li>应用场景: 适用于需要同时支持文字和图片检索的场景，如博客图片搜索引擎、游戏场景搜索等。</li>
+<li>核心组件:<ul>
+<li>多模态编码器：如Visualized-BGE模型</li>
+<li>向量数据库：存储向量和元数据</li>
+<li>相似度搜索：基于余弦相似度等算法</li>
+</ul>
+</li>
+<li>模型特点:<ul>
+<li>基于BGE文本嵌入框架，增加图像token嵌入能力</li>
+<li>保留原BGE模型的强大文本嵌入能力</li>
+<li>支持多种检索任务：多模态知识检索、组合图像检索等</li>
+</ul>
+</li>
+<li>模型版本:<ul>
+<li>bge-visualized-base-en-v1.5：768维，英文版</li>
+<li>bge-visualized-m3：1024维，多语言版</li>
+</ul>
+</li>
+<li>安装使用:<ul>
+<li>需要按官方指导逐步安装模型</li>
+<li>模型下载后需上传到服务器指定路径</li>
+<li>核心依赖包：torchvision、timm、einops等</li>
+</ul>
+</li>
+</ul>
+<h2 id="visual-bge模型下载安装"><a href="#visual-bge模型下载安装" class="headerlink" title="visual_bge模型下载安装"></a>visual_bge模型下载安装</h2><p>github说明地址：<a target="_blank" rel="noopener" href="https://github.com/FlagOpen/FlagEmbedding/tree/master/research/visual_bge">https://github.com/FlagOpen/FlagEmbedding/tree/master/research/visual_bge</a></p>
+<ol>
+<li><p>下载工程安装依赖</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/FlagOpen/FlagEmbedding.git</span><br><span class="line">cd FlagEmbedding/research/visual_bge</span><br><span class="line">pip install -e .</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>安装其他需要的依赖</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install torchvision timm einops ftfy</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>测试是否安装成功:<code>pip show visual-bge</code></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Name: visual_bge</span><br><span class="line">Version: 0.1.0</span><br><span class="line">Summary: visual_bge</span><br><span class="line">Home-page: https://github.com/FlagOpen/FlagEmbedding/tree/master/research/visual_bge</span><br><span class="line">Author: </span><br><span class="line">Author-email: </span><br><span class="line">License: </span><br><span class="line">Location: /Users/jinglv/PycharmProjects/llm-rag-system/.venv/lib/python3.12/site-packages</span><br><span class="line">Editable project location: /Users/jinglv/PycharmProjects/llm-rag-system/FlagEmbedding/research/visual_bge</span><br><span class="line">Requires: einops, ftfy, timm, torchvision</span><br><span class="line">Required-by: </span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>导入报错问题：<code>ModuleNotFoundError: No module named &#39;visual_bge&#39;</code></p>
+<ul>
+<li>visual<em>bge：是在下载的FlagEmbedding源码中，去找对应的位置，有包导入错误，或者不是python的包（目录下缺少：`<em>_init</em></em>.py`）补上对应的部分即可。</li>
+</ul>
+<h2 id="实战代码（说明）-1"><a href="#实战代码（说明）-1" class="headerlink" title="实战代码（说明）"></a>实战代码（说明）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/9/2 09:45</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">多模态图像检索系统：基于Visualized-BGE和Milvus实现</span></span><br><span class="line"><span class="string">功能：对图像和文本进行多模态编码，并在图像数据库中检索相似内容</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> cv2</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="comment"># ==================== 1. 初始化编码器 ====================</span></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient</span><br><span class="line"><span class="keyword">from</span> tqdm <span class="keyword">import</span> tqdm</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> FlagEmbedding.research.visual_bge.visual_bge.modeling <span class="keyword">import</span> Visualized_BGE</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># from visual_bge.modeling import Visualized_BGE</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">WukongEncoder</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;多模态编码器：将图像和文本编码成向量&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, model_name: <span class="built_in">str</span>, model_path: <span class="built_in">str</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.model = Visualized_BGE(model_name_bge=model_name, model_weight=model_path)</span><br><span class="line">        <span class="variable language_">self</span>.model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">encode_query</span>(<span class="params">self, image_path: <span class="built_in">str</span>, text: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[<span class="built_in">float</span>]:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;编码图像和文本的组合查询&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">            query_emb = <span class="variable language_">self</span>.model.encode(image=image_path, text=text)</span><br><span class="line">        <span class="keyword">return</span> query_emb.tolist()[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">encode_image</span>(<span class="params">self, image_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[<span class="built_in">float</span>]:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;仅编码图像&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">with</span> torch.no_grad():</span><br><span class="line">            query_emb = <span class="variable language_">self</span>.model.encode(image=image_path)</span><br><span class="line">        <span class="keyword">return</span> query_emb.tolist()[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化编码器</span></span><br><span class="line">model_name = <span class="string">&quot;BAAI/bge-m3&quot;</span></span><br><span class="line">model_path = <span class="string">&quot;../../../visualized_models/Visualized_m3.pth&quot;</span></span><br><span class="line">encoder = WukongEncoder(model_name, model_path)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==================== 2. 数据集管理 ====================</span></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">WukongImage</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;图像元数据结构&quot;&quot;&quot;</span></span><br><span class="line">    image_id: <span class="built_in">str</span></span><br><span class="line">    file_path: <span class="built_in">str</span></span><br><span class="line">    title: <span class="built_in">str</span></span><br><span class="line">    category: <span class="built_in">str</span></span><br><span class="line">    description: <span class="built_in">str</span></span><br><span class="line">    tags: <span class="type">List</span>[<span class="built_in">str</span>]</span><br><span class="line">    game_chapter: <span class="built_in">str</span></span><br><span class="line">    location: <span class="built_in">str</span></span><br><span class="line">    characters: <span class="type">List</span>[<span class="built_in">str</span>]</span><br><span class="line">    abilities_shown: <span class="type">List</span>[<span class="built_in">str</span>]</span><br><span class="line">    environment: <span class="built_in">str</span></span><br><span class="line">    time_of_day: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">WukongDataset</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;图像数据集管理类&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, data_dir: <span class="built_in">str</span>, metadata_path: <span class="built_in">str</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.data_dir = data_dir</span><br><span class="line">        <span class="variable language_">self</span>.metadata_path = metadata_path</span><br><span class="line">        <span class="variable language_">self</span>.images: <span class="type">List</span>[WukongImage] = []</span><br><span class="line">        <span class="variable language_">self</span>._load_metadata()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_load_metadata</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;加载图像元数据&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(<span class="variable language_">self</span>.metadata_path, <span class="string">&#x27;r&#x27;</span>, encoding=<span class="string">&#x27;utf-8&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">            data = json.load(f)</span><br><span class="line">            <span class="keyword">for</span> img_data <span class="keyword">in</span> data[<span class="string">&#x27;images&#x27;</span>]:</span><br><span class="line">                <span class="comment"># 确保图片路径是相对于 data_dir 的</span></span><br><span class="line">                img_data[<span class="string">&#x27;file_path&#x27;</span>] = <span class="string">f&quot;<span class="subst">&#123;self.data_dir&#125;</span>/<span class="subst">&#123;img_data[<span class="string">&#x27;file_path&#x27;</span>].split(<span class="string">&#x27;/&#x27;</span>)[-<span class="number">1</span>]&#125;</span>&quot;</span></span><br><span class="line">                <span class="variable language_">self</span>.images.append(WukongImage(**img_data))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化数据集</span></span><br><span class="line">dataset = WukongDataset(<span class="string">&quot;../../../data/多模态&quot;</span>, <span class="string">&quot;../../../data/多模态/metadata.json&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ==================== 3. 生成图像嵌入 ====================</span></span><br><span class="line"><span class="comment"># 为所有图像生成嵌入向量</span></span><br><span class="line">image_dict = &#123;&#125;</span><br><span class="line"><span class="keyword">for</span> image <span class="keyword">in</span> tqdm(dataset.images, desc=<span class="string">&quot;生成图片嵌入&quot;</span>):</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        image_dict[image.file_path] = encoder.encode_image(image.file_path)</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;处理图片 <span class="subst">&#123;image.file_path&#125;</span> 失败：<span class="subst">&#123;<span class="built_in">str</span>(e)&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;成功编码 <span class="subst">&#123;<span class="built_in">len</span>(image_dict)&#125;</span> 张图片&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ==================== 4. Milvus向量库设置 ====================</span></span><br><span class="line"><span class="comment"># 连接/创建Milvus数据库</span></span><br><span class="line">collection_name = <span class="string">&quot;wukong_scenes&quot;</span></span><br><span class="line">milvus_client = MilvusClient(uri=<span class="string">&quot;http://82.157.193.65:19530&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建向量集合</span></span><br><span class="line">dim = <span class="built_in">len</span>(<span class="built_in">list</span>(image_dict.values())[<span class="number">0</span>])</span><br><span class="line">milvus_client.create_collection(</span><br><span class="line">    collection_name=collection_name,</span><br><span class="line">    dimension=dim,</span><br><span class="line">    auto_id=<span class="literal">True</span>,</span><br><span class="line">    enable_dynamic_field=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 插入数据到Milvus</span></span><br><span class="line">insert_data = []</span><br><span class="line"><span class="keyword">for</span> image <span class="keyword">in</span> dataset.images:</span><br><span class="line">    <span class="keyword">if</span> image.file_path <span class="keyword">in</span> image_dict:</span><br><span class="line">        insert_data.append(&#123;</span><br><span class="line">            <span class="string">&quot;image_path&quot;</span>: image.file_path,</span><br><span class="line">            <span class="string">&quot;vector&quot;</span>: image_dict[image.file_path],</span><br><span class="line">            <span class="string">&quot;title&quot;</span>: image.title,</span><br><span class="line">            <span class="string">&quot;category&quot;</span>: image.category,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: image.description,</span><br><span class="line">            <span class="string">&quot;tags&quot;</span>: <span class="string">&quot;,&quot;</span>.join(image.tags),</span><br><span class="line">            <span class="string">&quot;game_chapter&quot;</span>: image.game_chapter,</span><br><span class="line">            <span class="string">&quot;location&quot;</span>: image.location,</span><br><span class="line">            <span class="string">&quot;characters&quot;</span>: <span class="string">&quot;,&quot;</span>.join(image.characters),</span><br><span class="line">            <span class="string">&quot;abilities&quot;</span>: <span class="string">&quot;,&quot;</span>.join(image.abilities_shown),</span><br><span class="line">            <span class="string">&quot;environment&quot;</span>: image.environment,</span><br><span class="line">            <span class="string">&quot;time_of_day&quot;</span>: image.time_of_day</span><br><span class="line">        &#125;)</span><br><span class="line"></span><br><span class="line">result = milvus_client.insert(</span><br><span class="line">    collection_name=collection_name,</span><br><span class="line">    data=insert_data</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;索引构建完成，共插入 <span class="subst">&#123;result[<span class="string">&#x27;insert_count&#x27;</span>]&#125;</span> 条记录&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==================== 5. 搜索功能实现 ====================</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_similar_images</span>(<span class="params"></span></span><br><span class="line"><span class="params">        query_image: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">        query_text: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">        limit: <span class="built_in">int</span> = <span class="number">9</span></span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="type">List</span>[<span class="built_in">dict</span>]:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    搜索相似图像</span></span><br><span class="line"><span class="string">    参数:</span></span><br><span class="line"><span class="string">        query_image: 查询图像路径</span></span><br><span class="line"><span class="string">        query_text: 查询文本</span></span><br><span class="line"><span class="string">        limit: 返回结果数量</span></span><br><span class="line"><span class="string">    返回:</span></span><br><span class="line"><span class="string">        检索结果列表</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 生成查询向量</span></span><br><span class="line">    query_vec = encoder.encode_query(query_image, query_text)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 构建搜索参数</span></span><br><span class="line">    search_params = &#123;</span><br><span class="line">        <span class="string">&quot;metric_type&quot;</span>: <span class="string">&quot;COSINE&quot;</span>,</span><br><span class="line">        <span class="string">&quot;params&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;nprobe&quot;</span>: <span class="number">10</span>,</span><br><span class="line">            <span class="string">&quot;radius&quot;</span>: <span class="number">0.1</span>,</span><br><span class="line">            <span class="string">&quot;range_filter&quot;</span>: <span class="number">0.8</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 执行搜索</span></span><br><span class="line">    results = milvus_client.search(</span><br><span class="line">        collection_name=collection_name,</span><br><span class="line">        data=[query_vec],</span><br><span class="line">        output_fields=[</span><br><span class="line">            <span class="string">&quot;image_path&quot;</span>, <span class="string">&quot;title&quot;</span>, <span class="string">&quot;category&quot;</span>, <span class="string">&quot;description&quot;</span>,</span><br><span class="line">            <span class="string">&quot;tags&quot;</span>, <span class="string">&quot;game_chapter&quot;</span>, <span class="string">&quot;location&quot;</span>, <span class="string">&quot;characters&quot;</span>,</span><br><span class="line">            <span class="string">&quot;abilities&quot;</span>, <span class="string">&quot;environment&quot;</span>, <span class="string">&quot;time_of_day&quot;</span></span><br><span class="line">        ],</span><br><span class="line">        limit=limit,</span><br><span class="line">        search_params=search_params</span><br><span class="line">    )[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> results</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==================== 6. 可视化函数 ====================</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">visualize_results</span>(<span class="params">query_image: <span class="built_in">str</span>, results: <span class="type">List</span>[<span class="built_in">dict</span>], output_path: <span class="built_in">str</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    可视化搜索结果</span></span><br><span class="line"><span class="string">    参数:</span></span><br><span class="line"><span class="string">        query_image: 查询图像路径</span></span><br><span class="line"><span class="string">        results: 搜索结果列表</span></span><br><span class="line"><span class="string">        output_path: 输出图像路径</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 设置图片大小和网格参数</span></span><br><span class="line">    img_size = (<span class="number">300</span>, <span class="number">300</span>)</span><br><span class="line">    grid_size = (<span class="number">3</span>, <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 创建画布</span></span><br><span class="line">    canvas_height = img_size[<span class="number">0</span>] * (grid_size[<span class="number">0</span>] + <span class="number">1</span>)</span><br><span class="line">    canvas_width = img_size[<span class="number">1</span>] * (grid_size[<span class="number">1</span>] + <span class="number">1</span>)</span><br><span class="line">    canvas = np.full((canvas_height, canvas_width, <span class="number">3</span>), <span class="number">255</span>, dtype=np.uint8)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 添加查询图片</span></span><br><span class="line">    query_img = Image.<span class="built_in">open</span>(query_image).convert(<span class="string">&quot;RGB&quot;</span>)</span><br><span class="line">    query_array = np.array(query_img)</span><br><span class="line">    query_resized = cv2.resize(query_array, (img_size[<span class="number">0</span>] - <span class="number">20</span>, img_size[<span class="number">1</span>] - <span class="number">20</span>))</span><br><span class="line">    bordered_query = cv2.copyMakeBorder(</span><br><span class="line">        query_resized, <span class="number">10</span>, <span class="number">10</span>, <span class="number">10</span>, <span class="number">10</span>,</span><br><span class="line">        cv2.BORDER_CONSTANT,</span><br><span class="line">        value=(<span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">    )</span><br><span class="line">    canvas[:img_size[<span class="number">0</span>], :img_size[<span class="number">1</span>]] = bordered_query</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 添加结果图片</span></span><br><span class="line">    <span class="keyword">for</span> idx, result <span class="keyword">in</span> <span class="built_in">enumerate</span>(results[:grid_size[<span class="number">0</span>] * grid_size[<span class="number">1</span>]]):</span><br><span class="line">        row = (idx // grid_size[<span class="number">1</span>]) + <span class="number">1</span></span><br><span class="line">        col = idx % grid_size[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">        img = Image.<span class="built_in">open</span>(result[<span class="string">&quot;entity&quot;</span>][<span class="string">&quot;image_path&quot;</span>]).convert(<span class="string">&quot;RGB&quot;</span>)</span><br><span class="line">        img_array = np.array(img)</span><br><span class="line">        resized = cv2.resize(img_array, (img_size[<span class="number">0</span>], img_size[<span class="number">1</span>]))</span><br><span class="line"></span><br><span class="line">        y_start = row * img_size[<span class="number">0</span>]</span><br><span class="line">        x_start = col * img_size[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">        canvas[y_start:y_start + img_size[<span class="number">0</span>], x_start:x_start + img_size[<span class="number">1</span>]] = resized</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 添加相似度分数</span></span><br><span class="line">        score_text = <span class="string">f&quot;Score: <span class="subst">&#123;result[<span class="string">&#x27;distance&#x27;</span>]:<span class="number">.2</span>f&#125;</span>&quot;</span></span><br><span class="line">        cv2.putText(</span><br><span class="line">            canvas,</span><br><span class="line">            score_text,</span><br><span class="line">            (x_start + <span class="number">10</span>, y_start + img_size[<span class="number">0</span>] - <span class="number">10</span>),</span><br><span class="line">            cv2.FONT_HERSHEY_SIMPLEX,</span><br><span class="line">            <span class="number">0.5</span>,</span><br><span class="line">            (<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>),</span><br><span class="line">            <span class="number">1</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    cv2.imwrite(output_path, canvas)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==================== 7. 执行查询示例 ====================</span></span><br><span class="line"><span class="comment"># 执行查询</span></span><br><span class="line">query_image = <span class="string">&quot;../../../data/多模态/query_image.jpg&quot;</span></span><br><span class="line">query_text = <span class="string">&quot;寻找悟空面对建筑物战斗场景&quot;</span></span><br><span class="line"></span><br><span class="line">results = search_similar_images(</span><br><span class="line">    query_image=query_image,</span><br><span class="line">    query_text=query_text,</span><br><span class="line">    limit=<span class="number">9</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出详细信息</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n搜索结果:&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> idx, result <span class="keyword">in</span> <span class="built_in">enumerate</span>(results):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;\n结果 <span class="subst">&#123;idx&#125;</span>:&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;图片：<span class="subst">&#123;result[<span class="string">&#x27;entity&#x27;</span>][<span class="string">&#x27;image_path&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;标题：<span class="subst">&#123;result[<span class="string">&#x27;entity&#x27;</span>][<span class="string">&#x27;title&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;描述：<span class="subst">&#123;result[<span class="string">&#x27;entity&#x27;</span>][<span class="string">&#x27;description&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;相似度分数：<span class="subst">&#123;result[<span class="string">&#x27;distance&#x27;</span>]:<span class="number">.4</span>f&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 可视化结果</span></span><br><span class="line">visualize_results(query_image, results, <span class="string">&quot;search_results.jpg&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>权重参数设计:</p>
+<ul>
+<li>sparse权重0.7，dense权重1.0</li>
+<li>权重值不需要加起来等于1，表示相对重要性比例</li>
+<li>稠密向量重要性是稀疏向量的约1.43倍(1.0/0.7)</li>
+<li>可根据实际效果动态调整权重比例</li>
+</ul>
+</li>
+<li><p>数据集管理</p>
+<ul>
+<li>数据结构:<ul>
+<li>包含图像ID、文件路径、标题、类别等基础信息</li>
+<li>详细描述字段：如战斗场景描述、角色、环境等</li>
+<li>标签列表：如”群战”、”水特效”等关键词</li>
+</ul>
+</li>
+<li>构建方法:<ul>
+<li>可使用大模型自动生成图像元数据</li>
+<li>元数据与图像文件需保持对应关系</li>
+<li>支持自定义字段扩展</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>检索功能的实现<ul>
+<li>检索方式:<ul>
+<li>支持纯图像检索</li>
+<li>支持图文混合检索</li>
+<li>支持带过滤条件的检索</li>
+</ul>
+</li>
+<li>核心流程:<ul>
+<li>初始化编码器并加载模型</li>
+<li>为所有图像生成嵌入向量</li>
+<li>创建Milvus向量集合</li>
+<li>执行相似度搜索</li>
+<li>可视化展示结果</li>
+</ul>
+</li>
+<li>混合检索实现:<ul>
+<li>同时编码图像和文本生成查询向量</li>
+<li>可设置过滤条件缩小搜索范围</li>
+<li>支持调整稀疏和稠密向量的权重比例</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="其它多模态解决方案"><a href="#其它多模态解决方案" class="headerlink" title="其它多模态解决方案"></a>其它多模态解决方案</h2><ul>
+<li>Weaviate：原生支持图像、文本等多种模态的 Any-to-Any 检索 。</li>
+<li>Qdrant：结合 ImageBind、LlamaIndex 等模型，可实现音频、图像、文本等跨模态向量化检索。</li>
+<li>OpenSearch：通过神经插件（Neural Search）和 Titan 多模态嵌入模型，提供云端托管的多模态搜索能力。</li>
+<li>Pinecone：全托管向量库，开箱即可实现图像、音频、视频等多模态向量检索。</li>
+<li>Haystack：在 NLP 检索框架基础上，集成 CLIP 等模型，可扩展为多模态搜索系统。</li>
+<li>Vespa：支持多向量索引与复杂排名函数，擅长电商、新闻等场景下的多模态检索。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/25/ai/llm/1-introduce/" rel="prev" title="AI大模型和Agent智能体介绍">
+      <i class="fa fa-chevron-left"></i> AI大模型和Agent智能体介绍
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/09/16/ai/langchain/12-langchain-agent-mcp-protocol/" rel="next" title="MCP通信方式">
+      MCP通信方式 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Milvus%E6%B7%B7%E5%90%88%E6%A3%80%E7%B4%A2%E5%AE%9E%E6%88%98"><span class="nav-number">1.</span> <span class="nav-text">Milvus混合检索实战</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%A0%E5%AF%86%E5%90%91%E9%87%8F"><span class="nav-number">1.1.</span> <span class="nav-text">稠密向量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%80%E7%96%8F%E5%90%91%E9%87%8F"><span class="nav-number">1.2.</span> <span class="nav-text">稀疏向量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%B7%E5%90%88%E6%A3%80%E7%B4%A2"><span class="nav-number">1.3.</span> <span class="nav-text">混合检索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%BB%A3%E7%A0%81%EF%BC%88%E8%AF%B4%E6%98%8E%EF%BC%89"><span class="nav-number">1.4.</span> <span class="nav-text">实战代码（说明）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Milvus%E5%A4%9A%E6%A8%A1%E6%80%81%E6%A3%80%E7%B4%A2%E5%AE%9E%E6%88%98"><span class="nav-number">2.</span> <span class="nav-text">Milvus多模态检索实战</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E6%A8%A1%E6%80%81%E6%A3%80%E7%B4%A2"><span class="nav-number">2.1.</span> <span class="nav-text">多模态检索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#visual-bge%E6%A8%A1%E5%9E%8B%E4%B8%8B%E8%BD%BD%E5%AE%89%E8%A3%85"><span class="nav-number">2.2.</span> <span class="nav-text">visual_bge模型下载安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%BB%A3%E7%A0%81%EF%BC%88%E8%AF%B4%E6%98%8E%EF%BC%89-1"><span class="nav-number">2.3.</span> <span class="nav-text">实战代码（说明）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E5%A4%9A%E6%A8%A1%E6%80%81%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.4.</span> <span class="nav-text">其它多模态解决方案</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

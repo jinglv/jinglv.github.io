@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Redis数据库笔记第一讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis介绍">
+<meta property="og:url" content="https://jinglv.github.io/2021/07/29/database/redis/1-introduce/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Redis数据库笔记第一讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141042631.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141043437.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141043026.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141044866.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141044898.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141045736.png">
+<meta property="article:published_time" content="2021-07-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-07-29T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="数据库">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141042631.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2021/07/29/database/redis/1-introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Redis介绍 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2021/07/29/database/redis/1-introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Redis介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-07-29 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2021-07-29T00:00:00+08:00">2021-07-29</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index"><span itemprop="name">Redis</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Redis数据库笔记第一讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="NoSQL的引言"><a href="#NoSQL的引言" class="headerlink" title="NoSQL的引言"></a>NoSQL的引言</h1><p><strong>NoSQL</strong>(<code>Not Only SQL</code> )，意即<strong>不仅仅是SQL</strong>, 泛指<strong>非关系型的数据库</strong>。Nosql这个技术门类,早期就有人提出,发展至2009年趋势越发高涨。</p>
+<p><strong>RDBMS</strong> — 关系型数据库，SQL语句</p>
+<h1 id="为什么是NoSQL"><a href="#为什么是NoSQL" class="headerlink" title="为什么是NoSQL"></a>为什么是NoSQL</h1><p>随着互联网网站的兴起，传统的关系数据库在应付动态网站，特别是超大规模和高并发的纯动态网站已经显得力不从心，暴露了很多难以克服的问题。如<code>商城网站中对商品数据频繁查询</code>、<code>对热搜商品的排行统计</code>、<code>订单超时问题</code>、以及微信朋友圈（音频，视频）存储等相关使用传统的关系型数据库实现就显得非常复杂，虽然能实现相应功能但是在性能上却不是那么乐观。nosql这个技术门类的出现，更好的解决了这些问题，它告诉了世界不仅仅是sql。</p>
+<h1 id="NoSQL四大分类"><a href="#NoSQL四大分类" class="headerlink" title="NoSQL四大分类"></a>NoSQL四大分类</h1><h2 id="1-键值-Key-Value-存储数据库"><a href="#1-键值-Key-Value-存储数据库" class="headerlink" title="1. 键值(Key-Value)存储数据库"></a>1. 键值(Key-Value)存储数据库</h2><ul>
+<li>说明<ul>
+<li>一类数据库主要会使用到一个哈希表，这个表中有一个特定的键和一个指针指向特定的数据。</li>
+</ul>
+</li>
+<li>特点<ul>
+<li>Key/value模型对于IT系统来说的优势在于简单、易部署。  </li>
+<li>但是如果DBA只对部分值进行查询或更新的时候，Key/value就显得效率低下了。</li>
+</ul>
+</li>
+<li>相关产品<ul>
+<li>Tokyo Cabinet/Tyrant</li>
+<li>Redis — 数据在内存</li>
+<li>SSDB — 数据在硬盘</li>
+<li>Voldemort </li>
+<li>Oracle BDB</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-列存储数据库"><a href="#2-列存储数据库" class="headerlink" title="2. 列存储数据库"></a>2. 列存储数据库</h2><ul>
+<li>说明<ul>
+<li>这部分数据库通常是用来应对分布式存储的海量数据。</li>
+</ul>
+</li>
+<li>特点<ul>
+<li>键仍然存在，但是它们的特点是指向了多个列。这些列是由列家族来安排的。</li>
+</ul>
+</li>
+<li>相关产品<ul>
+<li>Cassandra</li>
+<li>HBase</li>
+<li>Riak</li>
+</ul>
+</li>
+</ul>
+<h2 id="3-文档型数据库"><a href="#3-文档型数据库" class="headerlink" title="3. 文档型数据库"></a>3. 文档型数据库</h2><ul>
+<li>说明<ul>
+<li>文档型数据库的灵感是来自于Lotus Notes办公软件的，而且它同第一种键值存储相类似该类型的数据模型是版本化的文档，半结构化的文档以特定的格式存储，比如JSON。文档型数据库可 以看作是键值数据库的升级版，允许之间嵌套键值。而且文档型数据库比键值数据库的查询效率更高</li>
+</ul>
+</li>
+<li>特点<ul>
+<li>以文档形式存储</li>
+</ul>
+</li>
+<li>相关产品<ul>
+<li>MongoDB</li>
+<li>CouchDB</li>
+<li>MongoDb(4.x).</li>
+<li>国内也有文档型数据库SequoiaDB，已经开源</li>
+</ul>
+</li>
+</ul>
+<h2 id="4-图形-Graph-数据库"><a href="#4-图形-Graph-数据库" class="headerlink" title="4. 图形(Graph)数据库"></a>4. 图形(Graph)数据库</h2><ul>
+<li>说明<ul>
+<li>图形结构的数据库同其他行列以及刚性结构的SQL数据库不同，它是使用灵活的图形模型，并且能够扩展到多个服务器上。</li>
+<li>NoSQL数据库没有标准的查询语言(SQL)，因此进行数据库查询需要制定数据模型。许多NoSQL数据库都有REST式的数据接口或者查询API。</li>
+</ul>
+</li>
+<li>特点<ul>
+<li>NoSQL数据库没有标准的查询语句（SQL），因此进行数据库查询需要定制数据模型。许多NoSQL数据库都有REST式的数据接口或者查询API。</li>
+</ul>
+</li>
+<li>相关产品<ul>
+<li>Neo4J</li>
+<li>InfoGrid</li>
+<li>Infinite Graph</li>
+</ul>
+</li>
+</ul>
+<h1 id="NoSQL应用场景"><a href="#NoSQL应用场景" class="headerlink" title="NoSQL应用场景"></a>NoSQL应用场景</h1><ul>
+<li>数据模型比较简单</li>
+<li>需要灵活性更强的IT系统（系统设计灵活，性能要求比较高）</li>
+<li>对数据库性能要求较高</li>
+<li>不需要高度的数据一致性（Nosql产品对于事务支持都不是特别良好）</li>
+</ul>
+<h1 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h1><p>Redis官方网站：<a target="_blank" rel="noopener" href="https://redis.io">https://redis.io</a></p>
+<h2 id="什么是Redis"><a href="#什么是Redis" class="headerlink" title="什么是Redis"></a>什么是Redis</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141042631.png" alt="image-20220714104222594"></p>
+<blockquote>
+<p>Redis is an open source (BSD licensed), in-memory data structure store, used as a database, cache and message broker.</p>
+</blockquote>
+<p>Redis 开源  遵循BSD  基于内存数据存储 被用于作为 数据库 缓存  消息中间件</p>
+<p>Redis 数据存储在内存中，读写快，断电即消失（未进行数据持久化），机制：持久化机制，内存数据，定期写入到磁盘中</p>
+<ul>
+<li>总结：redis是一个内存型的数据库</li>
+<li>应用：缓存、消息中间件等</li>
+</ul>
+<h2 id="Redis特点"><a href="#Redis特点" class="headerlink" title="Redis特点"></a>Redis特点</h2><ul>
+<li>Redis是一个高性能key/value内存型数据库</li>
+<li>Redis支持丰富的数据类型(String、List、Set、ZSet、Hash)</li>
+<li>Redis支持持久化 （内存数据持久化到硬盘中）</li>
+<li>Redis单线程,单进程（不支持并发，不存在线程安全的问题，Redis实现分布式锁）</li>
+</ul>
+<h2 id="Redis安装"><a href="#Redis安装" class="headerlink" title="Redis安装"></a>Redis安装</h2><ol>
+<li><p>准备环境</p>
+<ul>
+<li>CentOS 7.x+</li>
+</ul>
+</li>
+<li><p>下载redis源码包</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141043437.png" alt="image-20220714104303379"></p>
+<p>拷贝下载连接</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141043026.png" alt="image-20220714104324993"></p>
+</li>
+<li><p>Linux系统下，下载完整源码包</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# wget https://download.redis.io/releases/redis-6.2.1.tar.gz?_ga=2.236241992.874767586.1616555487-1821064826.1616555487</span><br><span class="line">--2021-03-24 11:24:54--  https://download.redis.io/releases/redis-6.2.1.tar.gz?_ga=2.236241992.874767586.1616555487-1821064826.1616555487</span><br><span class="line">正在解析主机 download.redis.io (download.redis.io)... 45.60.125.1</span><br><span class="line">正在连接 download.redis.io (download.redis.io)|45.60.125.1|:443... 已连接。</span><br><span class="line">已发出 HTTP 请求，正在等待回应... 200 OK</span><br><span class="line">长度：2438367 (2.3M) [application/octet-stream]</span><br><span class="line">正在保存至: “redis-6.2.1.tar.gz?_ga=2.236241992.874767586.1616555487-1821064826.1616555487”</span><br><span class="line"></span><br><span class="line">100%[=====================================================================&gt;] 2,438,367   2.02MB/s 用时 1.2s</span><br><span class="line"></span><br><span class="line">2021-03-24 11:24:56 (2.02 MB/s) - 已保存 “redis-6.2.1.tar.gz?_ga=2.236241992.874767586.1616555487-1821064826.1616555487” [2438367/2438367])</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>解压缩文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# <span class="built_in">ls</span></span><br><span class="line">redis-6.2.1.tar.gz?_ga=2.236241992.874767586.1616555487-1821064826.1616555487</span><br><span class="line">[root@localhost ~]# tar -zxvf redis-6.2.1.tar.gz\?_ga\=2.236241992.874767586.1616555487-1821064826.1616555487</span><br><span class="line">redis-6.2.1/</span><br><span class="line">redis-6.2.1/.github/</span><br><span class="line">redis-6.2.1/.github/ISSUE_TEMPLATE/</span><br><span class="line">redis-6.2.1/.github/ISSUE_TEMPLATE/bug_report.md</span><br><span class="line">redis-6.2.1/.github/ISSUE_TEMPLATE/crash_report.md</span><br><span class="line">redis-6.2.1/.github/ISSUE_TEMPLATE/feature_request.md</span><br><span class="line">……</span><br><span class="line">[root@localhost ~]# <span class="built_in">ls</span></span><br><span class="line">redis-6.2.1.tar.gz?_ga=2.236241992.874767586.1616555487-1821064826.1616555487</span><br><span class="line">redis-6.2.1</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>安装gcc </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# yum install -y gcc</span><br><span class="line">已加载插件：fastestmirror</span><br><span class="line">Determining fastest mirrors</span><br><span class="line"> * base: mirrors.huaweicloud.com</span><br><span class="line"> * extras: mirrors.huaweicloud.com</span><br><span class="line"> * updates: mirrors.huaweicloud.com</span><br><span class="line">……</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>进入解压缩目录执行如下命令进行编译</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# <span class="built_in">cd</span> redis-6.2.1</span><br><span class="line">[root@localhost redis-6.2.1]# make MALLOC=libc</span><br><span class="line"><span class="built_in">cd</span> src &amp;&amp; make all</span><br><span class="line">make[1]: 进入目录“/root/redis-6.2.1/src”</span><br><span class="line">    CC Makefile.dep</span><br><span class="line">make[1]: 离开目录“/root/redis-6.2.1/src”</span><br><span class="line">make[1]: 进入目录“/root/redis-6.2.1/src”</span><br><span class="line"><span class="built_in">rm</span> -rf redis-server redis-sentinel redis-cli redis-benchmark redis-check-rdb redis-check-aof *.o *.gcda *.gcno *.gcov redis.info lcov-html Makefile.dep dict-benchmark</span><br><span class="line">……</span><br><span class="line">    INSTALL redis-check-rdb</span><br><span class="line">    INSTALL redis-check-aof</span><br><span class="line"></span><br><span class="line">Hint: It<span class="string">&#x27;s a good idea to run &#x27;</span>make <span class="built_in">test</span><span class="string">&#x27; ;)</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">make[1]: 离开目录“/root/redis-6.2.1/src”</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>编译完成后执行如下命令</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost redis-6.2.1]# make install PREFIX=/usr/local/redis</span><br><span class="line"><span class="built_in">cd</span> src &amp;&amp; make install</span><br><span class="line">make[1]: 进入目录“/root/redis-6.2.1/src”</span><br><span class="line">    CC Makefile.dep</span><br><span class="line">make[1]: 离开目录“/root/redis-6.2.1/src”</span><br><span class="line">make[1]: 进入目录“/root/redis-6.2.1/src”</span><br><span class="line"></span><br><span class="line">Hint: It<span class="string">&#x27;s a good idea to run &#x27;</span>make <span class="built_in">test</span><span class="string">&#x27; ;)</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    INSTALL install</span></span><br><span class="line"><span class="string">    INSTALL install</span></span><br><span class="line"><span class="string">    INSTALL install</span></span><br><span class="line"><span class="string">make[1]: 离开目录“/root/redis-6.2.1/src”</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p>进入/usr/local/redis目录启动redis服务 </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost redis-6.2.1]# <span class="built_in">cd</span> /usr/local/redis/</span><br><span class="line">[root@localhost redis]# <span class="built_in">ls</span></span><br><span class="line">bin</span><br><span class="line">[root@localhost redis]# <span class="built_in">cd</span> bin/</span><br><span class="line">[root@localhost bin]# <span class="built_in">ls</span></span><br><span class="line">redis-benchmark  redis-check-aof  redis-check-rdb  redis-cli  redis-sentinel  redis-server</span><br><span class="line">[root@localhost bin]# ./redis-server</span><br><span class="line">5715:C 24 Mar 2021 11:59:45.568 <span class="comment"># oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo</span></span><br><span class="line">5715:C 24 Mar 2021 11:59:45.568 <span class="comment"># Redis version=6.2.1, bits=64, commit=00000000, modified=0, pid=5715, just started</span></span><br><span class="line">5715:C 24 Mar 2021 11:59:45.568 <span class="comment"># Warning: no config file specified, using the default config. In order to specify a config file use ./redis-server /path/to/redis.conf</span></span><br><span class="line">5715:M 24 Mar 2021 11:59:45.570 * Increased maximum number of open files to 10032 (it was originally <span class="built_in">set</span> to 1024).</span><br><span class="line">5715:M 24 Mar 2021 11:59:45.570 * monotonic clock: POSIX clock_gettime</span><br><span class="line">                _._</span><br><span class="line">           _.-``__ <span class="string">&#x27;&#x27;</span>-._</span><br><span class="line">      _.-``    `.  `_.  <span class="string">&#x27;&#x27;</span>-._           Redis 6.2.1 (00000000/0) 64 bit</span><br><span class="line">  .-`` .-```.  ```\/    _.,_ <span class="string">&#x27;&#x27;</span>-._</span><br><span class="line"> (    <span class="string">&#x27;      ,       .-`  | `,    )     Running in standalone mode</span></span><br><span class="line"><span class="string"> |`-._`-...-` __...-.``-._|&#x27;</span>` _.-<span class="string">&#x27;|     Port: 6379</span></span><br><span class="line"><span class="string"> |    `-._   `._    /     _.-&#x27;</span>    |     PID: 5715</span><br><span class="line">  `-._    `-._  `-./  _.-<span class="string">&#x27;    _.-&#x27;</span></span><br><span class="line"> |`-._`-._    `-.__.-<span class="string">&#x27;    _.-&#x27;</span>_.-<span class="string">&#x27;|</span></span><br><span class="line"><span class="string"> |    `-._`-._        _.-&#x27;</span>_.-<span class="string">&#x27;    |           http://redis.io</span></span><br><span class="line"><span class="string">  `-._    `-._`-.__.-&#x27;</span>_.-<span class="string">&#x27;    _.-&#x27;</span></span><br><span class="line"> |`-._`-._    `-.__.-<span class="string">&#x27;    _.-&#x27;</span>_.-<span class="string">&#x27;|</span></span><br><span class="line"><span class="string"> |    `-._`-._        _.-&#x27;</span>_.-<span class="string">&#x27;    |</span></span><br><span class="line"><span class="string">  `-._    `-._`-.__.-&#x27;</span>_.-<span class="string">&#x27;    _.-&#x27;</span></span><br><span class="line">      `-._    `-.__.-<span class="string">&#x27;    _.-&#x27;</span></span><br><span class="line">          `-._        _.-<span class="string">&#x27;</span></span><br><span class="line"><span class="string">              `-.__.-&#x27;</span></span><br><span class="line"></span><br><span class="line">5715:M 24 Mar 2021 11:59:45.571 <span class="comment"># WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.</span></span><br><span class="line">5715:M 24 Mar 2021 11:59:45.571 <span class="comment"># Server initialized</span></span><br><span class="line">5715:M 24 Mar 2021 11:59:45.571 <span class="comment"># WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add &#x27;vm.overcommit_memory = 1&#x27; to /etc/sysctl.conf and then reboot or run the command &#x27;sysctl vm.overcommit_memory=1&#x27; for this to take effect.</span></span><br><span class="line">5715:M 24 Mar 2021 11:59:45.572 * Ready to accept connections</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>启动界面，Redis服务端口默认是 6379</p>
+</li>
+<li><p>进入bin目录执行客户端连接操作，打开一个新的iTherm，使用客户端连接Redis</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# <span class="built_in">cd</span> /usr/local/redis/</span><br><span class="line">[root@localhost redis]# <span class="built_in">ls</span></span><br><span class="line">bin</span><br><span class="line">[root@localhost redis]# <span class="built_in">cd</span> bin/</span><br><span class="line">[root@localhost bin]# <span class="built_in">ls</span></span><br><span class="line">redis-benchmark  redis-check-rdb  redis-sentinel</span><br><span class="line">redis-check-aof  redis-cli        redis-server</span><br><span class="line">[root@localhost bin]# ./redis-cli -h localhost -p 6379</span><br><span class="line">localhost:6379&gt;</span><br></pre></td></tr></table></figure>
+<p>连接成功出现上面界面连接成功</p>
+</li>
+</ol>
+<h2 id="Redis配置"><a href="#Redis配置" class="headerlink" title="Redis配置"></a>Redis配置</h2><ol>
+<li><p>redis启动服务的细节</p>
+<ul>
+<li>注意：直接使用./redis-server方式使用的是redis-server这个shell脚本中默认配置</li>
+</ul>
+</li>
+<li><p>如何在启动redis时指定配置文件启动</p>
+<ul>
+<li><p>注意：默认在redis安装完成之后再安装目录没有任何配置文件，需要在源码目录中复制redis.conf配置文件到安装目录</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141044866.png" alt="image-20220714104414831"></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost redis-6.2.1]# <span class="built_in">cp</span> redis.conf /usr/local/redis/</span><br><span class="line">[root@localhost redis-6.2.1]# <span class="built_in">cd</span> /usr/local/redis/</span><br><span class="line">[root@localhost redis]# <span class="built_in">ls</span></span><br><span class="line">bin  redis.conf</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将配置文件复制到redis目录下后，加载配置启动</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost redis]# <span class="built_in">cd</span> bin/</span><br><span class="line">[root@localhost bin]# ./redis-server ../redis.conf</span><br><span class="line">4322:C 25 Mar 2021 12:32:08.516 <span class="comment"># oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo</span></span><br><span class="line">4322:C 25 Mar 2021 12:32:08.516 <span class="comment"># Redis version=6.2.1, bits=64, commit=00000000, modified=0, pid=4322, just started</span></span><br><span class="line">4322:C 25 Mar 2021 12:32:08.516 <span class="comment"># Configuration loaded</span></span><br><span class="line">4322:M 25 Mar 2021 12:32:08.518 * Increased maximum number of open files to 10032 (it was originally <span class="built_in">set</span> to 1024).</span><br><span class="line">4322:M 25 Mar 2021 12:32:08.518 * monotonic clock: POSIX clock_gettime</span><br><span class="line">                _._</span><br><span class="line">           _.-``__ <span class="string">&#x27;&#x27;</span>-._</span><br><span class="line">      _.-``    `.  `_.  <span class="string">&#x27;&#x27;</span>-._           Redis 6.2.1 (00000000/0) 64 bit</span><br><span class="line">  .-`` .-```.  ```\/    _.,_ <span class="string">&#x27;&#x27;</span>-._</span><br><span class="line"> (    <span class="string">&#x27;      ,       .-`  | `,    )     Running in standalone mode</span></span><br><span class="line"><span class="string"> |`-._`-...-` __...-.``-._|&#x27;</span>` _.-<span class="string">&#x27;|     Port: 6379</span></span><br><span class="line"><span class="string"> |    `-._   `._    /     _.-&#x27;</span>    |     PID: 4322</span><br><span class="line">  `-._    `-._  `-./  _.-<span class="string">&#x27;    _.-&#x27;</span></span><br><span class="line"> |`-._`-._    `-.__.-<span class="string">&#x27;    _.-&#x27;</span>_.-<span class="string">&#x27;|</span></span><br><span class="line"><span class="string"> |    `-._`-._        _.-&#x27;</span>_.-<span class="string">&#x27;    |           http://redis.io</span></span><br><span class="line"><span class="string">  `-._    `-._`-.__.-&#x27;</span>_.-<span class="string">&#x27;    _.-&#x27;</span></span><br><span class="line"> |`-._`-._    `-.__.-<span class="string">&#x27;    _.-&#x27;</span>_.-<span class="string">&#x27;|</span></span><br><span class="line"><span class="string"> |    `-._`-._        _.-&#x27;</span>_.-<span class="string">&#x27;    |</span></span><br><span class="line"><span class="string">  `-._    `-._`-.__.-&#x27;</span>_.-<span class="string">&#x27;    _.-&#x27;</span></span><br><span class="line">      `-._    `-.__.-<span class="string">&#x27;    _.-&#x27;</span></span><br><span class="line">          `-._        _.-<span class="string">&#x27;</span></span><br><span class="line"><span class="string">              `-.__.-&#x27;</span></span><br><span class="line"></span><br><span class="line">4322:M 25 Mar 2021 12:32:08.520 <span class="comment"># WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.</span></span><br><span class="line">4322:M 25 Mar 2021 12:32:08.520 <span class="comment"># Server initialized</span></span><br><span class="line">4322:M 25 Mar 2021 12:32:08.520 <span class="comment"># WARNING overcommit_memory is set to 0! Background save may fail under low memory condition. To fix this issue add &#x27;vm.overcommit_memory = 1&#x27; to /etc/sysctl.conf and then reboot or run the command &#x27;sysctl vm.overcommit_memory=1&#x27; for this to take effect.</span></span><br><span class="line">4322:M 25 Mar 2021 12:32:08.520 * Loading RDB produced by version 6.2.1</span><br><span class="line">4322:M 25 Mar 2021 12:32:08.520 * RDB age 61 seconds</span><br><span class="line">4322:M 25 Mar 2021 12:32:08.520 * RDB memory usage when created 0.84 Mb</span><br><span class="line">4322:M 25 Mar 2021 12:32:08.520 * DB loaded from disk: 0.000 seconds</span><br><span class="line">4322:M 25 Mar 2021 12:32:08.520 * Ready to accept connections</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+<li><p>修改配置文件中的配置，例如：默认端口号，再指定配置文件重新启动redis</p>
+</li>
+</ol>
+<h1 id="Redis可视化工具"><a href="#Redis可视化工具" class="headerlink" title="Redis可视化工具"></a>Redis可视化工具</h1><p>工具：redis-desktop-manager，该工具收费</p>
+<p>官方网站：<a target="_blank" rel="noopener" href="https://rdm.dev">https://rdm.dev</a></p>
+<ul>
+<li><p>MacOS</p>
+<p>在App Store中搜索，需要人民币98块</p>
+</li>
+</ul>
+<p>注意：远程连接需要开启Redis的远程连接，默认Redis服务器是没有开启远程连接的，也就是默认拒绝所有远程客户端连接</p>
+<ol>
+<li><p>修改配置开启远程连接</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim redis.conf</span><br></pre></td></tr></table></figure>
+<p>修改如下配置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">################################## NETWORK #####################################</span><br><span class="line"></span><br><span class="line"># By default, if no &quot;bind&quot; configuration directive is specified, Redis listens</span><br><span class="line"># for connections from all available network interfaces on the host machine.</span><br><span class="line"># It is possible to listen to just one or multiple selected interfaces using</span><br><span class="line"># the &quot;bind&quot; configuration directive, followed by one or more IP addresses.</span><br><span class="line"># Each address can be prefixed by &quot;-&quot;, which means that redis will not fail to</span><br><span class="line"># start if the address is not available. Being not available only refers to</span><br><span class="line"># addresses that does not correspond to any network interfece. Addresses that</span><br><span class="line"># are already in use will always fail, and unsupported protocols will always BE</span><br><span class="line"># silently skipped.</span><br><span class="line">#</span><br><span class="line"># Examples:</span><br><span class="line">#</span><br><span class="line"># bind 192.168.1.100 10.0.0.1     # listens on two specific IPv4 addresses</span><br><span class="line"># bind 127.0.0.1 ::1              # listens on loopback IPv4 and IPv6</span><br><span class="line"># bind * -::*                     # like the default, all available interfaces</span><br><span class="line">#</span><br><span class="line"># ~~~ WARNING ~~~ If the computer running Redis is directly exposed to the</span><br><span class="line"># internet, binding to all the interfaces is dangerous and will expose the</span><br><span class="line"># instance to everybody on the internet. So by default we uncomment the</span><br><span class="line"># following bind directive, that will force Redis to listen only on the</span><br><span class="line"># IPv4 and IPv6 (if available) loopback interface addresses (this means Redis</span><br><span class="line"># will only be able to accept client connections from the same host that it is</span><br><span class="line"># running on).</span><br><span class="line">#</span><br><span class="line"># IF YOU ARE SURE YOU WANT YOUR INSTANCE TO LISTEN TO ALL THE INTERFACES</span><br><span class="line"># JUST COMMENT OUT THE FOLLOWING LINE.</span><br><span class="line"># ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span><br><span class="line"># bind 127.0.0.1 -::1</span><br><span class="line">bind 0.0.0.0</span><br></pre></td></tr></table></figure>
+<p>将配置文件中的bind 127.0.0.1 -::1修改为bind 0.0.0.0（允许一切客户端连接）</p>
+</li>
+<li><p>关闭防火墙</p>
+<ul>
+<li><p>查看防火墙状态</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# systemctl status firewalld</span><br><span class="line">● firewalld.service - firewalld - dynamic firewall daemon</span><br><span class="line">   Loaded: loaded (/usr/lib/systemd/system/firewalld.service; enabled; vendor preset: enabled)</span><br><span class="line">   Active: active (running) since 四 2021-03-25 12:22:30 CST; 4h 39min ago</span><br><span class="line">     Docs: man:firewalld(1)</span><br><span class="line"> Main PID: 2697 (firewalld)</span><br><span class="line">    Tasks: 2</span><br><span class="line">   Memory: 31.3M</span><br><span class="line">   CGroup: /system.slice/firewalld.service</span><br><span class="line">           └─2697 /usr/bin/python -Es /usr/sbin/firewalld --nofork --nopid</span><br><span class="line"></span><br><span class="line">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: <span class="string">&#x27;/usr/sbin/iptables -w2 -t ...me.</span></span><br><span class="line"><span class="string">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: &#x27;</span>/usr/sbin/iptables -w2 -t ...?).</span><br><span class="line">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: <span class="string">&#x27;/usr/sbin/iptables -w2 -t ...me.</span></span><br><span class="line"><span class="string">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: &#x27;</span>/usr/sbin/iptables -w2 -t ...?).</span><br><span class="line">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: <span class="string">&#x27;/usr/sbin/iptables -w2 -t ...me.</span></span><br><span class="line"><span class="string">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: &#x27;</span>/usr/sbin/iptables -w2 -t ...?).</span><br><span class="line">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: <span class="string">&#x27;/usr/sbin/iptables -w2 -t ...me.</span></span><br><span class="line"><span class="string">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: &#x27;</span>/usr/sbin/iptables -w2 -t ...me.</span><br><span class="line">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: <span class="string">&#x27;/usr/sbin/iptables -w2 -t ...?).</span></span><br><span class="line"><span class="string">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: &#x27;</span>/usr/sbin/iptables -w2 -t ...me.</span><br><span class="line">Hint: Some lines were ellipsized, use -l to show <span class="keyword">in</span> full.</span><br></pre></td></tr></table></figure>
+<p><strong>active (running)</strong> :表示防火墙开启</p>
+</li>
+<li><p>关闭防火墙</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# systemctl stop firewalld.service</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>再次查看防火墙状态</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost ~]# systemctl status firewalld</span><br><span class="line">● firewalld.service - firewalld - dynamic firewall daemon</span><br><span class="line">   Loaded: loaded (/usr/lib/systemd/system/firewalld.service; enabled; vendor preset: enabled)</span><br><span class="line">   Active: inactive (dead) since 四 2021-03-25 17:02:30 CST; 1s ago</span><br><span class="line">     Docs: man:firewalld(1)</span><br><span class="line">  Process: 2697 ExecStart=/usr/sbin/firewalld --nofork --nopid <span class="variable">$FIREWALLD_ARGS</span> (code=exited, status=0/SUCCESS)</span><br><span class="line"> Main PID: 2697 (code=exited, status=0/SUCCESS)</span><br><span class="line"></span><br><span class="line">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: <span class="string">&#x27;/usr/sbin/iptables -w2 -t filter -C DOCKER-IS...name.</span></span><br><span class="line"><span class="string">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: &#x27;</span>/usr/sbin/iptables -w2 -t filter -C DOCKER-IS...<span class="keyword">in</span>?).</span><br><span class="line">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: <span class="string">&#x27;/usr/sbin/iptables -w2 -t filter -n -L DOCKER...name.</span></span><br><span class="line"><span class="string">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: &#x27;</span>/usr/sbin/iptables -w2 -t filter -C DOCKER-US...<span class="keyword">in</span>?).</span><br><span class="line">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: <span class="string">&#x27;/usr/sbin/iptables -w2 -t filter -C FORWARD -...name.</span></span><br><span class="line"><span class="string">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: &#x27;</span>/usr/sbin/iptables -w2 -t nat -C DOCKER -p tc...name.</span><br><span class="line">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: <span class="string">&#x27;/usr/sbin/iptables -w2 -t filter -C DOCKER ! ...in?).</span></span><br><span class="line"><span class="string">3月 25 12:22:34 localhost.localdomain firewalld[2697]: WARNING: COMMAND_FAILED: &#x27;</span>/usr/sbin/iptables -w2 -t nat -C POSTROUTING ...name.</span><br><span class="line">3月 25 17:02:29 localhost.localdomain systemd[1]: Stopping firewalld - dynamic firewall daemon...</span><br><span class="line">3月 25 17:02:30 localhost.localdomain systemd[1]: Stopped firewalld - dynamic firewall daemon.</span><br><span class="line">Hint: Some lines were ellipsized, use -l to show <span class="keyword">in</span> full.</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ol>
+<ol>
+<li><p>修改配置之后重启Redis服务，一定要加载配置文件启动</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@localhost bin]# ./redis-server ../redis.conf</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>使用工具连接</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141044898.png" alt="image-20220714104443865"></p>
+<p>连接成功后</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141045736.png" alt="image-20220714104503703"></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/07/29/database/redis/2-operation/" rel="prev" title="Redis数据库操作相关指令">
+      <i class="fa fa-chevron-left"></i> Redis数据库操作相关指令
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/09/13/language/python/1-base/" rel="next" title="Python初识">
+      Python初识 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#NoSQL%E7%9A%84%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">NoSQL的引言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AFNoSQL"><span class="nav-number">2.</span> <span class="nav-text">为什么是NoSQL</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#NoSQL%E5%9B%9B%E5%A4%A7%E5%88%86%E7%B1%BB"><span class="nav-number">3.</span> <span class="nav-text">NoSQL四大分类</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%94%AE%E5%80%BC-Key-Value-%E5%AD%98%E5%82%A8%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">3.1.</span> <span class="nav-text">1. 键值(Key-Value)存储数据库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%88%97%E5%AD%98%E5%82%A8%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">3.2.</span> <span class="nav-text">2. 列存储数据库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%96%87%E6%A1%A3%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">3.3.</span> <span class="nav-text">3. 文档型数据库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%9B%BE%E5%BD%A2-Graph-%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">3.4.</span> <span class="nav-text">4. 图形(Graph)数据库</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#NoSQL%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">4.</span> <span class="nav-text">NoSQL应用场景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis"><span class="nav-number">5.</span> <span class="nav-text">Redis</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFRedis"><span class="nav-number">5.1.</span> <span class="nav-text">什么是Redis</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis%E7%89%B9%E7%82%B9"><span class="nav-number">5.2.</span> <span class="nav-text">Redis特点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis%E5%AE%89%E8%A3%85"><span class="nav-number">5.3.</span> <span class="nav-text">Redis安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis%E9%85%8D%E7%BD%AE"><span class="nav-number">5.4.</span> <span class="nav-text">Redis配置</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Redis%E5%8F%AF%E8%A7%86%E5%8C%96%E5%B7%A5%E5%85%B7"><span class="nav-number">6.</span> <span class="nav-text">Redis可视化工具</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

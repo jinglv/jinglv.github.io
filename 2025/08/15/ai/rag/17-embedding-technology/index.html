@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第十七讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--向量嵌入之稀疏嵌入、密集嵌入、混合检索">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/15/ai/rag/17-embedding-technology/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第十七讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250815093602208.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250815093846348.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250815094142413.png">
+<meta property="article:published_time" content="2025-08-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-15T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250815093602208.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/15/ai/rag/17-embedding-technology/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--向量嵌入之稀疏嵌入、密集嵌入、混合检索 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/15/ai/rag/17-embedding-technology/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--向量嵌入之稀疏嵌入、密集嵌入、混合检索
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-15 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2025-08-15T00:00:00+08:00">2025-08-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第十七讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="稀疏嵌入与密集嵌入"><a href="#稀疏嵌入与密集嵌入" class="headerlink" title="稀疏嵌入与密集嵌入"></a>稀疏嵌入与密集嵌入</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250815093602208.png" alt="image-20250815093602208" style="zoom:50%;" /></p>
+<h2 id="稀疏嵌入"><a href="#稀疏嵌入" class="headerlink" title="稀疏嵌入"></a>稀疏嵌入</h2><ul>
+<li>定义：早期自然语言处理中基于词频统计的嵌入方式</li>
+<li>形成方式：通过词频或n-gram统计词在文档中出现次数</li>
+<li>稀疏性原因：维度与词典大小相同（如现代汉语字典几万字对应几万维）</li>
+<li>存储方式：出现词标记为1（如”黑神话悟空”在3000、5000、8000维标记1），未出现词均为0</li>
+<li>典型示例：游戏角色特征标签（金箍棒:1，七十二变:1，筋斗云:1等）</li>
+</ul>
+<p>稀疏嵌入的特定场景应用</p>
+<ul>
+<li>保留价值：<ul>
+<li>精确匹配特定关键词（如游戏中的”金箍棒”）</li>
+<li>快速过滤未出现的关键词（得分为0）</li>
+<li>处理明确特征标签（如角色属性、技能名称）</li>
+</ul>
+</li>
+<li>混合检索：结合稀疏嵌入的精确匹配和密集嵌入的语义理解优势</li>
+</ul>
+<h2 id="密集嵌入"><a href="#密集嵌入" class="headerlink" title="密集嵌入"></a>密集嵌入</h2><ul>
+<li>现代主流：大语言模型时代主要使用的嵌入形式</li>
+<li>生成方式：通过transformer架构计算，基于文档相似度特征提取</li>
+<li>特点：<ul>
+<li>连续实数值（如[0.2,-0.5,0.8]）</li>
+<li>维度较小（通常128-256维）</li>
+<li>特征自动学习得到</li>
+</ul>
+</li>
+<li>优势：能捕捉语义相似度，适合处理抽象语义关系</li>
+</ul>
+<h1 id="稀疏嵌入与密集嵌入的结合使用"><a href="#稀疏嵌入与密集嵌入的结合使用" class="headerlink" title="稀疏嵌入与密集嵌入的结合使用"></a>稀疏嵌入与密集嵌入的结合使用</h1><ul>
+<li>应用场景：游戏问答系统中查询特定武器/技能时</li>
+<li>协同效应：<ul>
+<li>稀疏嵌入快速定位含关键词段落</li>
+<li>密集嵌入理解语义相关但表述不同的内容</li>
+</ul>
+</li>
+<li>示例：查询”悟空的武器在哪些关卡管用”时，稀疏嵌入能精准匹配”金箍棒”相关段落</li>
+</ul>
+<h1 id="稀疏嵌入的特征标签表示形式"><a href="#稀疏嵌入的特征标签表示形式" class="headerlink" title="稀疏嵌入的特征标签表示形式"></a>稀疏嵌入的特征标签表示形式</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250815093846348.png" alt="image-20250815093846348" style="zoom:50%;" /></p>
+<ul>
+<li>标签化表示：将特征转化为二进制标记（存在=1，不存在=0）</li>
+<li>现代发展：从简单0/1标记发展为带权重的实数表示（如金箍棒:0.82）</li>
+<li>类比理解：可视为更精确的关键词检索系统</li>
+</ul>
+<h1 id="向量类型的对比"><a href="#向量类型的对比" class="headerlink" title="向量类型的对比"></a>向量类型的对比</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250815094142413.png" alt="image-20250815094142413" style="zoom:50%;" /></p>
+<ul>
+<li>主要类型：<ul>
+<li>Float Vector（密集嵌入）</li>
+<li>Sparse Float Vector（稀疏实数向量）</li>
+<li>Binary Vector（稀疏嵌入简化形式）</li>
+</ul>
+</li>
+</ul>
+<h2 id="Sparse-Float-Vector（稀疏实数向量）"><a href="#Sparse-Float-Vector（稀疏实数向量）" class="headerlink" title="Sparse Float Vector（稀疏实数向量）"></a>Sparse Float Vector（稀疏实数向量）</h2><ul>
+<li>存储方式：键值对表示（如(1:0.5, 5:-0.3, 8:0.7)）</li>
+<li>特点：<ul>
+<li>只存储非零值</li>
+<li>维度可以非常大（几万维）</li>
+<li>现代稀疏向量包含权重值（非简单0/1）</li>
+</ul>
+</li>
+</ul>
+<h2 id="Binary-Vector（稀疏嵌入的简化形式）"><a href="#Binary-Vector（稀疏嵌入的简化形式）" class="headerlink" title="Binary Vector（稀疏嵌入的简化形式）"></a>Binary Vector（稀疏嵌入的简化形式）</h2><ul>
+<li>特点：<ul>
+<li>仅包含0和1</li>
+<li>表示特征存在与否</li>
+<li>推荐系统中用户画像的典型表示方式</li>
+</ul>
+</li>
+<li>示例：淘宝用户标签系统（性别、消费偏好等）</li>
+</ul>
+<h2 id="稀疏嵌入与密集嵌入的关系"><a href="#稀疏嵌入与密集嵌入的关系" class="headerlink" title="稀疏嵌入与密集嵌入的关系"></a>稀疏嵌入与密集嵌入的关系</h2><ul>
+<li>实现形式：<ul>
+<li>密集嵌入 → Float Vector</li>
+<li>稀疏嵌入 → Binary Vector或Sparse Float Vector</li>
+</ul>
+</li>
+<li>核心区别：<ul>
+<li>密集嵌入所有位置都有值</li>
+<li>稀疏嵌入大部分位置为0</li>
+</ul>
+</li>
+</ul>
+<h1 id="BM25：典型的稀疏嵌入实现"><a href="#BM25：典型的稀疏嵌入实现" class="headerlink" title="BM25：典型的稀疏嵌入实现"></a>BM25：典型的稀疏嵌入实现</h1><p>文本：“猢狲施展烈焰拳，击退妖怪；随后开启金刚体，抵挡神兵攻击。”如词表包含10 000个词，但作为稀疏向量只有特定维度有值，例如103维、302维等，分别对应“金刚体”“灭神纪”“猢狲”等词的权重。</p>
+<script type="math/tex; mode=display">
+\text{score}(w) = \text{IDF}(w) \cdot \frac{\text{TF}(w) \cdot (k_1 + 1)}{\text{TF}(w) + k_1 \cdot \left(1 - b + b \cdot \frac{\text{文档长度}}{\text{平均文档长度}}\right)}</script><ul>
+<li>参数说明：<ul>
+<li>﻿$k_1$﻿：控制词频对权重的影响（取值1-2）</li>
+<li>﻿$b$﻿：文档长度归一化参数（0-1）</li>
+</ul>
+</li>
+<li>参数调整：<ul>
+<li>文档长度差异大时增加b值</li>
+<li>强调词频重要性时增加k1值</li>
+</ul>
+</li>
+</ul>
+<script type="math/tex; mode=display">
+\text{IDF}(w) = \log \frac{\text{总文档数} - \text{包含词 } w \text{ 的文档数} + 0.5}{\text{包含词 } w \text{ 的文档数} + 0.5} + 1</script><ul>
+<li><h6 id="词频（TF）的解释与计算"><a href="#词频（TF）的解释与计算" class="headerlink" title="词频（TF）的解释与计算"></a>词频（TF）的解释与计算</h6><ul>
+<li>计算方式：词在当前文档中出现的次数</li>
+<li>示例：”悟空”出现3次则TF=3</li>
+<li>基础作用：单独使用TF即可生成简单稀疏向量</li>
+</ul>
+</li>
+<li><h6 id="逆文档频率（IDF）的概念与重要性"><a href="#逆文档频率（IDF）的概念与重要性" class="headerlink" title="逆文档频率（IDF）的概念与重要性"></a>逆文档频率（IDF）的概念与重要性</h6><ul>
+<li>定义：衡量词在所有文档中的全局重要性</li>
+<li>核心思想：<ul>
+<li>在所有文档中频繁出现的词（如”的”、”是”）重要性低</li>
+<li>在少数文档中高频出现的词重要性高</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="BM25的应用实例与解释"><a href="#BM25的应用实例与解释" class="headerlink" title="BM25的应用实例与解释"></a>BM25的应用实例与解释</h2><ul>
+<li>示例文本：”猢狲施展烈焰拳，击退妖怪；随后开启金刚体，抵挡神兵攻击”</li>
+<li>处理过程：<ul>
+<li>万维词表中只有特定维度有值（如103维”金刚体”）</li>
+<li>计算各关键词的BM25得分</li>
+</ul>
+</li>
+<li>比较示例：<ul>
+<li>“金箍棒”在段落出现3次，全局出现少 → 高分</li>
+<li>“悟空”在段落出现3次，但全局出现万次 → 相对低分</li>
+</ul>
+</li>
+</ul>
+<h2 id="BM25在大模型时代的应用价值"><a href="#BM25在大模型时代的应用价值" class="headerlink" title="BM25在大模型时代的应用价值"></a>BM25在大模型时代的应用价值</h2><ul>
+<li>快速过滤：对未出现关键词得分为0，检索效率高</li>
+<li>精确匹配：对强特征标签（如特定武器名）检索准确</li>
+<li>混合优势：与密集嵌入配合实现快速精确的混合检索</li>
+</ul>
+<p>示例代码：稀疏向量的实现</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/8/15 10:01</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> Counter</span><br><span class="line"></span><br><span class="line"><span class="comment"># 猢狲的战斗日志</span></span><br><span class="line">battle_logs = [</span><br><span class="line">    <span class="string">&quot;猢狲，施展，烈焰拳，击退，妖怪；随后开启，金刚体，抵挡，神兵，攻击。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;妖怪，使用，寒冰箭，攻击，猢狲，但被，烈焰拳，反击，击溃。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;猢狲，召唤，烈焰拳，与，毁灭咆哮，击败，妖怪，随后，收集，妖怪，精华。&quot;</span></span><br><span class="line">]</span><br><span class="line"><span class="comment"># 超参数</span></span><br><span class="line">k1 = <span class="number">1.5</span></span><br><span class="line">b = <span class="number">0.75</span></span><br><span class="line"><span class="comment"># 构建词表</span></span><br><span class="line">vocabulary = <span class="built_in">set</span>(word <span class="keyword">for</span> log <span class="keyword">in</span> battle_logs <span class="keyword">for</span> word <span class="keyword">in</span> log.split(<span class="string">&quot;，&quot;</span>))</span><br><span class="line">vocab_to_idx = &#123;word: idx <span class="keyword">for</span> idx, word <span class="keyword">in</span> <span class="built_in">enumerate</span>(vocabulary)&#125;</span><br><span class="line"><span class="comment"># 计算IDF</span></span><br><span class="line">N = <span class="built_in">len</span>(battle_logs)</span><br><span class="line">df = Counter(word <span class="keyword">for</span> log <span class="keyword">in</span> battle_logs <span class="keyword">for</span> word <span class="keyword">in</span> <span class="built_in">set</span>(log.split(<span class="string">&quot;，&quot;</span>)))</span><br><span class="line">idf = &#123;word: math.log((N - df[word] + <span class="number">0.5</span>) / (df[word] + <span class="number">0.5</span>) + <span class="number">1</span>) <span class="keyword">for</span> word <span class="keyword">in</span> vocabulary&#125;</span><br><span class="line"><span class="comment"># 日志长度信息</span></span><br><span class="line">avg_log_len = <span class="built_in">sum</span>(<span class="built_in">len</span>(log.split(<span class="string">&quot;，&quot;</span>)) <span class="keyword">for</span> log <span class="keyword">in</span> battle_logs) / N</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># BM25稀疏嵌入生成</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">bm25_sparse_embedding</span>(<span class="params">log</span>):</span><br><span class="line">    tf = Counter(log.split(<span class="string">&quot;，&quot;</span>))</span><br><span class="line">    log_len = <span class="built_in">len</span>(log.split(<span class="string">&quot;，&quot;</span>))</span><br><span class="line">    embedding = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> word, freq <span class="keyword">in</span> tf.items():</span><br><span class="line">        <span class="keyword">if</span> word <span class="keyword">in</span> vocabulary:</span><br><span class="line">            idx = vocab_to_idx[word]</span><br><span class="line">            score = idf[word] * (freq * (k1 + <span class="number">1</span>)) / (freq + k1 * (<span class="number">1</span> - b + b * log_len / avg_log_len))</span><br><span class="line">            embedding[idx] = score</span><br><span class="line">    <span class="keyword">return</span> embedding</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成稀疏向量</span></span><br><span class="line"><span class="keyword">for</span> log <span class="keyword">in</span> battle_logs:</span><br><span class="line">    sparse_embedding = bm25_sparse_embedding(log)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;稀疏嵌入： <span class="subst">&#123;sparse_embedding&#125;</span>&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果，内容输出</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">稀疏嵌入： &#123;1: 0.12572760993867385, 21: 0.9235080629006516, 2: 0.12572760993867385, 11: 0.9235080629006516, 10: 0.9235080629006516, 7: 0.9235080629006516, 19: 0.6429294928361478, 12: 0.9235080629006516, 3: 0.9235080629006516, 16: 0.9235080629006516&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="LangChain实现BM25的嵌入检索"><a href="#LangChain实现BM25的嵌入检索" class="headerlink" title="LangChain实现BM25的嵌入检索"></a>LangChain实现BM25的嵌入检索</h3><p>安装包</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install rank_bm25</span><br></pre></td></tr></table></figure>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/8/15 10:06</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain_community.retrievers <span class="keyword">import</span> BM25Retriever  <span class="comment"># pip install rank_bm25</span></span><br><span class="line"><span class="keyword">from</span> langchain_community.vectorstores <span class="keyword">import</span> Chroma  <span class="comment"># pip install chromadb</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.documents <span class="keyword">import</span> Document</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">battle_logs = [</span><br><span class="line">    <span class="string">&quot;猢狲身披锁子甲。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;猢狲在无回谷遭遇了妖怪，妖怪开始攻击，猢狲使用铜云棒抵挡。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;猢狲施展烈焰拳击退妖怪随后开启金刚体抵挡神兵攻击。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;妖怪使用寒冰箭攻击猢狲但被烈焰拳反击击溃。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;猢狲召唤烈焰拳与毁灭咆哮击败妖怪随后收集妖怪精华。&quot;</span></span><br><span class="line">]</span><br><span class="line">request = <span class="string">&quot;猢狲有什么装备和招数？&quot;</span></span><br><span class="line"></span><br><span class="line">bm25_retriever = BM25Retriever.from_texts(battle_logs)</span><br><span class="line">bm25_response = bm25_retriever.invoke(request)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;BM25检索结果：\n<span class="subst">&#123;bm25_response&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">docs = [Document(page_content=log) <span class="keyword">for</span> log <span class="keyword">in</span> battle_logs]</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 设置嵌入模型</span></span><br><span class="line"><span class="keyword">from</span> langchain_huggingface <span class="keyword">import</span> HuggingFaceEmbeddings  <span class="comment"># pip install langchain-huggingface</span></span><br><span class="line"></span><br><span class="line">embeddings = HuggingFaceEmbeddings(</span><br><span class="line">    model_name=<span class="string">&quot;BAAI/bge-small-zh&quot;</span>,</span><br><span class="line">    model_kwargs=&#123;<span class="string">&#x27;device&#x27;</span>: <span class="string">&#x27;cpu&#x27;</span>&#125;,</span><br><span class="line">    encode_kwargs=&#123;<span class="string">&#x27;normalize_embeddings&#x27;</span>: <span class="literal">True</span>&#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">chroma_vs = Chroma.from_documents(</span><br><span class="line">    docs,</span><br><span class="line">    embedding=embeddings</span><br><span class="line">    <span class="comment"># embedding=OpenAIEmbeddings(</span></span><br><span class="line">    <span class="comment">#     model=&quot;text-embedding-3-small&quot;,</span></span><br><span class="line">    <span class="comment">#     api_key=os.getenv(&quot;DEEPSEEK_API_KEY&quot;),  # 从环境变量加载API key</span></span><br><span class="line">    <span class="comment">#     base_url=os.getenv(&quot;DEEPSEEK_BASE_URL&quot;)</span></span><br><span class="line">    <span class="comment"># )</span></span><br><span class="line">)</span><br><span class="line">chroma_retriever = chroma_vs.as_retriever()</span><br><span class="line">chroma_response = chroma_retriever.invoke(request)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Chroma检索结果：\n<span class="subst">&#123;chroma_response&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># hybrid_response = list(&#123;doc.page_content for doc in bm25_response&#125;) # 缺锁子甲</span></span><br><span class="line"><span class="comment"># hybrid_response = list(&#123;doc.page_content for doc in chroma_response&#125;) # 缺铜云棒</span></span><br><span class="line">hybrid_response = <span class="built_in">list</span>(&#123;doc.page_content <span class="keyword">for</span> doc <span class="keyword">in</span> bm25_response + chroma_response&#125;)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;混合检索结果：\n<span class="subst">&#123;hybrid_response&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">prompt = ChatPromptTemplate.from_template(<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">                基于以下上下文，回答问题。如果上下文中没有相关信息，</span></span><br><span class="line"><span class="string">                请说&quot;我无法从提供的上下文中找到相关信息&quot;。</span></span><br><span class="line"><span class="string">                上下文: &#123;context&#125;</span></span><br><span class="line"><span class="string">                问题: &#123;question&#125;</span></span><br><span class="line"><span class="string">                回答:&quot;&quot;&quot;</span></span><br><span class="line">                                          )</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>),  <span class="comment"># DeepSeek API 支持的模型名称</span></span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),  <span class="comment"># 从环境变量加载API key</span></span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>)</span><br><span class="line">)</span><br><span class="line">doc_content = <span class="string">&quot;\n\n&quot;</span>.join(hybrid_response)</span><br><span class="line">answer = llm.invoke(prompt.<span class="built_in">format</span>(question=request, context=doc_content))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;LLM回答：\n<span class="subst">&#123;answer.content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h1 id="BGE-–-M3模型"><a href="#BGE-–-M3模型" class="headerlink" title="BGE – M3模型"></a>BGE – M3模型</h1><p>为什么叫作M3？</p>
+<ul>
+<li>多功能性（Multi-Functionality）：BGE-M3模型集成了密集检索、稀疏检索和多向量检索3种功能，能够灵活应对不同的检索需求，是目前首个实现三合一功能的嵌入模型。</li>
+<li>多语言性（Multi-Linguality）：BGE-M3模型支持超过100种语言，具备强大的多语言和跨语言检索能力。</li>
+<li>多粒度性（Multi-Granularity）：BGE-M3模型能够处理从短句到长达8192个token的长文档，满足不同长度文本的处理需求，上下文支持能力突出。</li>
+</ul>
+<p>BGE – M3实际应用—示例代码如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/8/15 10:20</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> FlagEmbedding <span class="keyword">import</span> BGEM3FlagModel</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    model = BGEM3FlagModel(<span class="string">&quot;BAAI/bge-m3&quot;</span>, use_fp16=<span class="literal">False</span>)</span><br><span class="line">    passage = [<span class="string">&quot;猢狲施展烈焰拳，击退妖怪；随后开启金刚体，抵挡神兵攻击。&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 编码文本，获取稀疏嵌入和密集嵌入</span></span><br><span class="line">    passage_embeddings = model.encode(</span><br><span class="line">        passage,</span><br><span class="line">        return_sparse=<span class="literal">True</span>,  <span class="comment"># 返回稀疏嵌入</span></span><br><span class="line">        return_dense=<span class="literal">True</span>,  <span class="comment"># 返回密集嵌入</span></span><br><span class="line">        return_colbert_vecs=<span class="literal">True</span>  <span class="comment"># 返回多向量嵌入</span></span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 分别提取稀疏嵌入、密集嵌入和多向量嵌入</span></span><br><span class="line">    dense_vecs = passage_embeddings[<span class="string">&quot;dense_vecs&quot;</span>]</span><br><span class="line">    sparse_vecs = passage_embeddings[<span class="string">&quot;lexical_weights&quot;</span>]</span><br><span class="line">    colbert_vecs = passage_embeddings[<span class="string">&quot;colbert_vecs&quot;</span>]</span><br><span class="line">    <span class="comment"># 展示稀疏嵌入和密集嵌入的示例</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;密集嵌入维度:&quot;</span>, dense_vecs[<span class="number">0</span>].shape)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;密集嵌入前10维:&quot;</span>, dense_vecs[<span class="number">0</span>][:<span class="number">10</span>])  <span class="comment"># 仅显示前10维</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;稀疏嵌入总长度:&quot;</span>, <span class="built_in">len</span>(sparse_vecs[<span class="number">0</span>]))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;稀疏嵌入前10个非零值:&quot;</span>, <span class="built_in">list</span>(sparse_vecs[<span class="number">0</span>].items())[:<span class="number">10</span>])  <span class="comment"># 仅显示前10个非零值</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;多向量嵌入维度:&quot;</span>, colbert_vecs[<span class="number">0</span>].shape)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;多向量嵌入前2个:&quot;</span>, colbert_vecs[<span class="number">0</span>][:<span class="number">2</span>])  <span class="comment"># 仅显示前2个多向量嵌入</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    main()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Fetching 30 files: 100%|██████████| 30/30 [03:36&lt;00:00,  7.20s/it]</span><br><span class="line">You&#x27;re using a XLMRobertaTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.</span><br><span class="line">密集嵌入维度: (1024,)</span><br><span class="line">密集嵌入前10维: [ 0.01156895  0.02439202 -0.02763914 -0.00984312 -0.04426081 -0.02911922</span><br><span class="line">  0.03953079  0.02165183  0.01074662 -0.03528604]</span><br><span class="line">稀疏嵌入总长度: 23</span><br><span class="line">稀疏嵌入前10个非零值: [(&#x27;6&#x27;, np.float32(0.07354035)), (&#x27;28323&#x27;, np.float32(0.07607667)), (&#x27;8869&#x27;, np.float32(0.15832472)), (&#x27;48124&#x27;, np.float32(0.16404548)), (&#x27;213212&#x27;, np.float32(0.20880702)), (&#x27;75133&#x27;, np.float32(0.25368148)), (&#x27;4&#x27;, np.float32(0.05709526)), (&#x27;31833&#x27;, np.float32(0.11104022)), (&#x27;12461&#x27;, np.float32(0.18773066)), (&#x27;101184&#x27;, np.float32(0.18636808))]</span><br><span class="line">多向量嵌入维度: (26, 1024)</span><br><span class="line">多向量嵌入前2个: [[-0.05067743  0.00912711 -0.0287432  ...  0.0251329   0.05133016</span><br><span class="line">  -0.00171831]</span><br><span class="line"> [-0.03439403 -0.00773524 -0.01304412 ...  0.01616604  0.01929808</span><br><span class="line">   0.01006441]]</span><br></pre></td></tr></table></figure>
+<ul>
+<li>典型输出维度:<ul>
+<li>密集嵌入: 1024维向量（如[0.01, -0.82, 0.03,…]）</li>
+<li>稀疏嵌入: 约30万维中几十个非零值（如{‘6’:0.073, ‘28323’:0.076}）</li>
+<li>多向量嵌入: (token数, 1024)矩阵（如26个token生成26×1024矩阵）</li>
+</ul>
+</li>
+</ul>
+<h2 id="核心内容总结"><a href="#核心内容总结" class="headerlink" title="核心内容总结"></a>核心内容总结</h2><ul>
+<li>混合检索优势:<ul>
+<li>稀疏检索: 快速定位含关键词文档（如”烈焰拳”）</li>
+<li>密集检索: 按语义相似度排序（如”战斗激烈”场景）</li>
+<li>多向量检索: 精细匹配token级关系（重排序场景）</li>
+</ul>
+</li>
+<li>典型应用场景:<ul>
+<li>多语言场景: 密集检索主导跨语言匹配</li>
+<li>长文档场景: 稀疏检索捕捉关键信息</li>
+<li>高精度需求: 多向量检索提升排序质量</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/15/ai/rag/18-embedding-multi/" rel="prev" title="RAG组件--向量嵌入之多模态嵌入技术">
+      <i class="fa fa-chevron-left"></i> RAG组件--向量嵌入之多模态嵌入技术
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/18/ai/rag/20-vector-db-collection/" rel="next" title="RAG组件--向量数据库集合">
+      RAG组件--向量数据库集合 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A8%80%E7%96%8F%E5%B5%8C%E5%85%A5%E4%B8%8E%E5%AF%86%E9%9B%86%E5%B5%8C%E5%85%A5"><span class="nav-number">1.</span> <span class="nav-text">稀疏嵌入与密集嵌入</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%80%E7%96%8F%E5%B5%8C%E5%85%A5"><span class="nav-number">1.1.</span> <span class="nav-text">稀疏嵌入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%86%E9%9B%86%E5%B5%8C%E5%85%A5"><span class="nav-number">1.2.</span> <span class="nav-text">密集嵌入</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A8%80%E7%96%8F%E5%B5%8C%E5%85%A5%E4%B8%8E%E5%AF%86%E9%9B%86%E5%B5%8C%E5%85%A5%E7%9A%84%E7%BB%93%E5%90%88%E4%BD%BF%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">稀疏嵌入与密集嵌入的结合使用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A8%80%E7%96%8F%E5%B5%8C%E5%85%A5%E7%9A%84%E7%89%B9%E5%BE%81%E6%A0%87%E7%AD%BE%E8%A1%A8%E7%A4%BA%E5%BD%A2%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">稀疏嵌入的特征标签表示形式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">4.</span> <span class="nav-text">向量类型的对比</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Sparse-Float-Vector%EF%BC%88%E7%A8%80%E7%96%8F%E5%AE%9E%E6%95%B0%E5%90%91%E9%87%8F%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">Sparse Float Vector（稀疏实数向量）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Binary-Vector%EF%BC%88%E7%A8%80%E7%96%8F%E5%B5%8C%E5%85%A5%E7%9A%84%E7%AE%80%E5%8C%96%E5%BD%A2%E5%BC%8F%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">Binary Vector（稀疏嵌入的简化形式）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%80%E7%96%8F%E5%B5%8C%E5%85%A5%E4%B8%8E%E5%AF%86%E9%9B%86%E5%B5%8C%E5%85%A5%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">4.3.</span> <span class="nav-text">稀疏嵌入与密集嵌入的关系</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#BM25%EF%BC%9A%E5%85%B8%E5%9E%8B%E7%9A%84%E7%A8%80%E7%96%8F%E5%B5%8C%E5%85%A5%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.</span> <span class="nav-text">BM25：典型的稀疏嵌入实现</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E8%AF%8D%E9%A2%91%EF%BC%88TF%EF%BC%89%E7%9A%84%E8%A7%A3%E9%87%8A%E4%B8%8E%E8%AE%A1%E7%AE%97"><span class="nav-number">5.0.0.0.0.1.</span> <span class="nav-text">词频（TF）的解释与计算</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E9%80%86%E6%96%87%E6%A1%A3%E9%A2%91%E7%8E%87%EF%BC%88IDF%EF%BC%89%E7%9A%84%E6%A6%82%E5%BF%B5%E4%B8%8E%E9%87%8D%E8%A6%81%E6%80%A7"><span class="nav-number">5.0.0.0.0.2.</span> <span class="nav-text">逆文档频率（IDF）的概念与重要性</span></a></li></ol></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BM25%E7%9A%84%E5%BA%94%E7%94%A8%E5%AE%9E%E4%BE%8B%E4%B8%8E%E8%A7%A3%E9%87%8A"><span class="nav-number">5.1.</span> <span class="nav-text">BM25的应用实例与解释</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BM25%E5%9C%A8%E5%A4%A7%E6%A8%A1%E5%9E%8B%E6%97%B6%E4%BB%A3%E7%9A%84%E5%BA%94%E7%94%A8%E4%BB%B7%E5%80%BC"><span class="nav-number">5.2.</span> <span class="nav-text">BM25在大模型时代的应用价值</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#LangChain%E5%AE%9E%E7%8E%B0BM25%E7%9A%84%E5%B5%8C%E5%85%A5%E6%A3%80%E7%B4%A2"><span class="nav-number">5.2.1.</span> <span class="nav-text">LangChain实现BM25的嵌入检索</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#BGE-%E2%80%93-M3%E6%A8%A1%E5%9E%8B"><span class="nav-number">6.</span> <span class="nav-text">BGE – M3模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%86%85%E5%AE%B9%E6%80%BB%E7%BB%93"><span class="nav-number">6.1.</span> <span class="nav-text">核心内容总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

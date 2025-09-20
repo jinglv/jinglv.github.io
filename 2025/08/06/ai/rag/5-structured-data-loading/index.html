@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第五讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--数据导入之结构化文本的读取">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/06/ai/rag/5-structured-data-loading/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第五讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250806093810747.png">
+<meta property="article:published_time" content="2025-08-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-06T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250806093810747.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/06/ai/rag/5-structured-data-loading/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--数据导入之结构化文本的读取 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/06/ai/rag/5-structured-data-loading/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--数据导入之结构化文本的读取
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-06 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2025-08-06T00:00:00+08:00">2025-08-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第五讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="使用LangChain的JSON-Loader"><a href="#使用LangChain的JSON-Loader" class="headerlink" title="使用LangChain的JSON Loader"></a>使用LangChain的JSON Loader</h1><ul>
+<li>结构化文档特点：JSON、网页、Markdown等文档具有数据结构，解析时应尽量保留原有结构信息</li>
+<li>基本用法：通过JSONLoader加载JSON文件，配合jq_schema指定解析规则</li>
+<li>输出格式：解析结果包含metadata和page_content两部分，metadata记录来源信息，page_content包含提取的字段内容</li>
+</ul>
+<p>代码示例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> TextLoader</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== TextLoader 加载结果 ===&quot;</span>)</span><br><span class="line">text_loader = TextLoader(<span class="string">&quot;../data/灭神纪/人物角色.json&quot;</span>)</span><br><span class="line">text_documents = text_loader.load()</span><br><span class="line"><span class="built_in">print</span>(text_documents)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">=== TextLoader 加载结果 ===</span><br><span class="line">[Document(metadata=&#123;&#x27;source&#x27;: &#x27;../data/灭神纪/人物角色.json&#x27;&#125;, page_content=&#x27;&#123;\n  &quot;gameTitle&quot;: &quot;西游记&quot;,\n  &quot;basicInfo&quot;: &#123; &quot;engine&quot;: &quot;虚幻引擎5&quot;, &quot;releaseDate&quot;: &quot;2024-08-20&quot;, &quot;genre&quot;: &quot;动作角色扮演&quot;, &quot;platforms&quot;: [&quot;PC&quot;, &quot;PS5&quot;, &quot;Xbox Series X/S&quot;], &quot;supportedLanguages&quot;: [&quot;简体中文&quot;, &quot;繁体中文&quot;, &quot;英语&quot;, &quot;日语&quot;, &quot;韩语&quot;] &#125;,\n  &quot;mainCharacter&quot;: &#123; &quot;name&quot;: &quot;孙悟空&quot;, &quot;backstory&quot;: &quot;混沌初开之时，盘古开天辟地，天地灵气凝结成仙石，其中孕育出一只石猴。这只石猴拜师菩提老祖，修得一身本领，后被赐名孙悟空。&quot;, &quot;abilities&quot;: [&quot;七十二变&quot;, &quot;筋斗云&quot;, &quot;火眼金睛&quot;, &quot;金刚不坏之身&quot;], &quot;weapons&quot;: [&quot;如意金箍棒&quot;, &quot;法器&quot;, &quot;神通符咒&quot;], &quot;combatStyle&quot;: &quot;基于变身系统的高速格斗，结合中国传统神话元素的技能组合&quot; &#125;,\n  &quot;supportCharacters&quot;: [\n    &#123; &quot;name&quot;: &quot;白龙马&quot;, &quot;identity&quot;: &quot;八部天龙之一&quot;, &quot;background&quot;: &quot;原为西海龙王三太子敖烈，因冒犯天条被贬为马，后随唐僧西行取经，成为孙悟空的伙伴&quot;, &quot;abilities&quot;: [&quot;水遁&quot;, &quot;腾云驾雾&quot;, &quot;变化&quot;] &#125;,\n    &#123; &quot;name&quot;: &quot;红孩儿&quot;, &quot;identity&quot;: &quot;圣婴大王&quot;, &quot;background&quot;: &quot;牛魔王与铁扇公主之子，修炼火焰三昧，掌握三昧真火&quot;, &quot;abilities&quot;: [&quot;三昧真火&quot;, &quot;火眼&quot;, &quot;战斗形态&quot;] &#125;,\n    &#123; &quot;name&quot;: &quot;六耳猕猴&quot;, &quot;identity&quot;: &quot;孙悟空分身&quot;, &quot;background&quot;: &quot;天地间与美猴王最像的存在，有着与孙悟空相似的能力&quot;, &quot;abilities&quot;: [&quot;七十二变&quot;, &quot;法术&quot;, &quot;分身术&quot;] &#125;\n  ],\n  &quot;gameFeatures&quot;: &#123; &quot;worldSetting&quot;: &quot;基于西游记神话背景，融合虚构的玄幻世界&quot;, &quot;combatSystem&quot;: &quot;独特的变身战斗系统，结合高难度动作玩法&quot;, &quot;progression&quot;: &quot;技能树发展系统，解锁新的战斗技能和变身形态&quot;, &quot;exploration&quot;: &quot;开放式地图探索，丰富的支线任务和隐藏剧情&quot;, &quot;graphics&quot;: &quot;采用虚幻引擎5, 实现高质量画面表现和实时光线追踪&quot; &#125;\n&#125;\n&#x27;)]</span><br></pre></td></tr></table></figure>
+<ul>
+<li>文件结构：包含gameTitle、basicInfo、mainCharacter、supportCharacters等结构化字段</li>
+<li>解析目标：需要分门别类提取主角信息和配角信息</li>
+<li>局限性：将所有内容堆叠在同一个page_content中，无法区分不同字段</li>
+<li>问题：需要手动解析字符串，难以准确定位特定字段内容</li>
+</ul>
+<h2 id="json-loader与jq-schema"><a href="#json-loader与jq-schema" class="headerlink" title="json loader与jq schema"></a>json loader与jq schema</h2><p>由于上述问题，我们需要进行数据处理，因此使用jq schema：</p>
+<ul>
+<li>jq schema作用：指定需要提取的字段及其格式</li>
+<li>优势：<ul>
+<li>自动将不同角色解析为独立document</li>
+<li>保留sequence number等元数据</li>
+<li>实现数据切片功能</li>
+</ul>
+</li>
+</ul>
+<p>安装包</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -qU jq</span><br></pre></td></tr></table></figure>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> JSONLoader</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== JSONLoader 加载结果 ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;1. 主角信息：&quot;</span>)</span><br><span class="line">main_loader = JSONLoader(</span><br><span class="line">    file_path=<span class="string">&quot;../data/灭神纪/人物角色.json&quot;</span>,</span><br><span class="line">    jq_schema=<span class="string">&#x27;.mainCharacter | &quot;姓名：&quot; + .name + &quot;，背景：&quot; + .backstory&#x27;</span>,</span><br><span class="line">    text_content=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line">main_char = main_loader.load()</span><br><span class="line"><span class="built_in">print</span>(main_char)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n2. 支持角色信息：&quot;</span>)</span><br><span class="line">support_loader = JSONLoader(</span><br><span class="line">    file_path=<span class="string">&quot;../data/灭神纪/人物角色.json&quot;</span>,</span><br><span class="line">    jq_schema=<span class="string">&#x27;.supportCharacters[] | &quot;姓名：&quot; + .name + &quot;，背景：&quot; + .background&#x27;</span>,</span><br><span class="line">    text_content=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line">support_chars = support_loader.load()</span><br><span class="line"><span class="built_in">print</span>(support_chars)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">=== JSONLoader 加载结果 ===</span><br><span class="line">1. 主角信息：</span><br><span class="line">[Document(metadata=&#123;&#x27;source&#x27;: &#x27;/Users/jinglv/PycharmProjects/llm-rag-system/data/灭神纪/人物角色.json&#x27;, &#x27;seq_num&#x27;: 1&#125;, page_content=&#x27;姓名：孙悟空，背景：混沌初开之时，盘古开天辟地，天地灵气凝结成仙石，其中孕育出一只石猴。这只石猴拜师菩提老祖，修得一身本领，后被赐名孙悟空。&#x27;)]</span><br><span class="line"></span><br><span class="line">2. 支持角色信息：</span><br><span class="line">[Document(metadata=&#123;&#x27;source&#x27;: &#x27;/Users/jinglv/PycharmProjects/llm-rag-system/data/灭神纪/人物角色.json&#x27;, &#x27;seq_num&#x27;: 1&#125;, page_content=&#x27;姓名：白龙马，背景：原为西海龙王三太子敖烈，因冒犯天条被贬为马，后随唐僧西行取经，成为孙悟空的伙伴&#x27;), Document(metadata=&#123;&#x27;source&#x27;: &#x27;/Users/jinglv/PycharmProjects/llm-rag-system/data/灭神纪/人物角色.json&#x27;, &#x27;seq_num&#x27;: 2&#125;, page_content=&#x27;姓名：红孩儿，背景：牛魔王与铁扇公主之子，修炼火焰三昧，掌握三昧真火&#x27;), Document(metadata=&#123;&#x27;source&#x27;: &#x27;/Users/jinglv/PycharmProjects/llm-rag-system/data/灭神纪/人物角色.json&#x27;, &#x27;seq_num&#x27;: 3&#125;, page_content=&#x27;姓名：六耳猕猴，背景：天地间与美猴王最像的存在，有着与孙悟空相似的能力&#x27;)]</span><br></pre></td></tr></table></figure>
+<h1 id="使用LangChain的网页加载器"><a href="#使用LangChain的网页加载器" class="headerlink" title="使用LangChain的网页加载器"></a>使用LangChain的网页加载器</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250806093810747.png" alt="image-20250806093810747" style="zoom:50%;" /></p>
+<ul>
+<li>WebBaseLoader：基于urllib和BeautifulSoup，适合基本网页抓取</li>
+<li>UnstructuredLoader：支持复杂网页结构，保留元素间关系</li>
+<li>RecursiveURLLoader：递归抓取子链接，适合大规模站点</li>
+<li>SitemapLoader：通过站点地图快速获取所有页面</li>
+<li>FirecrawlLoader：API服务，适合实时抓取应用</li>
+</ul>
+<h2 id="WebBaseLoader"><a href="#WebBaseLoader" class="headerlink" title="WebBaseLoader"></a>WebBaseLoader</h2><ul>
+<li>基本用法：指定URL即可抓取网页内容</li>
+<li>优化技巧：<ul>
+<li>使用bs4.SoupStrainer限定解析范围（如只解析bodyContent）</li>
+<li>调整bs_get_text_kwargs参数控制输出格式</li>
+</ul>
+</li>
+<li>输出内容：包含source、title、language等metadata</li>
+</ul>
+<p>示例代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> bs4</span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> WebBaseLoader</span><br><span class="line"></span><br><span class="line">page_url = <span class="string">&quot;https://zh.wikipedia.org/wiki/黑神话：悟空&quot;</span></span><br><span class="line"><span class="comment"># loader = WebBaseLoader(web_paths=[page_url])</span></span><br><span class="line"><span class="comment"># docs = []</span></span><br><span class="line"><span class="comment"># docs = loader.load()</span></span><br><span class="line"><span class="comment"># assert len(docs) == 1</span></span><br><span class="line"><span class="comment"># doc = docs[0]</span></span><br><span class="line"><span class="comment"># print(f&quot;&#123;doc.metadata&#125;\n&quot;)</span></span><br><span class="line"><span class="comment"># print(doc.page_content.strip()[:3000])</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 只解析文章的主体部分</span></span><br><span class="line">loader = WebBaseLoader(</span><br><span class="line">    web_paths=[page_url],</span><br><span class="line">    bs_kwargs=&#123;</span><br><span class="line">        <span class="string">&quot;parse_only&quot;</span>: bs4.SoupStrainer(<span class="built_in">id</span>=<span class="string">&quot;bodyContent&quot;</span>),</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="comment"># bs_get_text_kwargs=&#123;&quot;separator&quot;: &quot; | &quot;, &quot;strip&quot;: True&#125;,</span></span><br><span class="line">)</span><br><span class="line">docs = []</span><br><span class="line">docs = loader.load()</span><br><span class="line"><span class="keyword">assert</span> <span class="built_in">len</span>(docs) == <span class="number">1</span></span><br><span class="line">doc = docs[<span class="number">0</span>]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;doc.metadata&#125;</span>\n&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(doc.page_content)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#x27;source&#x27;: &#x27;https://zh.wikipedia.org/wiki/黑神话：悟空&#x27;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">维基百科，自由的百科全书</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">黑神话：悟空类型動作角色扮演[1]平台Microsoft WindowsPlayStation 5Xbox Series X/S（暂未发售）开发商游戏科学发行商全球：游戏科学臺灣：4Divinity制作人冯骥、杨奇编剧冯骥美术杨奇[2]、王怡新[3]音乐8082 Audio引擎虚幻引擎5[4]模式单人游戏发行日</span><br><span class="line">2024年8月20日</span><br><span class="line">Microsoft Windows全球：2024年8月20日PlayStation 5全球：2024年8月20日臺灣：2024年11月1日全球：2024年12月（實體豪華版）中国大陆：2025年6月18日Xbox Series X/S全球：2025年8月20日</span><br><span class="line"></span><br><span class="line">《黑神话：悟空》是一款由游戏科学开发和发行的动作角色扮演游戏，被新华社称为中国首款“3A游戏”[5]，游戏于2024年8月20日登入Windows（Steam、Epic Games、WeGame）及PlayStation 5平台，Xbox Series X/S版预定2025年8月20日发售。</span><br><span class="line">游戏内容改编自中国四大名著之一的《西游记》[6]，在正式发布前，游戏已获得业界媒体与评论家们的普遍好评，称赞其在战斗系统、视觉设计以及世界观方面的构建。游戏上线后迅速登顶多个平台的销量榜首，官方宣布首发3天内全球销量超过1000万份[7]，发售后一个月内全球销量超过2000万份[8]，成为有史以来销售速度最快的游戏之一。[9]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">玩法[编辑]</span><br><span class="line">《黑神话：悟空》是一款动作角色扮演游戏，[10]采用单人模式和第三人称视角。尽管在游戏发布前因為本作借鑒了不少魂类遊戲要素，曾有人讨论其是否属于魂类游戏，但其开发商游戏科学并不认为它属于这一类型[11]，许多评论者也认为该游戏并不完全符合“魂类”游戏的定义。[12][13]</span><br><span class="line">游戏的设计灵感源于中国四大名著之一——古典神魔小說《西游记》，玩家将操控一位名为“天命人”的花果山灵明石猴。主角的主要武器是如意金箍棒等棍棒类武器，能在战斗中伸缩自如。游戏的战斗系统包括三种主要棍法：劈棍、戳棍和立棍，为战斗提供多样化选择。战斗还涉及资源管理，玩家可以积累气力值，用于连招或蓄力重击。冲刺、闪避和攻击都会消耗气力值。[14][15]</span><br><span class="line">除了物理战斗，玩家还可以使用“奇术”、“身法”、“毫毛”和“变化”等四类法术。[16]这些法术有冷却时间并消耗法力值。各类法术按技能可再细分，例如：“定身”奇术可以在短时间内定住敌人；“聚形散气”身法可散气遁走并留下假身，聚形时可再行突袭，造成更高的伤害；“身外身法”的毫毛法术能召唤多个分身协助战斗，而各种变化法术允许主角变形为不同的游戏内角色，并拥有独特的招式和生命值。[12]此外，玩家可以通过击败强大的敌人获得“精魄”技能，这些技能类似于一次性的变身，例如，“幽魂”精魄可以让玩家进行头锤攻击。[17]</span><br><span class="line">游戏的进程大多是线性的，亦有较为宽阔的区域供玩家探索。玩家会遇到各种妖怪和头目作为敌人。玩家的检查点是世界各地的神龛（土地庙）。游戏地图无法由玩家调整，但会随游戏进展而变化。[18]</span><br><span class="line">此外，游戏也支持多周目模式，为玩家提供“再入轮回”的玩法和彩蛋。[19]例如，进入二周目可以解锁“救命”的毫毛法术，在战斗中死亡可以立即复活；[20]三周目怪物变强；四周目敌人强度大幅提升，并触发四段棍势彩蛋等。[21][22]一至六周目游戏难度（敌人伤害）逐渐提升，第七周目起游戏难度不再变化。</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">检索自“https://zh.wikipedia.org/w/index.php?title=黑神话：悟空&amp;oldid=88025374”</span><br><span class="line">分类：​2024年電子遊戲2024年中国作品中国大陆开发电子游戏原生中文游戏Windows游戏PlayStation 5游戏Xbox Series X/S游戏动作角色扮演游戏虚幻引擎5游戏西遊記題材電子遊戲单人电子游戏魂系遊戲金摇杆奖年度游戏得主遊戲大獎得主孙悟空隐藏分类：​CS1英语来源 (en)引文格式1错误：日期CS1泰语来源 (th)CS1美国英语来源 (en-us)有蓝链却未移除内部链接助手模板的页面使用多个图像且自动缩放的页面自2025年1月缺少重要資訊的條目VG Reviews模板使用單平台模式的條目</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="UnstructuredLoader"><a href="#UnstructuredLoader" class="headerlink" title="UnstructuredLoader"></a>UnstructuredLoader</h2><ul>
+<li>核心功能：解析网页元素类型（Title、ListItem等）和父子关系</li>
+<li>关键应用：<ul>
+<li>通过parent_id保持内容与标题的关联</li>
+<li>避免信息切片时丢失上下文关系</li>
+</ul>
+</li>
+<li>典型场景：处理参考资料列表时确保每个条目与”参考资料”标题保持关联</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_unstructured <span class="keyword">import</span> UnstructuredLoader</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.documents <span class="keyword">import</span> Document</span><br><span class="line"></span><br><span class="line">page_url = <span class="string">&quot;https://zh.wikipedia.org/wiki/黑神话：悟空&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">_get_setup_docs_from_url</span>(<span class="params">url: <span class="built_in">str</span></span>) -&gt; <span class="type">List</span>[Document]:</span><br><span class="line">    loader = UnstructuredLoader(web_url=url)</span><br><span class="line">    setup_docs = []</span><br><span class="line">    <span class="comment"># parent_id = None  # 初始化 parent_id</span></span><br><span class="line">    <span class="comment"># current_parent = None  # 用于存储当前父元素</span></span><br><span class="line">    <span class="keyword">for</span> doc <span class="keyword">in</span> loader.load():</span><br><span class="line">        <span class="comment"># 检查是否是 Title 或 Table</span></span><br><span class="line">        <span class="keyword">if</span> doc.metadata[<span class="string">&quot;category&quot;</span>] == <span class="string">&quot;Title&quot;</span> <span class="keyword">or</span> doc.metadata[<span class="string">&quot;category&quot;</span>] == <span class="string">&quot;Table&quot;</span>:</span><br><span class="line">            parent_id = doc.metadata[<span class="string">&quot;element_id&quot;</span>]</span><br><span class="line">            current_parent = doc  <span class="comment"># 更新当前父元素</span></span><br><span class="line">            setup_docs.append(doc)</span><br><span class="line">        <span class="keyword">elif</span> doc.metadata.get(<span class="string">&quot;parent_id&quot;</span>) == parent_id:</span><br><span class="line">            setup_docs.append((current_parent, doc))  <span class="comment"># 将父元素和子元素一起存储</span></span><br><span class="line">    <span class="keyword">return</span> setup_docs   </span><br><span class="line">    </span><br><span class="line">docs = _get_setup_docs_from_url(page_url)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> item <span class="keyword">in</span> docs:</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">isinstance</span>(item, <span class="built_in">tuple</span>):</span><br><span class="line">        parent, child = item</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;父元素 - <span class="subst">&#123;parent.metadata[<span class="string">&quot;category&quot;</span>]&#125;</span>: <span class="subst">&#123;parent.page_content&#125;</span>&#x27;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;子元素 - <span class="subst">&#123;child.metadata[<span class="string">&quot;category&quot;</span>]&#125;</span>: <span class="subst">&#123;child.page_content&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&#x27;<span class="subst">&#123;item.metadata[<span class="string">&quot;category&quot;</span>]&#125;</span>: <span class="subst">&#123;item.page_content&#125;</span>&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">80</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">Title: 黑神话：悟空</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">父元素 - Title: 黑神话：悟空</span><br><span class="line">子元素 - ListItem: العربية</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">父元素 - Title: 黑神话：悟空</span><br><span class="line">子元素 - ListItem: مصرى</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">父元素 - Title: 黑神话：悟空</span><br><span class="line">子元素 - ListItem: Azərbaycanca</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">父元素 - Title: 黑神话：悟空</span><br><span class="line">子元素 - ListItem: Беларуская (тарашкевіца)</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">父元素 - Title: 黑神话：悟空</span><br><span class="line">子元素 - ListItem: Català</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">父元素 - Title: 黑神话：悟空</span><br><span class="line">子元素 - ListItem: 閩東語 / Mìng-dĕ̤ng-ngṳ̄</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">父元素 - Title: 黑神话：悟空</span><br><span class="line">子元素 - ListItem: Deutsch</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">父元素 - Title: 黑神话：悟空</span><br><span class="line">子元素 - ListItem: English</span><br><span class="line">...</span><br><span class="line">子元素 - ListItem: 官方网站</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">Table: 查 论 编 《 西游记 》 可能作者： 吴承恩 · 丘处机 起源 《 大唐三藏取經詩話 》 《 杂剧西游记 》 《 大唐西域記 》 登場角色 主要角色 唐三藏 孙悟空 猪八戒 沙僧 白龙马 主要配角 如来佛祖 观音菩萨 玉皇大帝 太上老君 太白金星 菩提祖师 二郎神 托塔天王 哪吒 木吒 毗蓝婆菩萨 主要反派 混世魔王 白骨精 牛魔王 鐵扇公主 大鵬金翅鵰 地涌夫人 紅孩兒 蜘蛛精 六耳獼猴 蝎子精 青牛怪 作中事物 法寶 如意金箍棒 筋斗雲 九齿钉耙 降妖寶杖 芭蕉扇 七十二变 紧箍咒 地點 東勝神洲 西牛賀洲 傲来国 花果山 火焰山 盘丝洞 西天 續書和相关著作 《 後西遊記 》 《 续西游记 》 《 西遊補 》 《 四遊記 》 《 東遊記 》 《 南遊記 》 《 北遊記 》 电视剧 《 西游记 》（1982） 《 西遊記 》（1996） 《 西遊記（貳） 》（1998） 《 西游记后传 》（2000） 《 齊天大聖孫悟空 》（2002） 《 西游记 》（2006） 《 西游记 》（2010） 《 西游记 》（2011） 《 新美猴王传奇 （ 英语 ： The New Legends of Monkey ） 》（2018） 电影 《 大闹天宫 》（1961） 《 西行平妖 》（1991） 《 西遊記第壹佰零壹回之月光寶盒 》（1995） 《 西遊記大結局之仙履奇緣 》（1995） 《 西游记：失落的帝国 》（2001） 《 西遊記之大鬧天宮 》（2014） 《 西游记之孙悟空三打白骨精 》（2016） 《 西游记·女儿国 》（2018） 游戏 《 中華大仙 （ 日语 ： 中華大仙 ） 》（1988） 《 西游释厄传 》（1997） 《 西遊記 (日本光荣株式会社游戏) （ 日语 ： 西遊記 (ゲーム) ） 》（1999） 《 大话西游Online 》（2001） 《 夢幻西遊 》（2003） 《 西游记之大圣归来 》（2019） 《 黑神话：悟空 》（2024） 改編作品和事物 西遊記的衍生作品列表 淮安西游乐园 东方神曲 唐僧喇嘛传 相关 &#123;&#123; 中国神话 &#125;&#125; · &#123;&#123; 佛教主题 &#125;&#125; · &#123;&#123; 中國文學名著 &#125;&#125;</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line"></span><br><span class="line">……</span><br></pre></td></tr></table></figure>
+<h1 id="Markdown文档的解析—UnstructuredMarkdownLoader"><a href="#Markdown文档的解析—UnstructuredMarkdownLoader" class="headerlink" title="Markdown文档的解析—UnstructuredMarkdownLoader"></a>Markdown文档的解析—UnstructuredMarkdownLoader</h1><ul>
+<li>解析模式：使用mode=”elements”参数解析文档结构</li>
+<li>关键metadata：<ul>
+<li>category_depth：标题层级深度</li>
+<li>parent_id：父元素标识</li>
+<li>element_id：当前元素唯一标识</li>
+</ul>
+</li>
+<li>重要性：保持标题与内容的关联关系，确保检索结果不丢失上下文</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> UnstructuredMarkdownLoader</span><br><span class="line"><span class="keyword">from</span> langchain_core.documents <span class="keyword">import</span> Document</span><br><span class="line"></span><br><span class="line">markdown_path = <span class="string">&quot;../data/黑悟空/黑悟空版本介绍.md&quot;</span></span><br><span class="line">loader = UnstructuredMarkdownLoader(markdown_path)</span><br><span class="line"></span><br><span class="line">data = loader.load()</span><br><span class="line"><span class="built_in">print</span>(data[<span class="number">0</span>].page_content[:<span class="number">250</span>])</span><br><span class="line"></span><br><span class="line">loader = UnstructuredMarkdownLoader(markdown_path, mode=<span class="string">&quot;elements&quot;</span>)</span><br><span class="line">data = loader.load()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Number of documents: <span class="subst">&#123;<span class="built_in">len</span>(data)&#125;</span>\n&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> document <span class="keyword">in</span> data:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;document&#125;</span>\n&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果，输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">黑神话：悟空 🐵</span><br><span class="line"></span><br><span class="line">黑神话：悟空 是由中国游戏开发团队制作的一款备受瞩目的动作冒险游戏，以《西游记》为背景，重新演绎了经典故事，带来了极具冲击力的视觉和游戏体验。</span><br><span class="line"></span><br><span class="line">游戏版本介绍</span><br><span class="line"></span><br><span class="line">1. 数字标准版 💻</span><br><span class="line"></span><br><span class="line">包含基础游戏</span><br><span class="line"></span><br><span class="line">2. 数字豪华版 🎶</span><br><span class="line"></span><br><span class="line">包括基础游戏</span><br><span class="line"></span><br><span class="line">额外的游戏内内容和精选数字原声音乐</span><br><span class="line"></span><br><span class="line">兵器“铜云棒” 🏹</span><br><span class="line"></span><br><span class="line">披挂“百戏傩面、百戏衬钱衣、百戏护手、百戏吊腿” 🛡️</span><br><span class="line"></span><br><span class="line">珍玩“风铎” 🎐</span><br><span class="line"></span><br><span class="line">3. 实体豪华版 📦</span><br><span class="line"></span><br><span class="line">包含数字豪华版的启动码和一系列实体收藏品</span><br><span class="line">...</span><br><span class="line">page_content=&#x27;文化再现：重现了中国传统文化中的神话和传奇故事。&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;../data/黑悟空/黑悟空版本介绍.md&#x27;, &#x27;category_depth&#x27;: 1, &#x27;emphasized_text_contents&#x27;: [&#x27;文化再现&#x27;], &#x27;emphasized_text_tags&#x27;: [&#x27;b&#x27;], &#x27;languages&#x27;: [&#x27;zho&#x27;], &#x27;file_directory&#x27;: &#x27;../data/黑悟空&#x27;, &#x27;filename&#x27;: &#x27;黑悟空版本介绍.md&#x27;, &#x27;filetype&#x27;: &#x27;text/markdown&#x27;, &#x27;last_modified&#x27;: &#x27;2025-07-16T19:30:42&#x27;, &#x27;parent_id&#x27;: &#x27;d7374cb94107a8ff0101f1776a058022&#x27;, &#x27;category&#x27;: &#x27;ListItem&#x27;, &#x27;element_id&#x27;: &#x27;222a4b25bb6bd3e6d7f9d695ec706876&#x27;&#125;</span><br><span class="line"></span><br><span class="line">page_content=&#x27;提示：关注游戏的官方网站和社交媒体，获取最新的开发进度和发布信息。 📅&#x27; metadata=&#123;&#x27;source&#x27;: &#x27;../data/黑悟空/黑悟空版本介绍.md&#x27;, &#x27;emphasized_text_contents&#x27;: [&#x27;提示&#x27;], &#x27;emphasized_text_tags&#x27;: [&#x27;b&#x27;], &#x27;languages&#x27;: [&#x27;zho&#x27;], &#x27;file_directory&#x27;: &#x27;../data/黑悟空&#x27;, &#x27;filename&#x27;: &#x27;黑悟空版本介绍.md&#x27;, &#x27;filetype&#x27;: &#x27;text/markdown&#x27;, &#x27;last_modified&#x27;: &#x27;2025-07-16T19:30:42&#x27;, &#x27;parent_id&#x27;: &#x27;d7374cb94107a8ff0101f1776a058022&#x27;, &#x27;category&#x27;: &#x27;UncategorizedText&#x27;, &#x27;element_id&#x27;: &#x27;8832006fc109f9b62a5a03e2d7b71b10&#x27;&#125;</span><br><span class="line"></span><br><span class="line">……</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/05/ai/rag/4-simple-data-loading/" rel="prev" title="RAG组件--数据导入之简单文本的读取">
+      <i class="fa fa-chevron-left"></i> RAG组件--数据导入之简单文本的读取
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/06/ai/rag/6-image-loading/" rel="next" title="RAG组件--数据导入之解析图片中的文字和内容">
+      RAG组件--数据导入之解析图片中的文字和内容 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8LangChain%E7%9A%84JSON-Loader"><span class="nav-number">1.</span> <span class="nav-text">使用LangChain的JSON Loader</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#json-loader%E4%B8%8Ejq-schema"><span class="nav-number">1.1.</span> <span class="nav-text">json loader与jq schema</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8LangChain%E7%9A%84%E7%BD%91%E9%A1%B5%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">2.</span> <span class="nav-text">使用LangChain的网页加载器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#WebBaseLoader"><span class="nav-number">2.1.</span> <span class="nav-text">WebBaseLoader</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UnstructuredLoader"><span class="nav-number">2.2.</span> <span class="nav-text">UnstructuredLoader</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Markdown%E6%96%87%E6%A1%A3%E7%9A%84%E8%A7%A3%E6%9E%90%E2%80%94UnstructuredMarkdownLoader"><span class="nav-number">3.</span> <span class="nav-text">Markdown文档的解析—UnstructuredMarkdownLoader</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

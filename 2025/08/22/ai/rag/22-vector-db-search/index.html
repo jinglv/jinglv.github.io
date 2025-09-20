@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第二十二讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--向量数据库检索（搜索）、度量类型和条件过滤">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/22/ai/rag/22-vector-db-search/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第二十二讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822101843966.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822101723764.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822102907414.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822103507782.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822103728847.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822103942383.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822104341926.png">
+<meta property="article:published_time" content="2025-08-21T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-22T02:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822101843966.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/22/ai/rag/22-vector-db-search/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--向量数据库检索（搜索）、度量类型和条件过滤 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/22/ai/rag/22-vector-db-search/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--向量数据库检索（搜索）、度量类型和条件过滤
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-22 00:00:00 / 修改时间：10:30:00" itemprop="dateCreated datePublished" datetime="2025-08-22T00:00:00+08:00">2025-08-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第二十二讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="度量类型"><a href="#度量类型" class="headerlink" title="度量类型"></a>度量类型</h1><h2 id="距离度量的标准（类型）"><a href="#距离度量的标准（类型）" class="headerlink" title="距离度量的标准（类型）"></a>距离度量的标准（类型）</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822101843966.png" alt="image-20250822101843966" style="zoom:67%;" /></p>
+<h3 id="L2（欧氏距离）"><a href="#L2（欧氏距离）" class="headerlink" title="L2（欧氏距离）"></a>L2（欧氏距离）</h3><ul>
+<li>适用于连续数值型特征，如图像像素或声纹特征；</li>
+<li><p>常见于需要精确度量“几何距离”的场景，例如视觉检索、点云匹配等。</p>
+</li>
+<li><p>适用场景: 连续数值型特征(如图像像素、声纹特征)，需要精确度量几何距离的场景(视觉检索、点云匹配)</p>
+</li>
+<li>特性: 值越小相似度越高，范围﻿$[0,∞)$﻿</li>
+<li>公式:$L2= \sqrt{\sum(A-B)^2}$﻿</li>
+</ul>
+<h3 id="IP（内积）"><a href="#IP（内积）" class="headerlink" title="IP（内积）"></a>IP（内积）</h3><ul>
+<li>在向量长度（范数）有意义时使用，比如评估未归一化嵌入向量的匹配强度；</li>
+<li><p>若向量已归一化，等价于余弦相似度，可用于文本或推荐系统中的评分计算。</p>
+</li>
+<li><p>适用场景: 向量长度(范数)有意义时(如未归一化的嵌入向量)</p>
+</li>
+<li>特性: 值越大相似度越高，范围无限制</li>
+<li>公式:﻿ $IP = A \cdot B = \sum(A_1B_1 + A_2B_2 + …)$﻿</li>
+<li>注意: 若向量已归一化，等价于余弦相似度</li>
+</ul>
+<h3 id="COSINE（余弦相似度）"><a href="#COSINE（余弦相似度）" class="headerlink" title="COSINE（余弦相似度）"></a>COSINE（余弦相似度）</h3><ul>
+<li>最常用于文本、自然语言嵌入之间的语义相似性计算；</li>
+<li><p>不受向量长度影响，关注方向一致性，适合主题或意图匹配。</p>
+</li>
+<li><p>适用场景: 文本/NLP嵌入的语义相似性计算，主题或意图匹配</p>
+</li>
+<li>特性: 值越大相似度越高，范围﻿$[-1,1]$﻿</li>
+<li>公式:$cos(θ)=\frac{A \cdot B}{|A||B|}$﻿</li>
+<li>黄金标准: 文本检索不知道选什么时首选余弦</li>
+</ul>
+<h3 id="JACCARD（交并比距离）"><a href="#JACCARD（交并比距离）" class="headerlink" title="JACCARD（交并比距离）"></a>JACCARD（交并比距离）</h3><ul>
+<li>用于集合或二值特征的相似度评估，如标签集合、关键词重叠；</li>
+<li>在文本片段重叠、推荐系统中基于兴趣标签的匹配场景常见。</li>
+</ul>
+<ul>
+<li>适用场景: 集合或二值特征的相似度评估(标签集合、关键词重叠)</li>
+<li>特性: 值越小相似度越高，范围$[0,1]$﻿</li>
+<li>公式:$J=1-\frac{|A∩B|}{|A∪B|}$﻿</li>
+</ul>
+<h3 id="HAMMING（海明距离）"><a href="#HAMMING（海明距离）" class="headerlink" title="HAMMING（海明距离）"></a>HAMMING（海明距离）</h3><ul>
+<li>专用于二进制向量（如感知哈希、二值化特征）的相似度度量；</li>
+<li><p>常见于图像指纹检索、人脸二值编码或者简易哈希匹配场景。</p>
+</li>
+<li><p>适用场景: 二进制向量(感知哈希、二值化特征)</p>
+</li>
+<li>特性: 值越小相似度越高，范围$[0,dim]$﻿</li>
+</ul>
+<h3 id="BM25（全文检索评分）"><a href="#BM25（全文检索评分）" class="headerlink" title="BM25（全文检索评分）"></a>BM25（全文检索评分）</h3><ul>
+<li>专为稀疏向量上的全文搜索设计，结合 TF、IDF 和文档长度归一化；</li>
+<li><p>适用于文档检索、问答系统的倒排索引搜索场景。</p>
+</li>
+<li><p>适用场景: 稀疏向量上的全文搜索(文档检索、问答系统)</p>
+</li>
+<li>特性: 值越大相似度越高，范围﻿$[0,∞)$﻿</li>
+</ul>
+<h2 id="各种字段所支持的度量类型"><a href="#各种字段所支持的度量类型" class="headerlink" title="各种字段所支持的度量类型"></a>各种字段所支持的度量类型</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字段类型</th>
+<th>维度范围</th>
+<th>支持的度量类型</th>
+<th>默认度量类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FLOAT_VECTOR</td>
+<td>2 – 32 768</td>
+<td>COSINE、L2、IP</td>
+<td>COSINE</td>
+</tr>
+<tr>
+<td>FLOAT16_VECTOR</td>
+<td>2 – 32 768</td>
+<td>COSINE、L2、IP</td>
+<td>COSINE</td>
+</tr>
+<tr>
+<td>BFLOAT16_VECTOR</td>
+<td>2 – 32 768</td>
+<td>COSINE、L2、IP</td>
+<td>COSINE</td>
+</tr>
+<tr>
+<td>SPARSE_FLOAT_VECTOR</td>
+<td>无需指定</td>
+<td>IP、BM25(仅限全文检索)</td>
+<td>IP</td>
+</tr>
+<tr>
+<td>BINARY_VECTOR</td>
+<td>8 – (32 768x8)</td>
+<td>HAMMING、JACCARD</td>
+<td>HAMMING</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>FLOAT/FLOAT16/BFLOAT16 VECTOR:<ul>
+<li>维度范围: 2-32768</li>
+<li>支持: COSINE, L2, IP</li>
+<li>默认: COSINE</li>
+</ul>
+</li>
+<li>SPARSE FLOAT VECTOR:<ul>
+<li>无需指定维度</li>
+<li>支持: IP、BM25(仅限全文检索)</li>
+<li>默认: IP</li>
+</ul>
+</li>
+<li>BINARY VECTOR:<ul>
+<li>维度范围: 8-(32768×8)</li>
+<li>支持: HAMMING, JACCARD</li>
+<li>默认: HAMMING</li>
+</ul>
+</li>
+</ul>
+<h2 id="各种度量类型的取值范围"><a href="#各种度量类型的取值范围" class="headerlink" title="各种度量类型的取值范围"></a>各种度量类型的取值范围</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>度量类型</th>
+<th>相似度/距离特性</th>
+<th>数值范围</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>L2</strong> (欧氏距离)</td>
+<td>值越小，相似度越高</td>
+<td>[0,∞)</td>
+</tr>
+<tr>
+<td><strong>IP</strong> (内积)</td>
+<td>值越大，相似度越高</td>
+<td>[−1,1]</td>
+</tr>
+<tr>
+<td><strong>COSINE</strong> (余弦)</td>
+<td>值越大，相似度越高</td>
+<td>[−1,1]</td>
+</tr>
+<tr>
+<td><strong>JACCARD</strong></td>
+<td>值越小，相似度越高</td>
+<td>[0,1]</td>
+</tr>
+<tr>
+<td><strong>HAMMING</strong></td>
+<td>值越小，相似度越高</td>
+<td>[0,dim)</td>
+</tr>
+<tr>
+<td><strong>BM25</strong></td>
+<td>值越大，相似度越高</td>
+<td>[0,∞)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>关键注意: 不同度量类型的数值范围差异很大，如欧式距离可能大于1是正常的</p>
+<h1 id="ANN搜索"><a href="#ANN搜索" class="headerlink" title="ANN搜索"></a>ANN搜索</h1><p>Milvus的ANN搜索是一种高效的向量相似度搜索方法，它通过预构建的索引文件来加速搜索过程。与kNN搜索相比，ANN搜索不需要遍历所有向量，而是通过索引快速定位可能包含最相似向量的子集，从而大大提高了搜索效率。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822101723764.png" alt="image-20250822101723764" style="zoom:67%;" /></p>
+<ul>
+<li>核心原理: 通过预构建的索引文件加速搜索过程，不需要遍历所有向量，而是快速定位可能包含最相似向量的子集</li>
+<li>与kNN区别: ANN(Approximate Nearest Neighbor)是近似搜索，效率高但结果不一定完美；kNN需要精确遍历所有数据</li>
+<li>主要特点:<ul>
+<li>支持单向量和批量向量搜索</li>
+<li>可在特定分区内进行搜索</li>
+<li>支持多种相似度度量方式(L2、IP、COSINE等)</li>
+<li>可通过过滤条件、范围搜索增强效果</li>
+<li>支持分页查询和输出字段控制</li>
+</ul>
+</li>
+</ul>
+<h2 id="过滤搜索"><a href="#过滤搜索" class="headerlink" title="过滤搜索"></a>过滤搜索</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822102907414.png" alt="image-20250822102907414" style="zoom:67%;" /></p>
+<h3 id="标准过滤"><a href="#标准过滤" class="headerlink" title="标准过滤"></a>标准过滤</h3><ul>
+<li>原理: 先执行过滤条件筛选数据，再在过滤后的数据集上进行搜索</li>
+<li>适用场景: 过滤条件简单且能显著减少数据量的情况</li>
+</ul>
+<h3 id="迭代过滤"><a href="#迭代过滤" class="headerlink" title="迭代过滤"></a>迭代过滤</h3><ul>
+<li>原理: 边搜索边过滤，动态判断是否满足条件</li>
+<li>优势: 处理复杂过滤条件时可能更高效</li>
+<li>实现: 通过设置”hints”: “iterative filter”参数启用</li>
+</ul>
+<h2 id="范围搜索"><a href="#范围搜索" class="headerlink" title="范围搜索"></a>范围搜索</h2><p>范围搜索是在 ANN 搜索结果的基础上，进一步按相似度（或距离）阈值进行筛选，将符合条件的向量返回。</p>
+<p>通过两个参数 radius（外圈半径）和 range_filter（内圈半径）构成一对同心圆，返回落在这两个圆之间（或内外圈定义区间内）的所有向量</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822103507782.png" alt="image-20250822103507782" style="zoom:67%;" /></p>
+<ul>
+<li>原理: 在ANN结果基础上，按相似度阈值进一步筛选</li>
+<li>参数:<ul>
+<li>radius: 外圈半径</li>
+<li>range_filter: 内圈半径</li>
+</ul>
+</li>
+<li>效果: 返回落在两个半径定义的环形区域内的向量</li>
+</ul>
+<h2 id="分组搜索"><a href="#分组搜索" class="headerlink" title="分组搜索"></a>分组搜索</h2><p>目的：在基于向量的相似度搜索结果中，按某个标量字段（如 docId、category）分组，以提高结果多样性，避免同一组内多个相似片段抢占 Top-K。</p>
+<p>场景举例：对拆分成多个段落的文档做检索，希望最终返回最相关的文档列表，而不是返回同一文档中多个相似段落。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822103728847.png" alt="image-20250822103728847" style="zoom:67%;" /></p>
+<p>流程</p>
+<ol>
+<li>ANN 检索 对整个集合执行近似最近邻搜索，得到若干最相似实体（chunk）。</li>
+<li>按字段分组 将检索结果按 group_by_field 指定的字段值（如 docId）分桶。</li>
+<li>选取每组 TopN 默认从每个组中取最相似的 1条； 如需更多，可通过 group_size（每组返回条数）和 strict_group_size（是否严格保证每组条数）进行控制。</li>
+<li>整体汇总 最终按组级 TopK（limit）选出若干组，并返回各组内按相似度排序的实体。</li>
+</ol>
+<h2 id="混合搜索"><a href="#混合搜索" class="headerlink" title="混合搜索"></a>混合搜索</h2><p>同时对同一实体中的多种向量字段（如稠密向量 dense 与稀疏向量 sparse）分别执行 ANN 搜索，将各自返回的 Top-K 结果按得分或排名策略重新融合（rerank），最后输出一个统一的结果集。</p>
+<p>目的：融合多模态或多视角特征，提高检索的准确性和鲁棒性。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822103942383.png" alt="image-20250822103942383" style="zoom:67%;" /></p>
+<p>实现步骤：</p>
+<ul>
+<li>Embedding 生成<ul>
+<li>稠密向量（dense）：用 BERT、CLIP、其他深度模型生成。</li>
+<li>稀疏向量（sparse）：用 BM25、SPLADE、BGE-M3 等算法或 Milvus Function 生成。</li>
+</ul>
+</li>
+<li>创建集合并定义多向量字段<ul>
+<li>在建表时同时包括 FLOAT_VECTOR（稠密）</li>
+<li>和 SPARSE_FLOAT_VECTOR（稀疏）字段</li>
+<li>并分别建立索引</li>
+</ul>
+</li>
+<li>插入数据<ul>
+<li>同一条记录同时插入两种向量。</li>
+<li>发起多次基础 ANN 搜索</li>
+<li>针对每个向量字段构造一个AnnSearchRequest</li>
+</ul>
+</li>
+<li>选择重排序（Reranking）策略<ul>
+<li>WeightedRanker：可为每个向量字段分配权重，强化某些字段的重要性</li>
+<li>RRFRanker（Reciprocal Rank Fusion）：平衡融合，默认参数 k 可调</li>
+</ul>
+</li>
+<li>执行 Hybrid Search<ul>
+<li>limit 决定最终输出的 Top-K 条融合结果。</li>
+</ul>
+</li>
+</ul>
+<h2 id="BM25-全文关键字检索"><a href="#BM25-全文关键字检索" class="headerlink" title="BM25 全文关键字检索"></a>BM25 全文关键字检索</h2><p>通过 BM25 对原始文本进行关键词匹配排序，弥补语义向量检索可能忽略精确词条匹配的不足。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250822104341926.png" alt="image-20250822104341926" style="zoom:67%;" /></p>
+<p>优势：</p>
+<ul>
+<li>接受原始文本输入，无需手动生成向量；</li>
+<li>自动将文本分词、映射为稀疏向量（SPARSE_FLOAT_VECTOR）；</li>
+<li>适合需精确命中关键术语的场景，如法律、医药、配置文档等；</li>
+<li>与稠密向量检索结合，可在 RAG 中实现“语义 + 关键词”双保险。</li>
+</ul>
+<p>应用: 可与稠密向量检索结合实现”语义+关键词”双保险</p>
+<h2 id="Text-Match-精确文本匹配"><a href="#Text-Match-精确文本匹配" class="headerlink" title="Text Match: 精确文本匹配"></a>Text Match: 精确文本匹配</h2><p>精确匹配：基于倒排索引查找包含指定词条的文档，不计算相关度分数，仅返回命中实体。<br>底层引擎：集成 Tantivy ，针对每个 VARCHAR 字段建立倒排索引，按词条快速定位。</p>
+<ul>
+<li><p>原理: 基于倒排索引查找包含指定词条的文档</p>
+</li>
+<li><p>特点:</p>
+<ul>
+<li>不计算相关度分数，仅返回命中实体</li>
+<li>底层集成Tantivy引擎</li>
+</ul>
+</li>
+<li><p>查询语法:</p>
+<ul>
+<li><p>包含 machine 或 deep: TEXT_MATCH(text, ‘machine deep’)</p>
+</li>
+<li><p>包含 machine 且包含 deep: TEXT_MATCH(text, ‘machine’) AND TEXT_MATCH(text, ‘deep’)</p>
+</li>
+<li><p>包含 machine、learning，但不包含 deep: </p>
+<p>TEXT_MATCH(text, ‘machine’)<br>AND TEXT_MATCH(text, ‘learning’)<br>AND NOT TEXT_MATCH(text, ‘deep’)</p>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="搜索和查询"><a href="#搜索和查询" class="headerlink" title="搜索和查询"></a>搜索和查询</h1><ul>
+<li>本质区别：<ul>
+<li>搜索：基于向量相似度，通过距离度量找到相近向量（如余弦相似度）</li>
+<li>查询：基于元数据（标量数据）直接定位实体，与向量无关</li>
+</ul>
+</li>
+<li>典型场景：<ul>
+<li>搜索适用于”找到相似内容”（如推荐系统）</li>
+<li>查询适用于”精确查找记录”（如数据库检索）</li>
+</ul>
+</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>作用</th>
+<th>输入</th>
+<th>输出</th>
+<th>场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Get</strong></td>
+<td>根据主键查询指定实体</td>
+<td>collection_name, ids</td>
+<td>指定主键对应的所有字段实体</td>
+<td>已知 ID 时最快速地获取完整记录</td>
+</tr>
+<tr>
+<td><strong>Query</strong></td>
+<td>根据自定义过滤表达式查询指定数量的实体</td>
+<td>collection_name, filter, limit</td>
+<td>满足条件最多 limit 个实体</td>
+<td>需要一次性拿到部分满足条件的结果</td>
+</tr>
+<tr>
+<td><strong>QueryIterator</strong></td>
+<td>根据自定义过滤表达式按批次 (分页) 遍历所有实体</td>
+<td>collection_name, expr, batch_size</td>
+<td>通过 iterator.next() 分批返回实体</td>
+<td>需要遍历所有满足条件的实体 (流式或分页处理场景)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="Get和Query"><a href="#Get和Query" class="headerlink" title="Get和Query"></a>Get和Query</h2><ul>
+<li>核心功能：<ul>
+<li>Get：通过主键ID快速获取完整记录（如查询ID为0/1/2的记录）</li>
+<li>Query：通过过滤表达式获取限定数量的结果（如color=”红色”取前5条）</li>
+</ul>
+</li>
+<li>参数特点：<ul>
+<li>Get需明确指定ids字段列表</li>
+<li>Query支持filter表达式和limit限制（示例：color like “color_1%”）</li>
+</ul>
+</li>
+</ul>
+<h2 id="QueryIterator"><a href="#QueryIterator" class="headerlink" title="QueryIterator"></a>QueryIterator</h2><ul>
+<li>流式处理：<ul>
+<li>通过iterator.next()分批返回结果（类似OpenAI API的流式响应）</li>
+<li>每批数量由batch_size参数控制（如每次返回5条记录）</li>
+</ul>
+</li>
+<li>适用场景：<ul>
+<li>处理大规模结果集（避免内存溢出）</li>
+<li>需要渐进式展示结果的场景（如分页加载）</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/19/ai/rag/21-vector-db-index/" rel="prev" title="RAG组件--向量数据库索引">
+      <i class="fa fa-chevron-left"></i> RAG组件--向量数据库索引
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/25/ai/llm/1-introduce/" rel="next" title="AI大模型和Agent智能体介绍">
+      AI大模型和Agent智能体介绍 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BA%A6%E9%87%8F%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">度量类型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B7%9D%E7%A6%BB%E5%BA%A6%E9%87%8F%E7%9A%84%E6%A0%87%E5%87%86%EF%BC%88%E7%B1%BB%E5%9E%8B%EF%BC%89"><span class="nav-number">1.1.</span> <span class="nav-text">距离度量的标准（类型）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#L2%EF%BC%88%E6%AC%A7%E6%B0%8F%E8%B7%9D%E7%A6%BB%EF%BC%89"><span class="nav-number">1.1.1.</span> <span class="nav-text">L2（欧氏距离）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IP%EF%BC%88%E5%86%85%E7%A7%AF%EF%BC%89"><span class="nav-number">1.1.2.</span> <span class="nav-text">IP（内积）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#COSINE%EF%BC%88%E4%BD%99%E5%BC%A6%E7%9B%B8%E4%BC%BC%E5%BA%A6%EF%BC%89"><span class="nav-number">1.1.3.</span> <span class="nav-text">COSINE（余弦相似度）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#JACCARD%EF%BC%88%E4%BA%A4%E5%B9%B6%E6%AF%94%E8%B7%9D%E7%A6%BB%EF%BC%89"><span class="nav-number">1.1.4.</span> <span class="nav-text">JACCARD（交并比距离）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HAMMING%EF%BC%88%E6%B5%B7%E6%98%8E%E8%B7%9D%E7%A6%BB%EF%BC%89"><span class="nav-number">1.1.5.</span> <span class="nav-text">HAMMING（海明距离）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BM25%EF%BC%88%E5%85%A8%E6%96%87%E6%A3%80%E7%B4%A2%E8%AF%84%E5%88%86%EF%BC%89"><span class="nav-number">1.1.6.</span> <span class="nav-text">BM25（全文检索评分）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%84%E7%A7%8D%E5%AD%97%E6%AE%B5%E6%89%80%E6%94%AF%E6%8C%81%E7%9A%84%E5%BA%A6%E9%87%8F%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.</span> <span class="nav-text">各种字段所支持的度量类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%84%E7%A7%8D%E5%BA%A6%E9%87%8F%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%8F%96%E5%80%BC%E8%8C%83%E5%9B%B4"><span class="nav-number">1.3.</span> <span class="nav-text">各种度量类型的取值范围</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ANN%E6%90%9C%E7%B4%A2"><span class="nav-number">2.</span> <span class="nav-text">ANN搜索</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%87%E6%BB%A4%E6%90%9C%E7%B4%A2"><span class="nav-number">2.1.</span> <span class="nav-text">过滤搜索</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E8%BF%87%E6%BB%A4"><span class="nav-number">2.1.1.</span> <span class="nav-text">标准过滤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%AD%E4%BB%A3%E8%BF%87%E6%BB%A4"><span class="nav-number">2.1.2.</span> <span class="nav-text">迭代过滤</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8C%83%E5%9B%B4%E6%90%9C%E7%B4%A2"><span class="nav-number">2.2.</span> <span class="nav-text">范围搜索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E7%BB%84%E6%90%9C%E7%B4%A2"><span class="nav-number">2.3.</span> <span class="nav-text">分组搜索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%B7%E5%90%88%E6%90%9C%E7%B4%A2"><span class="nav-number">2.4.</span> <span class="nav-text">混合搜索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BM25-%E5%85%A8%E6%96%87%E5%85%B3%E9%94%AE%E5%AD%97%E6%A3%80%E7%B4%A2"><span class="nav-number">2.5.</span> <span class="nav-text">BM25 全文关键字检索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Text-Match-%E7%B2%BE%E7%A1%AE%E6%96%87%E6%9C%AC%E5%8C%B9%E9%85%8D"><span class="nav-number">2.6.</span> <span class="nav-text">Text Match: 精确文本匹配</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%90%9C%E7%B4%A2%E5%92%8C%E6%9F%A5%E8%AF%A2"><span class="nav-number">3.</span> <span class="nav-text">搜索和查询</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Get%E5%92%8CQuery"><span class="nav-number">3.1.</span> <span class="nav-text">Get和Query</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#QueryIterator"><span class="nav-number">3.2.</span> <span class="nav-text">QueryIterator</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

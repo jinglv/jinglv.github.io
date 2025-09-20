@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Jacoco学习笔记第二讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Jacoco代码覆盖率报告分析">
+<meta property="og:url" content="https://jinglv.github.io/2020/09/15/jacoco/2-analysis/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Jacoco学习笔记第二讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141701196.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141701905.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141702123.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141703914.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141703223.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141704525.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141704775.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141705383.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141705184.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141706910.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141709399.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141709995.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141710208.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141710380.png">
+<meta property="article:published_time" content="2020-09-14T16:00:00.000Z">
+<meta property="article:modified_time" content="2020-09-15T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="Jacoco">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141701196.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2020/09/15/jacoco/2-analysis/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Jacoco代码覆盖率报告分析 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2020/09/15/jacoco/2-analysis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Jacoco代码覆盖率报告分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2020-09-15 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2020-09-15T00:00:00+08:00">2020-09-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Jacoco/" itemprop="url" rel="index"><span itemprop="name">Jacoco</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Jacoco学习笔记第二讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Jacoco代码覆盖率报告分析"><a href="#Jacoco代码覆盖率报告分析" class="headerlink" title="Jacoco代码覆盖率报告分析"></a>Jacoco代码覆盖率报告分析</h1><p>Jacoco代码覆盖率统计维度、报告字段说明、报告详细分析描述。并为精准测试、健壮性测试提供指导。</p>
+<h2 id="Jacoco代码覆盖率统计维度"><a href="#Jacoco代码覆盖率统计维度" class="headerlink" title="Jacoco代码覆盖率统计维度"></a>Jacoco代码覆盖率统计维度</h2><p>Jacoco是从代码指令（Instructions， C0coverage），分支（Branches， C1coverage），圈复杂度（Cyclomatic Complexity），行（Lines），方法（Methods），类（Classes）等维度进行分析的。</p>
+<h2 id="Jacoco生成报告字段说明"><a href="#Jacoco生成报告字段说明" class="headerlink" title="Jacoco生成报告字段说明"></a>Jacoco生成报告字段说明</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141701196.png" alt="image-20220714170154169"></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字段名称</th>
+<th>说明</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Element</td>
+<td>元素</td>
+<td>最外层展示分组名称，依次为包&gt;类&gt;方法</td>
+</tr>
+<tr>
+<td>Missed Instructions Cov.</td>
+<td>指令覆盖，字节码中指令</td>
+<td>1.  Jacoco最小计数单元是单个Java二进制指令代码。<br />2. 指令覆盖率提供了代码是否被执行的信息。</td>
+</tr>
+<tr>
+<td>Missed Branches Cov.</td>
+<td>分支覆盖率</td>
+<td>1. Jacoco计算分支覆盖率，包括所有的if和switch语句。<br /><br />2. 用钻石表示，分支覆盖不能看行。<br />3. 这是度量一个方法里面的总分支数，确定执行和不执行的分支数量。<br />4. 分支覆盖率总是可用的，即使class文件里面没有调试信息。<br />注意：异常处理时不在分支度量里面统计的。</td>
+</tr>
+<tr>
+<td>Missed Cxty</td>
+<td>圈复杂度</td>
+<td>1. Jacoco为每一个<strong>非抽象方法</strong>计算复杂度，最终计算出类、包和组的复杂度。由McCabe1996可知圈复杂度的定义是，在（线性）组合中，计算在一个方法里面所有可能路径的最小数目。<br />2. 复杂度可以作为度量单元测试是否完整覆盖所有场景的一个依据，复杂度即使在没有调试信息的情况下也可以计算。<br />3. 圈复杂度V(G)的正式定义是基于方法的控制流图的有向图表示的：V(G)=E-N+2 E是边界数量，N是节点的数量。<br />4. Jacoco的复杂度计算方程：V(G)=B-D+1 B是分支的数量，D是决策点的数量。<br />5. 基于每个分支的覆盖情况，Jacoco也为每个方法计算覆盖和缺失的复杂度，缺失的复杂度同样表示测试案例没有完全覆盖到这个模块。<br />注意：Jacoco不将异常处理作为分支，try/catch块不增加复杂度。</td>
+</tr>
+<tr>
+<td>Missed Lines</td>
+<td>代码行</td>
+<td>1. class文件使用debug信息编译后，就可以统计行的覆盖率信息。一行源码是否被执行，要看这一行中是否至少有一个指令被执行。<br />2. 一行代码一般被编译成多个二进制代码指令。</td>
+</tr>
+<tr>
+<td>Missed Methods</td>
+<td>方法</td>
+<td>每一个非抽象方法至少包含一个指令，一个方法是否执行取决于方法中是否有至少一个指令被执行。<br />在Jacoco中，构造器和静态初始化同样会像方法一样统计，其中一些方法可能没有可以直接对应的源码，比如默认构造器或常量的初始化命令。</td>
+</tr>
+<tr>
+<td>Missed Classes</td>
+<td>类</td>
+<td>一个方法是否执行取决于类中是否至少有一个方法被执行。<br />注意：Jacoco认为构造器和静态初始化都是方法，Java的接口一般包含静态初始化，所以接口也同样被认为是可执行的类。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>注：Missed表示未覆盖</p>
+<h2 id="Jacoco生成报告详细分析"><a href="#Jacoco生成报告详细分析" class="headerlink" title="Jacoco生成报告详细分析"></a>Jacoco生成报告详细分析</h2><p>将生成的Jacoco报告打开，如何生成Jacoco的报告，后续会介绍，本篇主要介绍Jacoco报告的分析。为了更好的分析Jacoco覆盖率，新建了一个工程进行演练。</p>
+<p>Github：<a target="_blank" rel="noopener" href="https://github.com/jinglv/spring-boot-demo">https://github.com/jinglv/spring-boot-demo</a></p>
+<h3 id="包"><a href="#包" class="headerlink" title="包"></a>包</h3><p>展示当前所有的包，包的覆盖率取决于类的覆盖情况。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141701905.png" alt="image-20220714170114856"></p>
+<h3 id="类"><a href="#类" class="headerlink" title="类"></a>类</h3><p>点进去一个包中，显示该包下所有的类，类的覆盖率取决于方法的覆盖情况。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141702123.png" alt="image-20220714170231078"></p>
+<h3 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h3><p>点进去一个类中，显示该类下所有的方法名，方法的覆盖率取决于方法内的覆盖情况。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141703914.png" alt="image-20220714170304829"></p>
+<h2 id="Jacoco覆盖率的详细分析"><a href="#Jacoco覆盖率的详细分析" class="headerlink" title="Jacoco覆盖率的详细分析"></a>Jacoco覆盖率的详细分析</h2><p>以上已经介绍了Jacoco代码覆盖统计的维度，接下来针对于实例，进行报告中字段的详细说明。</p>
+<h3 id="Missed-Instructions"><a href="#Missed-Instructions" class="headerlink" title="Missed Instructions"></a>Missed Instructions</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141703223.png" alt="image-20220714170358193"></p>
+<p>说明：<strong>红色</strong>进度条表示未覆盖，<strong>绿色</strong>进度条表示已覆盖，Cov为总体覆盖率。</p>
+<p>Total：1176表示没有覆盖的指令，1517表示总的指令</p>
+<p>Cov：表示覆盖率</p>
+<p>Jacoco计算的最小单位就是字节码指令。指令覆盖表明了在所有的指令中，哪些被执行过以及哪些没有被执行。这项指数完全独立与源码格式并且在任何情况下有效，不需要类文件的调试信息。</p>
+<h3 id="Missed-Branches"><a href="#Missed-Branches" class="headerlink" title="Missed Branches"></a>Missed Branches</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141704525.png" alt="image-20220714170427494"></p>
+<p>说明：<strong>红色</strong>进度条表示未覆盖，<strong>绿色</strong>进度条表示已覆盖，Cov为总体覆盖率。</p>
+<p>Total：168表示没有覆盖的分支，172表示总的分支</p>
+<p>Cov：表示覆盖率</p>
+<p>从上面的图看出Missed Instructions（指令）覆盖率为22%，Missed Branches（分支）覆盖率为2%，为什么会是这样的情况呢？原因是：代码行覆盖的并不代表分支都已覆盖。</p>
+<p>实例分析：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141704775.png" alt="image-20220714170457687"></p>
+<p>从上图看出，ofException这个方法，指令覆盖了85%，分支覆盖了50%，这时进入到方法中查看：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141705383.png" alt="image-20220714170524286"></p>
+<p>查看该方法调用的代码看，只返回了ApiCodeEnum.FAIL.getCode()，说明该条件只执行了结果为true的情况，没有执行结果为false的情况，因此指令覆盖和分支覆盖都不全。</p>
+<h3 id="Missed-Cxty"><a href="#Missed-Cxty" class="headerlink" title="Missed Cxty"></a>Missed Cxty</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141705184.png" alt="image-20220714170559147"></p>
+<p>Total：166表示没有覆盖到的圈复杂度，213表示总共的圈复杂度</p>
+<p>实例分析：进入到包service.impl包下，再进入CalcServiceImpl实例类中</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141706910.png" alt="image-20220714170637872"></p>
+<p>查看该实现类里，有加减乘除四个方法，圈复杂度的显示加减乘都是1，除是2，接下来再进入的方法内再次查看：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141709399.png" alt="image-20220714170913362"></p>
+<p>从圈复杂度的介绍可知，圈复杂度是根据代码中判定条件的节点来计算的，jacoco在统计代码时也是根据代码中有多少个判定节点来算（代码里有多少if、for、while…的判定节点来统计的），从上面的代码来看，add、sub、mul这三个方法，没有判定节点，计算是0+1，因此这个三个方法都是复杂度都是1，div方法中有一个if节点，计算是1+1，这个方法的复杂度就是2，和jacoco的报告就对上了。</p>
+<p>将上面的代码，进行修改并执行</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141709995.png" alt="image-20220714170952909"></p>
+<p>查看jacoco的报告</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141710208.png" alt="image-20220714171022174"></p>
+<p>由于在代码中添加了if的判定条件，统计的圈复杂度明显增加，通过计算公式的计算也是一致的。</p>
+<p>根据官网介绍，jacoco的圈复杂度的计算公式是：<code>V(G) = B - D + 1</code>B是分支数量，D是决策点数量，查看一些资料后，并不理解这个分支数量和决策点数量具体指什么，因此还是根据圈复杂度里介绍的计算公式更容易理解一些。</p>
+<h3 id="Missed-Lines、Methods、classes"><a href="#Missed-Lines、Methods、classes" class="headerlink" title="Missed.Lines、Methods、classes"></a>Missed.Lines、Methods、classes</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202207141710380.png" alt="image-20220714171053295"></p>
+<p>Lines：代码行，共有177行，98行未覆盖到（例如：else是不统计到Lines的）</p>
+<p>Methods：方法，共有127个方法，80个未覆盖到</p>
+<p>Classes：类，共有18个类，4个未覆盖到</p>
+<p>Missed表示未覆盖到</p>
+<h2 id="覆盖率标识"><a href="#覆盖率标识" class="headerlink" title="覆盖率标识"></a>覆盖率标识</h2><h3 id="钻石代表分支覆盖情况"><a href="#钻石代表分支覆盖情况" class="headerlink" title="钻石代表分支覆盖情况"></a>钻石代表分支覆盖情况</h3><ul>
+<li>红色钻石：这一行没有分支被执行</li>
+<li>黄色钻石：这一行中只有部分分支被执行</li>
+<li>绿色钻石：这一行的所有分支都被执行</li>
+</ul>
+<h3 id="背景颜色代表指令覆盖率"><a href="#背景颜色代表指令覆盖率" class="headerlink" title="背景颜色代表指令覆盖率"></a>背景颜色代表指令覆盖率</h3><ul>
+<li>红色背景：这一行并没有任何指令被执行</li>
+<li>黄色背景：这一行的部分指令被执行</li>
+<li>绿色背景：这一行的所有指令都被执行了</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Jacoco/" rel="tag"># Jacoco</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/09/15/jacoco/3-cycl/" rel="prev" title="圈复杂度">
+      <i class="fa fa-chevron-left"></i> 圈复杂度
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/09/15/jacoco/1-introduce/" rel="next" title="Jacoco简介">
+      Jacoco简介 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Jacoco%E4%BB%A3%E7%A0%81%E8%A6%86%E7%9B%96%E7%8E%87%E6%8A%A5%E5%91%8A%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text">Jacoco代码覆盖率报告分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Jacoco%E4%BB%A3%E7%A0%81%E8%A6%86%E7%9B%96%E7%8E%87%E7%BB%9F%E8%AE%A1%E7%BB%B4%E5%BA%A6"><span class="nav-number">1.1.</span> <span class="nav-text">Jacoco代码覆盖率统计维度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jacoco%E7%94%9F%E6%88%90%E6%8A%A5%E5%91%8A%E5%AD%97%E6%AE%B5%E8%AF%B4%E6%98%8E"><span class="nav-number">1.2.</span> <span class="nav-text">Jacoco生成报告字段说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jacoco%E7%94%9F%E6%88%90%E6%8A%A5%E5%91%8A%E8%AF%A6%E7%BB%86%E5%88%86%E6%9E%90"><span class="nav-number">1.3.</span> <span class="nav-text">Jacoco生成报告详细分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%85"><span class="nav-number">1.3.1.</span> <span class="nav-text">包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB"><span class="nav-number">1.3.2.</span> <span class="nav-text">类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E6%B3%95"><span class="nav-number">1.3.3.</span> <span class="nav-text">方法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Jacoco%E8%A6%86%E7%9B%96%E7%8E%87%E7%9A%84%E8%AF%A6%E7%BB%86%E5%88%86%E6%9E%90"><span class="nav-number">1.4.</span> <span class="nav-text">Jacoco覆盖率的详细分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Missed-Instructions"><span class="nav-number">1.4.1.</span> <span class="nav-text">Missed Instructions</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Missed-Branches"><span class="nav-number">1.4.2.</span> <span class="nav-text">Missed Branches</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Missed-Cxty"><span class="nav-number">1.4.3.</span> <span class="nav-text">Missed Cxty</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Missed-Lines%E3%80%81Methods%E3%80%81classes"><span class="nav-number">1.4.4.</span> <span class="nav-text">Missed.Lines、Methods、classes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A6%86%E7%9B%96%E7%8E%87%E6%A0%87%E8%AF%86"><span class="nav-number">1.5.</span> <span class="nav-text">覆盖率标识</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%92%BB%E7%9F%B3%E4%BB%A3%E8%A1%A8%E5%88%86%E6%94%AF%E8%A6%86%E7%9B%96%E6%83%85%E5%86%B5"><span class="nav-number">1.5.1.</span> <span class="nav-text">钻石代表分支覆盖情况</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%83%8C%E6%99%AF%E9%A2%9C%E8%89%B2%E4%BB%A3%E8%A1%A8%E6%8C%87%E4%BB%A4%E8%A6%86%E7%9B%96%E7%8E%87"><span class="nav-number">1.5.2.</span> <span class="nav-text">背景颜色代表指令覆盖率</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

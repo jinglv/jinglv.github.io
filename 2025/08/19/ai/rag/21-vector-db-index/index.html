@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习大模型RAG系统学习笔记第二十一讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RAG组件--向量数据库索引">
+<meta property="og:url" content="https://jinglv.github.io/2025/08/19/ai/rag/21-vector-db-index/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习大模型RAG系统学习笔记第二十一讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820095803094.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820101017610.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820101448765.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820102716154.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820103439677.png">
+<meta property="article:published_time" content="2025-08-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-19T07:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="大模型RAG系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820095803094.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/08/19/ai/rag/21-vector-db-index/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RAG组件--向量数据库索引 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/08/19/ai/rag/21-vector-db-index/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RAG组件--向量数据库索引
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-19 00:00:00 / 修改时间：15:30:00" itemprop="dateCreated datePublished" datetime="2025-08-19T00:00:00+08:00">2025-08-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">大模型RAG系统</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习大模型RAG系统学习笔记第二十一讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Milvus中的常用索引介绍"><a href="#Milvus中的常用索引介绍" class="headerlink" title="Milvus中的常用索引介绍"></a>Milvus中的常用索引介绍</h1><h2 id="FLAT-索引-–-全量扫描"><a href="#FLAT-索引-–-全量扫描" class="headerlink" title="FLAT 索引 – 全量扫描"></a>FLAT 索引 – 全量扫描</h2><p>每个查询向量直接与数据集中的每个向量进行比较，无需任何高级预处理或数据结构化。</p>
+<p>工作原理：全量扫描每个查询向量，直接与数据集中的每个向量进行比较</p>
+<p>创建索引代码示例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient</span><br><span class="line"></span><br><span class="line">index_params = MilvusClient.prepare_index_params()</span><br><span class="line"></span><br><span class="line">index_params.add_index(</span><br><span class="line">    field_name=<span class="string">&quot;your_vector_field_name&quot;</span>,</span><br><span class="line">    index_type=<span class="string">&quot;FLAT&quot;</span>,</span><br><span class="line">    index_name=<span class="string">&quot;vector_index&quot;</span>,</span><br><span class="line">    metric_type=<span class="string">&quot;L2&quot;</span>,</span><br><span class="line">    params=&#123;&#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>特点：<ul>
+<li>无预处理：数据加载时全部加载到内存，没有任何结构化处理</li>
+<li>精准度高：能达到embedding模型给出的上限，是向量检索的”天花板”</li>
+<li>适用场景：适合数据量在几万到几十万条的情况</li>
+<li>性能局限：百万/千万级数据时延迟过高，不推荐使用</li>
+</ul>
+</li>
+</ul>
+<h2 id="IVF-FLAT-倒排文件"><a href="#IVF-FLAT-倒排文件" class="headerlink" title="IVF_FLAT - 倒排文件"></a>IVF_FLAT - 倒排文件</h2><p>当对数据集进行聚类可以减少搜索空间，并且有足够的内存来存储聚类数据时，快速查询响应并保证高精度。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820095803094.png" alt="image-20250820095803094" style="zoom:67%;" /></p>
+<ul>
+<li>核心思想：通过聚类减少搜索空间，相似向量聚为一类(类似：一张照片中，将人、猫、狗分别进行分区)</li>
+<li>工作流程：<ul>
+<li>使用k-means算法将向量聚类（nlist指定聚类数量）</li>
+<li>查询时计算与各聚类中心的距离</li>
+<li>只在最近的nprobe个聚类中进行搜索</li>
+<li>返回最相似的结果</li>
+</ul>
+</li>
+<li>关键参数：<ul>
+<li>nlist：指定聚类分区数量（如64/80）</li>
+<li>nprobe：搜索时考虑的聚类数量（如3/5）</li>
+</ul>
+</li>
+<li>优势：<ul>
+<li>效率提升：相比FLAT可快nlist倍（如分成80类快80倍）</li>
+<li>灵活性：通过调整nprobe平衡精度与性能</li>
+</ul>
+</li>
+<li>局限性：精度略低于FLAT，但通过增加nprobe可接近</li>
+</ul>
+<p>创建索引代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient</span><br><span class="line"></span><br><span class="line">index_params = MilvusClient.prepare_index_params()</span><br><span class="line"></span><br><span class="line">index_params.add_index(</span><br><span class="line">    field_name=<span class="string">&quot;vector&quot;</span>,</span><br><span class="line">    metric_type=<span class="string">&quot;L2&quot;</span>,</span><br><span class="line">    index_type=<span class="string">&quot;IVF_FLAT&quot;</span>,</span><br><span class="line">    index_name=<span class="string">&quot;vector_index&quot;</span>,</span><br><span class="line">    params=&#123;</span><br><span class="line">        <span class="string">&quot;nlist&quot;</span>: <span class="number">64</span>  <span class="comment"># 设置聚类数量</span></span><br><span class="line">    &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h2 id="IVF-PQ：倒排文件与乘积量化"><a href="#IVF-PQ：倒排文件与乘积量化" class="headerlink" title="IVF_PQ：倒排文件与乘积量化"></a>IVF_PQ：倒排文件与乘积量化</h2><p>Inverted File with Product Quantization，是一种结合索引和压缩的混合方法。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820101017610.png" alt="image-20250820101017610" style="zoom:80%;" /></p>
+<ul>
+<li>核心原理: 结合倒排索引和乘积量化的混合方法，通过维度分解和子空间量化实现高效压缩检索</li>
+<li>工作流程:<ul>
+<li>维度分解: 将高维向量分解为m个等长子向量，m值控制分解粒度和压缩率</li>
+<li>码本生成: 每个子空间用K-means聚类生成$2^n$﻿位质心码本（如nbits=8时码本含256个质心）</li>
+<li>矢量量化: 子向量通过最近邻搜索匹配对应子空间的质心</li>
+<li>压缩表示: 最终编码由m个子空间索引组成，存储需求从$D×32$﻿位降至$m×nbits$﻿位</li>
+</ul>
+</li>
+<li>量化本质:<ul>
+<li>压缩原理: 通过降低参数精度（如64位浮点→8位整型）减少存储空间</li>
+<li>性能影响: 显著提升检索速度但会损失精度，适用于对速度敏感、精度要求宽松的场景</li>
+</ul>
+</li>
+<li>关键参数:<ul>
+<li>k: 每个子空间的质心数，计算公式﻿$k=2^{nbits}$﻿</li>
+<li>m: 原始向量分割的子向量数量，需满足$dim/m≥2$﻿</li>
+<li>nbits: 质心索引编码位数（典型值为8位）</li>
+</ul>
+</li>
+</ul>
+<p>创建索引代码示例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient</span><br><span class="line"></span><br><span class="line">index_params = MilvusClient.prepare_index_params()</span><br><span class="line"></span><br><span class="line">index_params.add_index(</span><br><span class="line">    field_name=<span class="string">&quot;vector&quot;</span>,</span><br><span class="line">    metric_type=<span class="string">&quot;L2&quot;</span>,</span><br><span class="line">    index_type=<span class="string">&quot;IVF_PQ&quot;</span>,</span><br><span class="line">    index_name=<span class="string">&quot;vector_index&quot;</span>,</span><br><span class="line">    params=&#123;</span><br><span class="line">        <span class="string">&quot;nlist&quot;</span>: <span class="number">64</span>,  <span class="comment"># 聚类中心数量，通常设置为 4*sqrt(n)，n 为向量数量</span></span><br><span class="line">        <span class="string">&quot;m&quot;</span>: <span class="number">32</span>,  <span class="comment"># 向量被分割的子向量数量，通常为 dim/m &gt;= 2，这里 128/32=4</span></span><br><span class="line">        <span class="string">&quot;nbits&quot;</span>: <span class="number">8</span>  <span class="comment"># 每个子向量的编码位数，通常为 8 位</span></span><br><span class="line">    &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>参数配置:<ul>
+<li>nlist=64: 聚类中心数量，建议设为﻿$4×\sqrt{n}$﻿（n为向量总数）</li>
+<li>m=32: 128维向量分割为32个子向量（满足128/32=4）</li>
+<li>nbits=8: 每个子向量8位编码，产生256个质心（﻿$2^8$﻿）</li>
+</ul>
+</li>
+<li>实现特点:<ul>
+<li>小数据集难以体现性能优势，适合大规模高维向量场景</li>
+<li>相比原始存储（如1536维32位浮点向量），压缩后仅需$m×nbits$﻿存储空间</li>
+</ul>
+</li>
+</ul>
+<h2 id="HNSW：分层可导航小世界"><a href="#HNSW：分层可导航小世界" class="headerlink" title="HNSW：分层可导航小世界"></a>HNSW：分层可导航小世界</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820101448765.png" alt="image-20250820101448765" style="zoom:67%;" /></p>
+<p><strong>分层可导航小世界 (HNSW)</strong> 算法构建了一个多层图，有点像具有不同缩放级别的地图。底层包含所有数据点，而上层则由从下层采样的数据点子集组成。</p>
+<p>在这个层次结构中，每一层都包含代表数据点的节点，这些节点通过指示其接近度的边连接起来。较高的层级提供长距离跳跃，以快速接近目标，而较低的层级则支持细粒度搜索，以获得最准确的结果。</p>
+<ol>
+<li><strong>入口点</strong>：搜索从顶层的固定入口点开始，该入口点是图中预先确定的节点。</li>
+<li><strong>贪婪搜索</strong>：该算法贪婪地移动到当前层的最近邻，直到无法再接近查询向量。上层起到导航的作用，充当粗略的过滤器，为下层更精细的搜索找到潜在的入口点。</li>
+<li><strong>层下降</strong>：一旦在当前层达到局部最小值，算法就会使用预先建立的连接跳转到较低层，并重复贪婪搜索。</li>
+<li><strong>最终细化</strong>：该过程持续直至到达底层，其中最终细化步骤识别最近的邻居。</li>
+</ol>
+<p>总结：</p>
+<ul>
+<li>算法架构: 多层图结构，类似多分辨率地图<ul>
+<li>底层: 包含全部数据点</li>
+<li>上层: 下层数据点的抽样子集，层级越高数据点越稀疏</li>
+</ul>
+</li>
+<li>搜索机制:<ul>
+<li>入口点: 从顶层固定入口点启动搜索</li>
+<li>贪婪搜索: 逐层寻找最近邻，上层实现快速粗筛，下层进行精细搜索</li>
+<li>层间跳转: 到达局部最优后降层继续搜索，直至底层完成最终匹配</li>
+</ul>
+</li>
+<li>核心参数:<ul>
+<li>M: 节点最大连接数（控制图密度）</li>
+<li>efConstruction: 构建时的候选邻居数（影响索引质量）</li>
+</ul>
+</li>
+<li>性能特点:<ul>
+<li>精度与效率平衡良好，适合需要高准确率的场景</li>
+<li>通过层级结构实现类似雷达的渐进式搜索，逐步扩大搜索范围</li>
+</ul>
+</li>
+</ul>
+<p>创建索引代码示例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient</span><br><span class="line"></span><br><span class="line">index_params = MilvusClient.prepare_index_params()</span><br><span class="line"></span><br><span class="line">index_params.add_index(</span><br><span class="line">    field_name=<span class="string">&quot;vector&quot;</span>,</span><br><span class="line">    metric_type=<span class="string">&quot;L2&quot;</span>,</span><br><span class="line">    index_type=<span class="string">&quot;HNSW&quot;</span>,</span><br><span class="line">    index_name=<span class="string">&quot;vector_index&quot;</span>,</span><br><span class="line">    params=&#123;</span><br><span class="line">        <span class="string">&quot;M&quot;</span>: <span class="number">64</span>,  <span class="comment"># 最大邻居数</span></span><br><span class="line">        <span class="string">&quot;efConstruction&quot;</span>: <span class="number">100</span>  <span class="comment"># 构建时的候选邻居数</span></span><br><span class="line">    &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h2 id="DISKANN（磁盘版图索引）"><a href="#DISKANN（磁盘版图索引）" class="headerlink" title="DISKANN（磁盘版图索引）"></a>DISKANN（磁盘版图索引）</h2><p>基于 Vamana 图（类似 HNSW），将图结构和压缩向量存放在 SSD 上；在内存中只保留元数据。</p>
+<p><strong>查询流程</strong>：结合 PQ 压缩和图遍历，从磁盘 I/O 中读入必要节点。</p>
+<p><strong>优缺点</strong></p>
+<ul>
+<li>✔ 适合海量数据：可支撑十亿级向量</li>
+<li>✔ RAM 占用低：仅元数据在内存</li>
+<li>✘ 延迟受 SSD IOPS 限制：对 I/O 性能依赖高</li>
+</ul>
+<p><strong>适用场景</strong></p>
+<ul>
+<li>数据量远超可用内存</li>
+<li>对响应时延有一定容忍（或 SSD IOPS 足够高）</li>
+</ul>
+<p>总结：</p>
+<ul>
+<li>核心思想：基于Vamana图（类似HNSW）结构，将图结构和压缩向量存放在SSD上，内存中仅保留元数据</li>
+<li>查询机制：结合PQ压缩和图遍历技术，按需从磁盘I/O读取必要节点</li>
+<li>优势特点：<ul>
+<li>海量支持：可处理十亿级向量数据</li>
+<li>内存优化：仅需存储元数据，RAM占用极低</li>
+</ul>
+</li>
+<li>性能局限：<ul>
+<li>I/O依赖：查询延迟受SSD IOPS限制</li>
+<li>速度折衷：相比纯内存方案存在性能差距</li>
+</ul>
+</li>
+<li>适用场景：<ul>
+<li>数据规模远超可用内存容量</li>
+<li>对响应时延有一定容忍度（或具备高性能SSD）</li>
+</ul>
+</li>
+</ul>
+<p>创建索引代码示例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pymilvus <span class="keyword">import</span> MilvusClient</span><br><span class="line"></span><br><span class="line">index_params = MilvusClient.prepare_index_params()</span><br><span class="line"></span><br><span class="line">index_params.add_index(</span><br><span class="line">    field_name=<span class="string">&quot;vector&quot;</span>,</span><br><span class="line">    metric_type=<span class="string">&quot;L2&quot;</span>,  <span class="comment"># 支持 L2、IP 或 COSINE</span></span><br><span class="line">    index_type=<span class="string">&quot;DISKANN&quot;</span>,  <span class="comment"># 使用 DiskANN 索引</span></span><br><span class="line">    index_name=<span class="string">&quot;vector_index&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>索引创建步骤：<ul>
+<li>准备索引参数：使用prepare_index_params()方法初始化索引参数对象</li>
+<li>添加索引配置：通过add_index()方法设置字段名、度量类型和索引类型<ul>
+<li>支持三种度量类型：$L2$﻿距离、内积(、$IP$﻿)和余弦相似度($COSINE$﻿)</li>
+<li>索引类型需明确指定为”DISKANN”</li>
+</ul>
+</li>
+<li>执行创建操作：调用create_index()方法并传入集合名称和索引参数</li>
+</ul>
+</li>
+<li>DiskANN特点：<ul>
+<li>硬盘存储：索引数据直接存储在硬盘而非内存，适合大规模数据集</li>
+<li>简单配置：只需在索引类型参数中指定”DISKANN”即可启用</li>
+<li>自动运行：设置完成后系统会自动在硬盘上构建和运行索引</li>
+</ul>
+</li>
+<li>注意事项：<ul>
+<li>索引创建是同步操作，建议设置sync=True等待完成</li>
+<li>创建前需确保集合已存在且包含向量数据</li>
+<li>不同度量类型会影响搜索结果，需根据应用场景选择</li>
+</ul>
+</li>
+</ul>
+<h1 id="索引和向量类型以及度量标准相关"><a href="#索引和向量类型以及度量标准相关" class="headerlink" title="索引和向量类型以及度量标准相关"></a>索引和向量类型以及度量标准相关</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820102716154.png" alt="image-20250820102716154" style="zoom:50%;" /></p>
+<ul>
+<li>索引体系：<ul>
+<li>浮点向量：支持FLAT/IVF_FLAT/IVF_SQ8/IVF_PQ/HNSW/DISKANN等</li>
+<li>稀疏向量：仅支持SPARSE_INVERTED_INDEX</li>
+<li>二进制向量：提供BIN_FLAT/BIN_IVF_FLAT专用索引</li>
+</ul>
+</li>
+<li>度量标准：<ul>
+<li>浮点向量：适用$L_2$﻿/IP/COSINE三种距离</li>
+<li>稀疏向量：限定IP/BM25相似度</li>
+<li>二进制向量：专用JACCARD/HAMMING距离</li>
+</ul>
+</li>
+<li>组合规律：<ul>
+<li>浮点向量索引体系最丰富（含GPU加速版本）</li>
+<li>二进制向量索引采用”BIN_”前缀标识</li>
+<li>稀疏向量仅支持倒排索引结构</li>
+</ul>
+</li>
+</ul>
+<h1 id="各种类型索引的组合"><a href="#各种类型索引的组合" class="headerlink" title="各种类型索引的组合"></a>各种类型索引的组合</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>分类</th>
+<th>适用场景</th>
+<th>嵌入类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FLAT</td>
+<td>普通索引</td>
+<td>数据集规模相对较小需要100%的召回率</td>
+<td>浮点嵌入</td>
+</tr>
+<tr>
+<td>IVF_FLAT</td>
+<td>基于树的索引</td>
+<td>查询速度要求高同时需要尽可能高的召回率<br />查询速度非常快内存资源有限</td>
+<td>浮点嵌入</td>
+</tr>
+<tr>
+<td>IVF_SQ8</td>
+<td>基于量化的索引</td>
+<td>可接受在召回率上有轻微折中</td>
+<td>浮点嵌入</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>查询速度较快内存资源有限</td>
+<td></td>
+</tr>
+<tr>
+<td>IVF_PQ</td>
+<td>基于量化的索引</td>
+<td>可接受在召回率上有轻微折中<br /></td>
+<td>查询速度非常快对召回率要求高浮点嵌入</td>
+</tr>
+<tr>
+<td>SCANN</td>
+<td>基于量化的索引</td>
+<td>查询速度非常快对召回率要求高内存资源充足</td>
+<td>浮点嵌入</td>
+</tr>
+<tr>
+<td>HNSW</td>
+<td>基于图的索引</td>
+<td>查询速度非常快对召回率要求高<br />内存资源较为充足</td>
+<td>浮点嵌入</td>
+</tr>
+<tr>
+<td>HNSW_SQ</td>
+<td>基于图的索引</td>
+<td>查询速度非常快内存资源有限<br />可接受在召回率上有轻微折中</td>
+<td>浮点嵌入</td>
+</tr>
+<tr>
+<td>HNSW_PQ</td>
+<td>基于图的索引</td>
+<td>查询速度中等内存资源非常有限<br />可接受在召回率上有轻微折中</td>
+<td>浮点嵌入</td>
+</tr>
+<tr>
+<td>HNSW_PRQ</td>
+<td>基于图的索引</td>
+<td>查询速度中等内存资源非常有限<br />可接受在召回率上有轻微折中</td>
+<td>浮点嵌入</td>
+</tr>
+<tr>
+<td>BIN_FLAT</td>
+<td>普通索引</td>
+<td>数据集规模较小<br />需要精确的搜索结果无须压缩</td>
+<td>二进制嵌入</td>
+</tr>
+<tr>
+<td>BIN_IVF_FLAT</td>
+<td>基于树的索引</td>
+<td>需要高查询速度对召回率要求高<br />数据集规模较大</td>
+<td>二进制嵌入</td>
+</tr>
+<tr>
+<td>SPARSE_INVERTED_INDEX</td>
+<td>普通索引</td>
+<td>数据集规模较小需要100%的召回率<br />适用于稀疏向量的检索</td>
+<td>稀疏嵌入</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>FLAT索引：<ul>
+<li>分类：普通索引</li>
+<li>适用场景：数据集规模较小且需要100%召回率</li>
+<li>嵌入类型：浮点嵌入</li>
+<li>特点：全量精度最高，适合对召回率要求严格的场景</li>
+</ul>
+</li>
+<li>IVF_FLAT索引：<ul>
+<li>分类：基于树的索引</li>
+<li>适用场景：查询速度要求高同时需要尽可能高的召回率</li>
+<li>嵌入类型：浮点嵌入</li>
+<li>特点：通过聚类(树状结构)加速查询，适合大规模数据</li>
+</ul>
+</li>
+<li>量化索引系列：<ul>
+<li>包含IVF_SQ8/IVF_PQ/SCANN等</li>
+<li>共同特点：通过有损压缩减少内存占用</li>
+<li>取舍：在查询速度和内存占用上有优势，但会牺牲部分召回率</li>
+<li>典型应用：IVF_SQ8适合内存紧张场景，SCANN适合资源充足但对召回率要求高的场景</li>
+</ul>
+</li>
+<li>图索引系列：<ul>
+<li>包含HNSW/HNSW_SQ/HNSW_PQ等</li>
+<li>共同特点：基于图网络结构实现快速导航</li>
+<li>优势：HNSW在速度和召回率上表现优异，适合资源充足场景</li>
+<li>变体：带量化的版本(HNSW_SQ等)在内存占用和性能间取得平衡</li>
+</ul>
+</li>
+<li>二进制索引：<ul>
+<li>BIN_FLAT：适合小规模二进制数据精确搜索</li>
+<li>BIN_IVF_FLAT：适合大规模二进制数据高速查询</li>
+<li>特点：专门处理二进制嵌入，不进行压缩</li>
+</ul>
+</li>
+<li>稀疏索引：<ul>
+<li>SPARSE_INVERTED_INDEX：专为稀疏向量设计</li>
+<li>特点：保持100%召回率，适合小规模稀疏数据</li>
+</ul>
+</li>
+</ul>
+<h1 id="索引选型速览"><a href="#索引选型速览" class="headerlink" title="索引选型速览"></a>索引选型速览</h1><ul>
+<li>精度优先：<ul>
+<li>选择FLAT索引</li>
+<li>特点：保证100%召回率，适合对精度要求极高的场景</li>
+</ul>
+</li>
+<li>低延迟场景：<ul>
+<li>选择HNSW系列</li>
+<li>适用条件：top-K较小且内存资源充足</li>
+<li>优势：查询速度非常快</li>
+</ul>
+</li>
+<li>海量数据处理：<ul>
+<li>选择IVF_FLAT</li>
+<li>特点：适合大规模数据和大top-K场景</li>
+<li>原理：通过聚类减少搜索范围</li>
+</ul>
+</li>
+<li>内存优化方案：<ul>
+<li>IVF_SQ8或IVF_PQ</li>
+<li>特点：量化压缩减少内存占用</li>
+<li>取舍：会轻微影响召回率</li>
+</ul>
+</li>
+<li>GPU加速：<ul>
+<li>GPU_IVF_FLAT/GPU_IVF_PQ</li>
+<li>优势：利用GPU并行计算能力加速</li>
+</ul>
+</li>
+<li>超大数据集：<ul>
+<li>DISKANN</li>
+<li>特点：数据量超过内存容量时使用</li>
+<li>原理：基于磁盘的索引结构</li>
+</ul>
+</li>
+</ul>
+<h1 id="Milvus中索引的工作机制"><a href="#Milvus中索引的工作机制" class="headerlink" title="Milvus中索引的工作机制"></a>Milvus中索引的工作机制</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250820103439677.png" alt="image-20250820103439677" style="zoom:50%;" /></p>
+<p>Milvus 的向量索引采用“粗—快—准”三层分层架构，以在检索效率和精度之间取得最佳平衡：</p>
+<ol>
+<li><strong>数据结构（粗过滤）</strong>— 例如 IVF 将向量按质心划分存储桶，或 HNSW构建分层图网络，通过只扫描与查询向量质心或邻域相关的子集，实现对大规模数据的快速过滤。</li>
+<li><strong>量化（加速计算）</strong>— 通过 SQ8、PQ 等有损压缩，将向量从 32 位浮点压缩到 8 位或更低维度，大幅减少内存和计算开销，快速计算候选集距离。</li>
+<li><strong>精炼器（精准重排</strong>）— 对量化后的候选结果（topK×扩展率）使用FP32 精度重新计算距离，对排序进行微调，弥补量化带来的误差，确保最终返回的 topK 结果高质量、低延迟。</li>
+</ol>
+<p>总结：</p>
+<ul>
+<li>三层架构：<ul>
+<li>数据结构层：负责粗过滤，如IVF的聚类或HNSW的图结构</li>
+<li>量化层：可选，通过SQ8/PQ等算法压缩数据</li>
+<li>精炼器：对候选结果进行精准重排</li>
+</ul>
+</li>
+<li>数据结构层：<ul>
+<li>核心功能：组织数据以加速检索</li>
+<li>实现方式：聚类(IVF)或图网络(HNSW)</li>
+<li>特点：只扫描相关子集，大幅提高效率</li>
+</ul>
+</li>
+<li>量化技术：<ul>
+<li>目的：减少内存和计算开销</li>
+<li>方法：将32位浮点压缩到8位或更低</li>
+<li>影响：会引入误差，但显著提升速度</li>
+</ul>
+</li>
+<li>精炼器机制：<ul>
+<li>工作流程：先获取topK×扩展率的候选集，再用FP32精度重算距离</li>
+<li>优势：弥补量化误差，确保最终结果质量</li>
+<li>特点：类似检索后处理，提升排序准确性</li>
+</ul>
+</li>
+<li>设计理念：<ul>
+<li>“粗-快-准”分层架构</li>
+<li>在检索效率和精度间取得最佳平衡</li>
+<li>内部自动完成多阶段优化</li>
+</ul>
+</li>
+</ul>
+<h1 id="性能的权衡"><a href="#性能的权衡" class="headerlink" title="性能的权衡"></a>性能的权衡</h1><p><strong>构建时间 vs QPS vs 召回率</strong></p>
+<ul>
+<li>基于图（如 HNSW）通常能提供最高的 QPS 和低延迟，尤其适合 Top-K 较小（≤2 000）或对高召回率有需求的场景。</li>
+<li>IVF 系列（IVF-PQ/SQ8 等）在 Top-K 较大（＞2 000）时更高效，能够通过聚类分桶减少检索范围。</li>
+<li>在相同压缩率下，PQ 比 SQ8 召回率更高，但 SQ8 的查询速度略胜一筹。</li>
+<li>使用 DiskANN（磁盘＋PQ 量化＋Vamana 图）可处理远超内存容量的海量数据，但会受制于磁盘 IOPS。</li>
+</ul>
+<p><strong>容量与内存映射（mmap</strong>）</p>
+<ul>
+<li>如果所有向量数据都能装进内存，可优先选用内存索引（HNSW、IVF＋精炼）并配合 mmap 优化大文件访问。</li>
+<li>如果只有部分数据能进内存，DiskANN 是更稳的低延迟方案；IVFPQ/SQ8＋mmap 则在成本和精度间提供折中。</li>
+</ul>
+<p><strong>过滤率（Filter Rate）与召回策略</strong></p>
+<ul>
+<li>过滤率 &lt; 85%：图索引效果最佳</li>
+<li>85% ≤ 过滤率 ≤ 95%：IVF 系列更合适</li>
+<li>过滤率 &gt; 98%：暴力搜索（FLAT）可保证最高召回</li>
+</ul>
+<p><strong>Top-K 大小影响</strong></p>
+<ul>
+<li>小 top-K、高召回：基于图</li>
+<li>大 top-K（占数据集 ≥ 1%）：IVF 系列</li>
+<li>极高召回率（＞ 99%）：FLAT＋GPU 重算</li>
+</ul>
+<p>总结：</p>
+<ol>
+<li>构建时间 vs QPS vs 召回率<ul>
+<li>基于图的索引优势：在Top-K较小（﻿$\leq 2000$﻿）或需要高召回率时，HNSW等图结构能提供最高QPS和最低延迟。</li>
+<li>IVF系列适用场景：当Top-K较大（$&gt; 2000$﻿）时，IVF-PQ/SQ8通过聚类分桶减少检索范围更高效。</li>
+<li>PQ与SQ8对比：相同压缩率下PQ召回率更高，但SQ8查询速度更快。</li>
+<li>DiskANN特点：采用磁盘存储+PQ量化+Vamana图结构可处理超内存数据，但性能受磁盘IOPS限制。</li>
+</ul>
+</li>
+<li>容量与内存映射<ul>
+<li>全内存场景：优先选择HNSW或IVF+精炼索引，配合mmap优化大文件访问。</li>
+<li>部分内存场景：<ul>
+<li>DiskANN是低延迟稳定方案</li>
+<li>VFPQ/SQ8+mmap在成本与精度间提供折中方案</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>过滤率与召回策略<ul>
+<li>低过滤率（&lt;85%）：图索引效果最佳</li>
+<li>中过滤率（85%-95%）：IVF系列更合适</li>
+<li>极高过滤率（&gt;98%）：暴力搜索(FLAT)可保证最高召回</li>
+</ul>
+</li>
+<li>Top-K大小影响<ul>
+<li>小top-K高召回：基于图结构</li>
+<li>大top-K（≥数据集1%）：IVF系列</li>
+<li>极高召回率（&gt;99%）：FLAT+GPU重算</li>
+</ul>
+</li>
+</ol>
+<h1 id="案例：内存估算（以-1-百万条-128-维向量为例）"><a href="#案例：内存估算（以-1-百万条-128-维向量为例）" class="headerlink" title="案例：内存估算（以 1 百万条 128 维向量为例）"></a>案例：内存估算（以 1 百万条 128 维向量为例）</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>索引类型</th>
+<th>组成</th>
+<th>内存消耗</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IVF-PQ</td>
+<td>质心(2 000x128x4 B)=1 MB<br/>簇分配(1 000 000x2 B)=2 MB<br/>PQ(1 000 000x8 B)=8 MB</td>
+<td>≈11 MB</td>
+</tr>
+<tr>
+<td>IVF-PQ + 10% 精炼</td>
+<td>IVF-PQ(11 MB)+精炼缓存(1 000 000x128 x 0.1 x4 B)=51.2 MB</td>
+<td>≈62 MB</td>
+</tr>
+<tr>
+<td>IVF-SQ8</td>
+<td>质心(1 MB)+簇分配(2 MB)+SQ8(1 000 000x128 x 1 B)=128 MB</td>
+<td>≈131 MB</td>
+</tr>
+<tr>
+<td>IVF-FLAT</td>
+<td>质心(1 MB)+簇分配(2 MB)+原始向量(1 000 000x128x4 B)=512 MB</td>
+<td>≈515 MB</td>
+</tr>
+<tr>
+<td>HNSW</td>
+<td>图结构(1 000 000x32x4 B)=128 MB<br/>原始向量=512 MB</td>
+<td>≈640 MB</td>
+</tr>
+<tr>
+<td>HNSW-PQ</td>
+<td>图结构(128 MB)+PQ(1 000 000x8 B)=8 MB</td>
+<td>≈136 MB</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>IVF-PQ：11MB（质心1MB + 簇分配2MB + PQ编码8MB）</li>
+<li>IVF-PQ+10%精炼：62MB（基础11MB + 精炼缓存51.2MB）</li>
+<li>IVF-SQ8：131MB（质心1MB + 簇分配2MB + SQ8编码128MB）</li>
+<li>IVF-FLAT：515MB（含原始向量存储）</li>
+<li>HNSW：&lt;640MB（图结构128MB + 原始向量512MB）</li>
+<li>HNSW-PQ：136MB（图结构128MB + PQ编码8MB）</li>
+<li>估算方法：根据实际数据量参照表格比例计算，需结合可用内存选择合适索引类型。工业项目中需查阅文档获取更精确的内存映射算法参数。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8BRAG%E7%B3%BB%E7%BB%9F/" rel="tag"># 大模型RAG系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/18/ai/rag/19-vector-db/" rel="prev" title="RAG组件--向量数据库介绍">
+      <i class="fa fa-chevron-left"></i> RAG组件--向量数据库介绍
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/08/22/ai/rag/22-vector-db-search/" rel="next" title="RAG组件--向量数据库检索（搜索）、度量类型和条件过滤">
+      RAG组件--向量数据库检索（搜索）、度量类型和条件过滤 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Milvus%E4%B8%AD%E7%9A%84%E5%B8%B8%E7%94%A8%E7%B4%A2%E5%BC%95%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">Milvus中的常用索引介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#FLAT-%E7%B4%A2%E5%BC%95-%E2%80%93-%E5%85%A8%E9%87%8F%E6%89%AB%E6%8F%8F"><span class="nav-number">1.1.</span> <span class="nav-text">FLAT 索引 – 全量扫描</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IVF-FLAT-%E5%80%92%E6%8E%92%E6%96%87%E4%BB%B6"><span class="nav-number">1.2.</span> <span class="nav-text">IVF_FLAT - 倒排文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IVF-PQ%EF%BC%9A%E5%80%92%E6%8E%92%E6%96%87%E4%BB%B6%E4%B8%8E%E4%B9%98%E7%A7%AF%E9%87%8F%E5%8C%96"><span class="nav-number">1.3.</span> <span class="nav-text">IVF_PQ：倒排文件与乘积量化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#HNSW%EF%BC%9A%E5%88%86%E5%B1%82%E5%8F%AF%E5%AF%BC%E8%88%AA%E5%B0%8F%E4%B8%96%E7%95%8C"><span class="nav-number">1.4.</span> <span class="nav-text">HNSW：分层可导航小世界</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DISKANN%EF%BC%88%E7%A3%81%E7%9B%98%E7%89%88%E5%9B%BE%E7%B4%A2%E5%BC%95%EF%BC%89"><span class="nav-number">1.5.</span> <span class="nav-text">DISKANN（磁盘版图索引）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E5%92%8C%E5%90%91%E9%87%8F%E7%B1%BB%E5%9E%8B%E4%BB%A5%E5%8F%8A%E5%BA%A6%E9%87%8F%E6%A0%87%E5%87%86%E7%9B%B8%E5%85%B3"><span class="nav-number">2.</span> <span class="nav-text">索引和向量类型以及度量标准相关</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%84%E7%A7%8D%E7%B1%BB%E5%9E%8B%E7%B4%A2%E5%BC%95%E7%9A%84%E7%BB%84%E5%90%88"><span class="nav-number">3.</span> <span class="nav-text">各种类型索引的组合</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E9%80%89%E5%9E%8B%E9%80%9F%E8%A7%88"><span class="nav-number">4.</span> <span class="nav-text">索引选型速览</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Milvus%E4%B8%AD%E7%B4%A2%E5%BC%95%E7%9A%84%E5%B7%A5%E4%BD%9C%E6%9C%BA%E5%88%B6"><span class="nav-number">5.</span> <span class="nav-text">Milvus中索引的工作机制</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E7%9A%84%E6%9D%83%E8%A1%A1"><span class="nav-number">6.</span> <span class="nav-text">性能的权衡</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%EF%BC%9A%E5%86%85%E5%AD%98%E4%BC%B0%E7%AE%97%EF%BC%88%E4%BB%A5-1-%E7%99%BE%E4%B8%87%E6%9D%A1-128-%E7%BB%B4%E5%90%91%E9%87%8F%E4%B8%BA%E4%BE%8B%EF%BC%89"><span class="nav-number">7.</span> <span class="nav-text">案例：内存估算（以 1 百万条 128 维向量为例）</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">153</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
