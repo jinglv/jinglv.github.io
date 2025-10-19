@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习AI大模型和Agent智能体学习笔记第二讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="AI大模型提示词工程">
+<meta property="og:url" content="https://jinglv.github.io/2025/09/23/ai/llm/2-prompts/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习AI大模型和Agent智能体学习笔记第二讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041538865.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041540977.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041544431.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041550209.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041552696.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041553313.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041555133.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041559763.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041600359.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041602068.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041604429.png">
+<meta property="article:published_time" content="2025-09-22T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-09-23T08:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="AI大模型和Agent智能体学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041538865.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/09/23/ai/llm/2-prompts/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>AI大模型提示词工程 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/09/23/ai/llm/2-prompts/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          AI大模型提示词工程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-09-23 00:00:00 / 修改时间：16:30:00" itemprop="dateCreated datePublished" datetime="2025-09-23T00:00:00+08:00">2025-09-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/AI%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%92%8CAgent%E6%99%BA%E8%83%BD%E4%BD%93%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">AI大模型和Agent智能体学习</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习AI大模型和Agent智能体学习笔记第二讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="与AI对话"><a href="#与AI对话" class="headerlink" title="与AI对话"></a>与AI对话</h1><h2 id="提示词Prompt介绍"><a href="#提示词Prompt介绍" class="headerlink" title="提示词Prompt介绍"></a>提示词Prompt介绍</h2><ol>
+<li>对于普通人：提示词是和 AI 沟通的桥梁，提示词的好坏决定了返回的结果是否准确。</li>
+<li>对于开发者：提示工程是一种相对较新的学科，专门用于开发和优化提示，以高效地使用语言模型（LM）来处理各种应用和研究主题。</li>
+</ol>
+<h2 id="提示词的原则与技巧"><a href="#提示词的原则与技巧" class="headerlink" title="提示词的原则与技巧"></a>提示词的原则与技巧</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">原则</th>
+<th style="text-align:left">原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">写清楚需求</td>
+<td style="text-align:left">GPT 模型无法读懂您的想法，因此在提供需求时尽可能具体是很重要的。这包括在您的查询中包含详细信息，要求模型采用角色，以及使用定界符清楚地指示输入的不同部分。</td>
+</tr>
+<tr>
+<td style="text-align:left">提供参考文本</td>
+<td style="text-align:left">如果可以，请提供与您希望模型生成的内容相似的参考文本。这将有助于模型了解您要查找的内容并生成更准确的结果。</td>
+</tr>
+<tr>
+<td style="text-align:left">将复杂的任务拆分为更简单的子任务</td>
+<td style="text-align:left">如果您试图让模型做一些复杂的事情，将任务分解为更小、更易于管理的子任务会很有帮助。这将使模型更容易理解您的要求并生成更准确的结果。</td>
+</tr>
+<tr>
+<td style="text-align:left">角色扮演</td>
+<td style="text-align:left">这个技巧的作用是告诉ChatGPT在对话中扮演一个特定的角色或人物。这对于创造更有吸引力和沉浸感的对话，或模拟真实世界的场景特别有用。</td>
+</tr>
+<tr>
+<td style="text-align:left">系统地测试变化</td>
+<td style="text-align:left">对需求或参考文本进行更改时，重要的是系统地测试结果以了解它们如何影响模型的输出。这将帮助您确定对改进结果最有效的更改。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="写清楚需求"><a href="#写清楚需求" class="headerlink" title="写清楚需求"></a>写清楚需求</h3><p>编写有效的ChatGPT的难点之一是表达含糊不清。为了避免这个问题，有以下几个问题需要注意：</p>
+<ol>
+<li>定义任何专业术语或技术术语。</li>
+<li>避免使用模棱两可的语言。</li>
+<li>使用清晰或简明的语言</li>
+</ol>
+<ul>
+<li><p>错误案例：”你是我的哈基米吗？”</p>
+<p>哈基米属于网络用语，而且诞生在2023年，ChatGPT是无法理解这个词的语意的。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041538865.png" alt="image-20230904153857689" style="zoom:40%;" /></p>
+</li>
+<li><p>好的案例：”请帮我提供在深圳市宝安区所有的咖啡馆”</p>
+<p>简明扼要说清楚自己的需求，无需多言，ChatGPT便很好理解了。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041540977.png" alt="image-20230904154007912" style="zoom:40%;" /></p>
+</li>
+</ul>
+<h3 id="提供参考文本"><a href="#提供参考文本" class="headerlink" title="提供参考文本"></a>提供参考文本</h3><ol>
+<li><p>对于文本比较短的引用，可以直接贴到提问里面即可： 如果你有一段法律条款，并希望模型使用这段条款来解释某个概念，例如，我给ChatGPT一段代码，分析代码的Bug</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041544431.png" alt="image-20230904154421304" style="zoom:40%;" /></p>
+</li>
+<li><p>网页链接的引用： 也可以直接将网页链接里面的内容提供给 GPT 来作为引用文本。比如可以直接给它一个链接地址，让它总结文章内的内容。（注意这个功能需要使用web插件）</p>
+</li>
+</ol>
+<h3 id="拆解复杂任务"><a href="#拆解复杂任务" class="headerlink" title="拆解复杂任务"></a>拆解复杂任务</h3><p>作为一个厨师，在做饭的时候需要完成这些步骤：准备食材、清理食材、处理食材、开始烹饪、摆盘。</p>
+<p>在这个过程中，其实厨师就是把一个复杂的任务，拆解成了多个简单的任务。其实在编程的过程中，也是同样的道理。也会把一个复杂需求，拆解为N个简单的子需求。</p>
+<p>如果需要ChatGPT帮助我们完成一个复杂的任务，那么，我们需要预先帮它把任务拆分。这样做的优点是：</p>
+<ol>
+<li>更好理解每一个操作步骤。</li>
+<li>不被上下文限制影响。</li>
+<li>方便调整。</li>
+</ol>
+<p>例如，我们提出了一个如下的复杂任务：</p>
+<ul>
+<li>提示词：作为一个测试工程师，我即将进行述职答辩，我想编写一个述职报告，述职报告需要包含我今年的成绩、我明年的目标、以及我在今年的工作过程中碰到的问题</li>
+</ul>
+<p>ChatGPT 虽然给到了相应的回复，但是还有问题：</p>
+<ol>
+<li>工作成绩没有清晰的数据也没有说服力，看着比较干瘪。报告内容没有图表。</li>
+<li>内容太过简单空洞。</li>
+<li>格式不够优雅。</li>
+</ol>
+<p>如果我们把提问的方式做进一步优化，把这个复杂问题一步步进行拆解，并给ChatGPT一定的修改反馈，则产生的内容会更加符合我们的需求，比如我们可以把问题分解为：</p>
+<ul>
+<li><p>提示词：作为一个测试工程师，我即将进行述职答辩，我想编写一个述职报告。述职报告需要包含我今年的成绩，我今年带领测试团队将bug的逃逸率降低了10%的比例。并且我希望有一个通过echarts绘制的折线图。请将我的述职报告做进一步优化。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041550209.png" alt="image-20230904155058134" style="zoom:40%;" /></p>
+</li>
+<li><p>提示词： echarts 折线图没有展示出来</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041552696.png" alt="image-20230904155223593" style="zoom:40%;" /></p>
+</li>
+</ul>
+<h3 id="借助外部工具"><a href="#借助外部工具" class="headerlink" title="借助外部工具"></a>借助外部工具</h3><p>作为一个大语言生成模型，GPT4 并不擅长各种数学计算。比如下面的问题(来自官方 GPT 最佳指南中的示例问题)：</p>
+<ul>
+<li>提示词：查找以下多项式的所有实值根：3x^5 - 5x^4 - 3x^3 - 7x - 10</li>
+</ul>
+<p>如果直接提问的话，通常没法直接给出答案，如下图所示，虽然借助Python，给出了运算过程，但是其实ChatGPT无法像人类数学家一样，给出直接的推导过程：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041553313.png" alt="image-20230904155335208" style="zoom:40%;" /></p>
+<p>所以可以将提示词改为：</p>
+<ul>
+<li><p>提示词：查找以下多项式的所有实值根：3x^5 - 5x^4 - 3x^3 - 7x - 10 ，使用Python 实现</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041555133.png" alt="image-20230904155551020" style="zoom:40%;" /></p>
+</li>
+</ul>
+<h3 id="角色扮演"><a href="#角色扮演" class="headerlink" title="角色扮演"></a>角色扮演</h3><p>角色扮演的过程就更为简单了，我们在编写提示词的时候，只需要给它加上一些角色的设定。</p>
+<p>ChatGPT甚至可以扮演领导，面试官，浏览器的console插件等各种各样我们可以想象到的角色：</p>
+<ul>
+<li><p>提示词：我希望你作为一个 javascript 控制台。我将输入命令，你回复javascript 控制台应显示的内容。我希望您只在一个唯一的代码块内回复终端输出，而不是其他任何内容。不要写解释。我的第一个命令是 console.log(“Hello World”);</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041559763.png" alt="image-20230904155950703" style="zoom:40%;" /></p>
+</li>
+</ul>
+<h3 id="系统的测试变化"><a href="#系统的测试变化" class="headerlink" title="系统的测试变化"></a>系统的测试变化</h3><p>正如人在回复信息的时候，也无法保证所有的回复都是正确的，ChatGPT 也无法保证每次给到的信息都是“靠谱的”或者是满足需求的。</p>
+<p>所以ChatGPT的每一次回复，在确认没有问题之后，再使用。如果有问题的话，可以进一步进行提问，ChatGPT会根据提示词不停的纠正回复。以达到一个满意的效果。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041600359.png" alt="image-20230904160046303" style="zoom:50%;" /></p>
+<p>比如这个示例：</p>
+<ul>
+<li><p>提示词：请问 App 的产品在测试的过程中需要注意什么</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041602068.png" alt="image-20230904160251993" style="zoom:40%;" /></p>
+</li>
+<li><p>提示词：请针对兼容性测试再做一些补充</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/202309041604429.png" alt="image-20230904160422314" style="zoom:40%;" /></p>
+</li>
+</ul>
+<p>通过不停的测试以及纠正 ChatGPT 的回复，即可最终获得一个满意的回复。</p>
+<h1 id="提示词相关概念"><a href="#提示词相关概念" class="headerlink" title="提示词相关概念"></a>提示词相关概念</h1><p>通过上面内容对大模型如何进行对话介绍，下面内容则是详细介绍提示词相关具体内容</p>
+<h2 id="什么是提示词（Prompt）？"><a href="#什么是提示词（Prompt）？" class="headerlink" title="什么是提示词（Prompt）？"></a>什么是提示词（Prompt）？</h2><p>概念说明：</p>
+<ul>
+<li>提示词是<strong>用户与大模型交互的输入指令</strong>，用于告诉模型你希望它完成什么任务。</li>
+<li>它既可以是一句话，也可以是一段上下文或示例。</li>
+</ul>
+<p>举例：</p>
+<p>请撰写一份关于用户注册功能的测试用例。</p>
+<h2 id="什么是-Token？"><a href="#什么是-Token？" class="headerlink" title="什么是 Token？"></a>什么是 Token？</h2><p>概念说明：</p>
+<ul>
+<li>模型处理的最小单位，通常是词的一部分、一个单词，甚至一个符号*。</li>
+</ul>
+<p>举例：</p>
+<ul>
+<li>“Deepseek 是厉害的。” → 分词可能为： <code>[&quot;Deepseek&quot;, &quot; 是&quot;, &quot; 厉&quot;, &quot;害&quot;, &quot;的&quot;, &quot;。&quot;]</code></li>
+</ul>
+<h2 id="上下文窗口（Context-Window）"><a href="#上下文窗口（Context-Window）" class="headerlink" title="上下文窗口（Context Window）"></a>上下文窗口（Context Window）</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">128K 的上下文==128000 个 token</span><br></pre></td></tr></table></figure>
+<p>概念说明：</p>
+<ul>
+<li>指模型每次处理输入 + 输出的<strong>最大 token 数量</strong>。</li>
+<li>超出后旧内容将被“遗忘”</li>
+</ul>
+<p>注意点💡</p>
+<ul>
+<li>长 prompt ≠ 好效果，要“<strong>信息密度高且结构清晰</strong>”。</li>
+<li>内容越多，token 消耗越多 → 成本 ↑、速度 ↓。</li>
+</ul>
+<p>常见大模型的上下文最大Token记忆数量：</p>
+<ul>
+<li>GPT4 —-&gt; 128K</li>
+<li>DeepSeekV3 —-&gt;128K</li>
+</ul>
+<h2 id="Prompt-与响应的关系"><a href="#Prompt-与响应的关系" class="headerlink" title="Prompt 与响应的关系"></a>Prompt 与响应的关系</h2><p>基本流程：</p>
+<ol>
+<li>用户发出 Prompt</li>
+<li>模型理解并生成响应</li>
+<li>模型根据上下文和历史对话生成“合理推测”</li>
+</ol>
+<p>模型生成原理：</p>
+<ul>
+<li>本质是<strong>下一个最可能的 token 预测</strong>。</li>
+<li>模型没有“理解”，而是基于概率选择“合适的词”。</li>
+</ul>
+<p>Prompt 与输出质量的关系：</p>
+<ul>
+<li>Prompt 不清晰 → 响应不确定甚至出现“幻觉”</li>
+<li>Prompt 精准 → 响应更专业、格式更一致</li>
+</ul>
+<h2 id="什么是提示词工程？"><a href="#什么是提示词工程？" class="headerlink" title="什么是提示词工程？"></a>什么是提示词工程？</h2><p>概念说明：</p>
+<p>提示词工程是指<strong>系统性地设计、优化与测试提示词</strong>的技术和方法，以引导大语言模型产生预期、高质量、可控的输出。</p>
+<p>作用：</p>
+<ul>
+<li>增强模型<strong>可靠性</strong>与<strong>一致性</strong></li>
+<li>控制模型输出<strong>格式</strong>与<strong>风格</strong></li>
+<li>降低“胡编乱造”（幻觉）的风险</li>
+</ul>
+<h1 id="提示词角色设定"><a href="#提示词角色设定" class="headerlink" title="提示词角色设定"></a>提示词角色设定</h1><h2 id="role-的类型及语义说明"><a href="#role-的类型及语义说明" class="headerlink" title="role 的类型及语义说明"></a>role 的类型及语义说明</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>角色（role）</th>
+<th>说明</th>
+<th>示例场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>system</td>
+<td>系统设定。用来告诉模型它的角色、行为风格、语境范围等。</td>
+<td>设定模型是“测试专家”、“英语老师”、“客服机器人”等</td>
+</tr>
+<tr>
+<td>user</td>
+<td>用户输入。代表人类给模型提的问题或指令。</td>
+<td>提问、请求、任务说明</td>
+</tr>
+<tr>
+<td>assistant</td>
+<td>模型回复。由大语言模型根据前文生成的回答。</td>
+<td>模型生成输出，如回答问题、给建议</td>
+</tr>
+<tr>
+<td>tool（可选）</td>
+<td>工具调用（部分模型支持）。用于中间调用工具函数或API时的中间交互。</td>
+<td>使用函数调用插件、调用代码执行器等</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>在多数常见应用中，仅需关注前三种角色：system、user 和 assistant。</li>
+</ul>
+<h2 id="基础角色设定"><a href="#基础角色设定" class="headerlink" title="基础角色设定"></a>基础角色设定</h2><p>给模型“扮演”某个角色，设定行为风格与语言风格</p>
+<p>特点：</p>
+<ul>
+<li>模拟身份让输出更真实、更符合特定语境</li>
+<li>非常适合教育、技术、客服等行业场景</li>
+</ul>
+<p><strong>示例1：标准问答流程</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;请用通俗易懂的方式讲解“时态”概念？&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例2：英语教学风格</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">    &#x27;role&#x27;: &#x27;user&#x27;, </span><br><span class="line">    &#x27;content&#x27;: &#x27;你是一个专业的英语老师，请用通俗易懂的方式讲解“时态”概念。&#x27;</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例3：测试主管角色扮演</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&#x27;role&#x27;: &#x27;user&#x27;, </span><br><span class="line">    &#x27;content&#x27;: &#x27;你是一个经验丰富的软件测试主管，请评审以下测试用例是否合理，并提出优化建议：\n用例：用户注册时输入无效邮箱应提示错误信息。&#x27;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<h2 id="使用system设定角色"><a href="#使用system设定角色" class="headerlink" title="使用system设定角色"></a>使用system设定角色</h2><p><strong>示例1：设定身份与风格（使用 system）</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;你是一名严谨且有经验的软件测试工程师，回答需清晰、专业、有条理。&quot;&#125;,</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;请列出注册功能的边界测试用例。&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例2：错误场景分析</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;你是一个擅长分析测试日志的QA专家，能快速定位问题根源。&quot;&#125;,</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;测试报告显示登录接口返回500错误，可能是什么原因？&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例3：技术方案咨询</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;system&quot;, &quot;content&quot;: &quot;你是自动化测试工具专家，熟悉主流测试框架。&quot;&#125;,</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;如何用Pytest对API响应做Schema验证？&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>对比</strong></p>
+<ol>
+<li>角色设定的位置不同：system消息用于长期角色设定，而user消息中的角色指示是即时的</li>
+<li>结构规范性：按照官方的最佳实践，角色和风格应该放在system消息中，这样更清晰和持久。</li>
+<li>效率：使用system消息可以避免重复指定角色，提高对话效率。</li>
+<li>清晰度：system消息明确区分角色设定和具体请求，而user中的角色指示可能混合了指令和角色设定，不够清晰</li>
+</ol>
+<h1 id="提示词优化的技巧"><a href="#提示词优化的技巧" class="headerlink" title="提示词优化的技巧"></a>提示词优化的技巧</h1><h2 id="技巧1：明确指令"><a href="#技巧1：明确指令" class="headerlink" title="技巧1：明确指令"></a>技巧1：明确指令</h2><ul>
+<li>模型更擅长处理任务明确的请求。</li>
+<li>含糊的描述容易导致输出不符合预期。</li>
+</ul>
+<p><strong>示例一：写接口测试代码</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 模糊提示：</span><br><span class="line">messages = [&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;帮我写个接口测试代码&quot;&#125;]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 明确提示：</span><br><span class="line">messages = [&#123;</span><br><span class="line">&quot;role&quot;: &quot;user&quot;, </span><br><span class="line">&quot;content&quot;: &quot;请使用 Python 和 requests 编写一个 POST 接口的测试脚本，接口地址为 https://api.mstest.vip/login，参数包括 username 和 password，校验响应中 code 是否为 200。&quot;</span><br><span class="line">&#125;]</span><br></pre></td></tr></table></figure>
+<h2 id="技巧2：控制风格与格式"><a href="#技巧2：控制风格与格式" class="headerlink" title="技巧2：控制风格与格式"></a>技巧2：控制风格与格式</h2><ul>
+<li>通过提示控制模型以 Markdown、表格、列表、JSON 等格式输出。</li>
+<li>用于生成日报、Bug列表、测试报告、接口说明等结构化内容。</li>
+</ul>
+<p><strong>示例一：Markdown报告</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, </span><br><span class="line">     &quot;content&quot;: &quot;请用Markdown生成用户中心测试报告，必须包含：\n## 模块名称\n## 测试范围\n## 通过率\n## 关键缺陷\n## 剩余风险&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例二：表格用例</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;,</span><br><span class="line">     &quot;content&quot;: &quot;请用表格展示5条注册测试用例，列名包括：\n| 用例ID | 测试点 | 测试数据 | 预期结果 |&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例三：JSON接口用例</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;请生成JSON格式的&#x27;修改密码&#x27;接口测试用例，字段包含：\ntest_case_id, description, request_data, expected_response&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<h2 id="技巧3：加入约束，减少幻觉"><a href="#技巧3：加入约束，减少幻觉" class="headerlink" title="技巧3：加入约束，减少幻觉"></a>技巧3：加入约束，减少幻觉</h2><ul>
+<li>模型在生成实时性内容时可能产生“幻觉”（虚假或伪造内容）。</li>
+<li>限定“来源、时间、事实标准”等可以有效降低这种风险。</li>
+</ul>
+<p><strong>示例一：对比Selenium版本新特性</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 宽泛提示</span><br><span class="line">messages = [&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;请介绍 Selenium 的最新变化&quot;&#125;]</span><br><span class="line"></span><br><span class="line"># 高约束提示</span><br><span class="line">messages = [&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;请根据 Selenium 4.20 官方文档，总结 Python 中相较 Selenium 3 的五个主要变化，并附对应代码示例。&quot;&#125;]</span><br></pre></td></tr></table></figure>
+<p><strong>示例二：生成测试用例</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># 宽泛提示</span><br><span class="line">messages = [&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;请为用户注册功能设计5条测试用例&quot;&#125;]</span><br><span class="line"># 高约束提示</span><br><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, </span><br><span class="line">     &quot;content&quot;: &quot;请为用户注册功能设计 5 条测试用例，要求：\n- 包含有效与无效邮箱输入\n- 密码边界值测试（6~20位）\n- 每条用例需包含：用例名称、前置条件、输入、预期输出\n- 输出为纯文本描述，不包含自动化脚本&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例三：生成Bug报告</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, </span><br><span class="line">     &quot;content&quot;: &quot;请撰写一份缺陷报告模版&quot;&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, </span><br><span class="line">     &quot;content&quot;: &quot;请撰写一份缺陷报告模版，要求：\n- 模块：登录页\n- 问题描述：输入错误密码后无提示信息\n- 必须包含字段：缺陷标题、环境、重现步骤、实际结果、预期结果\n- 使用中性客观语言&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<h2 id="技巧4：少量样本提示"><a href="#技巧4：少量样本提示" class="headerlink" title="技巧4：少量样本提示"></a>技巧4：少量样本提示</h2><ul>
+<li>通过示例“教”模型学会相应的分类或转换任务。</li>
+<li>非常适合缺陷分类、日志解析、测试案例格式转换等。</li>
+</ul>
+<p><strong>示例一：测试步骤转换</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;&quot;&quot;</span><br><span class="line">将自然语言测试步骤转换为结构化步骤：</span><br><span class="line">---</span><br><span class="line">示例1：</span><br><span class="line">输入：用户输入错误的密码点击登录</span><br><span class="line">输出：</span><br><span class="line">1. 在密码输入框输入错误密码</span><br><span class="line">2. 点击登录按钮</span><br><span class="line"></span><br><span class="line">示例2：</span><br><span class="line">输入：选择商品加入购物车并结算</span><br><span class="line">输出：</span><br><span class="line">1. 在商品页点击「加入购物车」</span><br><span class="line">2. 进入购物车页面</span><br><span class="line">3. 点击「结算」按钮</span><br><span class="line">---</span><br><span class="line">请转换以下步骤：</span><br><span class="line">输入：上传JPG文件后检查预览图显示</span><br><span class="line">输出：</span><br><span class="line">&quot;&quot;&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例二：自动化测试故障分析</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">instruction = &quot;&quot;&quot;</span><br><span class="line">作为资深测试开发工程师，请分析自动化测试失败日志：</span><br><span class="line">1. 失败类型分类：</span><br><span class="line">   - 定位问题（元素/XPath失效）</span><br><span class="line">   - 环境问题（服务/网络异常）</span><br><span class="line">   - 脚本缺陷（逻辑/断言错误）</span><br><span class="line">2. 标记可疑代码位置（文件+行号）</span><br><span class="line">3. 给出修复方案（含代码示例）</span><br><span class="line">&quot;&quot;&quot;</span><br><span class="line"></span><br><span class="line">examples = &quot;&quot;&quot;</span><br><span class="line">输入：</span><br><span class="line">[ERROR] ElementNotVisibleException: </span><br><span class="line">Failed to locate element #submit-btn</span><br><span class="line">at line 42 of login_test.py</span><br><span class="line"></span><br><span class="line">输出：</span><br><span class="line">失败类型：定位问题（元素ID变更）</span><br><span class="line">可疑位置：login_test.py第42行</span><br><span class="line">修复方案：</span><br><span class="line">原代码：driver.find_element(By.ID, &quot;submit-btn&quot;)</span><br><span class="line">改为：WebDriverWait(driver,10).until(</span><br><span class="line">    EC.presence_of_element_located((By.CSS_SELECTOR, &quot;[data-testid=submit]&quot;))</span><br><span class="line">)</span><br><span class="line">&quot;&quot;&quot;</span><br><span class="line"></span><br><span class="line">input_text = &#x27;[FAIL] AssertionError: Expected 200, got 404 at api_healthcheck.py:17&#x27;</span><br><span class="line"></span><br><span class="line">prompt = f&quot;&quot;&quot;</span><br><span class="line">&#123;instruction&#125;</span><br><span class="line"></span><br><span class="line">&#123;examples&#125;</span><br><span class="line"></span><br><span class="line">输入：</span><br><span class="line">&#123;input_text&#125;</span><br><span class="line"></span><br><span class="line">输出：</span><br><span class="line">&quot;&quot;&quot;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="技巧5：链式思维"><a href="#技巧5：链式思维" class="headerlink" title="技巧5：链式思维"></a>技巧5：链式思维</h2><p><strong>示例一：基础算术（分步推理）</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;&quot;&quot;</span><br><span class="line">请逐步解决以下数学问题，并展示推理过程：</span><br><span class="line">问题：如果3个人5天能挖15米水沟，6个人10天能挖多少米？</span><br><span class="line"></span><br><span class="line">分步思考：</span><br><span class="line">1. 计算单人单天效率：15米 ÷ 3人 ÷ 5天 = 1米/人天</span><br><span class="line">2. 计算6人10天总效率：1米/人天 × 6人 × 10天 = ?</span><br><span class="line">3. 最终结果：</span><br><span class="line">&quot;&quot;&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p><strong>示例二：测试点分析</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;&quot;&quot;请逐步分析登录功能的测试点，</span><br><span class="line">    按以下逻辑展开：</span><br><span class="line">    1. 识别输入字段（用户名/密码）</span><br><span class="line">    2. 列出每个字段的合法/非法输入情况</span><br><span class="line">    3. 分析页面交互流程（按钮状态、错误提示等）</span><br><span class="line">    最终输出结构化测试点列表&quot;&quot;&quot;&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<h1 id="提示词指令模板"><a href="#提示词指令模板" class="headerlink" title="提示词指令模板"></a>提示词指令模板</h1><p><strong>作用</strong>：通过结构化模板控制模型输出，实现高效可复现的任务处理</p>
+<p><strong>特点</strong>：</p>
+<ul>
+<li>✅ <strong>直接高效</strong> - 减少模糊指令导致的无效输出</li>
+<li>✅ <strong>可复现性强</strong> - 固定模板确保结果一致性</li>
+<li>✅ <strong>动态适配</strong> - 支持变量插值灵活填充内容</li>
+</ul>
+<h2 id="模板结构"><a href="#模板结构" class="headerlink" title="模板结构"></a>模板结构</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字段名</th>
+<th>作用</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&#123;instruction&#125;</code></td>
+<td>定义任务目标和输出格式要求</td>
+<td>“生成法语翻译，保留专业术语”</td>
+</tr>
+<tr>
+<td><code>&#123;examples&#125;</code></td>
+<td>提供输入-输出样本（可选）</td>
+<td>“输入：Hello → 输出：Bonjour”</td>
+</tr>
+<tr>
+<td><code>&#123;input_text&#125;</code></td>
+<td>用户实际需要处理的内容</td>
+<td>“How are you?”</td>
+</tr>
+<tr>
+<td><code>&#123;output&#125;</code></td>
+<td>模型生成结果的占位符</td>
+<td>（留空由模型填充）</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="使用案例"><a href="#使用案例" class="headerlink" title="使用案例"></a>使用案例</h2><p><strong>自动化测试故障分析</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">instruction = &quot;&quot;&quot;</span><br><span class="line">作为资深测试开发工程师，请分析自动化测试失败日志：</span><br><span class="line">1. 失败类型分类：</span><br><span class="line">   - 定位问题（元素/XPath失效）</span><br><span class="line">   - 环境问题（服务/网络异常）</span><br><span class="line">   - 脚本缺陷（逻辑/断言错误）</span><br><span class="line">2. 标记可疑代码位置（文件+行号）</span><br><span class="line">3. 给出修复方案（含代码示例）</span><br><span class="line">&quot;&quot;&quot;</span><br><span class="line"></span><br><span class="line">examples = &quot;&quot;&quot;</span><br><span class="line">输入：</span><br><span class="line">[ERROR] ElementNotVisibleException: </span><br><span class="line">Failed to locate element #submit-btn</span><br><span class="line">at line 42 of login_test.py</span><br><span class="line"></span><br><span class="line">输出：</span><br><span class="line">失败类型：定位问题（元素ID变更）</span><br><span class="line">可疑位置：login_test.py第42行</span><br><span class="line">修复方案：</span><br><span class="line">原代码：driver.find_element(By.ID, &quot;submit-btn&quot;)</span><br><span class="line">改为：WebDriverWait(driver,10).until(</span><br><span class="line">    EC.presence_of_element_located((By.CSS_SELECTOR, &quot;[data-testid=submit]&quot;))</span><br><span class="line">)</span><br><span class="line">&quot;&quot;&quot;</span><br><span class="line"></span><br><span class="line">input_text = &#x27;[FAIL] AssertionError: Expected 200, got 404 at api_healthcheck.py:17&#x27;</span><br><span class="line"></span><br><span class="line">prompt = f&quot;&quot;&quot;</span><br><span class="line">&#123;instruction&#125;</span><br><span class="line"></span><br><span class="line">&#123;examples&#125;</span><br><span class="line"></span><br><span class="line">测试日志：</span><br><span class="line">&#123;input_text&#125;</span><br><span class="line"></span><br><span class="line">分析报告：</span><br><span class="line">&quot;&quot;&quot;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%92%8CAgent%E6%99%BA%E8%83%BD%E4%BD%93%E5%AD%A6%E4%B9%A0/" rel="tag"># AI大模型和Agent智能体学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/09/18/ai/langchain/langgraph/5-langgraph-time-travel/" rel="prev" title="LangGraph之时光旅行">
+      <i class="fa fa-chevron-left"></i> LangGraph之时光旅行
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/09/28/ai/langchain/langgraph/8-langgraph-agent/" rel="next" title="LangGraph之Agent开发">
+      LangGraph之Agent开发 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8EAI%E5%AF%B9%E8%AF%9D"><span class="nav-number">1.</span> <span class="nav-text">与AI对话</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E7%A4%BA%E8%AF%8DPrompt%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.1.</span> <span class="nav-text">提示词Prompt介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E7%A4%BA%E8%AF%8D%E7%9A%84%E5%8E%9F%E5%88%99%E4%B8%8E%E6%8A%80%E5%B7%A7"><span class="nav-number">1.2.</span> <span class="nav-text">提示词的原则与技巧</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E6%B8%85%E6%A5%9A%E9%9C%80%E6%B1%82"><span class="nav-number">1.2.1.</span> <span class="nav-text">写清楚需求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E4%BE%9B%E5%8F%82%E8%80%83%E6%96%87%E6%9C%AC"><span class="nav-number">1.2.2.</span> <span class="nav-text">提供参考文本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8B%86%E8%A7%A3%E5%A4%8D%E6%9D%82%E4%BB%BB%E5%8A%A1"><span class="nav-number">1.2.3.</span> <span class="nav-text">拆解复杂任务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%80%9F%E5%8A%A9%E5%A4%96%E9%83%A8%E5%B7%A5%E5%85%B7"><span class="nav-number">1.2.4.</span> <span class="nav-text">借助外部工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%92%E8%89%B2%E6%89%AE%E6%BC%94"><span class="nav-number">1.2.5.</span> <span class="nav-text">角色扮演</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E7%9A%84%E6%B5%8B%E8%AF%95%E5%8F%98%E5%8C%96"><span class="nav-number">1.2.6.</span> <span class="nav-text">系统的测试变化</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E7%A4%BA%E8%AF%8D%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">提示词相关概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%8F%90%E7%A4%BA%E8%AF%8D%EF%BC%88Prompt%EF%BC%89%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">什么是提示词（Prompt）？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-Token%EF%BC%9F"><span class="nav-number">2.2.</span> <span class="nav-text">什么是 Token？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%EF%BC%88Context-Window%EF%BC%89"><span class="nav-number">2.3.</span> <span class="nav-text">上下文窗口（Context Window）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Prompt-%E4%B8%8E%E5%93%8D%E5%BA%94%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">2.4.</span> <span class="nav-text">Prompt 与响应的关系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%8F%90%E7%A4%BA%E8%AF%8D%E5%B7%A5%E7%A8%8B%EF%BC%9F"><span class="nav-number">2.5.</span> <span class="nav-text">什么是提示词工程？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E7%A4%BA%E8%AF%8D%E8%A7%92%E8%89%B2%E8%AE%BE%E5%AE%9A"><span class="nav-number">3.</span> <span class="nav-text">提示词角色设定</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#role-%E7%9A%84%E7%B1%BB%E5%9E%8B%E5%8F%8A%E8%AF%AD%E4%B9%89%E8%AF%B4%E6%98%8E"><span class="nav-number">3.1.</span> <span class="nav-text">role 的类型及语义说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E8%A7%92%E8%89%B2%E8%AE%BE%E5%AE%9A"><span class="nav-number">3.2.</span> <span class="nav-text">基础角色设定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8system%E8%AE%BE%E5%AE%9A%E8%A7%92%E8%89%B2"><span class="nav-number">3.3.</span> <span class="nav-text">使用system设定角色</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E7%A4%BA%E8%AF%8D%E4%BC%98%E5%8C%96%E7%9A%84%E6%8A%80%E5%B7%A7"><span class="nav-number">4.</span> <span class="nav-text">提示词优化的技巧</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E5%B7%A71%EF%BC%9A%E6%98%8E%E7%A1%AE%E6%8C%87%E4%BB%A4"><span class="nav-number">4.1.</span> <span class="nav-text">技巧1：明确指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E5%B7%A72%EF%BC%9A%E6%8E%A7%E5%88%B6%E9%A3%8E%E6%A0%BC%E4%B8%8E%E6%A0%BC%E5%BC%8F"><span class="nav-number">4.2.</span> <span class="nav-text">技巧2：控制风格与格式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E5%B7%A73%EF%BC%9A%E5%8A%A0%E5%85%A5%E7%BA%A6%E6%9D%9F%EF%BC%8C%E5%87%8F%E5%B0%91%E5%B9%BB%E8%A7%89"><span class="nav-number">4.3.</span> <span class="nav-text">技巧3：加入约束，减少幻觉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E5%B7%A74%EF%BC%9A%E5%B0%91%E9%87%8F%E6%A0%B7%E6%9C%AC%E6%8F%90%E7%A4%BA"><span class="nav-number">4.4.</span> <span class="nav-text">技巧4：少量样本提示</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E5%B7%A75%EF%BC%9A%E9%93%BE%E5%BC%8F%E6%80%9D%E7%BB%B4"><span class="nav-number">4.5.</span> <span class="nav-text">技巧5：链式思维</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E7%A4%BA%E8%AF%8D%E6%8C%87%E4%BB%A4%E6%A8%A1%E6%9D%BF"><span class="nav-number">5.</span> <span class="nav-text">提示词指令模板</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E6%9D%BF%E7%BB%93%E6%9E%84"><span class="nav-number">5.1.</span> <span class="nav-text">模板结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%A1%88%E4%BE%8B"><span class="nav-number">5.2.</span> <span class="nav-text">使用案例</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">159</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
