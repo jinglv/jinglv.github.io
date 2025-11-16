@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习AI大模型和Agent智能体学习笔记第三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="上下文工程">
+<meta property="og:url" content="https://jinglv.github.io/2025/10/29/ai/llm/3-context/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习AI大模型和Agent智能体学习笔记第三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029141401415.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029145451783.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029145748257.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029150146285.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029150244909.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029150810491.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029150936083.png">
+<meta property="article:published_time" content="2025-10-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-10-29T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="AI大模型和Agent智能体学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029141401415.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/10/29/ai/llm/3-context/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>上下文工程 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/10/29/ai/llm/3-context/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          上下文工程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-10-29 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2025-10-29T00:00:00+08:00">2025-10-29</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/AI%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%92%8CAgent%E6%99%BA%E8%83%BD%E4%BD%93%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">AI大模型和Agent智能体学习</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习AI大模型和Agent智能体学习笔记第三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Context（上下文）是什么？"><a href="#Context（上下文）是什么？" class="headerlink" title="Context（上下文）是什么？"></a>Context（上下文）是什么？</h1><p><strong>核心定义</strong>：上下文指的是大语言模型在处理你的当前请求时，所能“看到”和“考虑”的所有文本信息。</p>
+<p>你可以把它类比为人类的<strong>短期记忆</strong>或<strong>工作记忆</strong>。</p>
+<ul>
+<li>当你和一个人对话时，你会记住刚才聊了什么，对方说了什么，这样才能做出连贯的回应。</li>
+<li>对大模型来说，<strong>上下文就是这个“刚才聊过”的全部内容</strong>。</li>
+</ul>
+<p>如下图形象的展示</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029141401415.png" alt="image-20251029141401415"></p>
+<p><strong>上下文的组成部分</strong>：</p>
+<p>一个典型的上下文通常包括：</p>
+<ul>
+<li><strong>系统提示</strong>：在对话开始前，开发者或用户给模型的“人设”或“指令”。例如：“你是一个乐于助人的、专业的AI助手。”</li>
+<li><strong>对话历史</strong>：你和模型之间已经进行的所有多轮问答。</li>
+<li><strong>当前查询</strong>：你刚刚提出的新问题。</li>
+<li><strong>外部知识/文档</strong>：你主动提供给模型的额外信息，比如一篇论文、一份数据表等。</li>
+</ul>
+<p><strong>上下文的内容常有：</strong></p>
+<ul>
+<li>用户问题</li>
+<li>背景信息</li>
+<li>相关资料</li>
+<li>可用工具列表</li>
+<li>工具执行结果</li>
+<li>历史对话</li>
+<li>……</li>
+</ul>
+<p><strong>关键点</strong>：模型<strong>只理解上下文内的信息</strong>。如果信息不在上下文中，就如同没有发生过一样，模型无法基于它进行推理。</p>
+<h2 id="运行时上下文（Runtime-context）"><a href="#运行时上下文（Runtime-context）" class="headerlink" title="运行时上下文（Runtime context）"></a>运行时上下文（Runtime context）</h2><ul>
+<li><strong>定义</strong>：运行时上下文指的是本地上下文，即你的代码运行所需的数据和依赖关系。它包含了代码在执行过程中所依赖的各种资源，例如变量、函数、库等。</li>
+<li><strong>作用</strong>：它为代码的运行提供了必要的环境和条件，确保代码能够正常执行。</li>
+</ul>
+<h2 id="LLM上下文（LLM-context）"><a href="#LLM上下文（LLM-context）" class="headerlink" title="LLM上下文（LLM context）"></a>LLM上下文（LLM context）</h2><ul>
+<li><strong>定义</strong>：LLM上下文是指传递给LLM（大型语言模型）提示（prompt）的数据。它包含了用于引导LLM生成响应的输入信息。</li>
+<li><strong>示例</strong>：在与LLM交互时，你可能会提供一段文本作为提示，让LLM根据这段文本生成相关的回答或内容，这段文本就是LLM上下文的一部分。</li>
+</ul>
+<h2 id="运行时上下文与LLM上下文的关系"><a href="#运行时上下文与LLM上下文的关系" class="headerlink" title="运行时上下文与LLM上下文的关系"></a>运行时上下文与LLM上下文的关系</h2><ul>
+<li><strong>区别</strong>：运行时上下文主要关注代码运行的本地环境和依赖，而LLM上下文关注的是传递给LLM的输入数据以及与LLM交互过程中相关的数据。</li>
+<li><strong>联系</strong>：运行时上下文可以被用来优化LLM上下文。例如，你可以利用运行时上下文中存储的用户元数据（如用户偏好设置等）来获取用户的相关信息，然后将这些信息作为输入数据传递给LLM，从而优化LLM生成的响应，使其更符合用户的期望和需求。</li>
+</ul>
+<h1 id="上下文窗口（Context-Window）"><a href="#上下文窗口（Context-Window）" class="headerlink" title="上下文窗口（Context Window）"></a>上下文窗口（Context Window）</h1><p><strong>核心定义</strong>：上下文窗口是指大模型一次性能处理和接受的<strong>最大文本量</strong>（模型的输入中最多能包含的Token数量）。这个容量通常以<strong>令牌</strong>为单位来衡量。</p>
+<ul>
+<li><strong>令牌</strong>：是模型处理文本的基本单位。在英文中，一个令牌可能是一个单词或一个词根（例如，“unbelievably” 可能被拆成 “un”, “believe”, “ably” 三个令牌）。在中文中，通常是一个汉字或一个词。</li>
+<li><strong>单位</strong>：常见的上下文窗口大小表示为 <strong>4K、8K、32K、128K、200K</strong> 甚至更高。例如，一个32K的窗口意味着模型可以一次性处理大约32,000个令牌的文本。</li>
+</ul>
+<p>上下文窗口是指可以传递给LLM的最大令牌（token）数量。令牌是文本数据在处理过程中被分割成的最小单位，例如单词、短语或字符等。</p>
+<p> <strong>限制</strong>：由于LLM的处理能力和资源有限，因此对输入数据的长度有一个上限，这个上限就是上下文窗口的大小。</p>
+<p><strong>为什么上下文窗口很重要？</strong></p>
+<ol>
+<li><strong>决定对话深度</strong>：窗口越大，模型能记住的对话轮次就越多，可以进行更长的、连贯的对话。</li>
+<li><strong>限制处理能力</strong>：如果你提供的文档（比如一本电子书）超过了上下文窗口，模型将无法完整阅读它。</li>
+<li><strong>技术成本</strong>：处理更长的上下文需要更多的计算资源和内存，技术上更具挑战性，成本也更高。</li>
+</ol>
+<p><strong>举个例子</strong>：<br>假设一个模型的上下文窗口是4K令牌（约3000个汉字）。</p>
+<ul>
+<li>如果你的对话历史加上当前问题已经达到了3800字，你还能再提供一篇2000字的文章让它总结吗？</li>
+<li><strong>不能</strong>。因为总文本量会超过4K的限制，系统会报错或者自动截断前面的部分对话，导致模型“忘记”了开头的内容。</li>
+</ul>
+<p><strong>重要区分</strong>：</p>
+<ul>
+<li><strong>上下文窗口</strong>：是模型的<strong>短期记忆容量</strong>，关乎一次交互中能处理多少信息。</li>
+<li><strong>训练数据</strong>：是模型在训练时“学习”到的<strong>长期知识</strong>，是固定的，模型无法实时更新它。</li>
+</ul>
+<h1 id="上下文工程（Context-Engineering）"><a href="#上下文工程（Context-Engineering）" class="headerlink" title="上下文工程（Context Engineering）"></a>上下文工程（Context Engineering）</h1><p>已经对上下文的概念有一个详细的了解，那么关键的部分上下文工程是我们在使用大模型及构建智能体中的核心了。</p>
+<p><strong>超越提示词：深入理解 AI 应用成功的关键—上下文工程</strong></p>
+<p><strong>核心观点：</strong> 大多数 AI 智能体的失败，其根源不在于模型本身的能力不足，而在于“上下文工程”（Context Engineering）的缺失。</p>
+<p>“<strong>上下文工程</strong>”这个概念近期在 AI 大模型领域迅速升温，它究竟是新瓶装旧酒，还是真正揭示了构建强大AI应用的核心秘诀？它与我们熟知的提示工程（Prompt Engineering）和检索增强生成（RAG）有何不同？</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029145451783.png" alt="image-20251029145451783" style="zoom:50%;" /></p>
+<h2 id="什么是上下文工程？"><a href="#什么是上下文工程？" class="headerlink" title="什么是上下文工程？"></a><strong>什么是上下文工程？</strong></h2><h3 id="上下文的真正含义"><a href="#上下文的真正含义" class="headerlink" title="上下文的真正含义"></a>上下文的真正含义</h3><p>上下文<strong>不是</strong>简单的历史聊天记录。它是<strong>提供给大语言模型（LLM）用于完成下一步任务的全部信息集合</strong>。我们可以将其分为三类：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029145748257.png" alt="image-20251029145748257" style="zoom:50%;" /></p>
+<ul>
+<li><strong>指导性上下文 (Guiding Context):</strong> 告诉模型“做什么”和“怎么做”。这部分是<strong>提示工程</strong>的核心优化对象。<ul>
+<li><strong>系统提示词 (System Prompt)</strong>: 定义模型的角色和行为准则。</li>
+<li><strong>任务描述 (Task Description)</strong>: 明确当前需要完成的任务。</li>
+<li><strong>少量样本示例 (Few-shot Examples)</strong>: 提供范例，指导模型输出风格。</li>
+<li><strong>输出格式定义 (Output Schema)</strong>: 规定模型必须遵循的输出格式，如JSON。</li>
+</ul>
+</li>
+<li><strong>信息性上下文 (Informational Context)</strong>: 告诉模型“需要知道什么”。这部分为模型提供解决问题所需的事实和知识。<ul>
+<li><strong>RAG</strong>: 从外部知识库（比如：文档、数据库）中检索相关信息。</li>
+<li><strong>记忆 (Memory)</strong>: 包括当前对话的短期记忆和跨对话的长期记忆（比如：用户偏好）。</li>
+<li><strong>状态/草稿纸 (State / Scratchpad)</strong>: 记录模型在任务过程中的中间思考和计划。</li>
+</ul>
+</li>
+<li>行动性上下文 (Actionable Context): 告诉模型“能做什么”和“做了之后的结果”。这部分赋予模型与外部世界交互的能力。<ul>
+<li><strong>工具定义 (Tool Definition)</strong>: 描述模型可以使用的工具（API、函数等）。</li>
+<li><strong>工具调用记录 (Tool Traces)</strong>: 记录模型调用了哪些工具以及返回了什么结果。</li>
+</ul>
+</li>
+</ul>
+<h3 id="上下文工程的定义"><a href="#上下文工程的定义" class="headerlink" title="上下文工程的定义"></a>上下文工程的定义</h3><p><strong>上下文工程是一门系统性学科，专注于设计、构建并维护一个动态系统。该系统能在 AI 智能体执行任务的每一步，为其智能地组装出最优的上下文组合，从而确保任务能够被可靠、高效地完成。</strong></p>
+<p>一个绝佳的类比是，如果 LLM 是计算机的 <strong>CPU</strong>，那么上下文窗口（Context Window）就是<strong>内存（RAM）</strong>。<strong>上下文工程就是这个系统中的“内存管理器”</strong>。它的任务不是简单地把信息塞满内存，而是通过精密的调度，决定在每个时刻加载什么、丢弃什么，以保证 CPU 高效运转，最终产出正确结果。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029150146285.png" alt="image-20251029150146285" style="zoom:50%;" /></p>
+<h2 id="与提示工程、RAG-的区别"><a href="#与提示工程、RAG-的区别" class="headerlink" title="与提示工程、RAG 的区别"></a>与提示工程、RAG 的区别</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029150244909.png" alt="image-20251029150244909" style="zoom:50%;" /></p>
+<ul>
+<li><strong>提示词工程 (Prompt Engineering)</strong>: 是上下文工程的<strong>子集</strong>，专注于优化“指导性上下文”，即如何下达清晰的指令。</li>
+<li><strong>RAG (Retrieval-Augmented Generation):</strong> 是实现上下文工程的<strong>关键技术手段之一</strong>，主要负责动态填充“信息性上下文”。</li>
+</ul>
+<p>因此，上下文工程是一个更宏大、更系统的概念，它统筹管理所有类型的上下文，目标是构建一个最高效的信息供给系统。</p>
+<h2 id="为什么我们需要上下文工程？"><a href="#为什么我们需要上下文工程？" class="headerlink" title="为什么我们需要上下文工程？"></a><strong>为什么我们需要上下文工程？</strong></h2><p>当 AI 系统的表现不佳时，我们往往会怪罪于模型本身。但大多数情况下，问题出在上下文的供给上。</p>
+<h3 id="示例1：缺失上下文的代价"><a href="#示例1：缺失上下文的代价" class="headerlink" title="示例1：缺失上下文的代价"></a>示例1：缺失上下文的代价</h3><p>假设 AI 智能体收到邮件：“Hi, 明天有空聚一下吗？”</p>
+<ul>
+<li><strong>上下文贫乏的 AI</strong>： “感谢您的消息。我明天有空。请问您希望约在什么时间？” (无效回复，未推进任务)</li>
+<li><strong>上下文丰富的 AI</strong>： 在回复前，它的上下文工程系统会自动组装信息：<ul>
+<li><strong>信息性上下文</strong>： 检索日历发现明天已满；识别发件人 Jim 是重要伙伴；分析历史邮件确定应使用非正式语气。</li>
+<li><strong>行动性上下文</strong>： 知道自己有 send_calendar_invite 这个工具。</li>
+<li><strong>最终回复</strong>： “Hi Jim! 我明天日程完全满了。周四上午有空，你看方便吗？我发了一个暂定邀请，如果时间合适请确认。” (高效、智能)</li>
+</ul>
+</li>
+</ul>
+<p>这里的“魔力”并非来自更聪明的模型，而是来自一个能够为任务动态组装恰当上下文的系统。</p>
+<h3 id="示例2：上下文退化的挑战"><a href="#示例2：上下文退化的挑战" class="headerlink" title="示例2：上下文退化的挑战"></a>示例2：上下文退化的挑战</h3><p>既然上下文如此重要，是不是把它全部塞给模型就行了？答案是否定的。对于长期、复杂的任务（比如：编程），简单的信息累加会导致“上下文退化”：</p>
+<ul>
+<li><strong>第一、性能下降：</strong> 无关紧要的旧信息会干扰当前任务，造成“上下文干扰”。</li>
+<li><strong>第二、成本与延迟激增</strong>： 上下文越长，API 调用成本越高，响应越慢。</li>
+<li><strong>第三、最终崩溃：</strong> 当信息量超过模型的上下文窗口上限时，系统将直接报错或因信息截断而出错。</li>
+</ul>
+<p><strong>结论：</strong> 上下文是一种<strong>需要被主动管理的、有限的资源</strong>。简单的缺失或无脑的堆砌都无法构建出强大的 AI 智能体应用。因此，我们需要一套系统性的方法论——<strong>上下文工程</strong>。</p>
+<h2 id="如何实践上下文工程？"><a href="#如何实践上下文工程？" class="headerlink" title="如何实践上下文工程？"></a>如何实践上下文工程？</h2><p>上下文工程的实践核心在于对上下文进行智能的<strong>写入（Write）、选取（Select）、压缩（Compress）和隔离（Isolate）</strong></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029150810491.png" alt="image-20251029150810491"></p>
+<ol>
+<li><p><strong>写入 (Write):</strong> 将有价值的信息持久化，超越单次对话的限制。</p>
+<ul>
+<li><strong>会话内写入</strong>： 将中间思考和计划写入“草稿纸”，供当前任务使用。</li>
+<li><strong>持久化写入</strong>： 将用户偏好、关键事实等存入外部记忆系统（比如：向量数据库），实现跨会话的“学习”和“成长”。</li>
+</ul>
+</li>
+<li><p><strong>选取 (Select):</strong> 在每次调用 LLM 前，从所有可用信息中，动态拉取与当前子任务最相关的信息。</p>
+<ul>
+<li><strong>确定性选取</strong>： 根据预设规则加载固定上下文（比如：启动时加载项目配置文件）。</li>
+<li><strong>检索式选取</strong>： 通过相似度搜索从知识库、记忆中拉取最相关的信息（RAG 的核心）。</li>
+</ul>
+</li>
+<li><p><strong>压缩 (Compress):</strong> 在信息进入上下文窗口前，对其进行“降噪”，用更少的 Token 承载最核心的信号。</p>
+<ul>
+<li><strong>自动总结</strong>： 当上下文过长时，自动总结历史对话，只保留关键部分。</li>
+<li><strong>专用压缩模型</strong>： 使用一个专门微调过的“压缩 LLM ”来对上下文进行提炼。</li>
+<li><strong>修剪策略</strong>： 例如，直接截断最早的历史记录。</li>
+</ul>
+</li>
+<li><p><strong>隔离 (Isolate):</strong> 在系统架构层面设置信息边界，防止信息污染和干扰。</p>
+<ul>
+<li><p><strong>多智能体架构</strong>： 这是最经典的隔离策略。让多个“专家”子智能体并行处理各自领域的信息，然后只将最关键的结论“压缩”并上报给主智能体。这极大地减轻了主智能体的认知负担，提高了信息密度，避免了长上下文带来的各种问题。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251029150936083.png" alt="image-20251029150936083" style="zoom:50%;" /></p>
+</li>
+<li><p><strong>工具调用：</strong> 将复杂的计算或操作隔离在沙盒环境中执行，只将最终结果返回到上下文中。</p>
+</li>
+</ul>
+</li>
+</ol>
+<p>上下文工程标志着 AI 智能体应用开发的范式转变。我们的重心正从“寻找那句完美的提示词”，转向“<strong>如何设计一个能够为模型在每一步都动态组装出完美上下文的、健壮可靠的系统</strong>”。</p>
+<p>理解并熟练运用<strong>写入、选取、压缩、隔离</strong>这四大实践，将是区分一个“有趣的演示”和一个“可靠的、可规模化的应用”的关键。归根结底，所有努力都指向同一个目标：在模型做出决策前，为它准备好一份恰到好处的上下文。这，就是上下文工程的禅意所在。</p>
+<h1 id="上下文的两个关键维度"><a href="#上下文的两个关键维度" class="headerlink" title="上下文的两个关键维度"></a>上下文的两个关键维度</h1><h2 id="可变性（Mutability）"><a href="#可变性（Mutability）" class="headerlink" title="可变性（Mutability）"></a>可变性（Mutability）</h2><ul>
+<li><strong>静态上下文（Static context）定义</strong>：静态上下文是不可变的数据，在执行过程中不会改变。<ul>
+<li><strong>示例</strong>：用户元数据（如用户的基本信息）、数据库连接、工具等。</li>
+<li><strong>特点</strong>：这些数据在应用启动时被加载，并在整个运行过程中保持不变。</li>
+</ul>
+</li>
+<li><strong>动态上下文（Dynamic context）定义</strong>：动态上下文是可变的数据，随着应用的运行而变化。<ul>
+<li><strong>示例</strong>：对话历史（如用户与AI的交互记录）、中间结果（如计算过程中的临时数据）、工具调用的观察结果等。</li>
+<li><strong>特点</strong>：这些数据会根据应用的运行状态和用户的交互动态更新，反映了应用的实时状态。</li>
+</ul>
+</li>
+</ul>
+<h2 id="生命周期（Lifetime）"><a href="#生命周期（Lifetime）" class="headerlink" title="生命周期（Lifetime）"></a>生命周期（Lifetime）</h2><ul>
+<li><strong>运行时上下文（Runtime context）定义</strong>：运行时上下文是指在单次运行或调用中有效的作用域数据。<ul>
+<li><strong>特点</strong>：这些数据仅在当前运行实例中存在，当运行结束时，数据也会随之消失。</li>
+</ul>
+</li>
+<li><strong>跨对话上下文（Cross-conversation context）定义</strong>：跨对话上下文是指在多次对话或会话中持续存在的数据。<ul>
+<li><strong>特点</strong>：这些数据可以跨越多个运行实例，保留用户的历史信息和偏好设置等，为用户提供更加连贯和个性化的体验。</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%92%8CAgent%E6%99%BA%E8%83%BD%E4%BD%93%E5%AD%A6%E4%B9%A0/" rel="tag"># AI大模型和Agent智能体学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/10/10/ai/langchain/langgraph/10-langgraph-subgraph/" rel="prev" title="LangGraph之父子图（多工作流）">
+      <i class="fa fa-chevron-left"></i> LangGraph之父子图（多工作流）
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Context%EF%BC%88%E4%B8%8A%E4%B8%8B%E6%96%87%EF%BC%89%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">Context（上下文）是什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E4%B8%8A%E4%B8%8B%E6%96%87%EF%BC%88Runtime-context%EF%BC%89"><span class="nav-number">1.1.</span> <span class="nav-text">运行时上下文（Runtime context）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LLM%E4%B8%8A%E4%B8%8B%E6%96%87%EF%BC%88LLM-context%EF%BC%89"><span class="nav-number">1.2.</span> <span class="nav-text">LLM上下文（LLM context）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E4%B8%8A%E4%B8%8B%E6%96%87%E4%B8%8ELLM%E4%B8%8A%E4%B8%8B%E6%96%87%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">1.3.</span> <span class="nav-text">运行时上下文与LLM上下文的关系</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%EF%BC%88Context-Window%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">上下文窗口（Context Window）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B%EF%BC%88Context-Engineering%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">上下文工程（Context Engineering）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B%EF%BC%9F"><span class="nav-number">3.1.</span> <span class="nav-text">什么是上下文工程？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E7%9A%84%E7%9C%9F%E6%AD%A3%E5%90%AB%E4%B9%89"><span class="nav-number">3.1.1.</span> <span class="nav-text">上下文的真正含义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B%E7%9A%84%E5%AE%9A%E4%B9%89"><span class="nav-number">3.1.2.</span> <span class="nav-text">上下文工程的定义</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E%E6%8F%90%E7%A4%BA%E5%B7%A5%E7%A8%8B%E3%80%81RAG-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">3.2.</span> <span class="nav-text">与提示工程、RAG 的区别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E4%BB%AC%E9%9C%80%E8%A6%81%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B%EF%BC%9F"><span class="nav-number">3.3.</span> <span class="nav-text">为什么我们需要上下文工程？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B1%EF%BC%9A%E7%BC%BA%E5%A4%B1%E4%B8%8A%E4%B8%8B%E6%96%87%E7%9A%84%E4%BB%A3%E4%BB%B7"><span class="nav-number">3.3.1.</span> <span class="nav-text">示例1：缺失上下文的代价</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B2%EF%BC%9A%E4%B8%8A%E4%B8%8B%E6%96%87%E9%80%80%E5%8C%96%E7%9A%84%E6%8C%91%E6%88%98"><span class="nav-number">3.3.2.</span> <span class="nav-text">示例2：上下文退化的挑战</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%AE%9E%E8%B7%B5%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B%EF%BC%9F"><span class="nav-number">3.4.</span> <span class="nav-text">如何实践上下文工程？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E7%9A%84%E4%B8%A4%E4%B8%AA%E5%85%B3%E9%94%AE%E7%BB%B4%E5%BA%A6"><span class="nav-number">4.</span> <span class="nav-text">上下文的两个关键维度</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E5%8F%98%E6%80%A7%EF%BC%88Mutability%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">可变性（Mutability）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%EF%BC%88Lifetime%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">生命周期（Lifetime）</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">160</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

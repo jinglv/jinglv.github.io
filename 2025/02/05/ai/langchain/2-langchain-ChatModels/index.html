@@ -325,7 +325,6 @@
 <li>AIMessage：应用助理角色</li>
 <li>AIMessageChunk：应用助理流式输出</li>
 <li>ToolMessage：工具角色</li>
-<li>RemoveMessage：LangGraph聊天记录</li>
 </ul>
 <h3 id="AIMessage"><a href="#AIMessage" class="headerlink" title="AIMessage"></a>AIMessage</h3><p>AI返回的数据</p>
 <div class="table-container">
@@ -372,6 +371,102 @@
 </table>
 </div>
 <p>注意：不同的大模型提供的内容属性并不相同目前行业暂无统一标准</p>
+<h4 id="几款主流大模型响应数据的字段对比"><a href="#几款主流大模型响应数据的字段对比" class="headerlink" title="几款主流大模型响应数据的字段对比"></a>几款主流大模型响应数据的字段对比</h4><p>大模型的厂商都是提供详细的接口调用的详细说明，会有字段详细的说了，如果需要多不同大模型的协作，因此查看文档后，需要处理统一格式。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">字段类别</th>
+<th style="text-align:left">字段名</th>
+<th style="text-align:left">DeepSeek</th>
+<th style="text-align:left">OpenAI (ChatGPT)</th>
+<th style="text-align:left">阿里云 (Qwen)</th>
+<th style="text-align:left">Anthropic (Claude)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>基本结构</strong></td>
+<td style="text-align:left">响应结构</td>
+<td style="text-align:left"><code>status</code>, <code>code</code>, <code>message</code>, <code>data</code></td>
+<td style="text-align:left"><code>object</code>, <code>choices</code>, <code>usage</code></td>
+<td style="text-align:left"><code>object</code>, <code>choices</code>, <code>usage</code></td>
+<td style="text-align:left">与OpenAI类似</td>
+</tr>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">唯一ID</td>
+<td style="text-align:left"><code>id</code> (在<code>data</code>内)</td>
+<td style="text-align:left"><code>id</code></td>
+<td style="text-align:left"><code>id</code></td>
+<td style="text-align:left"><code>id</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>生成内容</strong></td>
+<td style="text-align:left">回复内容</td>
+<td style="text-align:left"><code>generated_text</code> (在<code>data</code>内)</td>
+<td style="text-align:left"><code>choices[index].message.content</code></td>
+<td style="text-align:left"><code>choices[index].message.content</code></td>
+<td style="text-align:left"><code>content</code> (位于不同结构中)</td>
+</tr>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">停止原因</td>
+<td style="text-align:left">未明确提及</td>
+<td style="text-align:left"><code>choices[index].finish_reason</code></td>
+<td style="text-align:left"><code>choices[index].finish_reason</code></td>
+<td style="text-align:left"><code>stop_reason</code></td>
+</tr>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">角色</td>
+<td style="text-align:left">未明确提及</td>
+<td style="text-align:left"><code>choices[index].message.role</code> (<code>assistant</code>)</td>
+<td style="text-align:left"><code>choices[index].message.role</code> (<code>assistant</code>)</td>
+<td style="text-align:left"><code>role</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>使用统计</strong></td>
+<td style="text-align:left">Token消耗</td>
+<td style="text-align:left"><code>token_count</code> (在<code>data</code>内)</td>
+<td style="text-align:left"><code>usage.prompt_tokens</code>, <code>usage.completion_tokens</code>, <code>usage.total_tokens</code></td>
+<td style="text-align:left"><code>usage.prompt_tokens</code>, <code>usage.completion_tokens</code>, <code>usage.total_tokens</code></td>
+<td style="text-align:left">需在请求中设置 <code>extra_parameters</code> 来获取</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>模型信息</strong></td>
+<td style="text-align:left">模型名称</td>
+<td style="text-align:left">在请求中指定</td>
+<td style="text-align:left"><code>model</code></td>
+<td style="text-align:left"><code>model</code></td>
+<td style="text-align:left"><code>model</code></td>
+</tr>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">系统指纹</td>
+<td style="text-align:left">未明确提及</td>
+<td style="text-align:left"><code>system_fingerprint</code></td>
+<td style="text-align:left"><code>system_fingerprint</code> (常为<code>null</code>)</td>
+<td style="text-align:left">未明确提及</td>
+</tr>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left">时间戳</td>
+<td style="text-align:left"><code>timestamp</code> (ISO8601)</td>
+<td style="text-align:left"><code>created</code> (Unix时间戳)</td>
+<td style="text-align:left"><code>created</code> (Unix时间戳)</td>
+<td style="text-align:left">未明确提及</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>高级功能</strong></td>
+<td style="text-align:left">工具调用</td>
+<td style="text-align:left">未明确提及</td>
+<td style="text-align:left"><code>tool_calls</code></td>
+<td style="text-align:left"></td>
+</tr>
+</tbody>
+</table>
+</div>
 <h1 id="模型上下文窗口与token"><a href="#模型上下文窗口与token" class="headerlink" title="模型上下文窗口与token"></a>模型上下文窗口与token</h1><p>大模型的上下文窗口是指模型一次可处理的最大文本长度，受限于计算复杂度、硬件显存和训练数据长度。窗口过长会导致内存和计算需求激增，并可能因注意力衰减影响长文效果。解决方式包括引入外挂记忆（如REG）、滑动窗口技术及新架构探索。Token是模型处理的基本单位，其信息密度高于字符，且不同模型支持的窗口长度不一，应用时需注意控制输入输出长度以避免溢出问题。</p>
 <h2 id="什么是上下文窗口"><a href="#什么是上下文窗口" class="headerlink" title="什么是上下文窗口"></a>什么是上下文窗口</h2><p>是大模型一次最多可以处理上下文的长度，根据模型有关，跟以下相关：</p>
 <ul>
@@ -440,7 +535,13 @@
 <li><strong>RPM</strong> (Requests Per Minute)：每分钟请求数。</li>
 <li><strong>TPM</strong> (Tokens Per Minute)：每分钟 Token 数。</li>
 </ul>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">graph TD</span><br><span class="line">A[用户问题] --&gt; B[是否相同]</span><br><span class="line">	B --&gt; C(缓存层)</span><br><span class="line">	B --&gt; D(LLM)</span><br></pre></td></tr></table></figure>
+<pre class="mermaid">graph TD
+A[用户问题] --> B[是否相同]
+    B --> C(缓存层)
+    B --> D(LLM)</pre>
+
+
+
 <p>缓存层：</p>
 <ul>
 <li>长期缓存</li>
@@ -532,12 +633,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/01/08/ai/ai-basic/1-introduce/" rel="prev" title="人工智能概念基础">
-      <i class="fa fa-chevron-left"></i> 人工智能概念基础
+    <a href="/2025/02/05/ai/langchain/3-langchain-PromptTemple/" rel="prev" title="LangChain组件PromptTemple">
+      <i class="fa fa-chevron-left"></i> LangChain组件PromptTemple
     </a></div>
       <div class="post-nav-item">
-    <a href="/2025/02/05/ai/langchain/5-langchain-LCELChain/" rel="next" title="LangChain LCEL表达式语言">
-      LangChain LCEL表达式语言 <i class="fa fa-chevron-right"></i>
+    <a href="/2025/02/06/ai/langchain/7-langchain-rag-embed/" rel="next" title="LangChain RAG之向量">
+      LangChain RAG之向量 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -597,7 +698,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ChatModels-amp-LLMs"><span class="nav-number">1.</span> <span class="nav-text">ChatModels &amp; LLMs</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%A7%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%8E%A5%E5%85%A5%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.1.</span> <span class="nav-text">大模型的接入示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenAI%E6%8E%A5%E5%85%A5"><span class="nav-number">1.1.1.</span> <span class="nav-text">OpenAI接入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DeepSeek%E6%8E%A5%E5%85%A5"><span class="nav-number">1.1.2.</span> <span class="nav-text">DeepSeek接入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Anthropic%E6%8E%A5%E5%85%A5"><span class="nav-number">1.1.3.</span> <span class="nav-text">Anthropic接入</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E5%8F%82%E6%95%B0%E3%80%81%E4%BA%8B%E4%BB%B6%E3%80%81%E4%B8%8E%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA"><span class="nav-number">2.</span> <span class="nav-text">标准参数、事件、与输入输出</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E5%8F%82%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">标准参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A5%E5%85%A8%E5%8F%82%E6%95%B0-Completion-Params"><span class="nav-number">2.1.1.</span> <span class="nav-text">补全参数 (Completion Params)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%8F%82%E6%95%B0-Client-Params"><span class="nav-number">2.1.2.</span> <span class="nav-text">客户端参数 (Client Params)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E4%BA%8B%E4%BB%B6"><span class="nav-number">2.2.</span> <span class="nav-text">标准事件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E6%9C%89%E7%94%A8%E4%BA%8B%E4%BB%B6"><span class="nav-number">2.2.1.</span> <span class="nav-text">其他有用事件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%80%9A%E4%BF%A1%E7%9A%84%E6%A0%BC%E5%BC%8F"><span class="nav-number">2.3.</span> <span class="nav-text">数据通信的格式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenAI-Messages"><span class="nav-number">2.3.1.</span> <span class="nav-text">OpenAI Messages</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LangChain-Messages"><span class="nav-number">2.3.2.</span> <span class="nav-text">LangChain Messages</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AIMessage"><span class="nav-number">2.3.3.</span> <span class="nav-text">AIMessage</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%E4%B8%8Etoken"><span class="nav-number">3.</span> <span class="nav-text">模型上下文窗口与token</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3"><span class="nav-number">3.1.</span> <span class="nav-text">什么是上下文窗口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E7%9A%84token"><span class="nav-number">3.2.</span> <span class="nav-text">模型的token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#token%E7%9A%84%E7%9B%91%E6%8E%A7%E4%B8%8E%E8%BF%BD%E8%B8%AA"><span class="nav-number">3.3.</span> <span class="nav-text">token的监控与追踪</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9F%E7%8E%87%E9%99%90%E5%88%B6%E4%B8%8E%E7%BC%93%E5%AD%98%E6%9C%BA%E5%88%B6"><span class="nav-number">4.</span> <span class="nav-text">速率限制与缓存机制</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8%E5%8E%9F%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">大模型工具调用原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%91%E5%AE%9A%E5%B7%A5%E5%85%B7%E7%9A%84%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B"><span class="nav-number">5.1.</span> <span class="nav-text">绑定工具的代码示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OutputParsers%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="nav-number">5.2.</span> <span class="nav-text">OutputParsers的优势</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90%E5%99%A8%E7%B1%BB%E5%9E%8B"><span class="nav-number">5.3.</span> <span class="nav-text">解析器类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E7%A4%BA%E4%BE%8B"><span class="nav-number">5.4.</span> <span class="nav-text">实战示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#String%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.1.</span> <span class="nav-text">String解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Json%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.2.</span> <span class="nav-text">Json解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Pydantic%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.3.</span> <span class="nav-text">Pydantic解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.4.</span> <span class="nav-text">结构化输出解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenAI%E5%87%BD%E6%95%B0%E8%BE%93%E5%87%BA%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.5.</span> <span class="nav-text">OpenAI函数输出解析器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Json%E6%A0%BC%E5%BC%8F"><span class="nav-number">5.4.5.1.</span> <span class="nav-text">Json格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Pydantic%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.4.5.2.</span> <span class="nav-text">Pydantic模型</span></a></li></ol></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ChatModels-amp-LLMs"><span class="nav-number">1.</span> <span class="nav-text">ChatModels &amp; LLMs</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%A7%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%8E%A5%E5%85%A5%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.1.</span> <span class="nav-text">大模型的接入示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenAI%E6%8E%A5%E5%85%A5"><span class="nav-number">1.1.1.</span> <span class="nav-text">OpenAI接入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DeepSeek%E6%8E%A5%E5%85%A5"><span class="nav-number">1.1.2.</span> <span class="nav-text">DeepSeek接入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Anthropic%E6%8E%A5%E5%85%A5"><span class="nav-number">1.1.3.</span> <span class="nav-text">Anthropic接入</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E5%8F%82%E6%95%B0%E3%80%81%E4%BA%8B%E4%BB%B6%E3%80%81%E4%B8%8E%E8%BE%93%E5%85%A5%E8%BE%93%E5%87%BA"><span class="nav-number">2.</span> <span class="nav-text">标准参数、事件、与输入输出</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E5%8F%82%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">标准参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%A5%E5%85%A8%E5%8F%82%E6%95%B0-Completion-Params"><span class="nav-number">2.1.1.</span> <span class="nav-text">补全参数 (Completion Params)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%8F%82%E6%95%B0-Client-Params"><span class="nav-number">2.1.2.</span> <span class="nav-text">客户端参数 (Client Params)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E4%BA%8B%E4%BB%B6"><span class="nav-number">2.2.</span> <span class="nav-text">标准事件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E6%9C%89%E7%94%A8%E4%BA%8B%E4%BB%B6"><span class="nav-number">2.2.1.</span> <span class="nav-text">其他有用事件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%80%9A%E4%BF%A1%E7%9A%84%E6%A0%BC%E5%BC%8F"><span class="nav-number">2.3.</span> <span class="nav-text">数据通信的格式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenAI-Messages"><span class="nav-number">2.3.1.</span> <span class="nav-text">OpenAI Messages</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#LangChain-Messages"><span class="nav-number">2.3.2.</span> <span class="nav-text">LangChain Messages</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AIMessage"><span class="nav-number">2.3.3.</span> <span class="nav-text">AIMessage</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%A0%E6%AC%BE%E4%B8%BB%E6%B5%81%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E7%9A%84%E5%AD%97%E6%AE%B5%E5%AF%B9%E6%AF%94"><span class="nav-number">2.3.3.1.</span> <span class="nav-text">几款主流大模型响应数据的字段对比</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%E4%B8%8Etoken"><span class="nav-number">3.</span> <span class="nav-text">模型上下文窗口与token</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3"><span class="nav-number">3.1.</span> <span class="nav-text">什么是上下文窗口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E7%9A%84token"><span class="nav-number">3.2.</span> <span class="nav-text">模型的token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#token%E7%9A%84%E7%9B%91%E6%8E%A7%E4%B8%8E%E8%BF%BD%E8%B8%AA"><span class="nav-number">3.3.</span> <span class="nav-text">token的监控与追踪</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9F%E7%8E%87%E9%99%90%E5%88%B6%E4%B8%8E%E7%BC%93%E5%AD%98%E6%9C%BA%E5%88%B6"><span class="nav-number">4.</span> <span class="nav-text">速率限制与缓存机制</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8%E5%8E%9F%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">大模型工具调用原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%91%E5%AE%9A%E5%B7%A5%E5%85%B7%E7%9A%84%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B"><span class="nav-number">5.1.</span> <span class="nav-text">绑定工具的代码示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OutputParsers%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="nav-number">5.2.</span> <span class="nav-text">OutputParsers的优势</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90%E5%99%A8%E7%B1%BB%E5%9E%8B"><span class="nav-number">5.3.</span> <span class="nav-text">解析器类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E7%A4%BA%E4%BE%8B"><span class="nav-number">5.4.</span> <span class="nav-text">实战示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#String%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.1.</span> <span class="nav-text">String解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Json%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.2.</span> <span class="nav-text">Json解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Pydantic%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.3.</span> <span class="nav-text">Pydantic解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.4.</span> <span class="nav-text">结构化输出解析器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenAI%E5%87%BD%E6%95%B0%E8%BE%93%E5%87%BA%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">5.4.5.</span> <span class="nav-text">OpenAI函数输出解析器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Json%E6%A0%BC%E5%BC%8F"><span class="nav-number">5.4.5.1.</span> <span class="nav-text">Json格式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Pydantic%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.4.5.2.</span> <span class="nav-text">Pydantic模型</span></a></li></ol></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -613,7 +714,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">159</span>
+          <span class="site-state-item-count">160</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -772,6 +873,19 @@ window.addEventListener('pjax:success', () => {
 
 
 
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
 
 
     <div id="pjax">

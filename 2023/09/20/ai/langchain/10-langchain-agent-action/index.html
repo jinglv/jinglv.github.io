@@ -247,7 +247,11 @@
 
       
         <p>注意：LangChain中agent现在已经不在进行维护了，了解即可，用来编写智能体重点使用LangGraph，之后智能体会详细学习LangGraph</p>
-<h1 id="智能体开发流程"><a href="#智能体开发流程" class="headerlink" title="智能体开发流程"></a>智能体开发流程</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">graph LR</span><br><span class="line">    A[&quot;初始化工具&quot;] --&gt; B[&quot;初始化大模型&quot;]</span><br><span class="line">    B --&gt; C[&quot;创建智能体&quot;]</span><br><span class="line">    C --&gt; D[&quot;调用智能体&quot;]</span><br></pre></td></tr></table></figure>
+<h1 id="智能体开发流程"><a href="#智能体开发流程" class="headerlink" title="智能体开发流程"></a>智能体开发流程</h1><pre class="mermaid">graph LR
+    A["初始化工具"] --> B["初始化大模型"]
+    B --> C["创建智能体"]
+    C --> D["调用智能体"]</pre>
+
 <p>根据以上流程，示例代码如下：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/9/16 09:23</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> initialize_agent, AgentType</span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一步：初始化工具</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AddInputArgs</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    a: <span class="built_in">int</span> = Field(description=<span class="string">&quot;first number&quot;</span>)</span><br><span class="line">    b: <span class="built_in">int</span> = Field(description=<span class="string">&quot;second number&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params"></span></span></span><br><span class="line"><span class="params"><span class="meta">    description=<span class="string">&quot;add two numbers&quot;</span>,</span></span></span><br><span class="line"><span class="params"><span class="meta">    args_schema=AddInputArgs,</span></span></span><br><span class="line"><span class="params"><span class="meta">    return_direct=<span class="literal">True</span>,</span></span></span><br><span class="line"><span class="params"><span class="meta"></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add</span>(<span class="params">a, b</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;add two numbers&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> a + b</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">create_calc_tools</span>():</span><br><span class="line">    <span class="keyword">return</span> [add]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">calc_tools = create_calc_tools()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第二步：初始化大模型</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载 .env 文件中的变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">qv_llm = ChatOpenAI(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;LLM_MODEL&quot;</span>),</span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;LLM_BASE_URL&quot;</span>),</span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;LLM_API_KEY&quot;</span>),</span><br><span class="line">    streaming=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第三步：创建智能体（智能体初始化）</span></span><br><span class="line">agent = initialize_agent(</span><br><span class="line">    tools=calc_tools,</span><br><span class="line">    llm=qv_llm,</span><br><span class="line">    agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,</span><br><span class="line">    verbose=<span class="literal">True</span>,  <span class="comment"># 打开调试模式</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第四步：调用智能体</span></span><br><span class="line">response = agent.invoke(<span class="string">&quot;100+100=?&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(response)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 <p>打开了调试模式，可以看到执行的内部流程</p>
@@ -412,7 +416,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">159</span>
+          <span class="site-state-item-count">160</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -571,6 +575,19 @@ window.addEventListener('pjax:success', () => {
 
 
 
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
 
 
     <div id="pjax">
