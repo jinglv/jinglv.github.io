@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第九讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain核心组件Tools(工具)">
+<meta property="og:url" content="https://jinglv.github.io/2025/12/12/ai/langchain/3-langchain-Tools/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第九讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-12T06:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/12/12/ai/langchain/3-langchain-Tools/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain核心组件Tools(工具) | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/12/12/ai/langchain/3-langchain-Tools/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain核心组件Tools(工具)
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-12-12 00:00:00 / 修改时间：14:00:00" itemprop="dateCreated datePublished" datetime="2025-12-12T00:00:00+08:00">2025-12-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第九讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>大模型不仅可以生成文本，还能根据需要调用外部的工具来完成一些特定的任务。例如，模型可能需要从数据库中获取数据、在互联网上搜索信息，或者运行一段代码来实现某个功能。通过调用这些工具，模型能够更有效地处理复杂的任务，扩展自身的功能边界，从而更好地满足用户的需求。</p>
+<ul>
+<li><strong>组件</strong>：代理调用以执行动作的组件</li>
+<li><strong>桥梁作用</strong>：连接模型与外部系统（API、数据库、文件系统）</li>
+<li><strong>结构化接口</strong>：通过明确定义的输入输出与世界互动</li>
+<li><strong>能力扩展</strong>：扩展模型能力，使其能够执行具体任务</li>
+</ul>
+<p>工具调用流程：</p>
+<pre class="mermaid">graph LR
+    A["用户输入"] --> B["模型决策"]
+    B --> C["工具调用"]
+    C --> D["执行动作"]
+    D --> E["返回结果"]</pre>
+
+<p>工具的组成：</p>
+<ul>
+<li><strong>模式（Schema）</strong>：模式是工具的一个重要组成部分，它定义了工具的基本信息和使用规范。具体包括：<ul>
+<li><strong>工具名称（Name of the tool）</strong>：用于唯一标识这个工具，方便模型在调用时能够明确指定要使用的是哪一个工具。</li>
+<li><strong>描述（Description）</strong>：对工具的功能和用途进行简要说明，帮助模型理解这个工具是做什么的，以便在合适的情况下调用它。</li>
+<li><strong>参数定义（Argument definitions）</strong>：详细说明了调用该工具时需要提供哪些参数，以及这些参数的类型、格式和含义等。通常会采用JSON模式（JSON schema）来定义参数，这样可以清晰地描述参数的结构和约束条件，确保模型在调用工具时能够提供正确和完整的参数信息。</li>
+</ul>
+</li>
+<li><strong>执行函数或协程（Function or coroutine to execute）</strong>：这是工具的核心部分，它是一个具体的函数或者协程，用于实际执行工具所定义的任务。当模型调用工具时，就会触发这个函数或协程的执行，从而完成相应的操作，比如查询数据库、搜索网络或者运行代码等。函数或协程的实现会根据工具的具体功能而有所不同，它们是工具能够完成任务的关键所在。</li>
+</ul>
+<p>以官网的示例进行说明</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">locations: <span class="built_in">list</span>[<span class="built_in">str</span>]</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Get the weather at multiple locations.&quot;&quot;&quot;</span></span><br><span class="line">    results = []</span><br><span class="line">    <span class="keyword">for</span> location <span class="keyword">in</span> locations:</span><br><span class="line">        <span class="keyword">if</span> location == <span class="string">&#x27;SF&#x27;</span>:</span><br><span class="line">            results.append(<span class="string">&#x27;SF: 72°F sunny&#x27;</span>)</span><br><span class="line">        <span class="keyword">elif</span> location == <span class="string">&#x27;NYC&#x27;</span>:</span><br><span class="line">            results.append(<span class="string">&#x27;NYC: 68°F cloudy&#x27;</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            results.append(<span class="string">f&#x27;<span class="subst">&#123;location&#125;</span>: Weather not available&#x27;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;, &quot;</span>.join(results)</span><br><span class="line"></span><br><span class="line">model_with_tools = model.bind_tools([get_weather])  </span><br><span class="line"></span><br><span class="line">response = model_with_tools.invoke(<span class="string">&quot;What&#x27;s the weather in SF and NYC?&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> tool_call <span class="keyword">in</span> response.tool_calls:</span><br><span class="line">    <span class="comment"># View tool calls made by the model</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;Tool: <span class="subst">&#123;tool_call[<span class="string">&#x27;name&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;Args: <span class="subst">&#123;tool_call[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>用户和模型之间的基本工具调用流程</p>
+<pre class="mermaid">sequenceDiagram
+    participant User as 用户
+    participant Model as AI模型
+    participant Tools as 外部工具(天气查询)
+
+    %% 用户发起天气查询请求
+    User->>Model: What's the weather in SF and NYC?
+    note over Model: 分析请求，确定需调用天气查询工具
+
+    %% 模型并行调用工具（SF和NYC天气查询）
+    Model->>Tools: 并行调用 get_weather("San Francisco")
+    Model->>Tools: 并行调用 get_weather("New York")
+    note over Tools: 分别获取两地天气数据
+
+    %% 工具返回结果给模型
+    Tools-->>Model: 返回旧金山天气数据（72°F sunny）
+    Tools-->>Model: 返回纽约天气数据（68°F cloudy）
+    note over Model: 整理工具返回结果，生成自然语言回复
+
+    %% 模型向用户反馈最终结果
+    Model-->>User: SF: 72°F sunny, NYC: 68°F cloudy</pre>
+
+
+
+<h1 id="创建基本工具"><a href="#创建基本工具" class="headerlink" title="创建基本工具"></a>创建基本工具</h1><p>使用 <strong>@tool 装饰器</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/15 09:20</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">import</span> pymysql</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一步定义工具函数</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&#x27;数据库操作&#x27;</span>, description=<span class="string">&#x27;连接数据库,执行sql语句，并返回执行的结果&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">mysql_executor</span>(<span class="params">sql: <span class="built_in">str</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    连接数据库，执行sql语句</span></span><br><span class="line"><span class="string">    需要先安装pymysql</span></span><br><span class="line"><span class="string">    :param sql:</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        connect = pymysql.connect(host=<span class="string">&#x27;127.0.0.1&#x27;</span>,</span><br><span class="line">                                  port=<span class="number">3306</span>,</span><br><span class="line">                                  user=<span class="string">&#x27;root&#x27;</span>,</span><br><span class="line">                                  password=<span class="string">&#x27;mysql&#x27;</span>,</span><br><span class="line">                                  cursorclass=pymysql.cursors.DictCursor,</span><br><span class="line">                                  db=<span class="string">&#x27;agent&#x27;</span>,</span><br><span class="line">                                  autocommit=<span class="literal">True</span>,</span><br><span class="line">                                  )</span><br><span class="line">        cursor = connect.cursor()</span><br><span class="line">        cursor.execute(sql)</span><br><span class="line">        connect.commit()</span><br><span class="line">    <span class="keyword">except</span> pymysql.err.OperationalError <span class="keyword">as</span> e:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">    result = cursor.fetchall()</span><br><span class="line">    cursor.close()</span><br><span class="line">    connect.cursor()</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建模型并绑定工具</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model_client,</span><br><span class="line">    tools=[mysql_executor],</span><br><span class="line">    system_prompt=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    您是一个数据库操作助手</span></span><br><span class="line"><span class="string">    您可以：</span></span><br><span class="line"><span class="string">    1. 执行SQL创建、查询、更新和删除操作</span></span><br><span class="line"><span class="string">    2. 提供详细的执行过程反馈</span></span><br><span class="line"><span class="string">    请根据用户需求执行相应的数据库操作。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>重要说明:</p>
+<ul>
+<li><strong>类型提示必需</strong>：定义工具的输入模式</li>
+<li><strong>文档字符串重要</strong>：帮助模型理解工具用途</li>
+<li><strong>简洁明了</strong>：文档字符串应具备信息性且简洁</li>
+</ul>
+<h1 id="自定义工具属性"><a href="#自定义工具属性" class="headerlink" title="自定义工具属性"></a>自定义工具属性</h1><h2 id="自定义工具名称"><a href="#自定义工具名称" class="headerlink" title="自定义工具名称"></a>自定义工具名称</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;web_search&quot;</span></span>)  </span><span class="comment"># 自定义名称</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在网络上搜索信息。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;搜索结果: <span class="subst">&#123;query&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(search.name)  <span class="comment"># 输出: web_search</span></span><br></pre></td></tr></table></figure>
+<h2 id="自定义工具描述"><a href="#自定义工具描述" class="headerlink" title="自定义工具描述"></a>自定义工具描述</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;web_search&quot;</span></span>)  </span><span class="comment"># 自定义名称</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search</span>(<span class="params">query: <span class="built_in">str</span>，description=<span class="string">&quot;用于网络搜索&quot;</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在网络上搜索信息。&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;搜索结果: <span class="subst">&#123;query&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(search.name)  <span class="comment"># 输出: web_search</span></span><br></pre></td></tr></table></figure>
+<h1 id="工具参数的声明"><a href="#工具参数的声明" class="headerlink" title="工具参数的声明"></a>工具参数的声明</h1><p><strong>使用 Pydantic 模型定义复杂输入</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/15 09:20</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">import</span> pymysql</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义工具参数</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DataBaseConfig</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    host: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库地址&quot;</span>)</span><br><span class="line">    port: <span class="built_in">int</span> = Field(..., description=<span class="string">&quot;数据库端口&quot;</span>)</span><br><span class="line">    user: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库用户名&quot;</span>)</span><br><span class="line">    password: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库密码&quot;</span>)</span><br><span class="line">    db: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库名称&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一步定义工具函数</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&#x27;数据库操作&#x27;</span>, description=<span class="string">&#x27;连接数据库,执行sql语句，并返回执行的结果&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">mysql_executor</span>(<span class="params">sql: <span class="built_in">str</span>, data_config: DataBaseConfig</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    连接数据库，执行sql语句</span></span><br><span class="line"><span class="string">    需要先安装pymysql</span></span><br><span class="line"><span class="string">    :param sql:</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        connect = pymysql.connect(host=data_config.host,</span><br><span class="line">                                  port=data_config.port,</span><br><span class="line">                                  user=data_config.user,</span><br><span class="line">                                  password=data_config.password,</span><br><span class="line">                                  cursorclass=pymysql.cursors.DictCursor,</span><br><span class="line">                                  db=data_config.db,</span><br><span class="line">                                  <span class="comment"># 自动提交事物</span></span><br><span class="line">                                  autocommit=<span class="literal">True</span>,</span><br><span class="line">                                  )</span><br><span class="line">        cursor = connect.cursor()</span><br><span class="line">        cursor.execute(sql)</span><br><span class="line">        connect.commit()</span><br><span class="line">    <span class="keyword">except</span> pymysql.err.OperationalError <span class="keyword">as</span> e:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">    result = cursor.fetchall()</span><br><span class="line">    cursor.close()</span><br><span class="line">    connect.cursor()</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&#x27;获取数据库连接配置&#x27;</span>, description=<span class="string">&#x27;获取数据库的连接参数&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_database_config</span>() -&gt; DataBaseConfig:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取数据库连接参数</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> DataBaseConfig(</span><br><span class="line">        host=<span class="string">&quot;127.0.0.1&quot;</span>,</span><br><span class="line">        port=<span class="number">3306</span>,</span><br><span class="line">        user=<span class="string">&quot;root&quot;</span>,</span><br><span class="line">        password=<span class="string">&quot;12345678&quot;</span>,</span><br><span class="line">        db=<span class="string">&quot;test&quot;</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建模型并绑定工具</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model_client,</span><br><span class="line">    tools=[get_database_config, mysql_executor],</span><br><span class="line">    system_prompt=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    您是一个数据库操作助手</span></span><br><span class="line"><span class="string">    您可以：</span></span><br><span class="line"><span class="string">    1. 执行SQL创建、查询、更新和删除操作</span></span><br><span class="line"><span class="string">    2. 提供详细的执行过程反馈</span></span><br><span class="line"><span class="string">    请根据用户需求执行相应的数据库操作。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>注意</strong>：</p>
+<p>自定义工具参数的名称，以下参数名称是保留的，不能用作工具参数：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名称</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>config</code></td>
+<td>保留给内部工具 RunnableConfig</td>
+</tr>
+<tr>
+<td><code>runtime</code></td>
+<td>保留给参数 ToolRuntime</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>要访问运行时信息，请使用 <code>ToolRuntime</code> 参数。</p>
+<h1 id="访问上下文"><a href="#访问上下文" class="headerlink" title="访问上下文"></a>访问上下文</h1><p>当工具能够访问代理状态、运行时上下文和长期记忆时，它们最为强大。这使得工具能够做出基于上下文的决策、个性化响应，并在对话之间保持信息。</p>
+<p><strong>运行时上下文提供了一种方式，可以在运行时将依赖项（如数据库连接、用户ID或配置）注入到工具中，这使得工具更具可测试性和可重用性。</strong></p>
+<p><strong>工具可以通过ToolRuntime参数访问运行时信息，它提供以下内容：</strong></p>
+<ul>
+<li><strong>State(状态)</strong>：在执行过程中流动的可变数据（例如消息、计数器、自定义字段）。</li>
+<li><strong>Context(上下文)</strong>：像用户ID、会话详情或应用程序特定配置这样的不可变配置。</li>
+<li><strong>Store(存储)</strong>：跨对话的持久长期记忆。</li>
+<li><strong>Stream Writer(流式写入器)</strong>：在工具执行时流式传输自定义更新。</li>
+<li><strong>Config(配置)</strong>：执行的RunnableConfig。</li>
+<li><strong>Tool Call ID(工具调用ID)</strong>：当前工具调用的ID。这段内容主要介绍了LangChain中工具（Tools）如何通过ToolRuntime参数访问运行时上下文信息，以增强工具的功能性和灵活性。</li>
+</ul>
+<p><strong>工具访问运行时上下文的重要性</strong></p>
+<ul>
+<li><strong>增强工具能力</strong>：当工具能够访问代理状态、运行时上下文和长期记忆时，它们可以基于上下文做出更智能的决策，提供个性化的响应，并在多次对话中保持信息的连贯性。</li>
+<li><strong>提高可测试性和可重用性</strong>：运行时上下文允许在运行时将依赖项（如数据库连接、用户ID或配置）注入到工具中，这使得工具在不同环境下更容易被测试和重用。</li>
+</ul>
+<pre class="mermaid">flowchart LR
+    %% 定义容器（子图）
+    subgraph ToolRuntimeContext [工具运行时上下文]
+        direction LR
+        ToolCall[工具调用] --> ToolRuntime[工具运行时]
+
+        ToolRuntime --> ContextAccess[上下文访问]
+        ToolRuntime --> StateAccess[状态访问]
+        ToolRuntime --> StoreAccess[存储访问]
+        ToolRuntime --> StreamWriter[流写入器]
+    end
+
+    subgraph AvailableResources [可用资源]
+        SessionInfo[会话信息]
+        UserID[用户ID]
+        Messages[消息记录]
+        CustomState[自定义状态]
+        UserPreferences[用户偏好]
+        LongtermMemory[长期记忆]
+    end
+
+    subgraph EnhancedToolCapabilities [增强的工具能力]
+        ContextAwareTools[上下文感知工具]
+        StatefulTools[有状态工具]
+        MemoryEnabledTools[记忆赋能工具]
+        StreamingTools[流式工具]
+    end
+
+    %% 连接各模块
+    ContextAccess --> SessionInfo
+    ContextAccess --> UserID
+    StateAccess --> Messages
+    StateAccess --> CustomState
+    StoreAccess --> UserPreferences
+    StoreAccess --> LongtermMemory
+
+    SessionInfo --> ContextAwareTools
+    UserID --> ContextAwareTools
+    Messages --> ContextAwareTools
+    CustomState --> StatefulTools
+    UserPreferences --> MemoryEnabledTools
+    LongtermMemory --> MemoryEnabledTools
+    StreamWriter --> StreamingTools
+
+    %% 样式优化（提升视觉辨识度）
+    style ToolRuntimeContext fill:#fff8e1,stroke:#333,stroke-width:1px
+    style AvailableResources fill:#fff8e1,stroke:#333,stroke-width:1px
+    style EnhancedToolCapabilities fill:#fff8e1,stroke:#333,stroke-width:1px
+    classDef boxStyle fill:#e3eafd,stroke:#333,stroke-width:1px
+    class ToolCall,ToolRuntime,ContextAccess,StateAccess,StoreAccess,StreamWriter,SessionInfo,UserID,Messages,CustomState,UserPreferences,LongtermMemory,ContextAwareTools,StatefulTools,MemoryEnabledTools,StreamingTools boxStyle</pre>
+
+<h2 id="上下文数据"><a href="#上下文数据" class="headerlink" title="上下文数据"></a>上下文数据</h2><p><strong>ToolRuntime</strong>：这是一个工具运行时的上下文环境或参数，它为工具提供了一个统一的方式来访问所有运行时的信息。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/15 09:20</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> pymysql</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义工具参数</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DataBaseConfig</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    host: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库地址&quot;</span>)</span><br><span class="line">    port: <span class="built_in">int</span> = Field(..., description=<span class="string">&quot;数据库端口&quot;</span>)</span><br><span class="line">    user: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库用户名&quot;</span>)</span><br><span class="line">    password: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库密码&quot;</span>)</span><br><span class="line">    db: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库名称&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一步定义工具函数</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&#x27;数据库操作&#x27;</span>, description=<span class="string">&#x27;连接数据库,执行sql语句，并返回执行的结果&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">mysql_executor</span>(<span class="params">sql: <span class="built_in">str</span>, data_config: DataBaseConfig</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    连接数据库，执行sql语句</span></span><br><span class="line"><span class="string">    需要先安装pymysql</span></span><br><span class="line"><span class="string">    :param sql:</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        connect = pymysql.connect(host=data_config.host,</span><br><span class="line">                                  port=data_config.port,</span><br><span class="line">                                  user=data_config.user,</span><br><span class="line">                                  password=data_config.password,</span><br><span class="line">                                  cursorclass=pymysql.cursors.DictCursor,</span><br><span class="line">                                  db=data_config.db,</span><br><span class="line">                                  <span class="comment"># 自动提交事物</span></span><br><span class="line">                                  autocommit=<span class="literal">True</span>,</span><br><span class="line">                                  )</span><br><span class="line">        cursor = connect.cursor()</span><br><span class="line">        cursor.execute(sql)</span><br><span class="line">        connect.commit()</span><br><span class="line">    <span class="keyword">except</span> pymysql.err.OperationalError <span class="keyword">as</span> e:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">    result = cursor.fetchall()</span><br><span class="line">    cursor.close()</span><br><span class="line">    connect.cursor()</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义上下文类型</span></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AgentRunContext</span>:</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&#x27;获取数据库连接配置&#x27;</span>, description=<span class="string">&#x27;获取数据库的连接参数&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_database_config</span>(<span class="params">runtime: ToolRuntime[AgentRunContext]</span>) -&gt; DataBaseConfig:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取数据库连接参数</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;user_id&quot;</span>, runtime.context.user_id)</span><br><span class="line">    <span class="keyword">return</span> DataBaseConfig(</span><br><span class="line">        host=<span class="string">&quot;127.0.0.1&quot;</span>,</span><br><span class="line">        port=<span class="number">3306</span>,</span><br><span class="line">        user=<span class="string">&quot;root&quot;</span>,</span><br><span class="line">        password=<span class="string">&quot;12345678&quot;</span>,</span><br><span class="line">        db=<span class="string">&quot;test&quot;</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建模型并绑定工具</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model_client,</span><br><span class="line">    tools=[get_database_config, mysql_executor],</span><br><span class="line">    context_schema=AgentRunContext,</span><br><span class="line">    system_prompt=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    您是一个数据库操作助手</span></span><br><span class="line"><span class="string">    您可以：</span></span><br><span class="line"><span class="string">    1. 执行SQL创建、查询、更新和删除操作</span></span><br><span class="line"><span class="string">    2. 提供详细的执行过程反馈</span></span><br><span class="line"><span class="string">    请根据用户需求执行相应的数据库操作。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = agent.stream(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;用户获取数据的连接时什么？&quot;</span>&#125;]&#125;,</span><br><span class="line">    <span class="comment"># 通过上下文传递参数</span></span><br><span class="line">    context=AgentRunContext(user_id=<span class="string">&quot;user123&quot;</span>)</span><br><span class="line">)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="存储访问"><a href="#存储访问" class="headerlink" title="存储访问"></a>存储访问</h2><p>通过记忆可以访问跨对话的持久数据。存储可通过以下方式访问，并允许您保存和检索用户特定或应用特定数据。<strong>runtime.store</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/15 09:20</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> pymysql</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义工具参数</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DataBaseConfig</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    host: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库地址&quot;</span>)</span><br><span class="line">    port: <span class="built_in">int</span> = Field(..., description=<span class="string">&quot;数据库端口&quot;</span>)</span><br><span class="line">    user: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库用户名&quot;</span>)</span><br><span class="line">    password: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库密码&quot;</span>)</span><br><span class="line">    db: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;数据库名称&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一步定义工具函数</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&#x27;数据库操作&#x27;</span>, description=<span class="string">&#x27;连接数据库,执行sql语句，并返回执行的结果&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">mysql_executor</span>(<span class="params">sql: <span class="built_in">str</span>, data_config: DataBaseConfig</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    连接数据库，执行sql语句</span></span><br><span class="line"><span class="string">    需要先安装pymysql</span></span><br><span class="line"><span class="string">    :param sql:</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        connect = pymysql.connect(host=data_config.host,</span><br><span class="line">                                  port=data_config.port,</span><br><span class="line">                                  user=data_config.user,</span><br><span class="line">                                  password=data_config.password,</span><br><span class="line">                                  cursorclass=pymysql.cursors.DictCursor,</span><br><span class="line">                                  db=data_config.db,</span><br><span class="line">                                  <span class="comment"># 自动提交事物</span></span><br><span class="line">                                  autocommit=<span class="literal">True</span>,</span><br><span class="line">                                  )</span><br><span class="line">        cursor = connect.cursor()</span><br><span class="line">        cursor.execute(sql)</span><br><span class="line">        connect.commit()</span><br><span class="line">    <span class="keyword">except</span> pymysql.err.OperationalError <span class="keyword">as</span> e:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">    result = cursor.fetchall()</span><br><span class="line">    cursor.close()</span><br><span class="line">    connect.cursor()</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&#x27;获取数据库连接配置&#x27;</span>, description=<span class="string">&#x27;获取数据库的连接参数&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_database_config</span>() -&gt; DataBaseConfig:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取数据库连接参数</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;user_id&quot;</span>, runtime.context.user_id)</span><br><span class="line">    <span class="keyword">return</span> DataBaseConfig(</span><br><span class="line">        host=<span class="string">&quot;127.0.0.1&quot;</span>,</span><br><span class="line">        port=<span class="number">3306</span>,</span><br><span class="line">        user=<span class="string">&quot;root&quot;</span>,</span><br><span class="line">        password=<span class="string">&quot;12345678&quot;</span>,</span><br><span class="line">        db=<span class="string">&quot;test&quot;</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义上下文类型</span></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AgentRunContext</span>:</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&#x27;获取当前用户详情&#x27;</span>, description=<span class="string">&#x27;获取当前的用户id&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_id</span>(<span class="params">runtime: ToolRuntime[AgentRunContext]</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取当前用户id</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> runtime.context.user_id</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;存储对话的记录&quot;</span>, description=<span class="string">&quot;保存一个agent对话的记录&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">save_conversation</span>(<span class="params">runtime: ToolRuntime[AgentRunContext]</span>):</span><br><span class="line">    <span class="comment"># 获取存储对象</span></span><br><span class="line">    store = runtime.store</span><br><span class="line">    user_id = runtime.context.user_id</span><br><span class="line">    message = runtime.state[<span class="string">&#x27;message&#x27;</span>]</span><br><span class="line">    store.put((<span class="string">&#x27;user_id&#x27;</span>, user_id), user_id, message)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;保存成功&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;读取历史对话记录&quot;</span>, description=<span class="string">&quot;读取历史对话记录&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">read_history_conversation</span>(<span class="params">runtime: ToolRuntime[AgentRunContext]</span>):</span><br><span class="line">    <span class="comment"># 获取存储对象</span></span><br><span class="line">    store = runtime.store</span><br><span class="line">    user_id = runtime.context.user_id</span><br><span class="line">    info_list = store.get((<span class="string">&#x27;user_id&#x27;</span>, user_id), user_id)</span><br><span class="line">    <span class="keyword">return</span> info_list</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化store对象</span></span><br><span class="line">store = InMemoryStore()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建模型并绑定工具</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model_client,</span><br><span class="line">    tools=[get_database_config, mysql_executor, get_user_id, save_conversation, read_history_conversation],</span><br><span class="line">    context_schema=AgentRunContext,</span><br><span class="line">    store=store,  <span class="comment"># 绑定store</span></span><br><span class="line">    system_prompt=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    您是一个数据库操作助手</span></span><br><span class="line"><span class="string">    您可以：</span></span><br><span class="line"><span class="string">    1. 执行SQL创建、查询、更新和删除操作</span></span><br><span class="line"><span class="string">    2. 提供详细的执行过程反馈</span></span><br><span class="line"><span class="string">    3. 保存和读取对话记录</span></span><br><span class="line"><span class="string">    请根据用户需求执行相应的数据库操作。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = agent.stream(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;查询users表中的详情&quot;</span>&#125;]&#125;,</span><br><span class="line">    <span class="comment"># 通过上下文传递参数</span></span><br><span class="line">    context=AgentRunContext(user_id=<span class="string">&quot;user123&quot;</span>)</span><br><span class="line">)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="流式写入器"><a href="#流式写入器" class="headerlink" title="流式写入器"></a>流式写入器</h2><p>当工具运行时，使用“runtime.stream_writer”来流式传输来自工具的自定义更新。这有助于向用户实时反馈工具正在执行的操作。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span>, runtime: ToolRuntime</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取指定城市的天气。&quot;&quot;&quot;</span></span><br><span class="line">    writer = runtime.stream_writer</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 在工具执行时流式传输自定义更新</span></span><br><span class="line">    writer(<span class="string">f&quot;正在查找城市数据: <span class="subst">&#123;city&#125;</span>&quot;</span>)</span><br><span class="line">    writer(<span class="string">f&quot;已获取城市数据: <span class="subst">&#123;city&#125;</span>&quot;</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;city&#125;</span> 的天气总是晴朗的！&quot;</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/12/ai/langchain/2-langchain-Models/" rel="prev" title="LangChain核心组件Models（模型）">
+      <i class="fa fa-chevron-left"></i> LangChain核心组件Models（模型）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/12/19/ai/langchain/4-langchain-Memory/" rel="next" title="LangChain核心组件Memory(记忆)">
+      LangChain核心组件Memory(记忆) <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%9F%BA%E6%9C%AC%E5%B7%A5%E5%85%B7"><span class="nav-number">2.</span> <span class="nav-text">创建基本工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B7%A5%E5%85%B7%E5%B1%9E%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">自定义工具属性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B7%A5%E5%85%B7%E5%90%8D%E7%A7%B0"><span class="nav-number">3.1.</span> <span class="nav-text">自定义工具名称</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B7%A5%E5%85%B7%E6%8F%8F%E8%BF%B0"><span class="nav-number">3.2.</span> <span class="nav-text">自定义工具描述</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E5%8F%82%E6%95%B0%E7%9A%84%E5%A3%B0%E6%98%8E"><span class="nav-number">4.</span> <span class="nav-text">工具参数的声明</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%BF%E9%97%AE%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">5.</span> <span class="nav-text">访问上下文</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E6%95%B0%E6%8D%AE"><span class="nav-number">5.1.</span> <span class="nav-text">上下文数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E8%AE%BF%E9%97%AE"><span class="nav-number">5.2.</span> <span class="nav-text">存储访问</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E5%86%99%E5%85%A5%E5%99%A8"><span class="nav-number">5.3.</span> <span class="nav-text">流式写入器</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

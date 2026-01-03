@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第四讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain组件OutputParsers解析器  -- Langchain v0.3">
+<meta property="og:url" content="https://jinglv.github.io/2025/02/06/ai/langchain/15-langchain-OutputParsers/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第四讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250903100216125.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250903100243114.png">
+<meta property="article:published_time" content="2025-02-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-09-03T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250903100216125.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/02/06/ai/langchain/15-langchain-OutputParsers/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain组件OutputParsers解析器  -- Langchain v0.3 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/02/06/ai/langchain/15-langchain-OutputParsers/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain组件OutputParsers解析器  -- Langchain v0.3
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-02-06 00:00:00" itemprop="dateCreated datePublished" datetime="2025-02-06T00:00:00+08:00">2025-02-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-09-03 09:30:00" itemprop="dateModified" datetime="2025-09-03T09:30:00+08:00">2025-09-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第四讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="什么是输出解析器"><a href="#什么是输出解析器" class="headerlink" title="什么是输出解析器"></a>什么是输出解析器</h1><pre class="mermaid">graph LR
+    A[输入/指令] --> B[大模型处理]
+    B --> C[文本]
+    B --> D[json]
+    B --> E[xml]
+    B --> F[...]</pre>
+
+<ul>
+<li>大模型本质上是在用概率处理自然语言序列，一般而言输出为文本</li>
+<li>然而在现实中我们主要使用机器友好的序列语言来构建应用</li>
+<li>让大模型说机器懂的话，而不是人懂的话，就是outputParser的主要任务</li>
+</ul>
+<p>LangChain输出解析器（Output Parsers）是将大语言模型（LLM）的原始文本响应转换为结构化、可操作数据的关键组件。输出解析器通过提供格式化指令并解析模型输出，实现<strong>文本到结构化数据</strong>的高效转换。</p>
+<h1 id="常见的输出解析器一览"><a href="#常见的输出解析器一览" class="headerlink" title="常见的输出解析器一览"></a>常见的输出解析器一览</h1><p>LangChain内置多种解析器，如JSON、XML、CSV等结构化数据格式，部分支持流式输出。使用时需注意模型是否支持特定功能，并确保提示词模板包含格式要求，以避免输出错误。不同模型特性差异较大，需测试验证其兼容性与输出质量。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>是否支持流</th>
+<th>是否有格式要求</th>
+<th>输入</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>str</td>
+<td>✅</td>
+<td>❌</td>
+<td>str｜message</td>
+<td>string</td>
+</tr>
+<tr>
+<td>json</td>
+<td>✅</td>
+<td>✅</td>
+<td>str｜message</td>
+<td>json object</td>
+</tr>
+<tr>
+<td>xml</td>
+<td>✅</td>
+<td>✅</td>
+<td>str｜message</td>
+<td>dict</td>
+</tr>
+<tr>
+<td>csv</td>
+<td>✅</td>
+<td>✅</td>
+<td>str｜message</td>
+<td>List[str]</td>
+</tr>
+<tr>
+<td>pydantic</td>
+<td>❌</td>
+<td>✅</td>
+<td>str｜message</td>
+<td>Pydantic:Basemodel</td>
+</tr>
+<tr>
+<td>yaml</td>
+<td>❌</td>
+<td>✅</td>
+<td>str｜message</td>
+<td>Pydantic:Basemodel</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>不同的输出器在输出上都会不同</li>
+<li>注意有一些输出器是不支持流式输出的</li>
+<li>当解析器有格式要求的时候，需要在提示词模版格式化的时候，将格式要求实例化进去</li>
+<li>下游承接输出时，要注意数据格式兼容问题</li>
+</ul>
+<h1 id="主流模型的支持情况"><a href="#主流模型的支持情况" class="headerlink" title="主流模型的支持情况"></a>主流模型的支持情况</h1><p>Langchain官方对不同模型输出结构化情况说明：<a target="_blank" rel="noopener" href="https://python.langchain.com/docs/integrations/chat/">https://python.langchain.com/docs/integrations/chat/</a></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250903100216125.png" alt="image-20250903100216125" style="zoom:50%;" /></p>
+<p>以Deepseek举例：<a target="_blank" rel="noopener" href="https://python.langchain.com/docs/integrations/chat/deepseek/">https://python.langchain.com/docs/integrations/chat/deepseek/</a></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250903100243114.png" alt="image-20250903100243114" style="zoom:50%;" /></p>
+<ul>
+<li>注意并不是所有的模型都支持结构化的输出</li>
+<li>不支持结构化输出的模型只能输出字符串</li>
+<li>在使用某个模型前最好先对支持特定进行测试</li>
+</ul>
+<h1 id="LangChain支持的主要输出格式-解析器"><a href="#LangChain支持的主要输出格式-解析器" class="headerlink" title="LangChain支持的主要输出格式(解析器)"></a>LangChain支持的主要输出格式(解析器)</h1><p>在使用langchain框架时，不推荐直接用原生方式获取输出文本，因为会导致数据格式不统一、后续处理复杂。推荐使用框架自带的解析器（如Stream Output Parser、Pydantic Output Parser等），它们能自动提取并标准化输出结构，方便与Agent或Chain等组件协作。特别是Pydantic解析器，它是一个Python数据验证工具，能确保数据符合预期格式、自动转换类型、出错立即报错，常用于生成结构化数据，提升代码清晰度和安全性。同时介绍了JSON和chamr2等常见解析器及其使用场景，并强调使用框架内置解析器可避免重复造轮子、减少错误。</p>
+<h2 id="基础解析器"><a href="#基础解析器" class="headerlink" title="基础解析器"></a>基础解析器</h2><p>基础解析器处理最简单的数据格式转换：</p>
+<ul>
+<li><strong>StrOutputParser</strong>：直接提取模型返回的原始文本，不做任何结构化处理。</li>
+<li><strong>CommaSeparatedListOutputParser</strong>：将逗号分隔的文本转换为Python列表。例如，将”apples, bananas, oranges”解析为[‘apples’, ‘bananas’, ‘oranges’]。</li>
+<li><strong>BooleanOutputParser</strong>：解析文本为布尔值（True/False）。模型输出必须是”yes”或”no”（不区分大小写），解析器会统一转为大写后判断。</li>
+<li><strong>SimpleJsonOutputParser</strong>：将文本简单处理后转换为JSON格式，通常用于模型已经正确输出JSON的情况。</li>
+</ul>
+<p>这些基础解析器适合处理简单数据结构，但缺乏验证和容错机制，适用于对格式要求不严格的场景。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 纯文本</span></span><br><span class="line">str_parser = StrOutputParser()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 分号</span></span><br><span class="line">comma_parser = CommaSeparatedListOutputParser()</span><br><span class="line">comma_parser_instructions = comma_parser.get_format_instructions()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 布尔值</span></span><br><span class="line">boolean_parser = BooleanOutputParser()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 布尔值校验</span></span><br><span class="line">chain = llm | boolean_parser</span><br><span class="line">resp = chain.invoke(<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">要求：仅返回 YES 或者 NO</span></span><br><span class="line"><span class="string">--</span></span><br><span class="line"><span class="string">问题：“你好”这句话是否包含敏感信息？</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(resp)</span><br></pre></td></tr></table></figure>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.0</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个假的事实天气预报工具，用来传入地名返回实时天气</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">location: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;根据location地名返回当地实时天气&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;天气小雨18度&quot;</span></span><br><span class="line">  </span><br><span class="line"><span class="comment"># 绑定工具</span></span><br><span class="line">llm_with_tools = llm.bind_tools([get_weather])</span><br><span class="line"><span class="comment"># 调用</span></span><br><span class="line">response = llm_with_tools.invoke(<span class="string">&quot;北京市当前的天气如何？&quot;</span>)</span><br><span class="line">response.content</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入StrOutputParser</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> StrOutputParser</span><br><span class="line"></span><br><span class="line"><span class="comment"># 临时构造一个链</span></span><br><span class="line">chain = llm_with_tools | StrOutputParser()</span><br><span class="line"><span class="comment"># 调用</span></span><br><span class="line">response = chain.invoke(<span class="string">&quot;北京市当前的天气如何？&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(response)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.0</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行链</span></span><br><span class="line">response = llm.invoke(<span class="string">&#x27;列出3种适合春季穿搭的颜色，用逗号分隔。&#x27;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;原始输出：&quot;</span>, response.content)</span><br><span class="line"><span class="comment"># 初始化输出解析器</span></span><br><span class="line">parser = CommaSeparatedListOutputParser()</span><br><span class="line"><span class="comment"># 解析为结构化列表</span></span><br><span class="line">structured = parser.parse(response.content)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;结构化列表：&quot;</span>, structured)</span><br></pre></td></tr></table></figure>
+<h2 id="Pydantic解析器"><a href="#Pydantic解析器" class="headerlink" title="Pydantic解析器"></a>Pydantic解析器</h2><p>Pydantic解析器通过Pydantic模型定义复杂结构，提供更严格的验证和数据校验：</p>
+<ul>
+<li><strong>PydanticOutputParser</strong>：将模型输出解析为Pydantic定义的模型对象。需要预先定义Pydantic模型，支持嵌套数据结构和类型验证。</li>
+<li><strong>PydanticToolsParser</strong>：专门处理OpenAI工具调用中的Pydantic对象，将工具调用参数解析为Pydantic模型。</li>
+</ul>
+<p>Pydantic解析器适合需要严格验证的数据结构，如用户信息、订单详情等，确保输出的完整性和正确性。</p>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.0</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field, model_validator</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个名为Joke的数据模型</span></span><br><span class="line"><span class="comment"># 必须要包含的数据字段：铺垫(setup)、抖包袱(punchline)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Joke</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    setup: <span class="built_in">str</span> = Field(description=<span class="string">&quot;笑话中的铺垫问题，必须以?结尾&quot;</span>)</span><br><span class="line">    punchline: <span class="built_in">str</span> = Field(description=<span class="string">&quot;笑话中回答铺垫问题的部分，通常是一种抖包袱方式回答铺垫问题，例如谐音、会错意等&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 验证器，你可以根据自己的数据情况进行自定义</span></span><br><span class="line">    <span class="comment"># 注意mode=before意思是数据被转成pydantic模型的字段之前，对原始数据进行验证</span></span><br><span class="line"><span class="meta">    @model_validator(<span class="params">mode=<span class="string">&quot;before&quot;</span></span>)</span></span><br><span class="line"><span class="meta">    @classmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">question_ends_with_question_mark</span>(<span class="params">cls, values: <span class="built_in">dict</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">        setup = values.get(<span class="string">&quot;setup&quot;</span>)</span><br><span class="line">        <span class="comment"># 如果铺垫问题没有以问号结尾则抛出错误</span></span><br><span class="line">        <span class="keyword">if</span> setup <span class="keyword">and</span> setup[-<span class="number">1</span>] != <span class="string">&quot;?&quot;</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;Badly formed question!&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> values</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> PydanticOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 实例化解析器、提示词模板</span></span><br><span class="line">parser = PydanticOutputParser(pydantic_object=Joke)</span><br><span class="line"><span class="comment"># 注意，提示词模板中需要部分格式化解析器的格式要求format_instructions</span></span><br><span class="line">prompt = PromptTemplate(</span><br><span class="line">    template=<span class="string">&quot;回答用户的查询.\n&#123;format_instructions&#125;\n&#123;query&#125;\n&quot;</span>,</span><br><span class="line">    input_variables=[<span class="string">&quot;query&quot;</span>],</span><br><span class="line">    partial_variables=&#123;<span class="string">&quot;format_instructions&quot;</span>: parser.get_format_instructions()&#125;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;pydanticoutparser的格式指令要求为：&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(parser.get_format_instructions())</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;最终输出结果：&quot;</span>)</span><br><span class="line"><span class="comment"># 使用LCEL语法组合一个简单的链</span></span><br><span class="line">prompt_and_model = prompt | llm</span><br><span class="line">output = prompt_and_model.invoke(&#123;<span class="string">&quot;query&quot;</span>: <span class="string">&quot;给我讲一个笑话&quot;</span>&#125;)</span><br><span class="line">parser.invoke(output)</span><br></pre></td></tr></table></figure>
+<h3 id="扩展：什么是Pydantic"><a href="#扩展：什么是Pydantic" class="headerlink" title="扩展：什么是Pydantic"></a>扩展：什么是Pydantic</h3><ul>
+<li>定义：Pydantic是一个Python的数据验证工具，它就像一个“数据把关员”，帮你确保数据符合你预期的格式和规则</li>
+<li>作用：<ul>
+<li>确保所有信息都是按规定填写</li>
+<li>自动转换合适数据类型</li>
+<li>如果有问题就立即报告</li>
+</ul>
+</li>
+<li>好处：<ul>
+<li>省心：不用写很多if-else来检查数据</li>
+<li>安全：减少因数据格式错误导致的程序崩溃</li>
+<li>清晰：代码更容易理解，因为数据结构一目了然</li>
+</ul>
+</li>
+</ul>
+<p>Pydantic In LangChain</p>
+<ul>
+<li>V0.1: Pydantic 1</li>
+<li>V0.2: Pydantic 1 &amp;  Pydantic 2</li>
+<li>V0.3: Pydantic 2（Rust重构，语法变化）</li>
+</ul>
+<h2 id="JSON解析器"><a href="#JSON解析器" class="headerlink" title="JSON解析器"></a>JSON解析器</h2><ul>
+<li>JsonOutputParser</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.0</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用Pydantic快速生成json</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个名为Joke的数据模型</span></span><br><span class="line"><span class="comment"># 必须要包含的数据字段：铺垫(setup)、抖包袱(punchline)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Joke</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    setup: <span class="built_in">str</span> = Field(description=<span class="string">&quot;笑话中的铺垫问题，必须以?结尾&quot;</span>)</span><br><span class="line">    punchline: <span class="built_in">str</span> = Field(description=<span class="string">&quot;笑话中回答铺垫问题的部分，通常是一种抖包袱方式回答铺垫问题，例如谐音、会错意等&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> JsonOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 实例化解析器、提示词模板</span></span><br><span class="line">parser = JsonOutputParser(pydantic_object=Joke)</span><br><span class="line"><span class="comment"># 注意，提示词模板中需要部分格式化解析器的格式要求format_instructions</span></span><br><span class="line">prompt = PromptTemplate(</span><br><span class="line">    template=<span class="string">&quot;回答用户的查询.\n&#123;format_instructions&#125;\n&#123;query&#125;\n&quot;</span>,</span><br><span class="line">    input_variables=[<span class="string">&quot;query&quot;</span>],</span><br><span class="line">    partial_variables=&#123;<span class="string">&quot;format_instructions&quot;</span>: parser.get_format_instructions()&#125;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用LCEL语法组合一个简单的链</span></span><br><span class="line">chain = prompt | llm | parser</span><br><span class="line">output = chain.invoke(&#123;<span class="string">&quot;query&quot;</span>: <span class="string">&quot;给我讲一个笑话&quot;</span>&#125;)</span><br><span class="line"><span class="built_in">print</span>(output)</span><br><span class="line"><span class="comment"># 流式输出</span></span><br><span class="line">parser.get_format_instructions()</span><br><span class="line"><span class="keyword">for</span> s <span class="keyword">in</span> chain.stream(&#123;<span class="string">&quot;query&quot;</span>:<span class="string">&quot;给我讲一个关于程序员编程的笑话&quot;</span>&#125;):</span><br><span class="line">   <span class="built_in">print</span>(s)</span><br></pre></td></tr></table></figure>
+<p>不使用Pydantic生成JSON，缺点是无法控制精准字段</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> JsonOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">joke_query = <span class="string">&quot;Tell me a joke.&quot;</span></span><br><span class="line"></span><br><span class="line">parser = JsonOutputParser()</span><br><span class="line"></span><br><span class="line">prompt = PromptTemplate(</span><br><span class="line">    template=<span class="string">&quot;Answer the user query.\n&#123;format_instructions&#125;\n&#123;query&#125;\n&quot;</span>,</span><br><span class="line">    input_variables=[<span class="string">&quot;query&quot;</span>],</span><br><span class="line">    partial_variables=&#123;<span class="string">&quot;format_instructions&quot;</span>: parser.get_format_instructions()&#125;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">chain = prompt | llm | parser</span><br><span class="line"></span><br><span class="line">chain.invoke(&#123;<span class="string">&quot;query&quot;</span>: joke_query&#125;)</span><br></pre></td></tr></table></figure>
+<h2 id="XML解析器"><a href="#XML解析器" class="headerlink" title="XML解析器"></a>XML解析器</h2><ul>
+<li>XMLOutputParser</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.0</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入依赖包</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> XMLOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line">actor_query = <span class="string">&quot;Generate the shortened filmography for Tom Hanks.&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># parser = XMLOutputParser()</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># We will add these instructions to the prompt below</span></span><br><span class="line">parser = XMLOutputParser(tags=[<span class="string">&quot;movies&quot;</span>, <span class="string">&quot;actor&quot;</span>, <span class="string">&quot;film&quot;</span>, <span class="string">&quot;name&quot;</span>, <span class="string">&quot;genre&quot;</span>])</span><br><span class="line"></span><br><span class="line"><span class="comment"># We will add these instructions to the prompt below</span></span><br><span class="line"><span class="comment"># parser.get_format_instructions()</span></span><br><span class="line">prompt = PromptTemplate(</span><br><span class="line">    template=<span class="string">&quot;&quot;&quot;&#123;query&#125;\n&#123;format_instructions&#125;&quot;&quot;&quot;</span>,</span><br><span class="line">    input_variables=[<span class="string">&quot;query&quot;</span>],</span><br><span class="line">    partial_variables=&#123;<span class="string">&quot;format_instructions&quot;</span>: parser.get_format_instructions()&#125;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">chain = prompt | llm | parser</span><br><span class="line"></span><br><span class="line">output = chain.invoke(&#123;<span class="string">&quot;query&quot;</span>: actor_query&#125;)</span><br><span class="line"><span class="built_in">print</span>(output)</span><br></pre></td></tr></table></figure>
+<h2 id="函数调用解析器"><a href="#函数调用解析器" class="headerlink" title="函数调用解析器"></a>函数调用解析器</h2><p>函数调用解析器处理支持OpenAI函数调用的模型（如GPT-4）的响应：</p>
+<ul>
+<li><strong>OutputFunctionsParser</strong>：解析模型返回的函数调用参数，通常返回JSON格式的函数参数。</li>
+<li><strong>JsonOutputFunctionsParser</strong>：提取函数调用中的JSON参数。</li>
+</ul>
+<p>这些解析器专为需要调用特定函数或工具的场景设计，常见于Agent系统或复杂任务处理。</p>
+<h2 id="时间-枚举解析器"><a href="#时间-枚举解析器" class="headerlink" title="时间/枚举解析器"></a>时间/枚举解析器</h2><p>处理特定类型的数据：</p>
+<ul>
+<li><p><strong>DatetimeOutputParser</strong>：将文本解析为标准日期时间格式（”%Y-%m-%dT%H:%M:%S.%fZ”）。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.output_parsers <span class="keyword">import</span> DatetimeOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> app.common <span class="keyword">import</span> llm</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建DatetimeOutputParser</span></span><br><span class="line">output_parser = DatetimeOutputParser()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取格式指令</span></span><br><span class="line">format_instructions = output_parser.get_format_instructions()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建提示模板</span></span><br><span class="line">prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (<span class="string">&quot;system&quot;</span>, <span class="string">f&quot;你必须按照以下格式返回日期时间：<span class="subst">&#123;format_instructions&#125;</span>&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;请将以下自然语言转换为标准日期时间格式：&#123;text&#125;&quot;</span>)</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">chain = prompt | llm | output_parser</span><br><span class="line"></span><br><span class="line">resp = chain.invoke(&#123;<span class="string">&quot;text&quot;</span>: <span class="string">&quot;二零二五年五月十三日&quot;</span>&#125;)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(resp)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(resp))</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p><strong>EnumOutputParser</strong>：将文本解析为预定义的枚举值，适用于需要严格限制输出选项的场景。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> enum <span class="keyword">import</span> Enum</span><br><span class="line"><span class="keyword">from</span> langchain.output_parsers <span class="keyword">import</span> EnumOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> app.common <span class="keyword">import</span> llm</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义枚举类</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Color</span>(<span class="title class_ inherited__">Enum</span>):</span><br><span class="line">    RED = <span class="string">&quot;red&quot;</span></span><br><span class="line">    GREEN = <span class="string">&quot;green&quot;</span></span><br><span class="line">    BLUE = <span class="string">&quot;blue&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建解析器</span></span><br><span class="line">output_parser = EnumOutputParser(enum=Color)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 提示模板</span></span><br><span class="line">prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;请选择一种颜色：&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;选项：&#123;options&#125;，直接返回颜色文本&quot;</span>)</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建链</span></span><br><span class="line">chain = prompt | llm | output_parser</span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试输入</span></span><br><span class="line">result = chain.invoke(&#123;<span class="string">&quot;options&quot;</span>: <span class="string">&quot;red, green, blue&quot;</span>&#125;)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;解析后的枚举值：&quot;</span>, result)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(result))</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>这些解析器针对特定数据类型进行了优化，提供更精准的解析结果。</p>
+<h2 id="正则解析器"><a href="#正则解析器" class="headerlink" title="正则解析器"></a>正则解析器</h2><p>通过正则表达式提取特定模式的数据：</p>
+<ul>
+<li><strong>RegexParser</strong>：单字段正则匹配。</li>
+<li><strong>RegexDictParser</strong>：多字段正则提取为字典。</li>
+</ul>
+<p>正则解析器适合需要灵活匹配文本模式的场景，如提取电话号码、邮箱地址等。</p>
+<h2 id="复合解析器"><a href="#复合解析器" class="headerlink" title="复合解析器"></a>复合解析器</h2><p>处理复杂或多部分的输出：</p>
+<ul>
+<li><strong>CombiningOutputParser</strong>：组合多个解析器，将文本通过分隔符拆分后分别解析。</li>
+<li><strong>RetryWithErrorOutputParser</strong>：在解析失败时重试并尝试修复输出。</li>
+</ul>
+<p>复合解析器提供了更强大的处理能力，可以应对复杂或多任务的输出场景。</p>
+<h2 id="强校验解析器"><a href="#强校验解析器" class="headerlink" title="强校验解析器"></a>强校验解析器</h2><p>提供更严格的输出验证：</p>
+<ul>
+<li><strong>GuardrailsOutputParser</strong>：基于Guardrails库，对输出进行强校验，支持自定义规则（如过滤不当内容、校验数据格式）。</li>
+</ul>
+<p>Guardrails解析器特别适合安全敏感场景，确保输出内容符合预设规则和标准。</p>
+<h1 id="输出阶段的容错处理"><a href="#输出阶段的容错处理" class="headerlink" title="输出阶段的容错处理"></a>输出阶段的容错处理</h1><p>是在使用大模型时，由于其输出存在不确定性，可能会导致错误，为此Langchain提供了两种容错机制：一种是“重试”，即当解析器输出错误时，重新调用模型进行修正；另一种是“修复”，通过特定方法直接修复错误输出，确保最终结果符合预期格式和要求。</p>
+<h2 id="错误重试"><a href="#错误重试" class="headerlink" title="错误重试"></a>错误重试</h2><p>使用<strong>RetryOutputParser</strong>进行自动重试，示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.0</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Action</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    action: <span class="built_in">str</span> = Field(description=<span class="string">&quot;action to take&quot;</span>)</span><br><span class="line">    action_input: <span class="built_in">str</span> = Field(description=<span class="string">&quot;input to the action&quot;</span>)</span><br><span class="line">    </span><br><span class="line"><span class="comment"># 使用RetryOutputParser进行自动重试</span></span><br><span class="line"><span class="keyword">from</span> langchain.output_parsers <span class="keyword">import</span> RetryOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.exceptions <span class="keyword">import</span> OutputParserException</span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> PydanticOutputParser</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line">template = <span class="string">&quot;&quot;&quot;Based on the user question, provide an Action and Action Input for what step should be taken.</span></span><br><span class="line"><span class="string">&#123;format_instructions&#125;</span></span><br><span class="line"><span class="string">Question: &#123;query&#125;</span></span><br><span class="line"><span class="string">Response:&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">parser = PydanticOutputParser(pydantic_object=Action)</span><br><span class="line"></span><br><span class="line">prompt = PromptTemplate(</span><br><span class="line">    template=<span class="string">&quot;Answer the user query.\n&#123;format_instructions&#125;\n&#123;query&#125;\n&quot;</span>,</span><br><span class="line">    input_variables=[<span class="string">&quot;query&quot;</span>],</span><br><span class="line">    partial_variables=&#123;<span class="string">&quot;format_instructions&quot;</span>: parser.get_format_instructions()&#125;,</span><br><span class="line">)</span><br><span class="line"><span class="comment"># 假设的用户输入合成提示值</span></span><br><span class="line">prompt_value = prompt.format_prompt(query=<span class="string">&quot;北京今天天气如何?&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 假设得到的一个错误回答，不符合pydantic的字段要求</span></span><br><span class="line">bad_response = <span class="string">&#x27;&#123;&quot;action&quot;: &quot;search&quot;&#125;&#x27;</span></span><br><span class="line"><span class="comment"># 运行抛出错误</span></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">   parser.parse(bad_response)</span><br><span class="line"><span class="keyword">except</span> OutputParserException <span class="keyword">as</span> e:</span><br><span class="line">   <span class="built_in">print</span>(e)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用RetryOutputParser实现错误重试</span></span><br><span class="line"><span class="comment"># 定义使用哪个模型进行重试</span></span><br><span class="line">retry_parser = RetryOutputParser.from_llm(parser=parser, llm=llm)</span><br><span class="line"><span class="comment"># 传入错误信息以及原始的提示值</span></span><br><span class="line">retry_parser.parse_with_prompt(bad_response, prompt_value)</span><br></pre></td></tr></table></figure>
+<h2 id="错误修复"><a href="#错误修复" class="headerlink" title="错误修复"></a>错误修复</h2><p>使用<strong>OutputFixingParser</strong>进行错误修复，示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.0</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个演员模型，有两个字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Actor</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;name of an actor&quot;</span>)</span><br><span class="line">    film_names: <span class="type">List</span>[<span class="built_in">str</span>] = Field(description=<span class="string">&quot;list of names of films they starred in&quot;</span>)</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">actor_query = <span class="string">&quot;Generate the filmography for a random actor.&quot;</span></span><br><span class="line">parser = PydanticOutputParser(pydantic_object=Actor)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 假设生成的错误值</span></span><br><span class="line">misformatted = <span class="string">&quot;&#123;&#x27;name&#x27;: &#x27;Tom Hanks&#x27;, &#x27;film_names&#x27;: [&#x27;Forrest Gump&#x27;]&#125;&quot;</span></span><br><span class="line"><span class="comment"># 运行的时候抛出错误</span></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">   parser.parse(misformatted)</span><br><span class="line"><span class="keyword">except</span> OutputParserException <span class="keyword">as</span> e:</span><br><span class="line">   <span class="built_in">print</span>(e)</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用OutputFixingParser进行错误修复</span></span><br><span class="line"><span class="keyword">from</span> langchain.output_parsers <span class="keyword">import</span> OutputFixingParser</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用OutputFixingParser可以修复错误</span></span><br><span class="line"><span class="comment"># 定义修复所依赖的LLM</span></span><br><span class="line">new_parser = OutputFixingParser.from_llm(parser=parser, llm=llm)</span><br><span class="line"><span class="comment"># 传入报错信息</span></span><br><span class="line">new_parser.parse(misformatted)</span><br></pre></td></tr></table></figure>
+<h1 id="自定义输出解析器"><a href="#自定义输出解析器" class="headerlink" title="自定义输出解析器"></a>自定义输出解析器</h1><h2 id="纳美星输出器"><a href="#纳美星输出器" class="headerlink" title="纳美星输出器"></a>纳美星输出器</h2><p>纳美星语网址 <a target="_blank" rel="noopener" href="https://learnnavi.org/">https://learnnavi.org/</a></p>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.0</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> re</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> AIMessage</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">parse</span>(<span class="params">ai_message: AIMessage</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Convert message to Na&#x27;vi style language.&quot;&quot;&quot;</span></span><br><span class="line">    content = ai_message.content</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 纳美语特征转换规则</span></span><br><span class="line">    navi_rules = &#123;</span><br><span class="line">        <span class="comment"># 常见问候语转换</span></span><br><span class="line">        <span class="string">r&#x27;\b[Hh]ello\b&#x27;</span>: <span class="string">&#x27;Kaltxì&#x27;</span>,</span><br><span class="line">        <span class="string">r&#x27;\b[Hh]i\b&#x27;</span>: <span class="string">&#x27;Kaltxì&#x27;</span>,</span><br><span class="line">        <span class="string">r&#x27;\b[Tt]hank you\b&#x27;</span>: <span class="string">&#x27;Irayo&#x27;</span>,</span><br><span class="line">        <span class="string">r&#x27;\b[Gg]oodbye\b&#x27;</span>: <span class="string">&#x27;Eywa ngahu&#x27;</span>,</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 添加纳美语特征的后缀</span></span><br><span class="line">        <span class="string">r&#x27;\b(friend|friends)\b&#x27;</span>: <span class="string">&#x27;eylan&#x27;</span>,</span><br><span class="line">        <span class="string">r&#x27;\b(brother|brothers)\b&#x27;</span>: <span class="string">&#x27;tsmukan&#x27;</span>,</span><br><span class="line">        <span class="string">r&#x27;\b(sister|sisters)\b&#x27;</span>: <span class="string">&#x27;tsmuke&#x27;</span>,</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 添加纳美语语气词</span></span><br><span class="line">        <span class="string">r&#x27;[!.]\s*$&#x27;</span>: <span class="string">&#x27; kxe!&#x27;</span>,</span><br><span class="line">        <span class="string">r&#x27;\?\s*$&#x27;</span>: <span class="string">&#x27; srak?&#x27;</span>,</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 在某些词前添加特征前缀</span></span><br><span class="line">        <span class="string">r&#x27;\b(beautiful|pretty)\b&#x27;</span>: <span class="string">&#x27;na\&#x27;vi&#x27;</span>,</span><br><span class="line">        <span class="string">r&#x27;\b(sacred|holy)\b&#x27;</span>: <span class="string">&#x27;txe\&#x27;lan&#x27;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 应用转换规则</span></span><br><span class="line">    result = content</span><br><span class="line">    <span class="keyword">for</span> pattern, replacement <span class="keyword">in</span> navi_rules.items():</span><br><span class="line">        result = re.sub(pattern, replacement, result)</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 添加纳美语特征词缀</span></span><br><span class="line">    result = <span class="string">f&quot;Oel ngati kameie... <span class="subst">&#123;result&#125;</span>&quot;</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line"></span><br><span class="line">chain = llm | parse</span><br><span class="line">chain.invoke(<span class="string">&quot;hello&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="布尔值解析器"><a href="#布尔值解析器" class="headerlink" title="布尔值解析器"></a>布尔值解析器</h2><p>通过继承BaseOutputParser的方式来扩展自定义输出器</p>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.0</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.exceptions <span class="keyword">import</span> OutputParserException</span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> BaseOutputParser</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># [bool] 描述了一个泛型的参数化。</span></span><br><span class="line"><span class="comment"># 它基本上说明了解析的返回类型是什么</span></span><br><span class="line"><span class="comment"># 在这种情况下，返回类型为 True 或 False</span></span><br><span class="line"><span class="comment"># 自定义解析器将YES、NO字符串解析为布尔值</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BooleanOutputParser</span>(BaseOutputParser[<span class="built_in">bool</span>]):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Custom boolean parser.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    true_val: <span class="built_in">str</span> = <span class="string">&quot;YES&quot;</span></span><br><span class="line">    false_val: <span class="built_in">str</span> = <span class="string">&quot;NO&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">parse</span>(<span class="params">self, text: <span class="built_in">str</span></span>) -&gt; <span class="built_in">bool</span>:</span><br><span class="line">        cleaned_text = text.strip().upper()</span><br><span class="line">        <span class="keyword">if</span> cleaned_text <span class="keyword">not</span> <span class="keyword">in</span> (<span class="variable language_">self</span>.true_val.upper(), <span class="variable language_">self</span>.false_val.upper()):</span><br><span class="line">            <span class="keyword">raise</span> OutputParserException(</span><br><span class="line">                <span class="string">f&quot;BooleanOutputParser expected output value to either be &quot;</span></span><br><span class="line">                <span class="string">f&quot;<span class="subst">&#123;self.true_val&#125;</span> or <span class="subst">&#123;self.false_val&#125;</span> (case-insensitive). &quot;</span></span><br><span class="line">                <span class="string">f&quot;Received <span class="subst">&#123;cleaned_text&#125;</span>.&quot;</span></span><br><span class="line">            )</span><br><span class="line">        <span class="keyword">return</span> cleaned_text == <span class="variable language_">self</span>.true_val.upper()</span><br><span class="line">    <span class="comment">#设置统一接口名</span></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_type</span>(<span class="params">self</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;boolean_output_parser&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果传入值不是YES NO会报错</span></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">   parser = BooleanOutputParser()</span><br><span class="line">   parser.invoke(<span class="string">&quot;MEOW&quot;</span>)</span><br><span class="line"><span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">   <span class="built_in">print</span>(<span class="string">f&quot;Triggered an exception of type: <span class="subst">&#123;<span class="built_in">type</span>(e)&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 我们也可以更换参数</span></span><br><span class="line">parser = BooleanOutputParser(true_val=<span class="string">&quot;OKAY&quot;</span>)</span><br><span class="line">parser.invoke(<span class="string">&quot;OKAY&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 简单调用</span></span><br><span class="line">parser = BooleanOutputParser()</span><br><span class="line">parser.invoke(<span class="string">&quot;YES&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/02/05/ai/langchain/14-langchain-PromptTemple/" rel="prev" title="LangChain组件PromptTemple -- Langchain v0.3">
+      <i class="fa fa-chevron-left"></i> LangChain组件PromptTemple -- Langchain v0.3
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/02/06/ai/langchain/11-langchain-rag-embed/" rel="next" title="LangChain RAG之向量">
+      LangChain RAG之向量 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E8%BE%93%E5%87%BA%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">1.</span> <span class="nav-text">什么是输出解析器</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84%E8%BE%93%E5%87%BA%E8%A7%A3%E6%9E%90%E5%99%A8%E4%B8%80%E8%A7%88"><span class="nav-number">2.</span> <span class="nav-text">常见的输出解析器一览</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E6%B5%81%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%94%AF%E6%8C%81%E6%83%85%E5%86%B5"><span class="nav-number">3.</span> <span class="nav-text">主流模型的支持情况</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangChain%E6%94%AF%E6%8C%81%E7%9A%84%E4%B8%BB%E8%A6%81%E8%BE%93%E5%87%BA%E6%A0%BC%E5%BC%8F-%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.</span> <span class="nav-text">LangChain支持的主要输出格式(解析器)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.1.</span> <span class="nav-text">基础解析器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pydantic%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.2.</span> <span class="nav-text">Pydantic解析器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A9%E5%B1%95%EF%BC%9A%E4%BB%80%E4%B9%88%E6%98%AFPydantic"><span class="nav-number">4.2.1.</span> <span class="nav-text">扩展：什么是Pydantic</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JSON%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.3.</span> <span class="nav-text">JSON解析器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#XML%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.4.</span> <span class="nav-text">XML解析器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.5.</span> <span class="nav-text">函数调用解析器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E9%97%B4-%E6%9E%9A%E4%B8%BE%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.6.</span> <span class="nav-text">时间&#x2F;枚举解析器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AD%A3%E5%88%99%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.7.</span> <span class="nav-text">正则解析器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.8.</span> <span class="nav-text">复合解析器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%BA%E6%A0%A1%E9%AA%8C%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">4.9.</span> <span class="nav-text">强校验解析器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E9%98%B6%E6%AE%B5%E7%9A%84%E5%AE%B9%E9%94%99%E5%A4%84%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">输出阶段的容错处理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E9%87%8D%E8%AF%95"><span class="nav-number">5.1.</span> <span class="nav-text">错误重试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E4%BF%AE%E5%A4%8D"><span class="nav-number">5.2.</span> <span class="nav-text">错误修复</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E8%BE%93%E5%87%BA%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">6.</span> <span class="nav-text">自定义输出解析器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%B3%E7%BE%8E%E6%98%9F%E8%BE%93%E5%87%BA%E5%99%A8"><span class="nav-number">6.1.</span> <span class="nav-text">纳美星输出器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%83%E5%B0%94%E5%80%BC%E8%A7%A3%E6%9E%90%E5%99%A8"><span class="nav-number">6.2.</span> <span class="nav-text">布尔值解析器</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

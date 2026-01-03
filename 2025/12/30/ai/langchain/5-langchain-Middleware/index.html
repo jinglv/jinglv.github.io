@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第五讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain核心组件Middleware">
+<meta property="og:url" content="https://jinglv.github.io/2025/12/30/ai/langchain/5-langchain-Middleware/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第五讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-30T05:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/12/30/ai/langchain/5-langchain-Middleware/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain核心组件Middleware | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/12/30/ai/langchain/5-langchain-Middleware/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain核心组件Middleware
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-12-30 00:00:00 / 修改时间：13:30:00" itemprop="dateCreated datePublished" datetime="2025-12-30T00:00:00+08:00">2025-12-30</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第五讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="什么是Middleware（中间件）"><a href="#什么是Middleware（中间件）" class="headerlink" title="什么是Middleware（中间件）"></a>什么是Middleware（中间件）</h1><p>Langchain的v.0.3.x版本，推荐使用langgraph.prebuilt.create_react_agent来构建智能代理中会使用一些hook钩子函数（例如：prehook）进行大模型执行前后或者其中位置进行能力增强，在此基础上，Langchain的v1.x.x版本后，增加了中间件的机制，为 Agent 提供 <strong>可插拔的控制层</strong>，允许你在 <strong>每一次模型调用、每一次工具执行之前/之后</strong>，插入自定义逻辑。 </p>
+<p>官方文档介绍：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/javascript/langchain/middleware/overview">https://docs.langchain.com/oss/javascript/langchain/middleware/overview</a></p>
+<p>有主要以下用途：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">应用场景</th>
+<th style="text-align:left">具体说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>追踪与监控</strong></td>
+<td style="text-align:left">记录日志、进行行为分析和调试，便于观察(跟踪)代理的决策过程。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>内容与流程转换</strong></td>
+<td style="text-align:left">动态修改提示词、调整工具选择逻辑，或重新格式化最终输出。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>增强鲁棒性</strong></td>
+<td style="text-align:left">为核心流程添加重试机制、失败回退方案、异常兜底、提前终止的逻辑。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>安全与合规</strong></td>
+<td style="text-align:left">实施速率限制、设置安全护栏、检测个人敏感信息（PII）等。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>中间件的执行位于Agent核心循环的关键节点，执行流程图如下：</p>
+<pre class="mermaid">graph TD
+    %% 节点定义（椭圆((xxx))、矩形[xxx]，单独行无注释）
+    A((request)) --> B[model]
+    B -- action --> C[tools]
+    B --> D((result))
+    C -- observation --> B
+
+    %% linkStyle单独行，仅写样式+分号（无任何注释/额外内容）
+    linkStyle 1 stroke-dasharray:5,5;
+    linkStyle 2 stroke-dasharray:5,5;</pre>
+
+<p>中间件可在该循环的每个阶段插入钩子（hook）</p>
+<pre class="mermaid">graph TD
+    %% 节点定义
+    request([request])
+    before_agent[before_agent]
+    before_model[before_model]
+
+    %% 定义右侧分支
+    subgraph wrap_model_call [wrap_model_call]
+        model[model]
+    end
+
+    %% 定义左侧分支
+    subgraph wrap_tool_call [wrap_tool_call]
+        tools[tools]
+    end
+
+    after_model[after_model]
+    after_agent[after_agent]
+    result([result])
+
+    %% 流程连接
+    request --> before_agent
+    before_agent --> before_model
+
+    %% 核心循环与并列结构
+    before_model --> wrap_model_call
+    wrap_model_call --> after_model
+
+    %% 虚线分支
+    after_model -.-> wrap_tool_call
+    wrap_tool_call --> before_model
+
+    after_model -.-> after_agent
+    after_agent --> result
+
+    %% 样式美化：匹配原图紫色调
+    classDef purpleNode fill:#ede9fe,stroke:#a78bfa,stroke-width:1px
+    classDef container fill:#fff,stroke:#a78bfa,stroke-width:1px
+    classDef capsule fill:#f5f3ff,stroke:#a78bfa,stroke-width:1px
+
+    class request,result capsule
+    class before_agent,before_model,after_model,after_agent,tools,model purpleNode
+    class wrap_tool_call,wrap_model_call container</pre>
+
+<h1 id="中间件的分类"><a href="#中间件的分类" class="headerlink" title="中间件的分类"></a>中间件的分类</h1><h2 id="节点式钩子（Node-style-Hooks）"><a href="#节点式钩子（Node-style-Hooks）" class="headerlink" title="节点式钩子（Node-style Hooks）"></a>节点式钩子（Node-style Hooks）</h2><p>在固定事件点执行：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>钩子</th>
+<th>触发时机</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>before_agent</code></td>
+<td>每次 agent 调用开始之前</td>
+</tr>
+<tr>
+<td><code>before_model</code></td>
+<td>每次模型调用之前</td>
+</tr>
+<tr>
+<td><code>after_model</code></td>
+<td>每次模型调用之后</td>
+</tr>
+<tr>
+<td><code>after_agent</code></td>
+<td>整个 agent 调用结束之后</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>主要用于 <strong>顺序逻辑、检查、修改状态</strong>。</p>
+<h2 id="包装式钩子（Wrap-style-Hooks）"><a href="#包装式钩子（Wrap-style-Hooks）" class="headerlink" title="包装式钩子（Wrap-style Hooks）"></a>包装式钩子（Wrap-style Hooks）</h2><p>直接包裹模型或工具调用：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>钩子</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>wrap_model_call</code></td>
+<td>拦截模型调用，用于重试/回退/缓存/动态改 prompt</td>
+</tr>
+<tr>
+<td><code>wrap_tool_call</code></td>
+<td>拦截工具调用，用于监控/Mock/工具重试等</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>主要用于 <strong>控制流程、重试、模拟、替换、缓存等</strong>。</p>
+<h1 id="如何使用中间件？"><a href="#如何使用中间件？" class="headerlink" title="如何使用中间件？"></a>如何使用中间件？</h1><p>使用时只需在 <code>create_agent()</code> 里传入，官方示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> SummarizationMiddleware, HumanInTheLoopMiddleware</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[...],</span><br><span class="line">    middleware=[</span><br><span class="line">        SummarizationMiddleware(...),</span><br><span class="line">        HumanInTheLoopMiddleware(...)</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h1 id="内置中间件"><a href="#内置中间件" class="headerlink" title="内置中间件"></a>内置中间件</h1><p>基于LangChain的代理应用时，会遇到各种各样的需求和场景，例如对话管理、工具调用控制、数据安全等。为了帮助开发者更高效地应对这些常见问题，LangChain预先设计并实现了一系列中间件，这些中间件就像是一个个功能模块，可以直接被集成到代理应用中，从而节省了开发者从头开始编写代码的时间和精力。</p>
+<p>官方文档：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langchain/middleware/built-in">https://docs.langchain.com/oss/python/langchain/middleware/built-in</a></p>
+<p>以下列出些常用的内置中间件，具体的内置中间件可到官方文档中查看说明及使用方式。</p>
+<ul>
+<li><strong>Summarization（摘要）</strong>：接近令牌（token）限制时，自动对对话历史进行总结。这有助于在长对话中保持上下文的连贯性，同时避免因令牌数量过多而导致的性能问题。</li>
+<li><strong>Human-in-the-loop（人工介入）</strong>：在工具调用之前暂停执行，等待人工批准。这对于需要人工监督或在高风险操作中确保安全和合规性非常有用。</li>
+<li><strong>Model call limit（模型调用限制）</strong>：限制模型调用的次数，以防止成本过高。这对于控制生产环境中的资源使用和成本非常有效</li>
+<li><strong>Tool call limit（工具调用限制）</strong>：通过限制调用次数来控制工具的执行。这有助于避免工具被过度使用，特别是在调用外部API或执行资源密集型任务时。</li>
+<li><strong>Tool retry（工具重试）</strong>：当工具调用失败时，自动以指数退避策略进行重试。这有助于处理临时性故障，提高工具调用的可靠性。</li>
+</ul>
+<h1 id="自定义中间件"><a href="#自定义中间件" class="headerlink" title="自定义中间件"></a>自定义中间件</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>实现方式</th>
+<th>适用场景</th>
+<th>特点</th>
+<th>优势</th>
+<th>典型使用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>基于装饰器</strong></td>
+<td>- 只需要一个钩子 <br />- 无需复杂配置</td>
+<td>使用 <code>@before_model</code>/ <code>@after_model</code> / <code>@wrap_model_call</code>等装饰器</td>
+<td>简单、快速、无类结构</td>
+<td>- 打印日志<br /> - 单次验证<br /> - 简单重写提示词 <br />- 单次响应校验</td>
+</tr>
+<tr>
+<td><strong>基于类的中间件</strong></td>
+<td>- 需要多个钩子<br /> - 需要复杂配置 <br />- 需要跨项目复用</td>
+<td>继承 <code>AgentMiddleware</code>实现多个 Hook</td>
+<td>功能强大、可配置、可复用</td>
+<td>- 日志系统（前后钩子）<br /> - 重试 + 校验多组合 <br />- 动态模型选择<br /> - 状态统计<br /> - 企业级中间件库</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="基于装饰器的中间件"><a href="#基于装饰器的中间件" class="headerlink" title="基于装饰器的中间件"></a>基于装饰器的中间件</h2><h3 id="可用装饰器"><a href="#可用装饰器" class="headerlink" title="可用装饰器"></a>可用装饰器</h3><p><strong>节点式</strong>（在特定执行点运行）</p>
+<ul>
+<li><strong>@before_agent</strong> - 代理启动前（每次调用一次）</li>
+<li><code>@before_model</code>- 每次模型调用前</li>
+<li><code>@after_model</code>- 每次模型响应后</li>
+<li><strong>@after_agent</strong> - 代理完成时（每次调用一次）</li>
+</ul>
+<p><strong>包装式</strong>（拦截和控制执行）</p>
+<ul>
+<li><code>@wrap_model_call</code>- 每次模型调用前后</li>
+<li><code>@wrap_tool_call</code> - 每次工具调用前后</li>
+</ul>
+<p><strong>便利装饰器</strong>:</p>
+<ul>
+<li><code>@dynamic_prompt</code> - 生成动态系统提示（相当于修改<code>@wrap_model_call</code>中的系统提示词）</li>
+</ul>
+<h2 id="基于类的中间件"><a href="#基于类的中间件" class="headerlink" title="基于类的中间件"></a>基于类的中间件</h2><h3 id="节点式钩子"><a href="#节点式钩子" class="headerlink" title="节点式钩子"></a>节点式钩子</h3><p>在执行流中的特定点运行</p>
+<ul>
+<li><strong>before_agent</strong> - 代理启动前（每次调用一次）</li>
+<li><strong>before_model</strong> - 每次模型调用前</li>
+<li><strong>after_model</strong> - 每次模型响应后</li>
+<li><strong>after_agent</strong> - 代理完成时（每次调用最多一次）</li>
+</ul>
+<h3 id="包装式钩子"><a href="#包装式钩子" class="headerlink" title="包装式钩子"></a>包装式钩子</h3><p>拦截执行并控制何时调用处理程序</p>
+<ul>
+<li><strong>wrap_model_call</strong> - 每次模型调用前后</li>
+<li><strong>wrap_tool_call</strong> - 每次工具调用前后</li>
+</ul>
+<p>您可以决定处理程序是调用零次（短路）、一次（正常流程）还是多次（重试逻辑）。</p>
+<h2 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h2><h3 id="自定义中间件基本使用"><a href="#自定义中间件基本使用" class="headerlink" title="自定义中间件基本使用"></a>自定义中间件基本使用</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/30 15:15</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">自定义中间件</span></span><br><span class="line"><span class="string">在执行流中的特定点运行</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">- **before_agent** - 代理启动前（每次调用一次）</span></span><br><span class="line"><span class="string">- **before_model** - 每次模型调用前</span></span><br><span class="line"><span class="string">- **after_model** - 每次模型响应后</span></span><br><span class="line"><span class="string">- **after_agent** - 代理完成时（每次调用最多一次）</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> AgentState, create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model, ModelRequest, ModelResponse, wrap_model_call, after_model</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">print_stream_result</span>(<span class="params">response</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;流式结果的输出&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> response:</span><br><span class="line">        <span class="keyword">for</span> key, value <span class="keyword">in</span> item.items():</span><br><span class="line">            <span class="keyword">if</span> key == <span class="string">&quot;model&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&quot;-----执行步骤：调用大模型&quot;</span>)</span><br><span class="line">                <span class="keyword">if</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;-----大模型分析的结果:<span class="subst">&#123;value[<span class="string">&quot;messages&quot;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">&quot;-----大模型分析的结果为调用以下工具：&quot;</span>)</span><br><span class="line">                    <span class="keyword">for</span> tool_ <span class="keyword">in</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;工具名称：<span class="subst">&#123;tool_[<span class="string">&#x27;name&#x27;</span>]&#125;</span>,调用工具的入参:<span class="subst">&#123;tool_[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">elif</span> key == <span class="string">&quot;tools&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;智能体执行工具：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].name&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;工具执行结果：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">log_before_model</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;调用大模型之前的中间件：进行日志输出&quot;&quot;&quot;</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;调用大模型之前<span class="subst">&#123;<span class="built_in">len</span>(state[<span class="string">&#x27;messages&#x27;</span>])&#125;</span> messages&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">model_call</span>(<span class="params">request: ModelRequest, handler</span>) -&gt; ModelResponse:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;模型调用时会执行的中间件&quot;&quot;&quot;</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;开始调用模型&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> handler(request)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@after_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">log_after_model</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;调用大模型之后的中间件：进行日志输出&quot;&quot;&quot;</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;调用大模型之后<span class="subst">&#123;<span class="built_in">len</span>(state[<span class="string">&#x27;messages&#x27;</span>])&#125;</span> messages&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[],</span><br><span class="line">    middleware=[log_before_model, model_call, log_after_model]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">res = agent.stream(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你好&quot;</span>&#125;]&#125;)</span><br><span class="line">print_stream_result(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">调用大模型之前1 messages</span><br><span class="line">开始调用模型</span><br><span class="line">-----执行步骤：调用大模型</span><br><span class="line">-----大模型分析的结果:你好！很高兴见到你！😊 我是DeepSeek，由深度求索公司创造的AI助手。无论你有什么问题、需要什么帮助，或者只是想聊聊天，我都很乐意为你提供支持！</span><br><span class="line"></span><br><span class="line">我可以帮你解答各种问题，处理文本内容，进行创作和分析等等。虽然我不支持多模态识别，但我可以处理你上传的图像、txt、pdf、ppt、word、excel等文件，从中读取文字信息来帮助你。</span><br><span class="line"></span><br><span class="line">有什么我可以为你做的吗？不管是学习、工作还是生活中的问题，我都很愿意帮助你！✨</span><br><span class="line">调用大模型之后2 messages</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="自定义中间件类的使用"><a href="#自定义中间件类的使用" class="headerlink" title="自定义中间件类的使用"></a>自定义中间件类的使用</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/30 15:15</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">自定义中间件，定义中间件类</span></span><br><span class="line"><span class="string">在执行流中的特定点运行</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">- **before_agent** - 代理启动前（每次调用一次）</span></span><br><span class="line"><span class="string">- **before_model** - 每次模型调用前</span></span><br><span class="line"><span class="string">- **after_model** - 每次模型响应后</span></span><br><span class="line"><span class="string">- **after_agent** - 代理完成时（每次调用最多一次）</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span>, <span class="type">Callable</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> AgentMiddleware, ModelRequest, ModelResponse</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware.types <span class="keyword">import</span> StateT, ModelCallResult</span><br><span class="line"><span class="keyword">from</span> langchain.tools.tool_node <span class="keyword">import</span> ToolCallRequest, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> ToolMessage</span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"><span class="keyword">from</span> langgraph.typing <span class="keyword">import</span> ContextT</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">print_stream_result</span>(<span class="params">response</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;流式结果的输出&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> response:</span><br><span class="line">        <span class="keyword">for</span> key, value <span class="keyword">in</span> item.items():</span><br><span class="line">            <span class="keyword">if</span> key == <span class="string">&quot;model&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&quot;-----执行步骤：调用大模型&quot;</span>)</span><br><span class="line">                <span class="keyword">if</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;-----大模型分析的结果:<span class="subst">&#123;value[<span class="string">&quot;messages&quot;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">&quot;-----大模型分析的结果为调用以下工具：&quot;</span>)</span><br><span class="line">                    <span class="keyword">for</span> tool_ <span class="keyword">in</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;工具名称：<span class="subst">&#123;tool_[<span class="string">&#x27;name&#x27;</span>]&#125;</span>,调用工具的入参:<span class="subst">&#123;tool_[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">elif</span> key == <span class="string">&quot;tools&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;智能体执行工具：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].name&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;工具执行结果：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义中间件类</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyMiddleware</span>(<span class="title class_ inherited__">AgentMiddleware</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;自定义的agent中间件类，注意继承类需要重写对应方法&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_model</span>(<span class="params">self, state: StateT, runtime: Runtime[ContextT]</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;调用大模型之前的中间件&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;调用大模型之前的中间件&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;当前state:<span class="subst">&#123;state&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;传递给大模型的消息列表：<span class="subst">&#123;state[<span class="string">&#x27;messages&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">after_model</span>(<span class="params">self, state: StateT, runtime: Runtime[ContextT]</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;调用大模型之后的中间件&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;调用大模型之后的中间件&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;当前state:<span class="subst">&#123;state&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;传递给大模型的消息列表：<span class="subst">&#123;state[<span class="string">&#x27;messages&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_agent</span>(<span class="params">self, state: StateT, runtime: Runtime[ContextT]</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;agent开始之前&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;agent开始之前&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;当前state:<span class="subst">&#123;state&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;传递给大模型的消息列表：<span class="subst">&#123;state[<span class="string">&#x27;messages&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">after_agent</span>(<span class="params">self, state: StateT, runtime: Runtime[ContextT]</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;agent结束之后&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;agent结束之后&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;当前state:<span class="subst">&#123;state&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;传递给大模型的消息列表：<span class="subst">&#123;state[<span class="string">&#x27;messages&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">wrap_model_call</span>(<span class="params"></span></span><br><span class="line"><span class="params">            self,</span></span><br><span class="line"><span class="params">            request: ModelRequest,</span></span><br><span class="line"><span class="params">            handler: <span class="type">Callable</span>[[ModelRequest], ModelResponse],</span></span><br><span class="line"><span class="params">    </span>) -&gt; ModelCallResult:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;大模型调用时执行&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;大模型调用时执行&quot;</span>)</span><br><span class="line">        res = <span class="string">&quot;&quot;</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            res = handler(request)</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;大模型调用成功&quot;</span>)</span><br><span class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;大模型调用错误：<span class="subst">&#123;<span class="built_in">str</span>(e)&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;大模型调用失败&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> res</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">wrap_tool_call</span>(<span class="params"></span></span><br><span class="line"><span class="params">            self,</span></span><br><span class="line"><span class="params">            request: ToolCallRequest,</span></span><br><span class="line"><span class="params">            handler: <span class="type">Callable</span>[[ToolCallRequest], ToolMessage | Command],</span></span><br><span class="line"><span class="params">    </span>) -&gt; ToolMessage | Command:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;工具调用时执行&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;工具调用时执行&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> handler(request)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    nickname: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_id&quot;</span>: runtime.state.get(<span class="string">&quot;user_id&quot;</span>), <span class="string">&quot;nickname&quot;</span>: runtime.state.get(<span class="string">&quot;nickname&quot;</span>), <span class="string">&quot;age&quot;</span>: <span class="number">18</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">    middleware=[MyMiddleware()]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">res = agent.stream(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;获取用户的信息&quot;</span>&#125;], <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;9527&quot;</span>, <span class="string">&quot;nickname&quot;</span>: <span class="string">&quot;花花&quot;</span>&#125;)</span><br><span class="line">print_stream_result(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="自定义中间件工具执行失败重试"><a href="#自定义中间件工具执行失败重试" class="headerlink" title="自定义中间件工具执行失败重试"></a>自定义中间件工具执行失败重试</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/30 15:15</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">自定义中间件</span></span><br><span class="line"><span class="string">在执行流中的特定点运行</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">- **before_agent** - 代理启动前（每次调用一次）</span></span><br><span class="line"><span class="string">- **before_model** - 每次模型调用前</span></span><br><span class="line"><span class="string">- **after_model** - 每次模型响应后</span></span><br><span class="line"><span class="string">- **after_agent** - 代理完成时（每次调用最多一次）</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Callable</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> AgentMiddleware</span><br><span class="line"><span class="keyword">from</span> langchain.tools.tool_node <span class="keyword">import</span> ToolCallRequest, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> ToolMessage</span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">print_stream_result</span>(<span class="params">response</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;流式结果的输出&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> response:</span><br><span class="line">        <span class="keyword">for</span> key, value <span class="keyword">in</span> item.items():</span><br><span class="line">            <span class="keyword">if</span> key == <span class="string">&quot;model&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&quot;-----执行步骤：调用大模型&quot;</span>)</span><br><span class="line">                <span class="keyword">if</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;-----大模型分析的结果:<span class="subst">&#123;value[<span class="string">&quot;messages&quot;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">&quot;-----大模型分析的结果为调用以下工具：&quot;</span>)</span><br><span class="line">                    <span class="keyword">for</span> tool_ <span class="keyword">in</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;工具名称：<span class="subst">&#123;tool_[<span class="string">&#x27;name&#x27;</span>]&#125;</span>,调用工具的入参:<span class="subst">&#123;tool_[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">elif</span> key == <span class="string">&quot;tools&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;智能体执行工具：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].name&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;工具执行结果：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义中间件类</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ToolsCallMiddleware</span>(<span class="title class_ inherited__">AgentMiddleware</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;自定义的agent中间件类，注意继承类需要重写对应方法&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, count: <span class="built_in">int</span> = <span class="number">3</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.count = count</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">wrap_tool_call</span>(<span class="params"></span></span><br><span class="line"><span class="params">            self,</span></span><br><span class="line"><span class="params">            request: ToolCallRequest,</span></span><br><span class="line"><span class="params">            handler: <span class="type">Callable</span>[[ToolCallRequest], ToolMessage | Command],</span></span><br><span class="line"><span class="params">    </span>) -&gt; ToolMessage | Command:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;工具调用时执行&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;开始调用工具<span class="subst">&#123;request&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="variable language_">self</span>.count):</span><br><span class="line">            <span class="keyword">try</span>:</span><br><span class="line">                <span class="keyword">return</span> handler(request)</span><br><span class="line">            <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;调用工具出错了，错误信息是<span class="subst">&#123;<span class="built_in">str</span>(e)&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">if</span> i == <span class="built_in">len</span>(<span class="variable language_">self</span>.count - <span class="number">1</span>):</span><br><span class="line">                    <span class="keyword">raise</span> e</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;工具调用开始第<span class="subst">&#123;i + <span class="number">1</span>&#125;</span>轮调试！&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    nickname: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_id&quot;</span>: runtime.state.get(<span class="string">&quot;user_id&quot;</span>), <span class="string">&quot;nickname&quot;</span>: runtime.state.get(<span class="string">&quot;nickname&quot;</span>), <span class="string">&quot;age&quot;</span>: <span class="number">18</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">    middleware=[ToolsCallMiddleware()]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">res = agent.stream(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;获取用户的信息&quot;</span>&#125;], <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;9527&quot;</span>, <span class="string">&quot;nickname&quot;</span>: <span class="string">&quot;花花&quot;</span>&#125;)</span><br><span class="line">print_stream_result(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="中间件执行顺序"><a href="#中间件执行顺序" class="headerlink" title="中间件执行顺序"></a>中间件执行顺序</h2><p><strong>前置钩子按顺序运行</strong></p>
+<ol>
+<li><strong>middleware1.before_agent()</strong></li>
+<li><strong>middleware2.before_agent()</strong></li>
+<li><strong>middleware3.before_agent()</strong></li>
+</ol>
+<p><strong>代理循环开始</strong></p>
+<ol>
+<li><strong>middleware1.before_model()</strong></li>
+<li><strong>middleware2.before_model()</strong></li>
+<li><strong>middleware3.before_model()</strong></li>
+</ol>
+<p><strong>包装钩子像函数调用一样嵌套</strong></p>
+<ol>
+<li><strong>middleware1.wrap_model_call()</strong></li>
+<li><strong>middleware2.wrap_model_call()</strong></li>
+<li><strong>middleware3.wrap_model_call()</strong></li>
+<li><code>调用模型</code></li>
+</ol>
+<p><strong>后置钩子按相反顺序运行</strong></p>
+<ol>
+<li><strong>middleware3.after_model()</strong></li>
+<li><strong>middleware2.after_model()</strong></li>
+<li><strong>middleware1.after_model()</strong></li>
+</ol>
+<p><strong>代理循环结束</strong></p>
+<ol>
+<li><strong>middleware3.after_agent()</strong></li>
+<li><strong>middleware2.after_agent()</strong></li>
+<li><strong>middleware1.after_agent()</strong></li>
+</ol>
+<p><strong>关键规则</strong></p>
+<ul>
+<li><strong>before_*</strong>钩子：从头到尾</li>
+<li><strong>after_*</strong>钩子：从尾到头（反向）</li>
+<li><strong>wrap_*</strong> 钩子：嵌套（第一个中间件包装所有其他中间件）</li>
+</ul>
+<h2 id="Agent跳转"><a href="#Agent跳转" class="headerlink" title="Agent跳转"></a>Agent跳转</h2><p>要从中间件中提前退出，返回一个包含 <strong>jump_to</strong> 的字典</p>
+<p>中间件（middleware）时，如何通过返回一个包含jump_to字段的字典来改变代理（agent）的执行流程。具体来说，它列出了可用的跳转目标（jump targets），以及每个目标对应的含义。以下是对这段内容的详细解释：</p>
+<h3 id="可用跳转目标"><a href="#可用跳转目标" class="headerlink" title="可用跳转目标"></a>可用跳转目标</h3><ul>
+<li><strong>‘end’</strong>: 跳转到代理执行的末尾（或者第一个after_agent钩子）。当在中间件中返回{“jump_to”: “end”}时，代理会跳过当前执行流程中剩余的步骤，直接执行after_agent钩子（如果有的话），然后结束执行。这通常用于在满足某些条件时提前终止代理的执行，例如达到对话限制或检测到不适当的内容。</li>
+<li><strong>‘tools’</strong>: 跳转到工具节点（tools node）。当返回{“jump_to”: “tools”}时，代理会跳过当前的模型调用或其他中间件逻辑，直接进入工具调用阶段。这在需要直接调用工具而跳过模型推理时很有用，例如在某些情况下，根据上下文直接选择一个工具来执行。</li>
+<li><strong>‘model’</strong>: 跳转到模型节点（model node）或者第一个before_model钩子。返回{“jump_to”: “model”}会使得代理跳过当前的中间件逻辑，直接进入模型调用阶段。这通常用于在中间件中进行了一些预处理后，直接将控制权交给模型，或者在某些情况下需要重新触发模型调用。</li>
+</ul>
+<h3 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h3><p>这些跳转目标为开发者提供了灵活的控制手段，可以在中间件中根据不同的逻辑和条件动态地改变代理的执行流程。例如：</p>
+<ul>
+<li><strong>提前终止执行</strong>：当检测到对话达到预设的限制或者出现不适当的内容时，使用jump_to: “end”来提前结束代理的执行，避免进一步的处理。</li>
+<li><strong>直接调用工具</strong>：在某些情况下，根据上下文直接选择并调用工具，而跳过模型推理阶段，可以提高效率并简化执行流程。</li>
+<li><strong>重新触发模型调用</strong>：在中间件中对输入数据进行了一些修改或调整后，使用jump_to: “model”来重新触发模型调用，确保模型能够基于最新的数据进行推理。</li>
+</ul>
+<p><strong>重要提示:</strong></p>
+<ul>
+<li>从 <strong>before_model</strong> 或 <strong>after_model</strong> 跳转时，跳转到 <strong>“model”</strong> 将导致所有<strong>before_model</strong>中间件再次运行。</li>
+<li>要启用跳转，请使用 <strong>@hook_config(can_jump_to=[…])</strong>装饰您的钩子</li>
+</ul>
+<p>官方示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> after_model, hook_config, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> AIMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@after_model</span></span><br><span class="line"><span class="meta">@hook_config(<span class="params">can_jump_to=[<span class="string">&quot;end&quot;</span>]</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">check_for_blocked</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    last_message = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;BLOCKED&quot;</span> <span class="keyword">in</span> last_message.content:</span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: [AIMessage(<span class="string">&quot;I cannot respond to that request.&quot;</span>)],</span><br><span class="line">            <span class="string">&quot;jump_to&quot;</span>: <span class="string">&quot;end&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p>练习代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/30 15:15</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> AgentMiddleware, hook_config</span><br><span class="line"><span class="keyword">from</span> langchain.tools.tool_node <span class="keyword">import</span> ToolRuntime, StateT, ContextT</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> AIMessage</span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">print_stream_result</span>(<span class="params">response</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;流式结果的输出&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> response:</span><br><span class="line">        <span class="keyword">for</span> key, value <span class="keyword">in</span> item.items():</span><br><span class="line">            <span class="keyword">if</span> key == <span class="string">&quot;model&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&quot;-----执行步骤：调用大模型&quot;</span>)</span><br><span class="line">                <span class="keyword">if</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;-----大模型分析的结果:<span class="subst">&#123;value[<span class="string">&quot;messages&quot;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">&quot;-----大模型分析的结果为调用以下工具：&quot;</span>)</span><br><span class="line">                    <span class="keyword">for</span> tool_ <span class="keyword">in</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;工具名称：<span class="subst">&#123;tool_[<span class="string">&#x27;name&#x27;</span>]&#125;</span>,调用工具的入参:<span class="subst">&#123;tool_[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">elif</span> key == <span class="string">&quot;tools&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;智能体执行工具：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].name&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;工具执行结果：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义中间件类</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ToolsCallMiddleware</span>(<span class="title class_ inherited__">AgentMiddleware</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;自定义的agent中间件类，注意继承类需要重写对应方法&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @hook_config(<span class="params">can_jump_to=[<span class="string">&quot;end&quot;</span>, <span class="string">&quot;tools&quot;</span>]</span>)</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_agent</span>(<span class="params">self, state: StateT, runtime: Runtime[ContextT]</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;工具调用时执行&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;调用大模型之前的中间件&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;当前state:<span class="subst">&#123;state&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;传递给大模型的消息列表：<span class="subst">&#123;state[<span class="string">&#x27;messages&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;jump_to&quot;</span>: <span class="string">&quot;tools&quot;</span>,</span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: [AIMessage(</span><br><span class="line">                content=<span class="string">&quot;&quot;</span>,</span><br><span class="line">                tool_calls=[&#123;<span class="string">&quot;name&quot;</span>: <span class="string">&quot;get_user_info&quot;</span>, <span class="string">&quot;args&quot;</span>: &#123;&#125;, <span class="string">&quot;id&quot;</span>: <span class="string">&quot;123&quot;</span>&#125;]</span><br><span class="line">            )]</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    nickname: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_id&quot;</span>: runtime.state.get(<span class="string">&quot;user_id&quot;</span>), <span class="string">&quot;nickname&quot;</span>: runtime.state.get(<span class="string">&quot;nickname&quot;</span>), <span class="string">&quot;age&quot;</span>: <span class="number">18</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">    middleware=[ToolsCallMiddleware()]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">res = agent.stream(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;获取用户的信息&quot;</span>&#125;], <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;9527&quot;</span>, <span class="string">&quot;nickname&quot;</span>: <span class="string">&quot;花花&quot;</span>&#125;)</span><br><span class="line">print_stream_result(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="在中间件中修改-State（短期记忆）"><a href="#在中间件中修改-State（短期记忆）" class="headerlink" title="在中间件中修改 State（短期记忆）"></a>在中间件中修改 State（短期记忆）</h2><p>中间件可以通过自定义属性扩展 Agent 的 State。定义一个自定义状态类型并将其设置为 <strong>state_schema</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> AgentState, AgentMiddleware</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> NotRequired</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomState</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    model_call_count: NotRequired[<span class="built_in">int</span>]</span><br><span class="line">    user_id: NotRequired[<span class="built_in">str</span>]</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CallCounterMiddleware</span>(AgentMiddleware[CustomState]):</span><br><span class="line">    state_schema = CustomState</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_model</span>(<span class="params">self, state: CustomState, runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="comment"># Access custom state properties</span></span><br><span class="line">        count = state.get(<span class="string">&quot;model_call_count&quot;</span>, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> count &gt; <span class="number">3</span>:</span><br><span class="line">            <span class="keyword">return</span> &#123;<span class="string">&quot;jump_to&quot;</span>: <span class="string">&quot;end&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">after_model</span>(<span class="params">self, state: CustomState, runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="comment"># Update custom state</span></span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;model_call_count&quot;</span>: state.get(<span class="string">&quot;model_call_count&quot;</span>, <span class="number">0</span>) + <span class="number">1</span>&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="中间件使用最佳实践"><a href="#中间件使用最佳实践" class="headerlink" title="中间件使用最佳实践"></a>中间件使用最佳实践</h1><ol>
+<li>保持中间件的专注性——每个中间件只做好一件事</li>
+<li>优雅地处理错误——不要让中间件错误导致代理崩溃</li>
+<li><strong>使用适当的钩子类型</strong>:<ul>
+<li>节点式用于顺序逻辑（日志记录、验证）</li>
+<li>包装式用于控制流（重试、回退、缓存）</li>
+</ul>
+</li>
+<li>清晰地记录所有自定义状态属性(State)</li>
+<li>在集成之前独立进行中间件单元测试</li>
+<li>考虑执行顺序——将关键中间件放在列表前面</li>
+<li>尽可能使用内置中间件，不要重复造轮子</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/19/ai/langchain/4-langchain-Memory/" rel="prev" title="LangChain核心组件Memory(记忆)">
+      <i class="fa fa-chevron-left"></i> LangChain核心组件Memory(记忆)
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/12/31/ai/langchain/8-langchain-Human-loop/" rel="next" title="LangChain人工审核详解">
+      LangChain人工审核详解 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFMiddleware%EF%BC%88%E4%B8%AD%E9%97%B4%E4%BB%B6%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">什么是Middleware（中间件）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-number">2.</span> <span class="nav-text">中间件的分类</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E5%BC%8F%E9%92%A9%E5%AD%90%EF%BC%88Node-style-Hooks%EF%BC%89"><span class="nav-number">2.1.</span> <span class="nav-text">节点式钩子（Node-style Hooks）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8C%85%E8%A3%85%E5%BC%8F%E9%92%A9%E5%AD%90%EF%BC%88Wrap-style-Hooks%EF%BC%89"><span class="nav-number">2.2.</span> <span class="nav-text">包装式钩子（Wrap-style Hooks）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E4%B8%AD%E9%97%B4%E4%BB%B6%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">如何使用中间件？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E7%BD%AE%E4%B8%AD%E9%97%B4%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">内置中间件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%AD%E9%97%B4%E4%BB%B6"><span class="nav-number">5.</span> <span class="nav-text">自定义中间件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%A3%85%E9%A5%B0%E5%99%A8%E7%9A%84%E4%B8%AD%E9%97%B4%E4%BB%B6"><span class="nav-number">5.1.</span> <span class="nav-text">基于装饰器的中间件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E7%94%A8%E8%A3%85%E9%A5%B0%E5%99%A8"><span class="nav-number">5.1.1.</span> <span class="nav-text">可用装饰器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E7%B1%BB%E7%9A%84%E4%B8%AD%E9%97%B4%E4%BB%B6"><span class="nav-number">5.2.</span> <span class="nav-text">基于类的中间件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8A%82%E7%82%B9%E5%BC%8F%E9%92%A9%E5%AD%90"><span class="nav-number">5.2.1.</span> <span class="nav-text">节点式钩子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%85%E8%A3%85%E5%BC%8F%E9%92%A9%E5%AD%90"><span class="nav-number">5.2.2.</span> <span class="nav-text">包装式钩子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81"><span class="nav-number">5.3.</span> <span class="nav-text">示例代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%AD%E9%97%B4%E4%BB%B6%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8"><span class="nav-number">5.3.1.</span> <span class="nav-text">自定义中间件基本使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%B1%BB%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">5.3.2.</span> <span class="nav-text">自定义中间件类的使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%AD%E9%97%B4%E4%BB%B6%E5%B7%A5%E5%85%B7%E6%89%A7%E8%A1%8C%E5%A4%B1%E8%B4%A5%E9%87%8D%E8%AF%95"><span class="nav-number">5.3.3.</span> <span class="nav-text">自定义中间件工具执行失败重试</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E9%97%B4%E4%BB%B6%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F"><span class="nav-number">5.4.</span> <span class="nav-text">中间件执行顺序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Agent%E8%B7%B3%E8%BD%AC"><span class="nav-number">5.5.</span> <span class="nav-text">Agent跳转</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E7%94%A8%E8%B7%B3%E8%BD%AC%E7%9B%AE%E6%A0%87"><span class="nav-number">5.5.1.</span> <span class="nav-text">可用跳转目标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">5.5.2.</span> <span class="nav-text">使用场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E4%B8%AD%E9%97%B4%E4%BB%B6%E4%B8%AD%E4%BF%AE%E6%94%B9-State%EF%BC%88%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86%EF%BC%89"><span class="nav-number">5.6.</span> <span class="nav-text">在中间件中修改 State（短期记忆）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%AD%E9%97%B4%E4%BB%B6%E4%BD%BF%E7%94%A8%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">6.</span> <span class="nav-text">中间件使用最佳实践</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

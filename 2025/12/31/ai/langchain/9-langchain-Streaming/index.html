@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第九讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain流式输出模式">
+<meta property="og:url" content="https://jinglv.github.io/2025/12/31/ai/langchain/9-langchain-Streaming/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第九讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-30T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-31T07:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/12/31/ai/langchain/9-langchain-Streaming/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain流式输出模式 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/12/31/ai/langchain/9-langchain-Streaming/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain流式输出模式
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-12-31 00:00:00 / 修改时间：15:00:00" itemprop="dateCreated datePublished" datetime="2025-12-31T00:00:00+08:00">2025-12-31</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第九讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>LangChain 设计了一个特殊的机制，能够将数据以连续不断的“流”的形式传递和处理，而不是等待所有数据都准备好后再一次性展示。</p>
+<p>官方介绍地址：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langchain/streaming">https://docs.langchain.com/oss/python/langchain/streaming</a></p>
+<p><strong>流式处理对于提升基于 LLM 的应用程序的响应能力至关重要。</strong></p>
+<ul>
+<li><strong>基于 LLM 的应用程序</strong>：LLM（Large Language Models，大型语言模型）是现代人工智能应用的核心组件，如聊天机器人、智能助手等。这些应用依赖 LLM 来生成文本、回答问题等。</li>
+<li><strong>响应能力</strong>：应用程序能够快速响应用户操作的能力。如果响应延迟过高，用户体验会大打折扣。</li>
+<li><strong>流式处理的重要性</strong>：由于 LLM 通常需要一定时间来生成完整的回答（存在延迟），流式处理可以在生成过程中逐步展示部分结果，让用户感觉应用更加“响应迅速”。</li>
+</ul>
+<p><strong>通过逐步显示输出，即使在完整响应尚未准备好之前，流式处理也能显著提升用户体验（UX），尤其是在处理 LLM 的延迟时。</strong></p>
+<ul>
+<li><strong>逐步显示输出</strong>：不是等到 LLM 生成完整回答后再显示，而是随着生成过程逐步展示部分结果。</li>
+<li><strong>用户体验（UX）</strong>：用户在使用应用程序时的整体感受，包括操作的便捷性、等待时间的长短等。</li>
+<li><strong>处理 LLM 的延迟</strong>：LLM 生成回答可能需要几秒甚至更长时间，流式处理可以在这段时间内持续提供反馈，让用户知道系统正在工作，而不是无响应地等待。</li>
+</ul>
+<h1 id="LangChain-流式处理的功能"><a href="#LangChain-流式处理的功能" class="headerlink" title="LangChain 流式处理的功能"></a>LangChain 流式处理的功能</h1><ul>
+<li><strong>流式代理进度</strong>：在每个代理步骤之后获取状态更新。<ul>
+<li><strong>代理步骤</strong>：代理执行任务时的各个阶段，如调用工具、处理数据等。</li>
+<li><strong>状态更新</strong>：每个步骤完成后，系统会发送一个更新，告知当前的执行状态。</li>
+</ul>
+</li>
+<li><strong>流式 LLM 令牌</strong>：随着生成过程流式传输语言模型令牌。<ul>
+<li><strong>LLM 令牌</strong>：LLM 在生成文本时，会将文本分解为一个个“令牌”（token），这些令牌可以是单词、短语或符号等。</li>
+<li><strong>流式传输</strong>：随着 LLM 生成令牌的过程，实时地将这些令牌发送出去。</li>
+</ul>
+</li>
+<li><strong>流式自定义更新</strong>：发出用户定义的信号（例如，“已获取 10/100 条记录”）。<ul>
+<li><strong>用户定义的信号</strong>：开发者可以根据需要定义特定的更新信息，如任务进度、特定事件的发生等。</li>
+</ul>
+</li>
+<li><strong>流式多种模式</strong>：可以选择更新（代理进度）、消息（LLM 令牌 + 元数据）或自定义（任意用户数据）。<ul>
+<li><strong>更新模式</strong>：主要关注代理的执行进度。</li>
+<li><strong>消息模式</strong>：除了 LLM 令牌外，还会包含一些额外的元数据，如令牌的来源、生成时间等。</li>
+<li><strong>自定义模式</strong>：允许开发者发送任意类型的数据，以满足特定的应用需求。</li>
+</ul>
+</li>
+</ul>
+<h1 id="支持的流模式"><a href="#支持的流模式" class="headerlink" title="支持的流模式"></a>支持的流模式</h1><p>当你使用LangChain的stream方法时，可以将以下一种或多种流模式以列表的形式传递给它，以实现不同的数据流功能</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Mode</th>
+<th style="text-align:left">Description</th>
+<th>应用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>updates</code></td>
+<td style="text-align:left">在每个代理步骤之后流式传输状态更新。如果在同一个步骤中进行了多次更新（例如，运行了多个节点），那么这些更新将分别进行流式传输。</td>
+<td>当你需要实时了解代理的执行进度，例如代理调用了哪些工具、每个工具的执行结果等，就可以使用这种模式。这样可以让你的应用程序及时向用户反馈代理的运行状态，提高用户体验。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>messages</code></td>
+<td style="text-align:left">从任何调用了LLM的图节点流式传输（token，metadata）元组。</td>
+<td>当你想要获取LLM生成的token以及相关的元数据时，这种模式非常有用。你可以通过这些token逐步构建出最终的响应内容，并且可以根据元数据了解token的来源等信息，从而更好地处理和展示LLM的输出。</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>custom</code></td>
+<td style="text-align:left">使用流式写入器从你的图节点内部流式传输自定义数据。</td>
+<td>如果你有一些特定的数据需要实时传输，比如工具执行过程中的中间结果、日志信息等，就可以通过这种模式自定义要流式传输的内容。这为开发者提供了很大的灵活性，可以根据自己的需求传输各种类型的数据。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="流式处理案例"><a href="#流式处理案例" class="headerlink" title="流式处理案例"></a>流式处理案例</h1><h2 id="流式传输-Agent-进度（Agent-progress）"><a href="#流式传输-Agent-进度（Agent-progress）" class="headerlink" title="流式传输 Agent 进度（Agent progress）"></a>流式传输 Agent 进度（Agent progress）</h2><p><strong>使用stream方法和streamMode: “updates”</strong>：当你想流式传输代理的进度时，需要在调用stream方法时指定streamMode为”updates”。这样，代理在执行的每一步都会发出一个事件，告知当前的执行状态。</p>
+<p><strong>每一步的更新内容</strong>：</p>
+<ul>
+<li><strong>LLM节点：工具调用请求的AIMessage</strong>：当代理执行到需要调用某个工具（tool）时，会首先生成一个AIMessage，其中包含了对工具的调用请求信息。例如，如果代理需要调用一个获取天气信息的工具，这个AIMessage可能会包含工具的名称、参数等信息，表明代理正在请求调用该工具。</li>
+<li><strong>工具节点：工具执行结果的ToolMessage</strong>：工具节点在执行完成后，会生成一个ToolMessage，其中包含了工具执行的结果。例如，如果工具是获取天气信息，那么这个ToolMessage就会包含天气的具体信息，如温度、天气状况等。</li>
+<li><strong>LLM节点：最终的AI响应</strong>：在代理完成所有工具的调用和处理后，会生成一个最终的AI响应。这个响应是代理根据工具的执行结果以及自身的逻辑生成的，是对用户原始问题的最终回答。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/31 15:25</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    nickname: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_id&quot;</span>: runtime.state.get(<span class="string">&quot;user_id&quot;</span>), <span class="string">&quot;nickname&quot;</span>: runtime.state.get(<span class="string">&quot;nickname&quot;</span>), <span class="string">&quot;age&quot;</span>: <span class="number">18</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用agent,一定要通过参数config出入线程id</span></span><br><span class="line">res = agent.stream(</span><br><span class="line">    <span class="comment"># agent调用的时候第一个参数input传递的只，最终会保存到runtime.state(短期记忆)中</span></span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;获取用户的信息&quot;</span>&#125;], <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;9527&quot;</span>, <span class="string">&quot;nickname&quot;</span>: <span class="string">&quot;花花&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;updates&quot;</span>  <span class="comment"># 默认是updates</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> res:</span><br><span class="line">    <span class="keyword">for</span> step, data <span class="keyword">in</span> chunk.items():</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;step: <span class="subst">&#123;step&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;content: <span class="subst">&#123;data[<span class="string">&#x27;messages&#x27;</span>][-<span class="number">1</span>].content_blocks&#125;</span>&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">step: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;我来帮您获取用户信息。&#x27;&#125;, &#123;&#x27;type&#x27;: &#x27;tool_call&#x27;, &#x27;id&#x27;: &#x27;call_00_V1wAgybiEpZKj5WDuybkIUyC&#x27;, &#x27;name&#x27;: &#x27;get_user_info&#x27;, &#x27;args&#x27;: &#123;&#125;&#125;]</span><br><span class="line">step: tools</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;&#123;&quot;user_id&quot;: &quot;9527&quot;, &quot;nickname&quot;: &quot;花花&quot;, &quot;age&quot;: 18&#125;&#x27;&#125;]</span><br><span class="line">step: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;根据获取到的用户信息：\n\n- **用户ID**: 9527\n- **昵称**: 花花  \n- **年龄**: 18岁\n\n这是当前用户的完整信息。&#x27;&#125;]</span><br></pre></td></tr></table></figure>
+<h2 id="流式传输-LLM-Tokens（-LLM-tokens）"><a href="#流式传输-LLM-Tokens（-LLM-tokens）" class="headerlink" title="流式传输 LLM Tokens（ LLM tokens）"></a>流式传输 LLM Tokens（ LLM tokens）</h2><p>当语言模型（LLM）产生令牌（tokens）时，可以通过设置“stream_mode”为“messages”来实现对这些令牌的流式传输。</p>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/31 15:25</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    nickname: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_id&quot;</span>: runtime.state.get(<span class="string">&quot;user_id&quot;</span>), <span class="string">&quot;nickname&quot;</span>: runtime.state.get(<span class="string">&quot;nickname&quot;</span>), <span class="string">&quot;age&quot;</span>: <span class="number">18</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用agent,一定要通过参数config出入线程id</span></span><br><span class="line">res = agent.stream(</span><br><span class="line">    <span class="comment"># agent调用的时候第一个参数input传递的只，最终会保存到runtime.state(短期记忆)中</span></span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;获取用户的信息&quot;</span>&#125;], <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;9527&quot;</span>, <span class="string">&quot;nickname&quot;</span>: <span class="string">&quot;花花&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;messages&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> token, metadata <span class="keyword">in</span> res:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;node: <span class="subst">&#123;metadata[<span class="string">&#x27;langgraph_node&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;content: <span class="subst">&#123;token.content_blocks&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">node: model</span><br><span class="line">content: []</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;我来&#x27;&#125;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;帮&#x27;&#125;]</span><br><span class="line"></span><br><span class="line">……</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;\n\n&#x27;&#125;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;这是&#x27;&#125;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;当前&#x27;&#125;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;用户&#x27;&#125;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;的基本&#x27;&#125;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;信息&#x27;&#125;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: [&#123;&#x27;type&#x27;: &#x27;text&#x27;, &#x27;text&#x27;: &#x27;。&#x27;&#125;]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">node: model</span><br><span class="line">content: []</span><br></pre></td></tr></table></figure>
+<h2 id="自定义工具的-Streaming（-Custom-updates）"><a href="#自定义工具的-Streaming（-Custom-updates）" class="headerlink" title="自定义工具的 Streaming（ Custom updates）"></a>自定义工具的 Streaming（ Custom updates）</h2><p>当工具在运行过程中，为了实时传输更新信息，你可以使用配置中的writer参数。</p>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/31 15:25</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> langgraph.config <span class="keyword">import</span> get_stream_writer</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    nickname: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;用户id：<span class="subst">&#123;runtime.state.get(<span class="string">&quot;user_id&quot;</span>)&#125;</span>&quot;</span>)</span><br><span class="line">    writer(<span class="string">f&quot;用户昵称：<span class="subst">&#123;runtime.state.get(<span class="string">&quot;nickname&quot;</span>)&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_id&quot;</span>: runtime.state.get(<span class="string">&quot;user_id&quot;</span>), <span class="string">&quot;nickname&quot;</span>: runtime.state.get(<span class="string">&quot;nickname&quot;</span>), <span class="string">&quot;age&quot;</span>: <span class="number">18</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用agent,一定要通过参数config出入线程id</span></span><br><span class="line">res = agent.stream(</span><br><span class="line">    <span class="comment"># agent调用的时候第一个参数input传递的只，最终会保存到runtime.state(短期记忆)中</span></span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;获取用户的信息&quot;</span>&#125;], <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;9527&quot;</span>, <span class="string">&quot;nickname&quot;</span>: <span class="string">&quot;花花&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;custom&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> res:</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">用户id：9527</span><br><span class="line">用户昵称：花花</span><br></pre></td></tr></table></figure>
+<h2 id="同时启用多个-Streaming-模式（-Stream-multiple-modes）"><a href="#同时启用多个-Streaming-模式（-Stream-multiple-modes）" class="headerlink" title="同时启用多个 Streaming 模式（ Stream multiple modes）"></a>同时启用多个 Streaming 模式（ Stream multiple modes）</h2><p>可以通过将streamMode设置为一个数组来指定多种流式模式。数组中的元素可以是”updates”、”messages”、”custom”，分别代表不同的流式模式。例如，如果你想要同时获取状态更新、语言模型生成的token以及自定义的更新数据，就可以将streamMode设置为[“updates”, “messages”, “custom”]。</p>
+<p>当使用了多种流式模式后，流式系统输出的数据将会是一个元组的形式，即[mode, chunk]。其中，mode表示当前这个元组对应的是哪种流式模式，比如是”updates”、”messages”还是”custom”；chunk则是该模式下实际被流式传输的数据内容。</p>
+<p>代码示例：同时观察进度 + 自定义日志</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/31 15:25</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> langgraph.config <span class="keyword">import</span> get_stream_writer</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    nickname: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;用户id：<span class="subst">&#123;runtime.state.get(<span class="string">&quot;user_id&quot;</span>)&#125;</span>&quot;</span>)</span><br><span class="line">    writer(<span class="string">f&quot;用户昵称：<span class="subst">&#123;runtime.state.get(<span class="string">&quot;nickname&quot;</span>)&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_id&quot;</span>: runtime.state.get(<span class="string">&quot;user_id&quot;</span>), <span class="string">&quot;nickname&quot;</span>: runtime.state.get(<span class="string">&quot;nickname&quot;</span>), <span class="string">&quot;age&quot;</span>: <span class="number">18</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用agent,一定要通过参数config出入线程id</span></span><br><span class="line">res = agent.stream(</span><br><span class="line">    <span class="comment"># agent调用的时候第一个参数input传递的只，最终会保存到runtime.state(短期记忆)中</span></span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;获取用户的信息&quot;</span>&#125;], <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;9527&quot;</span>, <span class="string">&quot;nickname&quot;</span>: <span class="string">&quot;花花&quot;</span>&#125;,</span><br><span class="line">    stream_mode=[<span class="string">&quot;updates&quot;</span>, <span class="string">&quot;custom&quot;</span>]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> stream_mode, chunk <span class="keyword">in</span> res:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;stream_mode: <span class="subst">&#123;stream_mode&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;content: <span class="subst">&#123;chunk&#125;</span>\n&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">stream_mode: updates</span><br><span class="line">content: &#123;&#x27;model&#x27;: &#123;&#x27;messages&#x27;: [AIMessage(content=&#x27;我来帮您获取用户信息。&#x27;, additional_kwargs=&#123;&#x27;refusal&#x27;: None&#125;, response_metadata=&#123;&#x27;token_usage&#x27;: &#123;&#x27;completion_tokens&#x27;: 34, &#x27;prompt_tokens&#x27;: 286, &#x27;total_tokens&#x27;: 320, &#x27;completion_tokens_details&#x27;: None, &#x27;prompt_tokens_details&#x27;: &#123;&#x27;audio_tokens&#x27;: None, &#x27;cached_tokens&#x27;: 256&#125;, &#x27;prompt_cache_hit_tokens&#x27;: 256, &#x27;prompt_cache_miss_tokens&#x27;: 30&#125;, &#x27;model_provider&#x27;: &#x27;deepseek&#x27;, &#x27;model_name&#x27;: &#x27;deepseek-chat&#x27;, &#x27;system_fingerprint&#x27;: &#x27;fp_eaab8d114b_prod0820_fp8_kvcache&#x27;, &#x27;id&#x27;: &#x27;0ee91ccd-345b-4166-94aa-3fdb1c7f364d&#x27;, &#x27;finish_reason&#x27;: &#x27;tool_calls&#x27;, &#x27;logprobs&#x27;: None&#125;, id=&#x27;lc_run--3d10f54b-c504-43c0-b5e7-799ed1a33b0b-0&#x27;, tool_calls=[&#123;&#x27;name&#x27;: &#x27;get_user_info&#x27;, &#x27;args&#x27;: &#123;&#125;, &#x27;id&#x27;: &#x27;call_00_LjZ9Vs65zfubQYsPbTIOmR02&#x27;, &#x27;type&#x27;: &#x27;tool_call&#x27;&#125;], usage_metadata=&#123;&#x27;input_tokens&#x27;: 286, &#x27;output_tokens&#x27;: 34, &#x27;total_tokens&#x27;: 320, &#x27;input_token_details&#x27;: &#123;&#x27;cache_read&#x27;: 256&#125;, &#x27;output_token_details&#x27;: &#123;&#125;&#125;)]&#125;&#125;</span><br><span class="line"></span><br><span class="line">stream_mode: custom</span><br><span class="line">content: 用户id：9527</span><br><span class="line"></span><br><span class="line">stream_mode: custom</span><br><span class="line">content: 用户昵称：花花</span><br><span class="line"></span><br><span class="line">stream_mode: updates</span><br><span class="line">content: &#123;&#x27;tools&#x27;: &#123;&#x27;messages&#x27;: [ToolMessage(content=&#x27;&#123;&quot;user_id&quot;: &quot;9527&quot;, &quot;nickname&quot;: &quot;花花&quot;, &quot;age&quot;: 18&#125;&#x27;, name=&#x27;get_user_info&#x27;, id=&#x27;b3088504-3aeb-4530-8a81-dcfb8e314a49&#x27;, tool_call_id=&#x27;call_00_LjZ9Vs65zfubQYsPbTIOmR02&#x27;)]&#125;&#125;</span><br><span class="line"></span><br><span class="line">stream_mode: updates</span><br><span class="line">content: &#123;&#x27;model&#x27;: &#123;&#x27;messages&#x27;: [AIMessage(content=&#x27;根据获取到的信息，当前用户的信息如下：\n\n- **用户ID**: 9527\n- **昵称**: 花花\n- **年龄**: 18岁\n\n这是系统为您提供的用户基本信息。如果您需要其他帮助，请随时告诉我！&#x27;, additional_kwargs=&#123;&#x27;refusal&#x27;: None&#125;, response_metadata=&#123;&#x27;token_usage&#x27;: &#123;&#x27;completion_tokens&#x27;: 51, &#x27;prompt_tokens&#x27;: 357, &#x27;total_tokens&#x27;: 408, &#x27;completion_tokens_details&#x27;: None, &#x27;prompt_tokens_details&#x27;: &#123;&#x27;audio_tokens&#x27;: None, &#x27;cached_tokens&#x27;: 320&#125;, &#x27;prompt_cache_hit_tokens&#x27;: 320, &#x27;prompt_cache_miss_tokens&#x27;: 37&#125;, &#x27;model_provider&#x27;: &#x27;deepseek&#x27;, &#x27;model_name&#x27;: &#x27;deepseek-chat&#x27;, &#x27;system_fingerprint&#x27;: &#x27;fp_eaab8d114b_prod0820_fp8_kvcache&#x27;, &#x27;id&#x27;: &#x27;2970088f-977d-4f17-b204-99110debdc21&#x27;, &#x27;finish_reason&#x27;: &#x27;stop&#x27;, &#x27;logprobs&#x27;: None&#125;, id=&#x27;lc_run--b291342f-b997-474d-ae16-9fb1f21157e2-0&#x27;, usage_metadata=&#123;&#x27;input_tokens&#x27;: 357, &#x27;output_tokens&#x27;: 51, &#x27;total_tokens&#x27;: 408, &#x27;input_token_details&#x27;: &#123;&#x27;cache_read&#x27;: 320&#125;, &#x27;output_token_details&#x27;: &#123;&#125;&#125;)]&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/31/ai/langchain/8-langchain-Human-loop/" rel="prev" title="LangChain人工审核详解">
+      <i class="fa fa-chevron-left"></i> LangChain人工审核详解
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/12/31/ai/langchain/7-langchain-Built-in-Middleware/" rel="next" title="LangChain内置中间件案例">
+      LangChain内置中间件案例 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#LangChain-%E6%B5%81%E5%BC%8F%E5%A4%84%E7%90%86%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="nav-number">1.</span> <span class="nav-text">LangChain 流式处理的功能</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E6%B5%81%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">支持的流模式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E5%A4%84%E7%90%86%E6%A1%88%E4%BE%8B"><span class="nav-number">3.</span> <span class="nav-text">流式处理案例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93-Agent-%E8%BF%9B%E5%BA%A6%EF%BC%88Agent-progress%EF%BC%89"><span class="nav-number">3.1.</span> <span class="nav-text">流式传输 Agent 进度（Agent progress）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93-LLM-Tokens%EF%BC%88-LLM-tokens%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">流式传输 LLM Tokens（ LLM tokens）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B7%A5%E5%85%B7%E7%9A%84-Streaming%EF%BC%88-Custom-updates%EF%BC%89"><span class="nav-number">3.3.</span> <span class="nav-text">自定义工具的 Streaming（ Custom updates）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%97%B6%E5%90%AF%E7%94%A8%E5%A4%9A%E4%B8%AA-Streaming-%E6%A8%A1%E5%BC%8F%EF%BC%88-Stream-multiple-modes%EF%BC%89"><span class="nav-number">3.4.</span> <span class="nav-text">同时启用多个 Streaming 模式（ Stream multiple modes）</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

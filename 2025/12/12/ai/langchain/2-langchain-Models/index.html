@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第十四讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain核心组件Models（模型）">
+<meta property="og:url" content="https://jinglv.github.io/2025/12/12/ai/langchain/2-langchain-Models/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第十四讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-12T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/12/12/ai/langchain/2-langchain-Models/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain核心组件Models（模型） | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/12/12/ai/langchain/2-langchain-Models/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain核心组件Models（模型）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-12-12 00:00:00 / 修改时间：10:00:00" itemprop="dateCreated datePublished" datetime="2025-12-12T00:00:00+08:00">2025-12-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第十四讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>之前有介绍过ChatModels，但对于10月20日新更新的LangChain1.0.0+版本后，对于Models模型这里也有了很大的调整，以下我则进行详细介绍。</p>
+<p>大型语言模型（LLM）是强大的 AI 工具，能够像人类一样解释和生成文本。它们功能多样，可以撰写内容、翻译语言、总结和回答问题，而无需针对每个任务进行专门训练。很多模型都支持一下功能：</p>
+<ul>
+<li><strong>文本生成</strong>：LLMs能够生成类似人类书写的文本，可以用于写作内容、翻译语言、总结文本以及回答问题，且无需针对每个任务进行专门的训练。</li>
+<li><strong>工具调用</strong>：许多模型支持调用外部工具，例如执行数据库查询或API调用，并将结果用于其响应中。这使得模型能够获取和处理外部数据，从而提供更准确和丰富的回答。</li>
+<li><strong>结构化输出</strong>：模型可以按照预定义的格式生成响应，这有助于确保输出可以被后续处理流程轻松解析和使用。</li>
+<li><strong>多模态处理</strong>：除了文本，一些模型还能够处理和返回其他类型的数据，如图像、音频和视频。这使得模型能够更全面地理解和生成信息。</li>
+<li><strong>推理能力</strong>：模型能够执行多步推理以得出结论，这有助于解决复杂的、需要逐步分析的问题。</li>
+</ul>
+<p>模型是智能体的推理引擎。它们驱动代理的决策过程，确定调用哪些工具、如何解释结果以及何时提供最终答案。您选择的模型的质量和能力直接影响代理的可靠性和性能。不同的模型擅长不同的任务——有些更擅长遵循复杂指令，有些更擅长结构化推理，有些支持更大的上下文窗口来处理更多信息。</p>
+<h1 id="模型初始化"><a href="#模型初始化" class="headerlink" title="模型初始化"></a>模型初始化</h1><h2 id="直接创建模型对象"><a href="#直接创建模型对象" class="headerlink" title="直接创建模型对象"></a>直接创建模型对象</h2><p>这个是保留了之前ChatModels调用的方式，比如使用<code>langchain_openai</code>中的<code>ChatOpenAI</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="comment"># 创建一个和调用大模型的对象</span></span><br><span class="line">model = ChatOpenAI(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;llm_model&quot;</span>),</span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;base_url&quot;</span>),</span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;api_key&quot;</span>),</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h2 id="使用init-chat-model"><a href="#使用init-chat-model" class="headerlink" title="使用init_chat_model"></a>使用init_chat_model</h2><p><code>init_chat_model</code>是 langchian 中封装的一个模型初始化方法，可用于快速对模型进行初始化，其内部还是调用相关的第三方库来初始化模型,也需要安装对应大模型接入的模型</p>
+<p>官方文档详细介绍：<a target="_blank" rel="noopener" href="https://reference.langchain.com/python/langchain/models/">https://reference.langchain.com/python/langchain/models/</a></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">model = init_chat_model(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;llm_model&quot;</span>), <span class="comment"># 模型名称</span></span><br><span class="line">    model_provider =<span class="string">&quot;openai&quot;</span>, <span class="comment"># 模型供应商</span></span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;base_url&quot;</span>), <span class="comment"># 模型服务的基础地址</span></span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;api_key&quot;</span>) <span class="comment"># 模型服务的调用key</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>这种方式内置了很多模型调用在使用的时候，可以进行简化调用</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化大模型</span></span><br><span class="line">os.environ[<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>] = os.getenv(<span class="string">&quot;api_key&quot;</span>)</span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-chat&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h1 id="模型调用"><a href="#模型调用" class="headerlink" title="模型调用"></a>模型调用</h1><h2 id="1-Invoke非流式"><a href="#1-Invoke非流式" class="headerlink" title="1.Invoke非流式"></a>1.Invoke非流式</h2><ul>
+<li><p>单条消息调用</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">response = model_client.invoke(<span class="string">&quot;今天天气如何&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(response)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p>多条消息调用</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">conversation = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;You are a helpful assistant that translates English to French.&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;Translate: I love programming.&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;J&#x27;adore la programmation.&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;Translate: I love building applications.&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">response = model_client.invoke(conversation)</span><br><span class="line"><span class="built_in">print</span>(response)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="2-stream流式"><a href="#2-stream流式" class="headerlink" title="2. stream流式"></a>2. stream流式</h2><p><strong>流式传输（Streaming）功能</strong></p>
+<ul>
+<li><strong>定义</strong>：大多数模型可以在生成输出内容的过程中，逐步将内容以流的形式发送出来，而不是等到整个输出内容完全生成后再一次性返回。这种逐步生成并发送输出内容的方式被称为流式传输。</li>
+<li><strong>优势</strong>：通过流式传输，用户可以实时看到模型生成的输出内容，尤其是在生成较长的响应时，这种实时性可以显著提升用户体验。例如，当模型正在生成一个长篇回答时，用户可以逐步看到回答的内容，而不是等待很长时间后一次性看到完整的回答。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> model.stream(<span class="string">&quot;Why do parrots have colorful feathers?&quot;</span>):</span><br><span class="line">    <span class="built_in">print</span>(chunk.text, end=<span class="string">&quot;|&quot;</span>, flush=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>在这段代码中，model.stream() 方法被用来调用模型，并传入一个查询字符串（如 “Why do parrots have colorful feathers?”）。返回的迭代器 chunk 包含了模型逐步生成的输出内容。通过循环，每次迭代都会获取一个输出片段 chunk.text，并将其打印出来。end=”|” 参数用于在每个输出片段之间添加一个分隔符（如 “|”），以便更清楚地看到输出内容的逐步生成过程。flush=True 参数确保每次打印的内容都能立即显示，而不是等到缓冲区满后再显示。</p>
+<h2 id="3-batch批量消息非流式"><a href="#3-batch批量消息非流式" class="headerlink" title="3.batch批量消息非流式"></a>3.batch批量消息非流式</h2><p>将多个独立的请求批量发送给一个模型，可以显著提升性能并降低成本，因为这些请求的处理可以<strong>并行</strong>进行。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">responses = model.batch([</span><br><span class="line">    <span class="string">&quot;你是谁&quot;</span>,</span><br><span class="line">    <span class="string">&quot;今天是几月几日&quot;</span>,</span><br><span class="line"></span><br><span class="line">])</span><br><span class="line"><span class="keyword">for</span> response <span class="keyword">in</span> responses:</span><br><span class="line">    <span class="built_in">print</span>(response)</span><br></pre></td></tr></table></figure>
+<h2 id="4-batch-as-completed批量消息流式"><a href="#4-batch-as-completed批量消息流式" class="headerlink" title="4.batch_as_completed批量消息流式"></a>4.batch_as_completed批量消息流式</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> response <span class="keyword">in</span> model.batch_as_completed([</span><br><span class="line">    <span class="string">&quot;你是谁&quot;</span>,</span><br><span class="line">    <span class="string">&quot;今天是几月几日&quot;</span>,</span><br><span class="line">]):</span><br><span class="line">    <span class="built_in">print</span>(response)</span><br></pre></td></tr></table></figure>
+<h1 id="模型结果结构化"><a href="#模型结果结构化" class="headerlink" title="模型结果结构化"></a>模型结果结构化</h1><p>我们可以要求模型以符合给定模式的格式提供其响应。这对于确保输出能够轻松解析并在后续处理中使用非常有用。LangChain 支持多种模式类型和强制结构化输出的方法。</p>
+<p>例如，以下是以生产测试用例的大模型调用</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/12 10:23</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">message = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请根据以下需求文档,生成3条正向的测试用例</span></span><br><span class="line"><span class="string">    📌 F1.3 用户信息修改</span></span><br><span class="line"><span class="string">    🧩 功能背景</span></span><br><span class="line"><span class="string">    	用户可修改昵称、密码、头像、性别等基础信息。</span></span><br><span class="line"><span class="string">    🚶 主流程</span></span><br><span class="line"><span class="string">        1. 用户进入“个人中心”</span></span><br><span class="line"><span class="string">        2. 修改某字段并保存</span></span><br><span class="line"><span class="string">        3. 系统校验内容合法性（如昵称长度、头像格式）</span></span><br><span class="line"><span class="string">        4. 修改成功后刷新显示</span></span><br><span class="line"><span class="string">    ⚠ 异常流程</span></span><br><span class="line"><span class="string">        用户未登录：提示登录后操作</span></span><br><span class="line"><span class="string">        输入非法字符：提示不符合规范</span></span><br><span class="line"><span class="string">    📌 业务规则</span></span><br><span class="line"><span class="string">        昵称长度大于3 小于20，支持中英文</span></span><br><span class="line"><span class="string">        性别只能为“男 / 女 / 保密”</span></span><br><span class="line"><span class="string">        头像图片限制大小（2M以内），格式为 png/jpg/jpeg</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">result = model_client.invoke(message)</span><br><span class="line"><span class="built_in">print</span>(result.content)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>输出内容为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">根据您提供的需求文档，以下是3条正向测试用例：</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">### **测试用例1：修改昵称（合法边界值）**</span><br><span class="line">*   **用例ID:** TC_F1.3_001</span><br><span class="line">*   **用例标题:** 成功修改昵称为合法长度（4个字符）</span><br><span class="line">*   **前置条件:**</span><br><span class="line">    1.  用户已登录。</span><br><span class="line">    2.  用户已进入“个人中心”页面。</span><br><span class="line">*   **测试步骤:**</span><br><span class="line">    1.  在昵称输入框中，输入一个长度为4个字符的昵称（例如：“测试昵”）。</span><br><span class="line">    2.  点击“保存”按钮。</span><br><span class="line">*   **预期结果:**</span><br><span class="line">    1.  系统提示“修改成功”。</span><br><span class="line">    2.  页面刷新后，显示的昵称更新为“测试昵”。</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">### **测试用例2：修改性别（选择“女”）**</span><br><span class="line">*   **用例ID:** TC_F1.3_002</span><br><span class="line">*   **用例标题:** 成功将性别修改为“女”</span><br><span class="line">*   **前置条件:**</span><br><span class="line">    1.  用户已登录。</span><br><span class="line">    2.  用户已进入“个人中心”页面。</span><br><span class="line">*   **测试步骤:**</span><br><span class="line">    1.  在性别选择区域，选择“女”。</span><br><span class="line">    2.  点击“保存”按钮。</span><br><span class="line">*   **预期结果:**</span><br><span class="line">    1.  系统提示“修改成功”。</span><br><span class="line">    2.  页面刷新后，显示的性别更新为“女”。</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">### **测试用例3：修改头像（上传合规图片）**</span><br><span class="line">*   **用例ID:** TC_F1.3_003</span><br><span class="line">*   **用例标题:** 成功上传符合格式和大小限制的头像</span><br><span class="line">*   **前置条件:**</span><br><span class="line">    1.  用户已登录。</span><br><span class="line">    2.  用户已进入“个人中心”页面。</span><br><span class="line">*   **测试步骤:**</span><br><span class="line">    1.  点击“更换头像”按钮。</span><br><span class="line">    2.  从本地选择一张格式为JPG、大小为1.5M的图片。</span><br><span class="line">    3.  点击“保存”按钮。</span><br><span class="line">*   **预期结果:**</span><br><span class="line">    1.  系统提示“修改成功”。</span><br><span class="line">    2.  页面刷新后，显示的头像更新为新上传的图片。</span><br></pre></td></tr></table></figure>
+<p>是自然语言输出的，那么我想把以上的内容进行JSON格式的输出，要怎么做呢？</p>
+<h2 id="1-使用-json-Schme-来规范输出格式"><a href="#1-使用-json-Schme-来规范输出格式" class="headerlink" title="1. 使用 json Schme 来规范输出格式"></a>1. 使用 json Schme 来规范输出格式</h2><p>JSON（JavaScript Object Notation）是一种轻量级的数据交换格式，而 JSON Schema 是对 JSON 数据结构进行描述和约束的一种规范，用于定义 JSON 数据的结构、类型、格式等规则，以确保数据的正确性和一致性。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/12 10:23</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">message = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请根据以下需求文档,生成3条正向的测试用例</span></span><br><span class="line"><span class="string">    📌 F1.3 用户信息修改</span></span><br><span class="line"><span class="string">    🧩 功能背景</span></span><br><span class="line"><span class="string">    	用户可修改昵称、密码、头像、性别等基础信息。</span></span><br><span class="line"><span class="string">    🚶 主流程</span></span><br><span class="line"><span class="string">        1. 用户进入“个人中心”</span></span><br><span class="line"><span class="string">        2. 修改某字段并保存</span></span><br><span class="line"><span class="string">        3. 系统校验内容合法性（如昵称长度、头像格式）</span></span><br><span class="line"><span class="string">        4. 修改成功后刷新显示</span></span><br><span class="line"><span class="string">    ⚠ 异常流程</span></span><br><span class="line"><span class="string">        用户未登录：提示登录后操作</span></span><br><span class="line"><span class="string">        输入非法字符：提示不符合规范</span></span><br><span class="line"><span class="string">    📌 业务规则</span></span><br><span class="line"><span class="string">        昵称长度大于3 小于20，支持中英文</span></span><br><span class="line"><span class="string">        性别只能为“男 / 女 / 保密”</span></span><br><span class="line"><span class="string">        头像图片限制大小（2M以内），格式为 png/jpg/jpeg</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义 JSON Schema 来规范输出格式</span></span><br><span class="line">json_schema = &#123;</span><br><span class="line">    <span class="string">&quot;title&quot;</span>: <span class="string">&quot;TestCase&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;测试用例&quot;</span>,</span><br><span class="line">    <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">    <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;id&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用例编号&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;name&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;测试用例名称&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;steps&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;array&quot;</span>,</span><br><span class="line">            <span class="string">&quot;items&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span></span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;测试步骤列表&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;expected&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;array&quot;</span>,</span><br><span class="line">            <span class="string">&quot;items&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span></span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;预期结果断言列表&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;id&quot;</span>, <span class="string">&quot;name&quot;</span>, <span class="string">&quot;steps&quot;</span>, <span class="string">&quot;expected&quot;</span>]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置模型使用 JSON Schema 结构化输出</span></span><br><span class="line">model_with_structure = model_client.with_structured_output(</span><br><span class="line">    json_schema,</span><br><span class="line">    method=<span class="string">&quot;json_schema&quot;</span>,</span><br><span class="line">)</span><br><span class="line">result = model_with_structure.invoke(message)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;类型:&quot;</span>, <span class="built_in">type</span>(result))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;************************************结果****************************&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>输出内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">类型: &lt;class &#x27;dict&#x27;&gt;</span><br><span class="line">************************************结果****************************</span><br><span class="line">&#123;&#x27;id&#x27;: &#x27;TC-F1.3-001&#x27;, &#x27;name&#x27;: &#x27;修改用户昵称-正向测试&#x27;, &#x27;steps&#x27;: [&#x27;1. 用户登录系统&#x27;, &#x27;2. 进入个人中心页面&#x27;, &#x27;3. 点击昵称修改按钮&#x27;, &quot;4. 输入新的昵称&#x27;张三测试&#x27;（长度4-20字符）&quot;, &#x27;5. 点击保存按钮&#x27;], &#x27;expected&#x27;: [&#x27;1. 系统校验昵称长度符合要求（大于3小于20）&#x27;, &#x27;2. 系统校验昵称支持中英文&#x27;, &quot;3. 修改成功后页面刷新显示新昵称&#x27;张三测试&#x27;&quot;, &#x27;4. 系统提示修改成功&#x27;]&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>输出的是一个字典，这时可以根据字典进行数据转换等操作。</p>
+<h2 id="2-使用pydantic（推荐方式）"><a href="#2-使用pydantic（推荐方式）" class="headerlink" title="2. 使用pydantic（推荐方式）"></a>2. 使用pydantic（推荐方式）</h2><p>Pydantic 模型具有非常强大的功能。具体来说：</p>
+<ol>
+<li>字段验证：它能够对数据的各个字段进行验证，确保数据的准确性和完整性，比如检查数据类型是否正确、格式是否符合要求等。</li>
+<li>描述：可以为模型中的字段添加描述信息，这有助于更好地理解和使用模型，方便开发人员了解每个字段的含义和用途。</li>
+<li>嵌套结构：支持构建嵌套的数据结构，即一个模型中可以包含其他模型作为其字段，这样可以更灵活地组织和表示复杂的数据关系。</li>
+</ol>
+<p>Pydantic模型能提供自动验证功能，而TypedDict和JSON Schema则需要手动进行验证。</p>
+<h3 id="基础使用"><a href="#基础使用" class="headerlink" title="基础使用"></a>基础使用</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/12 10:23</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">message = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请根据以下需求文档,生成3条正向的测试用例</span></span><br><span class="line"><span class="string">    📌 F1.3 用户信息修改</span></span><br><span class="line"><span class="string">    🧩 功能背景</span></span><br><span class="line"><span class="string">    	用户可修改昵称、密码、头像、性别等基础信息。</span></span><br><span class="line"><span class="string">    🚶 主流程</span></span><br><span class="line"><span class="string">        1. 用户进入“个人中心”</span></span><br><span class="line"><span class="string">        2. 修改某字段并保存</span></span><br><span class="line"><span class="string">        3. 系统校验内容合法性（如昵称长度、头像格式）</span></span><br><span class="line"><span class="string">        4. 修改成功后刷新显示</span></span><br><span class="line"><span class="string">    ⚠ 异常流程</span></span><br><span class="line"><span class="string">        用户未登录：提示登录后操作</span></span><br><span class="line"><span class="string">        输入非法字符：提示不符合规范</span></span><br><span class="line"><span class="string">    📌 业务规则</span></span><br><span class="line"><span class="string">        昵称长度大于3 小于20，支持中英文</span></span><br><span class="line"><span class="string">        性别只能为“男 / 女 / 保密”</span></span><br><span class="line"><span class="string">        头像图片限制大小（2M以内），格式为 png/jpg/jpeg</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"><span class="comment"># 导入Pydantic库，用于数据验证和设置管理</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义Movie数据模型类，继承自BaseModel</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CaseItem</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="built_in">id</span>: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;用例编号&quot;</span>)</span><br><span class="line">    name: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;测试用例名称&quot;</span>)</span><br><span class="line">    steps: <span class="type">List</span>[<span class="built_in">str</span>] = Field(..., description=<span class="string">&quot;测试步骤列表&quot;</span>)</span><br><span class="line">    expected: <span class="type">List</span>[<span class="built_in">str</span>] = Field(..., description=<span class="string">&quot;预期结果断言列表&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 告诉语言模型要按照CaseItem类的结构来格式化输出</span></span><br><span class="line">model_with_structure = model_client.with_structured_output(CaseItem)</span><br><span class="line"></span><br><span class="line">result = model_with_structure.invoke(message)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(result))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;************************************结果****************************&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result.model_dump())</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>输出结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &#x27;__main__.CaseItem&#x27;&gt;</span><br><span class="line">************************************结果****************************</span><br><span class="line">&#123;&#x27;id&#x27;: &#x27;F1.3-TC-001&#x27;, &#x27;name&#x27;: &#x27;用户修改昵称-正向测试&#x27;, &#x27;steps&#x27;: [&#x27;1. 用户已登录并进入个人中心页面&#x27;, &#x27;2. 点击昵称编辑按钮&#x27;, &quot;3. 输入合法的昵称&#x27;张三用户&#x27;（长度4-20个字符）&quot;, &#x27;4. 点击保存按钮&#x27;], &#x27;expected&#x27;: [&#x27;1. 系统校验昵称长度符合要求（大于3小于20）&#x27;, &#x27;2. 系统校验昵称内容支持中英文&#x27;, &quot;3. 修改成功后页面刷新显示新的昵称&#x27;张三用户&#x27;&quot;, &#x27;4. 页面显示修改成功提示&#x27;]&#125;</span><br></pre></td></tr></table></figure>
+<p>输出的是一个CaseItem对象，对于厚度数据的内容就更好的处理</p>
+<h3 id="嵌套输出"><a href="#嵌套输出" class="headerlink" title="嵌套输出"></a>嵌套输出</h3><p>如果生成多条数据或者数据中有字段嵌套，可以使用 pydantic 模型类定义字段时指定字段嵌套来实现</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/12 10:23</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">message = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请根据以下需求文档,生成3条正向的测试用例</span></span><br><span class="line"><span class="string">    📌 F1.3 用户信息修改</span></span><br><span class="line"><span class="string">    🧩 功能背景</span></span><br><span class="line"><span class="string">    	用户可修改昵称、密码、头像、性别等基础信息。</span></span><br><span class="line"><span class="string">    🚶 主流程</span></span><br><span class="line"><span class="string">        1. 用户进入“个人中心”</span></span><br><span class="line"><span class="string">        2. 修改某字段并保存</span></span><br><span class="line"><span class="string">        3. 系统校验内容合法性（如昵称长度、头像格式）</span></span><br><span class="line"><span class="string">        4. 修改成功后刷新显示</span></span><br><span class="line"><span class="string">    ⚠ 异常流程</span></span><br><span class="line"><span class="string">        用户未登录：提示登录后操作</span></span><br><span class="line"><span class="string">        输入非法字符：提示不符合规范</span></span><br><span class="line"><span class="string">    📌 业务规则</span></span><br><span class="line"><span class="string">        昵称长度大于3 小于20，支持中英文</span></span><br><span class="line"><span class="string">        性别只能为“男 / 女 / 保密”</span></span><br><span class="line"><span class="string">        头像图片限制大小（2M以内），格式为 png/jpg/jpeg</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"><span class="comment"># 导入Pydantic库，用于数据验证和设置管理</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义Movie数据模型类，继承自BaseModel</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CaseItem</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="built_in">id</span>: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;用例编号&quot;</span>)</span><br><span class="line">    name: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;测试用例名称&quot;</span>)</span><br><span class="line">    steps: <span class="type">List</span>[<span class="built_in">str</span>] = Field(..., description=<span class="string">&quot;测试步骤列表&quot;</span>)</span><br><span class="line">    expected: <span class="type">List</span>[<span class="built_in">str</span>] = Field(..., description=<span class="string">&quot;预期结果断言列表&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CaseList</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    cases: <span class="type">List</span>[CaseItem]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 告诉语言模型要按照CaseItem类的结构来格式化输出</span></span><br><span class="line">model_with_structure = model_client.with_structured_output(CaseList)</span><br><span class="line"></span><br><span class="line">result = model_with_structure.invoke(message)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(result))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;************************************结果****************************&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result.model_dump())</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>输出结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &#x27;__main__.CaseList&#x27;&gt;</span><br><span class="line">************************************结果****************************</span><br><span class="line">&#123;&#x27;cases&#x27;: [&#123;&#x27;id&#x27;: &#x27;TC-F1.3-001&#x27;, &#x27;name&#x27;: &#x27;修改昵称-正向测试&#x27;, &#x27;steps&#x27;: [&#x27;用户登录系统&#x27;, &#x27;进入个人中心页面&#x27;, &#x27;点击昵称编辑按钮&#x27;, &#x27;输入符合规范的昵称（如：张三）&#x27;, &#x27;点击保存按钮&#x27;], &#x27;expected&#x27;: [&#x27;系统校验昵称长度符合要求（3-20字符）&#x27;, &#x27;系统提示修改成功&#x27;, &#x27;个人中心页面刷新显示新的昵称&#x27;]&#125;, &#123;&#x27;id&#x27;: &#x27;TC-F1.3-002&#x27;, &#x27;name&#x27;: &#x27;修改性别-正向测试&#x27;, &#x27;steps&#x27;: [&#x27;用户登录系统&#x27;, &#x27;进入个人中心页面&#x27;, &#x27;点击性别编辑按钮&#x27;, &quot;选择性别为&#x27;男&#x27;&quot;, &#x27;点击保存按钮&#x27;], &#x27;expected&#x27;: [&#x27;系统校验性别选项合法（男/女/保密）&#x27;, &#x27;系统提示修改成功&#x27;, &#x27;个人中心页面刷新显示新的性别信息&#x27;]&#125;, &#123;&#x27;id&#x27;: &#x27;TC-F1.3-003&#x27;, &#x27;name&#x27;: &#x27;修改头像-正向测试&#x27;, &#x27;steps&#x27;: [&#x27;用户登录系统&#x27;, &#x27;进入个人中心页面&#x27;, &#x27;点击头像编辑按钮&#x27;, &#x27;选择符合规范的图片文件（如：1.5M的jpg格式图片）&#x27;, &#x27;点击保存按钮&#x27;], &#x27;expected&#x27;: [&#x27;系统校验图片格式符合要求（png/jpg/jpeg）&#x27;, &#x27;系统校验图片大小符合要求（2M以内）&#x27;, &#x27;系统提示修改成功&#x27;, &#x27;个人中心页面刷新显示新的头像&#x27;]&#125;]&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-使用-TypedDict-来控制输出结果"><a href="#3-使用-TypedDict-来控制输出结果" class="headerlink" title="3. 使用 TypedDict 来控制输出结果"></a>3. 使用 TypedDict 来控制输出结果</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/12 10:23</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">message = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请根据以下需求文档,生成3条正向的测试用例</span></span><br><span class="line"><span class="string">    📌 F1.3 用户信息修改</span></span><br><span class="line"><span class="string">    🧩 功能背景</span></span><br><span class="line"><span class="string">    	用户可修改昵称、密码、头像、性别等基础信息。</span></span><br><span class="line"><span class="string">    🚶 主流程</span></span><br><span class="line"><span class="string">        1. 用户进入“个人中心”</span></span><br><span class="line"><span class="string">        2. 修改某字段并保存</span></span><br><span class="line"><span class="string">        3. 系统校验内容合法性（如昵称长度、头像格式）</span></span><br><span class="line"><span class="string">        4. 修改成功后刷新显示</span></span><br><span class="line"><span class="string">    ⚠ 异常流程</span></span><br><span class="line"><span class="string">        用户未登录：提示登录后操作</span></span><br><span class="line"><span class="string">        输入非法字符：提示不符合规范</span></span><br><span class="line"><span class="string">    📌 业务规则</span></span><br><span class="line"><span class="string">        昵称长度大于3 小于20，支持中英文</span></span><br><span class="line"><span class="string">        性别只能为“男 / 女 / 保密”</span></span><br><span class="line"><span class="string">        头像图片限制大小（2M以内），格式为 png/jpg/jpeg</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span>, TypedDict</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义Movie数据模型类，继承自BaseModel</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CaseItem</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="built_in">id</span>: <span class="built_in">str</span></span><br><span class="line">    name: <span class="built_in">str</span></span><br><span class="line">    setup: <span class="built_in">str</span></span><br><span class="line">    expected: <span class="type">List</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CaseList</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    cases: <span class="type">List</span>[CaseItem]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 告诉语言模型要按照CaseItem类的结构来格式化输出</span></span><br><span class="line">model_with_structure = model_client.with_structured_output(CaseList)</span><br><span class="line"></span><br><span class="line">result = model_with_structure.invoke(message)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(result))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;************************************结果****************************&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+<p>输出结果为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &#x27;dict&#x27;&gt;</span><br><span class="line">************************************结果****************************</span><br><span class="line">&#123;&#x27;cases&#x27;: [&#123;&#x27;id&#x27;: &#x27;F1.3_TC001&#x27;, &#x27;name&#x27;: &#x27;修改昵称-合法长度中英文混合&#x27;, &#x27;setup&#x27;: &#x27;1. 用户已登录\n2. 进入个人中心\n3. 修改昵称字段为&quot;张三Zhang123&quot;（长度12，包含中英文和数字）\n4. 点击保存按钮&#x27;, &#x27;expected&#x27;: [&#x27;系统校验通过&#x27;, &#x27;修改成功提示&#x27;, &#x27;页面刷新显示新昵称&quot;张三Zhang123&quot;&#x27;]&#125;, &#123;&#x27;id&#x27;: &#x27;F1.3_TC002&#x27;, &#x27;name&#x27;: &#x27;修改性别-选择合法选项&#x27;, &#x27;setup&#x27;: &#x27;1. 用户已登录\n2. 进入个人中心\n3. 修改性别字段为&quot;男&quot;\n4. 点击保存按钮&#x27;, &#x27;expected&#x27;: [&#x27;系统校验通过&#x27;, &#x27;修改成功提示&#x27;, &#x27;页面刷新显示性别为&quot;男&quot;&#x27;]&#125;, &#123;&#x27;id&#x27;: &#x27;F1.3_TC003&#x27;, &#x27;name&#x27;: &#x27;修改头像-合法格式和大小&#x27;, &#x27;setup&#x27;: &#x27;1. 用户已登录\n2. 进入个人中心\n3. 上传头像图片（格式为jpg，大小1.5M）\n4. 点击保存按钮&#x27;, &#x27;expected&#x27;: [&#x27;系统校验通过（格式和大小符合要求）&#x27;, &#x27;修改成功提示&#x27;, &#x27;页面刷新显示新头像&#x27;]&#125;]&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>注意事项：</strong></p>
+<ul>
+<li>TypedDict 只提供类型提示，没有数据验证功能</li>
+<li>TypedDict性能更好，但功能比 Pydantic 简单</li>
+<li>适合不需要复杂验证的场景</li>
+</ul>
+<h2 id="补充：参数include-raw-True"><a href="#补充：参数include-raw-True" class="headerlink" title="补充：参数include_raw=True"></a>补充：参数include_raw=True</h2><p>加上参数<code>include_raw=True</code>，大模型在输出结果时，不仅会返回格式化之后的结果，也会返回大模型输出的原始结果和元数据。以上的示例增加这个参数，查看下输出的内容。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 告诉语言模型要按照CaseItem类的结构来格式化输出</span></span><br><span class="line">model_with_structure = model_client.with_structured_output(CaseList, include_raw=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">result = model_with_structure.invoke(message)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(result))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;************************************结果****************************&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+<p>输出结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;class &#x27;dict&#x27;&gt;</span><br><span class="line">************************************结果****************************</span><br><span class="line">&#123;&#x27;raw&#x27;: AIMessage(content=&#x27;&#x27;, additional_kwargs=&#123;&#x27;refusal&#x27;: None&#125;, response_metadata=&#123;&#x27;token_usage&#x27;: &#123;&#x27;completion_tokens&#x27;: 323, &#x27;prompt_tokens&#x27;: 763, &#x27;total_tokens&#x27;: 1086, &#x27;completion_tokens_details&#x27;: None, &#x27;prompt_tokens_details&#x27;: &#123;&#x27;audio_tokens&#x27;: None, &#x27;cached_tokens&#x27;: 704&#125;, &#x27;prompt_cache_hit_tokens&#x27;: 704, &#x27;prompt_cache_miss_tokens&#x27;: 59&#125;, &#x27;model_provider&#x27;: &#x27;deepseek&#x27;, &#x27;model_name&#x27;: &#x27;deepseek-chat&#x27;, &#x27;system_fingerprint&#x27;: &#x27;fp_eaab8d114b_prod0820_fp8_kvcache&#x27;, &#x27;id&#x27;: &#x27;cfef118d-b435-424f-af7d-8257afe8d218&#x27;, &#x27;finish_reason&#x27;: &#x27;tool_calls&#x27;, &#x27;logprobs&#x27;: None&#125;, id=&#x27;lc_run--1ed5c2ac-7750-48f5-9ef8-be913f542194-0&#x27;, tool_calls=[&#123;&#x27;name&#x27;: &#x27;CaseList&#x27;, &#x27;args&#x27;: &#123;&#x27;cases&#x27;: [&#123;&#x27;id&#x27;: &#x27;TC_F1.3_001&#x27;, &#x27;name&#x27;: &#x27;修改昵称-正常场景&#x27;, &#x27;setup&#x27;: &#x27;1. 用户已登录系统\n2. 进入个人中心页面\n3. 准备修改昵称为符合规范的名称&#x27;, &#x27;expected&#x27;: [&#x27;1. 成功修改昵称为新值&#x27;, &#x27;2. 页面刷新显示更新后的昵称&#x27;, &#x27;3. 无错误提示信息&#x27;]&#125;, &#123;&#x27;id&#x27;: &#x27;TC_F1.3_002&#x27;, &#x27;name&#x27;: &#x27;修改性别-正常场景&#x27;, &#x27;setup&#x27;: &quot;1. 用户已登录系统\n2. 进入个人中心页面\n3. 准备修改性别为&#x27;男&#x27;、&#x27;女&#x27;或&#x27;保密&#x27;中的任一值&quot;, &#x27;expected&#x27;: [&#x27;1. 成功修改性别为新值&#x27;, &#x27;2. 页面刷新显示更新后的性别&#x27;, &#x27;3. 无错误提示信息&#x27;]&#125;, &#123;&#x27;id&#x27;: &#x27;TC_F1.3_003&#x27;, &#x27;name&#x27;: &#x27;修改头像-正常场景&#x27;, &#x27;setup&#x27;: &#x27;1. 用户已登录系统\n2. 进入个人中心页面\n3. 准备上传符合规范的图片文件（大小2M以内，格式为png/jpg/jpeg）&#x27;, &#x27;expected&#x27;: [&#x27;1. 成功上传并更新头像&#x27;, &#x27;2. 页面刷新显示新的头像&#x27;, &#x27;3. 无错误提示信息&#x27;]&#125;]&#125;, &#x27;id&#x27;: &#x27;call_00_2907Uso2ye8qxnYrWaRQkADk&#x27;, &#x27;type&#x27;: &#x27;tool_call&#x27;&#125;], usage_metadata=&#123;&#x27;input_tokens&#x27;: 763, &#x27;output_tokens&#x27;: 323, &#x27;total_tokens&#x27;: 1086, &#x27;input_token_details&#x27;: &#123;&#x27;cache_read&#x27;: 704&#125;, &#x27;output_token_details&#x27;: &#123;&#125;&#125;), &#x27;parsed&#x27;: &#123;&#x27;cases&#x27;: [&#123;&#x27;id&#x27;: &#x27;TC_F1.3_001&#x27;, &#x27;name&#x27;: &#x27;修改昵称-正常场景&#x27;, &#x27;setup&#x27;: &#x27;1. 用户已登录系统\n2. 进入个人中心页面\n3. 准备修改昵称为符合规范的名称&#x27;, &#x27;expected&#x27;: [&#x27;1. 成功修改昵称为新值&#x27;, &#x27;2. 页面刷新显示更新后的昵称&#x27;, &#x27;3. 无错误提示信息&#x27;]&#125;, &#123;&#x27;id&#x27;: &#x27;TC_F1.3_002&#x27;, &#x27;name&#x27;: &#x27;修改性别-正常场景&#x27;, &#x27;setup&#x27;: &quot;1. 用户已登录系统\n2. 进入个人中心页面\n3. 准备修改性别为&#x27;男&#x27;、&#x27;女&#x27;或&#x27;保密&#x27;中的任一值&quot;, &#x27;expected&#x27;: [&#x27;1. 成功修改性别为新值&#x27;, &#x27;2. 页面刷新显示更新后的性别&#x27;, &#x27;3. 无错误提示信息&#x27;]&#125;, &#123;&#x27;id&#x27;: &#x27;TC_F1.3_003&#x27;, &#x27;name&#x27;: &#x27;修改头像-正常场景&#x27;, &#x27;setup&#x27;: &#x27;1. 用户已登录系统\n2. 进入个人中心页面\n3. 准备上传符合规范的图片文件（大小2M以内，格式为png/jpg/jpeg）&#x27;, &#x27;expected&#x27;: [&#x27;1. 成功上传并更新头像&#x27;, &#x27;2. 页面刷新显示新的头像&#x27;, &#x27;3. 无错误提示信息&#x27;]&#125;]&#125;, &#x27;parsing_error&#x27;: None&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="Agent接入模型调用"><a href="#Agent接入模型调用" class="headerlink" title="Agent接入模型调用"></a>Agent接入模型调用</h1><h2 id="静态模型"><a href="#静态模型" class="headerlink" title="静态模型"></a>静态模型</h2><p>静态模型在创建智能体时配置一次，并在整个执行过程中保持不变。这是最常见和直接的方法。要从模型标识符字符串初始化静态模型：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">model = ChatOpenAI(</span><br><span class="line">    model=<span class="string">&quot;gpt-5&quot;</span>,</span><br><span class="line">    temperature=<span class="number">0.1</span>,</span><br><span class="line">    max_tokens=<span class="number">1000</span>,</span><br><span class="line">    timeout=<span class="number">30</span></span><br><span class="line">    <span class="comment"># ... (other params)</span></span><br><span class="line">)</span><br><span class="line">agent = create_agent(model, tools=tools)</span><br></pre></td></tr></table></figure>
+<p>模型实例让您可以完全控制配置。当您需要设置特定的<a target="_blank" rel="noopener" href="https://docs.langchain.org.cn/oss/python/langchain/models#parameters">参数</a>时使用它们，例如 <strong>temperature</strong>、<strong>max_tokens</strong>、<strong>timeouts</strong>、<strong>base_url</strong> 和其他特定于提供者的设置。</p>
+<h2 id="动态模型"><a href="#动态模型" class="headerlink" title="动态模型"></a>动态模型</h2><p>动态模型在运行时根据当前状态和上下文选择。这支持复杂的路由逻辑和成本优化。要使用动态模型，请使用<code>@wrap_model_call</code> 装饰器创建中间件，该中间件会修改请求中的模型：</p>
+<p><strong>使用动态模型的优点：</strong></p>
+<ul>
+<li>轻松集成新模态（图片、音频、视频），多模态的支持更方便</li>
+<li>简单对话使用成本较低的模型、复杂任务才启用高性能模型、降低成本</li>
+<li>模块化扩展</li>
+</ul>
+<p>这次更新后，增加了中间间的内容，使得大模型在执行过程中，可更好的控制执行中的行为，动态模型就是其中一种方式，官方网站的说明：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langchain/middleware/custom#dynamic-model-selection">https://docs.langchain.com/oss/python/langchain/middleware/custom#dynamic-model-selection</a></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> wrap_model_call, ModelRequest, ModelResponse</span><br><span class="line"></span><br><span class="line"><span class="comment"># 自动加载 .env 文件</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 基础对话模型</span></span><br><span class="line">basic_model = ChatOpenAI(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;llm_model&quot;</span>),</span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;base_url&quot;</span>),</span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;api_key&quot;</span>),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 图片理解模型</span></span><br><span class="line">image_model = ChatOpenAI(</span><br><span class="line">    model=os.getenv(<span class="string">&quot;image_model&quot;</span>),</span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;base_url&quot;</span>),</span><br><span class="line">    api_key=os.getenv(<span class="string">&quot;api_key&quot;</span>),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">dynamic_model_selection</span>(<span class="params">request: ModelRequest, handler</span>) -&gt; ModelResponse:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;基于对话复杂度选择模型&quot;&quot;&quot;</span></span><br><span class="line">    message_count = <span class="built_in">len</span>(request.state[<span class="string">&quot;messages&quot;</span>])</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 根据消息数量选择模型</span></span><br><span class="line">    <span class="keyword">if</span> message_count &gt; <span class="number">10</span>:</span><br><span class="line">        selected_model = image_model</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        selected_model = basic_model</span><br><span class="line">        </span><br><span class="line">    request.model = selected_model</span><br><span class="line">    <span class="keyword">return</span> handler(request)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建带中间件的agent</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=basic_model,  <span class="comment"># 默认模型</span></span><br><span class="line">    tools=tools,</span><br><span class="line">    <span class="comment"># 配置中间件</span></span><br><span class="line">    middleware=[dynamic_model_selection]</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/04/ai/langchain/deepagent/2-core-concepts/" rel="prev" title="核心概念">
+      <i class="fa fa-chevron-left"></i> 核心概念
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/12/12/ai/langchain/3-langchain-Tools/" rel="next" title="LangChain核心组件Tools(工具)">
+      LangChain核心组件Tools(工具) <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">1.</span> <span class="nav-text">模型初始化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B4%E6%8E%A5%E5%88%9B%E5%BB%BA%E6%A8%A1%E5%9E%8B%E5%AF%B9%E8%B1%A1"><span class="nav-number">1.1.</span> <span class="nav-text">直接创建模型对象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8init-chat-model"><span class="nav-number">1.2.</span> <span class="nav-text">使用init_chat_model</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E8%B0%83%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">模型调用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Invoke%E9%9D%9E%E6%B5%81%E5%BC%8F"><span class="nav-number">2.1.</span> <span class="nav-text">1.Invoke非流式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-stream%E6%B5%81%E5%BC%8F"><span class="nav-number">2.2.</span> <span class="nav-text">2. stream流式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-batch%E6%89%B9%E9%87%8F%E6%B6%88%E6%81%AF%E9%9D%9E%E6%B5%81%E5%BC%8F"><span class="nav-number">2.3.</span> <span class="nav-text">3.batch批量消息非流式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-batch-as-completed%E6%89%B9%E9%87%8F%E6%B6%88%E6%81%AF%E6%B5%81%E5%BC%8F"><span class="nav-number">2.4.</span> <span class="nav-text">4.batch_as_completed批量消息流式</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%9C%E7%BB%93%E6%9E%84%E5%8C%96"><span class="nav-number">3.</span> <span class="nav-text">模型结果结构化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BD%BF%E7%94%A8-json-Schme-%E6%9D%A5%E8%A7%84%E8%8C%83%E8%BE%93%E5%87%BA%E6%A0%BC%E5%BC%8F"><span class="nav-number">3.1.</span> <span class="nav-text">1. 使用 json Schme 来规范输出格式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%BD%BF%E7%94%A8pydantic%EF%BC%88%E6%8E%A8%E8%8D%90%E6%96%B9%E5%BC%8F%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">2. 使用pydantic（推荐方式）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E4%BD%BF%E7%94%A8"><span class="nav-number">3.2.1.</span> <span class="nav-text">基础使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B5%8C%E5%A5%97%E8%BE%93%E5%87%BA"><span class="nav-number">3.2.2.</span> <span class="nav-text">嵌套输出</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E4%BD%BF%E7%94%A8-TypedDict-%E6%9D%A5%E6%8E%A7%E5%88%B6%E8%BE%93%E5%87%BA%E7%BB%93%E6%9E%9C"><span class="nav-number">3.3.</span> <span class="nav-text">3. 使用 TypedDict 来控制输出结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%A5%E5%85%85%EF%BC%9A%E5%8F%82%E6%95%B0include-raw-True"><span class="nav-number">3.4.</span> <span class="nav-text">补充：参数include_raw&#x3D;True</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Agent%E6%8E%A5%E5%85%A5%E6%A8%A1%E5%9E%8B%E8%B0%83%E7%94%A8"><span class="nav-number">4.</span> <span class="nav-text">Agent接入模型调用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.1.</span> <span class="nav-text">静态模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.2.</span> <span class="nav-text">动态模型</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

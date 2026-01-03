@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第六讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain内置中间件案例">
+<meta property="og:url" content="https://jinglv.github.io/2025/12/31/ai/langchain/7-langchain-Built-in-Middleware/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第六讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-30T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-31T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/12/31/ai/langchain/7-langchain-Built-in-Middleware/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain内置中间件案例 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/12/31/ai/langchain/7-langchain-Built-in-Middleware/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain内置中间件案例
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-12-31 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2025-12-31T00:00:00+08:00">2025-12-31</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第六讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>LangChain提供了一些内置的中间件提供使用，避免重复造轮子，主要介绍官方提供中间件的介绍与使用。提供的中间件以功能进行区分，有以下几类</p>
+<p>官方地址：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langchain/middleware/built-in">https://docs.langchain.com/oss/python/langchain/middleware/built-in</a></p>
+<h1 id="对话管理与优化"><a href="#对话管理与优化" class="headerlink" title="对话管理与优化"></a>对话管理与优化</h1><h2 id="Summarization（对话总结）"><a href="#Summarization（对话总结）" class="headerlink" title="Summarization（对话总结）"></a>Summarization（对话总结）</h2><p>当对话内容接近令牌（token）限制时，会自动对之前的对话历史进行总结，以便在有限的令牌范围内继续进行有效沟通。</p>
+<h3 id="功能"><a href="#功能" class="headerlink" title="功能"></a>功能</h3><ul>
+<li><strong>自动总结对话历史</strong>：当对话接近令牌限制时，会自动对之前的对话内容进行总结。这里的“令牌限制”通常是指在某些语言模型中，输入和输出的文本长度是有限制的，以“令牌”（token）来衡量，当对话内容接近这个限制时，就需要对之前的对话进行压缩和总结，以便为后续的对话内容腾出空间。</li>
+<li><strong>保留近期消息并压缩旧的上下文</strong>：在进行总结时，会优先保留最近的几条消息，因为这些消息通常包含了对话的最新进展和关键信息，而对较早的对话内容进行压缩，提取其中的核心要点，从而在不丢失重要信息的前提下，减少对话历史所占用的令牌数量。</li>
+</ul>
+<h3 id="用途"><a href="#用途" class="headerlink" title="用途"></a>用途</h3><ul>
+<li><strong>长时间的对话</strong>：对于持续时间较长的对话，很容易就会超出语言模型的上下文窗口限制。通过自动总结功能，可以将之前的对话内容进行精简，使得对话能够继续进行，而不会因为超出上下文窗口而丢失之前的对话信息或者导致语言模型无法正常理解和生成后续的对话内容。</li>
+<li><strong>多轮对话且历史记录丰富</strong>：在一些复杂的多轮对话场景中，对话双方可能会进行很多轮的交流，积累了大量的对话历史。这种情况下，自动总结功能可以帮助语言模型更好地管理和利用这些丰富的历史记录，避免因为历史记录过多而导致模型处理困难或者生成质量下降。</li>
+<li><strong>需要完整保留对话上下文的应用</strong>：在某些应用场景中，对话的完整上下文是非常重要的，比如一些需要根据之前的对话内容来进行推理、决策或者生成连贯的长文本的任务。自动总结功能可以在不丢失关键信息的前提下，对对话历史进行优化处理，从而满足这些应用对完整对话上下文的需求。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> SummarizationMiddleware</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[weather_tool, calculator_tool],</span><br><span class="line">    middleware=[</span><br><span class="line">        SummarizationMiddleware(</span><br><span class="line">            model=<span class="string">&quot;gpt-4o-mini&quot;</span>,</span><br><span class="line">            max_tokens_before_summary=<span class="number">4000</span>,  <span class="comment"># Trigger summarization at 4000 tokens</span></span><br><span class="line">            messages_to_keep=<span class="number">20</span>,  <span class="comment"># Keep last 20 messages after summary</span></span><br><span class="line">            summary_prompt=<span class="string">&quot;Custom prompt for summarization...&quot;</span>,  <span class="comment"># Optional</span></span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>参数说明</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>是否必填</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>model</strong></td>
+<td>字符串</td>
+<td>无</td>
+<td>必填</td>
+<td>用于执行摘要的模型。通常选择比主模型更便宜的模型，如 <code>gpt-4o-mini</code></td>
+</tr>
+<tr>
+<td><strong>max_tokens_before_summary</strong></td>
+<td>数字</td>
+<td>无</td>
+<td>可选</td>
+<td>当累计上下文超过该令牌数时触发摘要</td>
+</tr>
+<tr>
+<td><strong>messages_to_keep</strong></td>
+<td>数字</td>
+<td><code>&quot;20&quot;</code></td>
+<td>可选</td>
+<td>摘要后保留的最近消息数量</td>
+</tr>
+<tr>
+<td><strong>token_counter</strong></td>
+<td>函数</td>
+<td>默认基于字符</td>
+<td>可选</td>
+<td>自定义令牌计数函数，用于替换系统默认的（简单字符长度统计）</td>
+</tr>
+<tr>
+<td><strong>summary_prompt</strong></td>
+<td>字符串</td>
+<td>无</td>
+<td>可选</td>
+<td>自定义摘要提示词，不填则使用 LangChain 内置的摘要提示模板</td>
+</tr>
+<tr>
+<td><strong>summary_prefix</strong></td>
+<td>字符串</td>
+<td><code>&quot;## Previous conversation summary:&quot;</code></td>
+<td>可选</td>
+<td>摘要消息放入历史前时的前缀内容</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="Context-editing（上下文编辑）"><a href="#Context-editing（上下文编辑）" class="headerlink" title="Context editing（上下文编辑）"></a>Context editing（上下文编辑）</h2><p>通过修剪或清除工具的使用情况来管理对话上下文，确保对话的连贯性和有效性。</p>
+<h3 id="功能-1"><a href="#功能-1" class="headerlink" title="功能"></a>功能</h3><ul>
+<li><strong>管理对话上下文</strong>：通过清除较旧的工具调用输出来管理对话上下文，同时保留最近的结果。</li>
+<li><strong>触发条件</strong>：当达到令牌限制时，会触发上下文编辑操作。</li>
+<li><strong>保持最新结果</strong>：在进行上下文编辑时，会保留最近的N个工具调用结果，确保这些最近的结果不会被清除。</li>
+</ul>
+<h3 id="用途-1"><a href="#用途-1" class="headerlink" title="用途"></a>用途</h3><ul>
+<li><strong>长对话中的工具调用过多</strong>：在长对话中，如果进行了大量的工具调用，可能会导致上下文窗口超出令牌限制。上下文编辑可以帮助管理这种情况，避免上下文窗口过大。</li>
+<li><strong>降低令牌成本</strong>：通过移除不再相关的较旧工具输出，可以减少令牌的使用量，从而降低成本。</li>
+<li><strong>保持上下文中的最新工具结果</strong>：确保上下文中只保留最近的N个工具调用结果，这样可以保持上下文的简洁性和相关性，便于模型更好地理解和处理当前的对话内容。</li>
+</ul>
+<p>总的来说，上下文编辑是一种用于优化对话上下文管理的机制，它通过在达到令牌限制时清除较旧的工具调用输出，同时保留最近的结果，从而帮助保持上下文窗口的可管理性，降低令牌成本，并确保上下文中的工具结果保持最新。</p>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> ContextEditingMiddleware, ClearToolUsesEdit</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[...],</span><br><span class="line">    middleware=[</span><br><span class="line">        ContextEditingMiddleware(</span><br><span class="line">            edits=[</span><br><span class="line">                ClearToolUsesEdit(max_tokens=<span class="number">1000</span>),  <span class="comment"># Clear old tool uses</span></span><br><span class="line">            ],</span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<p><strong>ContextEditingMiddleware</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>edits</strong></td>
+<td>list[ContextEdit]</td>
+<td><code>[ClearToolUsesEdit()]</code></td>
+<td>上下文编辑策略列表</td>
+</tr>
+<tr>
+<td><strong>token_count_method</strong></td>
+<td>string</td>
+<td><code>&quot;approximate&quot;</code></td>
+<td>approximate / model</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>ClearToolUsesEdit</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>trigger</strong></td>
+<td>number</td>
+<td>100000</td>
+<td>触发上下文编辑的 token 数</td>
+</tr>
+<tr>
+<td><strong>clear_at_least</strong></td>
+<td>number</td>
+<td>0</td>
+<td>至少要清除多少 token</td>
+</tr>
+<tr>
+<td><strong>keep</strong></td>
+<td>number</td>
+<td>3</td>
+<td>保留最新的工具调用数量</td>
+</tr>
+<tr>
+<td><strong>clear_tool_inputs</strong></td>
+<td>bool</td>
+<td>False</td>
+<td>是否清除工具输入参数</td>
+</tr>
+<tr>
+<td><strong>exclude_tools</strong></td>
+<td>list[string]</td>
+<td>()</td>
+<td>排除不清除的工具</td>
+</tr>
+<tr>
+<td><strong>placeholder</strong></td>
+<td>string</td>
+<td>“[cleared]”</td>
+<td>清除内容替换文本</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="人工干预与控制"><a href="#人工干预与控制" class="headerlink" title="人工干预与控制"></a>人工干预与控制</h1><h2 id="Human-in-the-loop（人工在环）"><a href="#Human-in-the-loop（人工在环）" class="headerlink" title="Human-in-the-loop（人工在环）"></a>Human-in-the-loop（人工在环）</h2><p>在工具调用执行过程中暂停，等待人工审批，确保工具调用的准确性和合规性。</p>
+<p>该中间件的功能是在工具调用执行之前，暂停智能体（agent）的执行流程，以便让人类介入，对即将执行的工具调用进行审批、编辑或者拒绝。</p>
+<h3 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h3><ul>
+<li><strong>高风险操作需要人工审批</strong>：对于一些高风险的操作，例如对数据库进行写入操作、进行金融交易等，这些操作可能会对系统或用户的资产等产生重大影响。在这种情况下，使用人机协作循环中间件可以让人类在工具调用执行之前进行审批，确保操作的准确性和安全性，避免因智能体的错误决策而导致不可挽回的后果。</li>
+<li><strong>合规工作流程需要人工监督</strong>：在一些需要遵守特定法规或合规要求的工作流程中，法规可能明确规定必须有人类对某些操作或决策进行监督和审核。人机协作循环中间件能够满足这种需求，确保智能体的行为符合合规要求，让人类在关键环节进行把控，避免因智能体的自主行为而违反相关规定。</li>
+<li><strong>长期对话中需要人工引导智能体</strong>：在一些持续时间较长的对话场景中，智能体可能需要根据人类的反馈来调整其行为和决策。通过人机协作循环中间件，人类可以在对话过程中随时对智能体即将执行的工具调用进行干预，提供指导和反馈，从而更好地引导智能体完成任务，使其能够更好地适应复杂多变的对话需求和用户的期望。</li>
+</ul>
+<p>中间件定义了人类响应中断的三种内置方式</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th><strong>决策类型</strong></th>
+<th><strong>描述</strong></th>
+<th><strong>示例用例</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✅ <strong>approve</strong></td>
+<td>操作按原样批准并执行，不进行任何更改。</td>
+<td>按原样发送电子邮件草稿</td>
+</tr>
+<tr>
+<td>✏️ <strong>edit</strong></td>
+<td>工具调用在修改后执行。</td>
+<td>在发送电子邮件前更改收件人</td>
+</tr>
+<tr>
+<td>❌ <strong>reject</strong></td>
+<td>工具调用被拒绝，并在对话中添加解释。</td>
+<td>拒绝电子邮件草稿并解释如何重写</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> HumanInTheLoopMiddleware</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[read_email_tool, send_email_tool],</span><br><span class="line">    checkpointer=InMemorySaver(),</span><br><span class="line">    middleware=[</span><br><span class="line">        HumanInTheLoopMiddleware(</span><br><span class="line">            interrupt_on=&#123;</span><br><span class="line">                <span class="comment"># Require approval, editing, or rejection for sending emails</span></span><br><span class="line">                <span class="string">&quot;send_email_tool&quot;</span>: &#123;</span><br><span class="line">                    <span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;edit&quot;</span>, <span class="string">&quot;reject&quot;</span>],</span><br><span class="line">                &#125;,</span><br><span class="line">                <span class="comment"># Auto-approve reading emails</span></span><br><span class="line">                <span class="string">&quot;read_email_tool&quot;</span>: <span class="literal">False</span>,</span><br><span class="line">            &#125;</span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><strong>参数说明</strong>：</p>
+<p><strong>HumanInTheLoopMiddleware</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>interrupt_on</strong></td>
+<td>dict</td>
+<td>必填</td>
+<td>工具名称 → 中断配置。 True=使用默认配置、False=跳过审批、dict=自定义 InterruptOnConfig</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>InterruptOnConfig</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>allowed_decisions</strong></td>
+<td>list[str]</td>
+<td>可选</td>
+<td>可选：”approve”、”edit”、”reject”</td>
+</tr>
+<tr>
+<td><strong>description</strong></td>
+<td>string 或 callable</td>
+<td>None</td>
+<td>人类审批时显示的提示说明</td>
+</tr>
+<tr>
+<td><strong>description_prefix</strong></td>
+<td>string</td>
+<td><code>&quot;Tool execution requires approval&quot;</code></td>
+<td>前缀文字</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="成本与性能管理"><a href="#成本与性能管理" class="headerlink" title="成本与性能管理"></a>成本与性能管理</h1><h2 id="Model-call-limit（模型调用限制）"><a href="#Model-call-limit（模型调用限制）" class="headerlink" title="Model call limit（模型调用限制）"></a>Model call limit（模型调用限制）</h2><p>限制模型调用的次数，以避免产生过高的成本。</p>
+<h3 id="用途-2"><a href="#用途-2" class="headerlink" title="用途"></a>用途</h3><p>主要有以下三个方面：</p>
+<ol>
+<li><strong>防止失控的代理进行过多的API调用</strong><ul>
+<li>在一些情况下，代理（agent）可能会因为某些逻辑错误或其他问题而陷入无限循环，不断地调用模型接口。例如，代理可能在处理某些复杂任务时，错误地重复执行相同的操作，导致不断触发模型调用。通过设置模型调用限制，可以有效地避免这种情况，防止代理过度占用资源和产生不必要的费用。</li>
+</ul>
+</li>
+<li><strong>在生产部署中强制执行成本控制</strong><ul>
+<li>在实际的生产环境中，使用模型调用通常会产生一定的成本，比如根据调用次数、数据量等因素计费。通过限制模型调用的次数，可以根据预算来控制成本，确保不会因为过多的调用而导致费用超出预期。这有助于更好地管理资源和预算，保证系统的经济性和可持续性。</li>
+</ul>
+</li>
+<li><strong>在特定的调用预算内测试代理行为</strong><ul>
+<li>当开发和测试代理时，可能需要在一定的调用次数限制下观察代理的行为和性能。这样可以更好地了解代理在有限资源下的表现，评估其在实际应用场景中的可行性和效率。例如，在测试阶段，可以设置一个调用预算，模拟真实环境下的使用情况，以便对代理进行优化和调整，确保其在实际部署后能够稳定、高效地运行。</li>
+</ul>
+</li>
+</ol>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> ModelCallLimitMiddleware</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[...],</span><br><span class="line">    middleware=[</span><br><span class="line">        ModelCallLimitMiddleware(</span><br><span class="line">            thread_limit=<span class="number">10</span>,  <span class="comment"># Max 10 calls per thread (across runs)</span></span><br><span class="line">            run_limit=<span class="number">5</span>,  <span class="comment"># Max 5 calls per run (single invocation)</span></span><br><span class="line">            exit_behavior=<span class="string">&quot;end&quot;</span>,  <span class="comment"># Or &quot;error&quot; to raise exception</span></span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>参数说明</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>thread_limit</strong></td>
+<td>number</td>
+<td>无</td>
+<td>单线程所有运行的模型调用上限</td>
+</tr>
+<tr>
+<td><strong>run_limit</strong></td>
+<td>number</td>
+<td>无</td>
+<td>单次执行中的模型调用上限</td>
+</tr>
+<tr>
+<td><strong>exit_behavior</strong></td>
+<td><code>&quot;end&quot;</code> / <code>&quot;error&quot;</code></td>
+<td><code>&quot;end&quot;</code></td>
+<td>达到限制时的行为</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="Tool-call-limit（工具调用限制）"><a href="#Tool-call-limit（工具调用限制）" class="headerlink" title="Tool call limit（工具调用限制）"></a>Tool call limit（工具调用限制）</h2><p>通过限制工具调用的次数来控制工具的执行，防止资源过度消耗。</p>
+<p>“工具调用限制”中间件可以控制智能代理（agent）的行为，通过限制工具调用的次数来实现。这种限制可以是全局性的，即对所有工具都生效；也可以是针对特定工具的，即只对某些指定的工具进行限制。</p>
+<h3 id="功能-2"><a href="#功能-2" class="headerlink" title="功能"></a>功能</h3><ul>
+<li><strong>防止过度调用昂贵的外部API</strong>：有些外部API的调用成本较高，如果智能代理频繁调用这些API，可能会导致成本急剧上升。通过设置工具调用限制，可以避免这种情况的发生，从而控制成本。</li>
+<li><strong>限制网页搜索或数据库查询</strong>：在某些应用场景中，可能需要限制智能代理进行网页搜索或数据库查询的次数。例如，在一个需要保护数据隐私的系统中，可能希望限制对敏感数据库的查询次数，以防止数据泄露或滥用。</li>
+<li><strong>强制执行特定工具的使用速率限制</strong>：某些工具可能有使用速率限制，即在一定时间内只能调用一定次数。通过工具调用限制中间件，可以确保智能代理遵守这些限制，避免因超出限制而导致的错误或异常。</li>
+<li><strong>防止智能代理失控循环</strong>：在某些情况下，智能代理可能会陷入无限循环，不断地调用某个工具。这种失控的循环可能会导致系统资源耗尽或出现其他问题。工具调用限制中间件可以防止这种情况的发生，确保智能代理的行为在可控范围内。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> ToolCallLimitMiddleware</span><br><span class="line"></span><br><span class="line"><span class="comment"># Limit all tool calls</span></span><br><span class="line">global_limiter = ToolCallLimitMiddleware(thread_limit=<span class="number">20</span>, run_limit=<span class="number">10</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Limit specific tool</span></span><br><span class="line">search_limiter = ToolCallLimitMiddleware(</span><br><span class="line">    tool_name=<span class="string">&quot;search&quot;</span>,</span><br><span class="line">    thread_limit=<span class="number">5</span>,</span><br><span class="line">    run_limit=<span class="number">3</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[...],</span><br><span class="line">    middleware=[global_limiter, search_limiter],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>tool_name</strong></td>
+<td>string</td>
+<td>None</td>
+<td>限制指定工具（None=全部工具）</td>
+</tr>
+<tr>
+<td><strong>thread_limit</strong></td>
+<td>number</td>
+<td>无</td>
+<td>多次运行间的累计上限</td>
+</tr>
+<tr>
+<td><strong>run_limit</strong></td>
+<td>number</td>
+<td>无</td>
+<td>单次执行的调用上限</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="可靠性与容错"><a href="#可靠性与容错" class="headerlink" title="可靠性与容错"></a>可靠性与容错</h1><h2 id="Model-fallback（模型回退）"><a href="#Model-fallback（模型回退）" class="headerlink" title="Model fallback（模型回退）"></a>Model fallback（模型回退）</h2><p>当主模型失败时，自动切换到备用模型，确保服务的持续性。</p>
+<p>当主模型（primary model）出现故障或无法正常工作时，会自动切换到其他备用模型（alternative models）。这种机制可以确保系统的稳定性和连续性，即使主模型出现问题，也不会导致整个系统瘫痪，而是通过备用模型继续提供服务。</p>
+<h3 id="功能-3"><a href="#功能-3" class="headerlink" title="功能"></a>功能</h3><ul>
+<li><strong>构建具有弹性的代理（Building resilient agents）</strong>：通过模型回退功能，可以创建出能够应对模型故障的代理。当主模型由于各种原因（如网络问题、模型内部错误等）无法正常运行时，代理可以无缝切换到备用模型，从而保证服务的可用性，提高系统的整体可靠性。</li>
+<li><strong>成本优化（Cost optimization）</strong>：在某些情况下，备用模型可能比主模型成本更低。当主模型出现故障时，切换到这些更经济的备用模型，可以在不影响服务质量的前提下，降低系统的运行成本。这有助于在保证系统稳定性的基础上，实现成本效益的最大化。</li>
+<li><strong>供应商冗余（Provider redundancy）</strong>：在使用多个语言模型供应商（如OpenAI、Anthropic等）的情况下，模型回退功能可以实现供应商之间的冗余。如果主模型来自某个供应商并且出现问题，系统可以自动切换到其他供应商提供的备用模型。这样可以避免因单一供应商的服务中断而导致整个系统无法运行，提高系统的抗风险能力，确保服务的持续性。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> ModelFallbackMiddleware</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,  <span class="comment"># Primary model</span></span><br><span class="line">    tools=[...],</span><br><span class="line">    middleware=[</span><br><span class="line">        ModelFallbackMiddleware(</span><br><span class="line">            <span class="string">&quot;gpt-4o-mini&quot;</span>,  <span class="comment"># Try first on error</span></span><br><span class="line">            <span class="string">&quot;claude-3-5-sonnet-20241022&quot;</span>,  <span class="comment"># Then this</span></span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>first_model</strong></td>
+<td>string/BaseChatModel</td>
+<td>必填</td>
+<td>主模型失败时的第一回退</td>
+</tr>
+<tr>
+<td><strong>additional_models</strong></td>
+<td>string/BaseChatModel</td>
+<td>可选</td>
+<td>额外回退模型</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="Tool-retry（工具重试）"><a href="#Tool-retry（工具重试）" class="headerlink" title="Tool retry（工具重试）"></a>Tool retry（工具重试）</h2><p>工具调用失败时，自动以指数退避的方式重试，提高工具调用的成功率。</p>
+<h3 id="功能-4"><a href="#功能-4" class="headerlink" title="功能"></a>功能</h3><ul>
+<li><strong>自动重试失败的工具调用</strong>：当某个工具调用失败时，该中间件会自动进行重试，无需人工干预，从而提高工具调用的成功率。</li>
+<li><strong>可配置的指数退避策略</strong>：重试的过程采用指数退避的方式，即每次重试的等待时间会根据一定的指数规律逐渐增加。这种策略可以有效避免因短时间内频繁重试而导致的网络拥堵或其他问题。同时，指数退避的相关参数（如初始延迟时间、退避因子等）是可以根据具体需求进行配置的，以适应不同的应用场景和网络环境。</li>
+</ul>
+<h3 id="用途-3"><a href="#用途-3" class="headerlink" title="用途"></a>用途</h3><ul>
+<li><strong>处理外部API调用中的瞬态故障</strong>：在与外部API进行交互时，可能会因为网络波动、服务器短暂故障等原因导致调用失败。通过使用工具重试中间件，可以在遇到这类瞬态故障时自动进行重试，从而增加调用成功的可能性，减少因临时问题而导致的业务中断。</li>
+<li><strong>提高依赖网络的工具的可靠性</strong>：对于那些依赖网络进行操作的工具，如数据查询工具、信息检索工具等，网络的不稳定可能会导致工具执行失败。利用工具重试中间件，可以增强这些工具在网络环境不佳时的可靠性，确保工具能够在合理的范围内成功完成任务。</li>
+<li><strong>构建能够优雅处理临时错误的弹性代理</strong>：在复杂的系统中，各种临时错误是难以完全避免的。工具重试中间件可以帮助构建更加弹性的代理，使其在面对临时错误时能够自动进行重试，而不是直接失败或抛出异常。这样可以提高整个系统的稳定性和用户体验，减少因临时问题而导致的业务流程中断</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> ToolRetryMiddleware</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[search_tool, database_tool],</span><br><span class="line">    middleware=[</span><br><span class="line">        ToolRetryMiddleware(</span><br><span class="line">            max_retries=<span class="number">3</span>,  <span class="comment"># Retry up to 3 times</span></span><br><span class="line">            backoff_factor=<span class="number">2.0</span>,  <span class="comment"># Exponential backoff multiplier</span></span><br><span class="line">            initial_delay=<span class="number">1.0</span>,  <span class="comment"># Start with 1 second delay</span></span><br><span class="line">            max_delay=<span class="number">60.0</span>,  <span class="comment"># Cap delays at 60 seconds</span></span><br><span class="line">            jitter=<span class="literal">True</span>,  <span class="comment"># Add random jitter to avoid thundering herd</span></span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>max_retries</strong></td>
+<td>number</td>
+<td>2</td>
+<td>最大重试次数</td>
+</tr>
+<tr>
+<td><strong>tools</strong></td>
+<td>list</td>
+<td>None</td>
+<td>限定某些工具重试</td>
+</tr>
+<tr>
+<td><strong>retry_on</strong></td>
+<td>tuple / callable</td>
+<td>(Exception,)</td>
+<td>触发重试的异常</td>
+</tr>
+<tr>
+<td><strong>on_failure</strong></td>
+<td>string/callable</td>
+<td>“return_message”</td>
+<td>重试用尽时的行为</td>
+</tr>
+<tr>
+<td><strong>backoff_factor</strong></td>
+<td>number</td>
+<td>2.0</td>
+<td>指数退避系数</td>
+</tr>
+<tr>
+<td><strong>initial_delay</strong></td>
+<td>number</td>
+<td>1.0</td>
+<td>初始延迟</td>
+</tr>
+<tr>
+<td><strong>max_delay</strong></td>
+<td>number</td>
+<td>60</td>
+<td>最大延迟</td>
+</tr>
+<tr>
+<td><strong>jitter</strong></td>
+<td>bool</td>
+<td>true</td>
+<td>是否添加抖动</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="Model-retry（模型重试）"><a href="#Model-retry（模型重试）" class="headerlink" title="Model retry（模型重试）"></a>Model retry（模型重试）</h2><p>模型调用失败时，自动以指数退避的方式重试，增强模型调用的可靠性。</p>
+<h3 id="功能-5"><a href="#功能-5" class="headerlink" title="功能"></a>功能</h3><ul>
+<li>处理模型API调用中的瞬态故障。瞬态故障是指那些短暂出现且可能会自行恢复的错误，比如网络抖动、服务器短暂过载等情况导致的模型调用失败。通过模型重试机制，可以在这些瞬态故障发生后自动尝试重新调用模型，从而提高模型调用的成功率，避免因为短暂的故障而导致整个应用或任务的失败。</li>
+<li>提高依赖网络的模型请求的可靠性。许多模型调用是通过网络进行的，网络的不稳定因素可能会导致模型请求失败。模型重试机制可以在网络请求失败后自动进行重试，从而减少因网络问题导致的模型请求失败次数，增强整个系统的稳定性和可靠性，确保模型请求能够在网络条件允许的情况下成功完成。</li>
+<li>构建能够优雅地处理临时模型错误的弹性代理（或智能体）。在一些复杂的应用场景中，可能会涉及到多个模型调用或者连续的模型交互过程。模型重试机制可以帮助这些代理在遇到临时的模型错误时，不会直接崩溃或者停止工作，而是通过自动重试来尝试解决问题，从而使代理能够更加稳定、可靠地运行，提高系统的整体弹性和容错能力。</li>
+</ul>
+<p>代码示例：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> ModelRetryMiddleware</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[search_tool, database_tool],</span><br><span class="line">    middleware=[</span><br><span class="line">        ModelRetryMiddleware(</span><br><span class="line">            max_retries=<span class="number">3</span>,</span><br><span class="line">            backoff_factor=<span class="number">2.0</span>,</span><br><span class="line">            initial_delay=<span class="number">1.0</span>,</span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>max_retries</strong></td>
+<td>number</td>
+<td>2</td>
+<td>最大重试次数</td>
+</tr>
+<tr>
+<td><strong>retry_on</strong></td>
+<td>tuple / callable</td>
+<td>(Exception,)</td>
+<td>触发重试的异常</td>
+</tr>
+<tr>
+<td><strong>on_failure</strong></td>
+<td>string/callable</td>
+<td>“return_message”</td>
+<td>重试用尽时的行为</td>
+</tr>
+<tr>
+<td><strong>backoff_factor</strong></td>
+<td>number</td>
+<td>2.0</td>
+<td>指数退避系数</td>
+</tr>
+<tr>
+<td><strong>initial_delay</strong></td>
+<td>number</td>
+<td>1.0</td>
+<td>初始延迟</td>
+</tr>
+<tr>
+<td><strong>max_delay</strong></td>
+<td>number</td>
+<td>60</td>
+<td>最大延迟</td>
+</tr>
+<tr>
+<td><strong>jitter</strong></td>
+<td>bool</td>
+<td>true</td>
+<td>是否添加抖动</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="安全与隐私保护"><a href="#安全与隐私保护" class="headerlink" title="安全与隐私保护"></a>安全与隐私保护</h1><h2 id="PII-detection（个人身份信息检测）"><a href="#PII-detection（个人身份信息检测）" class="headerlink" title="PII detection（个人身份信息检测）"></a>PII detection（个人身份信息检测）</h2><p>检测并处理个人身份信息（PII），保护用户的隐私和安全。</p>
+<h3 id="功能-6"><a href="#功能-6" class="headerlink" title="功能"></a>功能</h3><ul>
+<li><strong>检测和处理PII</strong>：该中间件能够在对话中识别出个人身份信息（PII），并根据配置的策略对其进行处理。PII是指可以用于识别个人身份的信息，如姓名、身份证号、电话号码、电子邮件地址、信用卡号等。</li>
+<li><strong>配置策略</strong>：用户可以根据自己的需求配置不同的处理策略，例如对PII进行脱敏处理（如部分隐藏、替换为特定标记等），或者直接阻止包含PII的信息被进一步处理。</li>
+</ul>
+<h3 id="用途-4"><a href="#用途-4" class="headerlink" title="用途"></a>用途</h3><ul>
+<li><strong>合规要求的医疗和金融应用</strong>：在医疗和金融领域，很多应用都受到严格的合规要求，需要确保用户数据的隐私和安全。例如，医疗应用可能涉及患者的个人信息和健康数据，金融应用可能涉及客户的财务信息和交易记录。使用PII检测中间件可以帮助这些应用在处理对话时自动识别和保护PII，避免违反相关法规。</li>
+<li><strong>需要清理日志的客服代理</strong>：客服代理在与客户交流过程中会生成大量的对话日志，其中可能包含客户的敏感信息。为了保护客户隐私，同时满足数据管理和审计的要求，客服系统需要对这些日志进行清理和脱敏处理。PII检测中间件可以自动检测日志中的PII，并按照预设的策略进行处理，确保日志中不包含敏感信息。</li>
+<li><strong>处理敏感用户数据的任何应用</strong>：除了医疗和金融领域，许多其他类型的应用也会处理用户的敏感信息。例如，社交媒体应用可能涉及用户的个人资料和社交关系，电商应用可能涉及用户的购物习惯和支付信息等。这些应用都可以利用PII检测中间件来增强数据隐私保护，防止用户信息泄露。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> PIIMiddleware</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[...],</span><br><span class="line">    middleware=[</span><br><span class="line">        <span class="comment"># Redact emails in user input</span></span><br><span class="line">        PIIMiddleware(<span class="string">&quot;email&quot;</span>, strategy=<span class="string">&quot;redact&quot;</span>, apply_to_input=<span class="literal">True</span>),</span><br><span class="line">        <span class="comment"># Mask credit cards (show last 4 digits)</span></span><br><span class="line">        PIIMiddleware(<span class="string">&quot;credit_card&quot;</span>, strategy=<span class="string">&quot;mask&quot;</span>, apply_to_input=<span class="literal">True</span>),</span><br><span class="line">        <span class="comment"># Custom PII type with regex</span></span><br><span class="line">        PIIMiddleware(</span><br><span class="line">            <span class="string">&quot;api_key&quot;</span>,</span><br><span class="line">            detector=<span class="string">r&quot;sk-[a-zA-Z0-9]&#123;32&#125;&quot;</span>,</span><br><span class="line">            strategy=<span class="string">&quot;block&quot;</span>,  <span class="comment"># Raise error if detected</span></span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>pii_type</strong></td>
+<td>string</td>
+<td>必填</td>
+<td>email/credit_card/ip/mac/url 或自定义名称</td>
+</tr>
+<tr>
+<td><strong>strategy</strong></td>
+<td>string</td>
+<td><code>&quot;redact&quot;</code></td>
+<td>block / redact / mask / hash block=严格最强、mask/redact=脱敏 hash 是进行哈希处理</td>
+</tr>
+<tr>
+<td><strong>detector</strong></td>
+<td>regex / callable</td>
+<td>None</td>
+<td>自定义检测器</td>
+</tr>
+<tr>
+<td><strong>apply_to_input</strong></td>
+<td>bool</td>
+<td>True</td>
+<td>检查用户输入</td>
+</tr>
+<tr>
+<td><strong>apply_to_output</strong></td>
+<td>bool</td>
+<td>False</td>
+<td>检查模型输出</td>
+</tr>
+<tr>
+<td><strong>apply_to_tool_results</strong></td>
+<td>bool</td>
+<td>False</td>
+<td>检查工具输出</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>还可以自定义PII类型，具体可想看官方文档：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langchain/middleware/built-in#pii-detection">https://docs.langchain.com/oss/python/langchain/middleware/built-in#pii-detection</a></p>
+<h1 id="任务与工具管理"><a href="#任务与工具管理" class="headerlink" title="任务与工具管理"></a>任务与工具管理</h1><h2 id="To-do-list（待办事项列表）"><a href="#To-do-list（待办事项列表）" class="headerlink" title="To-do list（待办事项列表）"></a>To-do list（待办事项列表）</h2><p>为代理提供任务规划和跟踪的能力，帮助更好地管理和执行任务。</p>
+<h3 id="功能-7"><a href="#功能-7" class="headerlink" title="功能"></a>功能</h3><p>“待办事项列表”中间件为智能代理（agents）配备了任务规划和跟踪能力，使其能够处理复杂的多步骤任务。具体来说，它为代理提供了以下能力：</p>
+<ul>
+<li><strong>任务规划</strong>：代理可以将复杂的任务分解为多个子任务，并制定相应的执行计划。例如，一个需要先查询信息、再进行数据分析、最后生成报告的多步骤任务，代理可以将其规划为三个子任务，并确定每个子任务的执行顺序。</li>
+<li><strong>任务跟踪</strong>：代理可以实时跟踪任务的执行进度，了解哪些子任务已经完成、哪些正在进行、哪些尚未开始。这有助于代理及时调整任务计划，确保整个任务能够顺利推进。</li>
+</ul>
+<h3 id="适用场景-1"><a href="#适用场景-1" class="headerlink" title="适用场景"></a>适用场景</h3><p>这种中间件在以下场景中特别有用：</p>
+<ul>
+<li><strong>需要跨多个工具协调的复杂多步骤任务</strong>：当一个任务涉及多个不同的工具或系统时，例如在软件开发中，需要先使用代码编辑器编写代码，然后使用版本控制系统提交代码，接着使用测试工具进行测试，最后使用部署工具将代码部署到服务器。这种情况下，待办事项列表可以帮助代理协调各个工具的使用，确保任务的每个步骤都能按照预定计划顺利进行。</li>
+<li><strong>长时间运行且需要可见进度的操作</strong>：对于一些耗时较长的任务，如大规模数据处理、复杂的机器学习模型训练等，用户需要能够随时了解任务的进展情况。待办事项列表可以为用户提供清晰的任务进度视图，让用户知道任务已经完成了多少、预计还需要多长时间完成，从而提高用户对任务执行过程的掌控感。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> TodoListMiddleware</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[...],</span><br><span class="line">    middleware=[TodoListMiddleware()],</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(<span class="string">&quot;Help me refactor my codebase&quot;</span>)]&#125;)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;todos&quot;</span>])  <span class="comment"># Array of todo items with status tracking</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>system_prompt</strong></td>
+<td>string</td>
+<td>内置</td>
+<td>自定义规划指令</td>
+</tr>
+<tr>
+<td><strong>tool_description</strong></td>
+<td>string</td>
+<td>内置</td>
+<td>修改 write_todos 描述</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="LLM-tool-selector（LLM工具选择器）"><a href="#LLM-tool-selector（LLM工具选择器）" class="headerlink" title="LLM tool selector（LLM工具选择器）"></a>LLM tool selector（LLM工具选择器）</h2><p>使用LLM来选择与主模型调用相关的工具，提高工具选择的准确性和效率。</p>
+<h3 id="功能-8"><a href="#功能-8" class="headerlink" title="功能"></a>功能</h3><ul>
+<li>使用一个LLM（大型语言模型）来智能地选择与当前查询最相关的工具，然后再调用主模型。也就是说，在正式使用主模型进行任务处理之前，先通过一个LLM来筛选出适合的工具，从而为后续的处理提供更精准的工具支持。</li>
+</ul>
+<h3 id="用途-5"><a href="#用途-5" class="headerlink" title="用途"></a>用途</h3><ul>
+<li><strong>多工具场景</strong>：当一个代理（agent）拥有10个以上的工具，而每次查询时大多数工具都不相关时，LLM工具选择器就显得非常有用。它能够从众多工具中筛选出与当前查询最相关的工具，避免了对大量不相关工具的无效调用。</li>
+<li><strong>减少token使用</strong>：通过过滤掉不相关的工具，可以有效减少token的使用量。因为每次调用工具都需要消耗一定的token，如果调用了大量无关的工具，就会浪费很多token，而LLM工具选择器能够避免这种情况，从而降低token的使用成本。</li>
+<li><strong>提高模型专注度和准确性</strong>：当工具选择更加精准时，主模型在处理任务时能够更加专注于与当前查询相关的工具和信息，从而提高模型的处理准确性和效率。它可以帮助模型更好地理解任务需求，避免被无关工具引入的噪声信息干扰，进而提升整体的性能表现。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[tool1, tool2, tool3, tool4, tool5, ...],  <span class="comment"># Many tools</span></span><br><span class="line">    middleware=[</span><br><span class="line">        LLMToolSelectorMiddleware(</span><br><span class="line">            model=<span class="string">&quot;gpt-4o-mini&quot;</span>,  <span class="comment"># Use cheaper model for selection</span></span><br><span class="line">            max_tools=<span class="number">3</span>,  <span class="comment"># Limit to 3 most relevant tools</span></span><br><span class="line">            always_include=[<span class="string">&quot;search&quot;</span>],  <span class="comment"># Always include certain tools</span></span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>model</strong></td>
+<td>string/BaseModel</td>
+<td>主模型</td>
+<td>用于过滤工具的小模型</td>
+</tr>
+<tr>
+<td><strong>system_prompt</strong></td>
+<td>string</td>
+<td>内置</td>
+<td>工具筛选提示词</td>
+</tr>
+<tr>
+<td><strong>max_tools</strong></td>
+<td>number</td>
+<td>无限</td>
+<td>限制最多多少工具参与</td>
+</tr>
+<tr>
+<td><strong>always_include</strong></td>
+<td>list[str]</td>
+<td>None</td>
+<td>永远包含的工具</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="LLM-tool-emulator（LLM工具模拟器）"><a href="#LLM-tool-emulator（LLM工具模拟器）" class="headerlink" title="LLM tool emulator（LLM工具模拟器）"></a>LLM tool emulator（LLM工具模拟器）</h2><p>使用LLM模拟工具的执行，用于测试目的，确保工具在实际使用中的表现符合预期。</p>
+<p>使用LLM（大型语言模型）来模拟工具的执行，用于测试目的，用AI生成的响应来替代实际的工具调用。在测试阶段，不需要真正调用外部工具，而是通过LLM生成模拟的响应来测试代理（agent）的行为。这样可以避免实际工具调用可能带来的问题，如外部依赖、成本或不可用性。例如，在开发一个需要调用天气API的代理时，可以通过LLM工具模拟器生成模拟的天气数据，而不是真正调用天气API，从而测试代理对天气数据的处理逻辑。</p>
+<h3 id="用途-6"><a href="#用途-6" class="headerlink" title="用途"></a>用途</h3><ul>
+<li>在不执行实际工具的情况下测试代理的行为。可以快速验证代理的逻辑是否正确，而不必担心实际工具的执行结果。这有助于在开发初期快速迭代和调试代理的逻辑。假设代理需要调用一个支付API来完成交易，但在测试阶段，可以使用LLM工具模拟器生成模拟的支付结果，从而测试代理对支付成功的处理逻辑。</li>
+<li>当外部工具不可用或成本过高时，用于开发代理。在开发过程中，如果某些外部工具无法使用（如API限制、成本过高或开发环境限制），LLM工具模拟器可以提供替代方案，使开发工作能够继续进行。如果一个代理需要调用一个昂贵的图像识别API，但在开发阶段无法承担API费用，可以使用LLM工具模拟器生成模拟的图像识别结果，从而继续开发代理的其他功能。</li>
+<li>在实现实际工具之前，用于原型设计代理的工作流程。在设计阶段，可以快速构建代理的工作流程，验证其逻辑和功能，而不需要立即实现实际的工具调用。这有助于在早期发现潜在问题，减少开发成本和时间。在设计一个需要调用多个外部API的复杂代理时，可以先使用LLM工具模拟器构建整个工作流程，验证代理的逻辑是否符合预期，然后再逐步实现实际的工具调用。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> LLMToolEmulator</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[get_weather, search_database, send_email],</span><br><span class="line">    middleware=[</span><br><span class="line">        <span class="comment"># Emulate all tools by default</span></span><br><span class="line">        LLMToolEmulator(),</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Emulate specific tools</span></span><br><span class="line">        <span class="comment"># LLMToolEmulator(tools=[&quot;get_weather&quot;, &quot;search_database&quot;]),</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># Use custom model</span></span><br><span class="line">        <span class="comment"># LLMToolEmulator(model=&quot;claude-sonnet-4-5-20250929&quot;),</span></span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>tools</strong></td>
+<td>list</td>
+<td>None</td>
+<td>要模拟的工具（None=全部）</td>
+</tr>
+<tr>
+<td><strong>model</strong></td>
+<td>string/BaseModel</td>
+<td><code>anthropic:claude-3-5-sonnet-latest</code></td>
+<td>用于模拟的模型</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="系统与文件操作"><a href="#系统与文件操作" class="headerlink" title="系统与文件操作"></a>系统与文件操作</h1><h2 id="Shell-tool（Shell工具）"><a href="#Shell-tool（Shell工具）" class="headerlink" title="Shell tool（Shell工具）"></a>Shell tool（Shell工具）</h2><p>为代理提供一个持久的Shell会话，用于执行命令，方便进行系统级的操作。</p>
+<h3 id="用途-7"><a href="#用途-7" class="headerlink" title="用途"></a>用途</h3><ul>
+<li>需要执行系统命令的代理。例如，一个代理可能需要运行系统命令来获取系统信息、管理服务或执行脚本。</li>
+<li>开发和部署自动化任务。在软件开发和部署过程中，经常需要执行一系列命令来编译代码、运行测试、部署应用程序等。Shell工具中间件可以帮助自动化这些任务。</li>
+<li>测试和验证工作流。在测试环境中，代理可能需要运行各种命令来验证系统的行为或执行测试脚本。</li>
+<li>文件系统操作和脚本执行。代理可以使用Shell工具中间件来执行文件系统操作，如创建文件、删除文件、移动文件等，以及运行各种脚本语言编写的脚本，如Python脚本、Shell脚本等。</li>
+</ul>
+<p>注意：在安全方面，要根据你的部署的安全需求，使用合适的执行策略（HostExecutionPolicy、DockerExecutionPolicy 或者 CodexSandboxExecutionPolicy）。</p>
+<ul>
+<li><strong>HostExecutionPolicy（主机执行策略）</strong>：一种执行策略，可能与在主机上直接运行程序或任务相关，适用于不需要容器化等隔离环境的场景，直接利用主机的资源和环境进行操作，但可能面临主机层面的安全风险，需要严格控制访问权限等安全措施。</li>
+<li><strong>DockerExecutionPolicy（Docker 执行策略）</strong>：与 Docker 容器相关的执行策略，利用 Docker 容器的隔离特性，将应用程序或任务运行在独立的容器环境中，可以有效限制应用程序对主机系统的访问和影响，降低安全风险，适合需要隔离和便于部署的应用场景。</li>
+<li><strong>CodexSandboxExecutionPolicy（Codex 沙箱执行策略）</strong>：一种沙箱执行策略，可能用于在更严格的隔离环境中运行代码或任务，类似于沙箱技术，为代码提供一个受限的运行环境，防止恶意代码对系统造成危害，适用于运行来自不可信来源的代码或需要高度安全隔离的场景。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> (</span><br><span class="line">    ShellToolMiddleware,</span><br><span class="line">    HostExecutionPolicy,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[search_tool],</span><br><span class="line">    middleware=[</span><br><span class="line">        ShellToolMiddleware(</span><br><span class="line">            workspace_root=<span class="string">&quot;/workspace&quot;</span>,</span><br><span class="line">            execution_policy=HostExecutionPolicy(),</span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>workspace_root</strong></td>
+<td>str/Path/None</td>
+<td></td>
+<td>Shell会话的根目录。如果省略，当代理启动时会创建一个临时目录，代理结束时会删除该目录。</td>
+</tr>
+<tr>
+<td><strong>startup_commands</strong></td>
+<td>tuple[str, …]/ list[str] /str/None</td>
+<td></td>
+<td>会话开始后依次执行的可选命令。</td>
+</tr>
+<tr>
+<td><strong>execution_policy</strong></td>
+<td>BaseExecutionPolicy/None</td>
+<td></td>
+<td>控制超时、输出限制和资源配置的执行策略。(上述有详细介绍)</td>
+</tr>
+<tr>
+<td><strong>redaction_rules</strong></td>
+<td>tuple[RedactionRule, …] /list[RedactionRule]/None</td>
+<td></td>
+<td>可选的脱敏规则，用于在将命令输出返回给模型之前对其进行清理。</td>
+</tr>
+<tr>
+<td><strong>tool_description</strong></td>
+<td>str/None</td>
+<td></td>
+<td>注册的shell工具描述的可选覆盖。</td>
+</tr>
+<tr>
+<td><strong>shell_command</strong></td>
+<td>Sequence[str] /str/None</td>
+<td></td>
+<td>用于启动持久会话的可选shell可执行文件（字符串）或参数序列。默认为/bin/bash。</td>
+</tr>
+<tr>
+<td><strong>env</strong></td>
+<td>Mapping[str, Any] /None</td>
+<td></td>
+<td>提供给shell会话的可选环境变量。在命令执行前，值会被转换为字符串。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="File-search（文件搜索）"><a href="#File-search（文件搜索）" class="headerlink" title="File search（文件搜索）"></a>File search（文件搜索）</h2><p>提供基于Glob和Grep的文件搜索工具，方便在文件系统中查找文件。</p>
+<ul>
+<li><strong>Glob</strong>：是一种基于模式匹配的文件查找工具。它使用特定的模式（如通配符）来匹配文件名，从而快速找到符合模式的文件。例如，模式“<em>*/</em>.py”可以匹配当前目录及其子目录下所有的 Python 文件。</li>
+<li><strong>Grep</strong>：是一种基于正则表达式的文本搜索工具。它可以在文件内容中搜索符合特定正则表达式的文本。例如，使用 Grep 搜索“async def”，可以找到包含该代码片段的 Python 文件。</li>
+<li><strong>文件系统</strong>：指的是计算机中用于组织和存储文件和目录的结构。这里的文件搜索工具可以在文件系统中进行操作，帮助用户查找和分析文件。</li>
+</ul>
+<h3 id="用途-8"><a href="#用途-8" class="headerlink" title="用途"></a>用途</h3><ul>
+<li><strong>Code exploration and analysis（代码探索和分析）</strong>：在开发过程中，开发者可能需要探索代码库，了解代码的结构、功能和依赖关系。文件搜索工具可以帮助开发者快速找到特定的代码文件或代码片段，从而进行更高效的代码分析。例如，通过搜索特定的函数名或类名，可以快速定位到相关的代码位置，便于理解代码的实现逻辑和进行调试。</li>
+<li><strong>Finding files by name patterns（按文件名模式查找文件）</strong>：有时用户需要根据文件名的特定模式来查找文件，例如查找所有以“config”开头的配置文件，或者查找所有扩展名为“.txt”的文本文件。Glob 搜索工具可以根据用户提供的模式，快速匹配并列出符合条件的文件，方便用户进行后续的操作，如批量处理或查看文件内容。</li>
+<li><strong>Searching code content with regex（使用正则表达式搜索代码内容）</strong>：在代码中，可能需要查找特定的代码模式或文本内容，例如查找所有使用了某个特定变量的代码行，或者查找符合某种代码风格的代码片段。Grep 搜索工具通过正则表达式匹配，可以在代码文件中精确地搜索到用户需要的内容，这对于代码审查、重构和维护等工作非常有帮助。</li>
+<li><strong>Large codebases where file discovery is needed（需要文件发现的大型代码库）</strong>：在大型代码库中，文件数量众多且结构复杂，手动查找文件会非常耗时且容易出错。文件搜索中间件可以帮助开发者快速发现和定位所需的文件，提高开发效率。例如，在一个包含数千个文件的大型项目中，通过文件搜索工具可以快速找到特定模块的代码文件，或者查找与某个功能相关的所有文件，从而更好地进行代码管理和开发工作。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> FilesystemFileSearchMiddleware</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[],</span><br><span class="line">    middleware=[</span><br><span class="line">        FilesystemFileSearchMiddleware(</span><br><span class="line">            root_path=<span class="string">&quot;/workspace&quot;</span>,</span><br><span class="line">            use_ripgrep=<span class="literal">True</span>,</span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>配置选项</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>root_path</strong></td>
+<td>str</td>
+<td>必填</td>
+<td>根目录用于搜索。所有文件操作都相对于这个路径。</td>
+</tr>
+<tr>
+<td><strong>use_ripgrep</strong></td>
+<td>bool</td>
+<td>True</td>
+<td>是否使用ripgrep进行搜索。如果ripgrep不可用，则回退到Python正则表达式。</td>
+</tr>
+<tr>
+<td><strong>max_file_size_mb</strong></td>
+<td>int</td>
+<td>10</td>
+<td>搜索的最大文件大小，单位为MB。大于此大小的文件将被跳过。</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/31/ai/langchain/9-langchain-Streaming/" rel="prev" title="LangChain流式输出模式">
+      <i class="fa fa-chevron-left"></i> LangChain流式输出模式
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AF%B9%E8%AF%9D%E7%AE%A1%E7%90%86%E4%B8%8E%E4%BC%98%E5%8C%96"><span class="nav-number">1.</span> <span class="nav-text">对话管理与优化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Summarization%EF%BC%88%E5%AF%B9%E8%AF%9D%E6%80%BB%E7%BB%93%EF%BC%89"><span class="nav-number">1.1.</span> <span class="nav-text">Summarization（对话总结）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD"><span class="nav-number">1.1.1.</span> <span class="nav-text">功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%80%94"><span class="nav-number">1.1.2.</span> <span class="nav-text">用途</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Context-editing%EF%BC%88%E4%B8%8A%E4%B8%8B%E6%96%87%E7%BC%96%E8%BE%91%EF%BC%89"><span class="nav-number">1.2.</span> <span class="nav-text">Context editing（上下文编辑）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD-1"><span class="nav-number">1.2.1.</span> <span class="nav-text">功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%80%94-1"><span class="nav-number">1.2.2.</span> <span class="nav-text">用途</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%BA%E5%B7%A5%E5%B9%B2%E9%A2%84%E4%B8%8E%E6%8E%A7%E5%88%B6"><span class="nav-number">2.</span> <span class="nav-text">人工干预与控制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Human-in-the-loop%EF%BC%88%E4%BA%BA%E5%B7%A5%E5%9C%A8%E7%8E%AF%EF%BC%89"><span class="nav-number">2.1.</span> <span class="nav-text">Human-in-the-loop（人工在环）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">2.1.1.</span> <span class="nav-text">适用场景</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%88%90%E6%9C%AC%E4%B8%8E%E6%80%A7%E8%83%BD%E7%AE%A1%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">成本与性能管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Model-call-limit%EF%BC%88%E6%A8%A1%E5%9E%8B%E8%B0%83%E7%94%A8%E9%99%90%E5%88%B6%EF%BC%89"><span class="nav-number">3.1.</span> <span class="nav-text">Model call limit（模型调用限制）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%80%94-2"><span class="nav-number">3.1.1.</span> <span class="nav-text">用途</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Tool-call-limit%EF%BC%88%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8%E9%99%90%E5%88%B6%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">Tool call limit（工具调用限制）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD-2"><span class="nav-number">3.2.1.</span> <span class="nav-text">功能</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%AF%E9%9D%A0%E6%80%A7%E4%B8%8E%E5%AE%B9%E9%94%99"><span class="nav-number">4.</span> <span class="nav-text">可靠性与容错</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Model-fallback%EF%BC%88%E6%A8%A1%E5%9E%8B%E5%9B%9E%E9%80%80%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">Model fallback（模型回退）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD-3"><span class="nav-number">4.1.1.</span> <span class="nav-text">功能</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Tool-retry%EF%BC%88%E5%B7%A5%E5%85%B7%E9%87%8D%E8%AF%95%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">Tool retry（工具重试）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD-4"><span class="nav-number">4.2.1.</span> <span class="nav-text">功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%80%94-3"><span class="nav-number">4.2.2.</span> <span class="nav-text">用途</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Model-retry%EF%BC%88%E6%A8%A1%E5%9E%8B%E9%87%8D%E8%AF%95%EF%BC%89"><span class="nav-number">4.3.</span> <span class="nav-text">Model retry（模型重试）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD-5"><span class="nav-number">4.3.1.</span> <span class="nav-text">功能</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E4%B8%8E%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4"><span class="nav-number">5.</span> <span class="nav-text">安全与隐私保护</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#PII-detection%EF%BC%88%E4%B8%AA%E4%BA%BA%E8%BA%AB%E4%BB%BD%E4%BF%A1%E6%81%AF%E6%A3%80%E6%B5%8B%EF%BC%89"><span class="nav-number">5.1.</span> <span class="nav-text">PII detection（个人身份信息检测）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD-6"><span class="nav-number">5.1.1.</span> <span class="nav-text">功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%80%94-4"><span class="nav-number">5.1.2.</span> <span class="nav-text">用途</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E4%B8%8E%E5%B7%A5%E5%85%B7%E7%AE%A1%E7%90%86"><span class="nav-number">6.</span> <span class="nav-text">任务与工具管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#To-do-list%EF%BC%88%E5%BE%85%E5%8A%9E%E4%BA%8B%E9%A1%B9%E5%88%97%E8%A1%A8%EF%BC%89"><span class="nav-number">6.1.</span> <span class="nav-text">To-do list（待办事项列表）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD-7"><span class="nav-number">6.1.1.</span> <span class="nav-text">功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-1"><span class="nav-number">6.1.2.</span> <span class="nav-text">适用场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LLM-tool-selector%EF%BC%88LLM%E5%B7%A5%E5%85%B7%E9%80%89%E6%8B%A9%E5%99%A8%EF%BC%89"><span class="nav-number">6.2.</span> <span class="nav-text">LLM tool selector（LLM工具选择器）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD-8"><span class="nav-number">6.2.1.</span> <span class="nav-text">功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%80%94-5"><span class="nav-number">6.2.2.</span> <span class="nav-text">用途</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LLM-tool-emulator%EF%BC%88LLM%E5%B7%A5%E5%85%B7%E6%A8%A1%E6%8B%9F%E5%99%A8%EF%BC%89"><span class="nav-number">6.3.</span> <span class="nav-text">LLM tool emulator（LLM工具模拟器）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%80%94-6"><span class="nav-number">6.3.1.</span> <span class="nav-text">用途</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E4%B8%8E%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C"><span class="nav-number">7.</span> <span class="nav-text">系统与文件操作</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Shell-tool%EF%BC%88Shell%E5%B7%A5%E5%85%B7%EF%BC%89"><span class="nav-number">7.1.</span> <span class="nav-text">Shell tool（Shell工具）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%80%94-7"><span class="nav-number">7.1.1.</span> <span class="nav-text">用途</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#File-search%EF%BC%88%E6%96%87%E4%BB%B6%E6%90%9C%E7%B4%A2%EF%BC%89"><span class="nav-number">7.2.</span> <span class="nav-text">File search（文件搜索）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E9%80%94-8"><span class="nav-number">7.2.1.</span> <span class="nav-text">用途</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

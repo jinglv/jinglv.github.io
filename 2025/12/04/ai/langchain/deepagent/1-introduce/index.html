@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习DeepAgents学习笔记第一讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DeepAgents介绍">
+<meta property="og:url" content="https://jinglv.github.io/2025/12/04/ai/langchain/deepagent/1-introduce/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习DeepAgents学习笔记第一讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-04T01:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangGraph">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/12/04/ai/langchain/deepagent/1-introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DeepAgents介绍 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/12/04/ai/langchain/deepagent/1-introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DeepAgents介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-12-04 00:00:00 / 修改时间：09:00:00" itemprop="dateCreated datePublished" datetime="2025-12-04T00:00:00+08:00">2025-12-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习DeepAgents学习笔记第一讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="DeepAgents介绍"><a href="#DeepAgents介绍" class="headerlink" title="DeepAgents介绍"></a>DeepAgents介绍</h1><p><strong>构建能够规划、使用子代理以及利用文件系统来处理复杂任务的代理</strong>。它强调了该工具可以创建具有规划能力、能够使用子代理以及借助文件系统来应对复杂、多步骤任务的代理。</p>
+<p><strong>deepagents 是一个独立的库，用于构建能够应对复杂、多步骤任务的代理。基于 LangGraph 构建，并受到 Claude Code、Deep Research 和 Manus 等应用的启发，Deep Agents 具备规划能力、用于上下文管理的文件系统以及生成子代理的能力</strong>：</p>
+<ul>
+<li><strong>独立的库</strong>：意味着“deepagents”是一个独立的软件组件，它不依赖于其他特定的软件环境，可以单独使用。</li>
+<li><strong>构建能够应对复杂、多步骤任务的代理</strong>：说明该库的主要用途是创建能够处理复杂任务的代理。复杂任务通常涉及多个步骤，需要代理具备一定的规划和执行能力。</li>
+<li><strong>基于 LangGraph 构建</strong>：表明“deepagents”是建立在“LangGraph”这个基础之上的。这可能意味着它利用了“LangGraph”提供的一些功能或架构。</li>
+<li><strong>受到 Claude Code、Deep Research 和 Manus 等应用的启发</strong>：这说明“deepagents”的设计思路受到了这些应用的影响，可能借鉴了它们的一些功能或特性。</li>
+<li><strong>具备规划能力</strong>：代理能够制定计划，以有效地完成任务。</li>
+<li><strong>用于上下文管理的文件系统</strong>：代理可以利用文件系统来管理上下文信息，这有助于处理大量的上下文数据，防止上下文窗口溢出。</li>
+<li><strong>生成子代理的能力</strong>：主代理可以创建子代理来处理特定的子任务，这有助于实现上下文隔离，保持主代理的上下文清晰。</li>
+</ul>
+<p>总的来说<strong>DeepAgents</strong> 是一个<strong>企业级 AI Agent 框架</strong>，它就像给 AI 装上了：</p>
+<ul>
+<li>🗂️ <strong>文件系统</strong>：让 AI 能读写文件</li>
+<li>🤖 <strong>子智能体</strong>：让 AI 能分配任务给专业助手</li>
+<li>💾 <strong>长期记忆</strong>：让 AI 能记住跨会话的信息</li>
+<li>⚙️ <strong>命令执行</strong>：让 AI 能运行 shell 命令</li>
+<li>🔄 <strong>人机协作</strong>：让 AI 在关键操作前征求人类同意</li>
+</ul>
+<h1 id="DeepAgents使用场景"><a href="#DeepAgents使用场景" class="headerlink" title="DeepAgents使用场景"></a>DeepAgents使用场景</h1><ol>
+<li><strong>处理复杂、多步骤任务（Handle complex, multi - step tasks that require planning and decomposition）</strong></li>
+</ol>
+<ul>
+<li><strong>复杂任务的定义</strong><ul>
+<li>复杂任务是指那些不能简单地一步完成的任务。例如，在一个智能客服场景中，用户可能要求查询订单状态、修改订单信息并获取发票。这就不是一个简单的查询操作，而是需要多个步骤来完成的复杂任务。</li>
+<li>这些任务往往需要规划，就像一个项目经理规划一个大型项目一样。深度代理需要先分析任务的整体目标，然后将其分解为多个子任务。</li>
+<li>例如，对于上述智能客服的例子，深度代理可能先规划出以下步骤：首先查询订单数据库以获取订单状态，然后根据用户要求修改订单信息（这可能涉及多个子步骤，如检查库存、更新配送信息等），最后生成并发送发票。</li>
+</ul>
+</li>
+</ul>
+<ol>
+<li><strong>管理大量上下文（Manage large amounts of context through file system tools）</strong></li>
+</ol>
+<ul>
+<li><strong>上下文的重要性</strong><ul>
+<li>在很多人工智能应用场景中，上下文是关键。上下文可以是用户之前的对话记录、相关的文档、知识库中的信息等。例如，在一个法律咨询场景中，用户可能已经提供了案件的详细背景信息，包括合同内容、事件经过等。</li>
+<li>当上下文信息量很大时，深度代理需要能够有效地管理这些信息。文件系统工具可以帮助存储和检索这些上下文信息。</li>
+<li>比如，深度代理可以将用户提供的法律文件存储在文件系统中，然后在需要的时候通过特定的工具（如文件检索算法）快速找到相关的文件内容，以更好地理解和回答用户的问题。</li>
+</ul>
+</li>
+</ul>
+<ol>
+<li><strong>委派工作给专业子代理（Delegate work to specialized subagents for context isolation）</strong></li>
+</ol>
+<ul>
+<li><strong>子代理的概念</strong><ul>
+<li>子代理可以看作是深度代理的“助手”，它们专注于特定的任务或领域。这种分工可以提高效率，就像在一个企业中，不同的部门负责不同的业务一样。</li>
+<li>上下文隔离是子代理的一个重要功能。例如，在一个多语言翻译应用场景中，深度代理可以将文本翻译任务委派给专门的翻译子代理。这个子代理只关注翻译任务，它有自己的上下文环境，只处理与翻译相关的上下文信息，如语言规则、词汇库等，而不会被其他无关的上下文信息干扰。</li>
+<li>这样做的好处是能够提高子代理的性能和准确性，同时也可以让深度代理更好地协调各个子代理的工作。</li>
+</ul>
+</li>
+</ul>
+<ol>
+<li><strong>在对话和线程之间持续保持记忆（Persist memory across conversations and threads）</strong></li>
+</ol>
+<ul>
+<li><strong>持续记忆的作用</strong><ul>
+<li>在一些连续的交互场景中，记忆是非常重要的。例如，在一个长期的项目咨询场景中，用户可能在不同的时间与深度代理进行交流，每次交流都可能涉及项目的新进展、问题等。</li>
+<li>深度代理需要能够记住之前的对话内容和线程（线程可以理解为一个特定的交流主题或任务序列）。这样它就可以在新的交流中继续之前的话题，而不是每次都从头开始。</li>
+<li>比如，用户在第一次交流时提到了一个项目的技术难点，深度代理记录了这个信息。在后续的交流中，当用户再次提到这个技术难点时，深度代理可以基于之前的记忆提供更深入的分析或者解决方案建议。</li>
+</ul>
+</li>
+</ul>
+<p>注意：对于更简单的使用场景，考虑使用 LangChain 的 create_agent 方法，或者构建一个自定义的 LangGraph 工作流。</p>
+<h1 id="核心能力（Core-capabilities）"><a href="#核心能力（Core-capabilities）" class="headerlink" title="核心能力（Core capabilities）"></a>核心能力（Core capabilities）</h1><ul>
+<li><strong>计划和任务分解（Planning and task decomposition）</strong><ul>
+<li>深度代理（Deep agents）内置了一个名为write_todos的工具。这个工具可以帮助代理将复杂的任务拆分成一些离散的步骤。例如，如果有一个任务是制作一个包含多个章节的报告，write_todos工具可以将这个任务分解为收集资料、撰写每个章节的草稿、校对和编辑等步骤。同时，代理能够跟踪任务的进度，比如记录已经完成了哪些步骤，还有哪些步骤正在进行中。并且，当有新的信息出现时，代理可以调整计划。比如，如果在撰写报告的过程中发现了一个新的重要观点，代理可以根据这个新观点对后续的步骤进行调整。</li>
+</ul>
+</li>
+<li><strong>上下文管理（Context management）</strong><ul>
+<li>代理可以使用文件系统工具（ls、read_file、write_file、edit_file）。这些工具允许代理将大量的上下文信息（比如任务相关的背景信息、数据等）转移到内存中。这样做的好处是防止上下文窗口溢出。上下文窗口溢出可以理解为代理在处理任务时，由于上下文信息过多，超出了其能够处理的范围，导致无法正常工作。通过这些工具，代理可以处理可变长度的工具结果。例如，当使用某个工具获取数据时，数据的大小可能是不确定的，文件系统工具可以帮助代理有效地管理这些不同大小的数据。</li>
+</ul>
+</li>
+<li><strong>子代理生成（Subagent spawning）</strong><ul>
+<li>有一个内置的任务工具，它使得代理能够生成专门的子代理来实现上下文隔离。上下文隔离的意思是，子代理可以专注于特定的子任务，而不会干扰主代理的上下文。例如，主代理正在处理一个大型项目，它生成一个子代理来处理项目中的一个特定模块。子代理可以深入研究这个模块，而主代理的上下文仍然保持清晰，不会被子代理处理模块时产生的大量信息所淹没。这样，主代理可以同时处理多个子任务，而不会因为上下文过于复杂而混乱。</li>
+</ul>
+</li>
+<li><strong>长期记忆（Long-term memory）</strong><ul>
+<li>使用LangGraph的Store功能，可以扩展代理的持久化内存，使其能够在多个线程（可以理解为多个任务处理流程）之间保持记忆。这意味着代理可以保存和检索之前的对话信息。比如，在一个客户服务场景中，代理可以记住之前与客户交流的内容，当再次与客户交流时，能够根据之前的对话提供更连贯、更个性化的服务。</li>
+</ul>
+</li>
+</ul>
+<h1 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h1><pre class="mermaid">graph TB
+    User[用户] --> Agent[Deep Agent]
+
+    Agent --> MW1[TodoListMiddleware<br/>任务管理]
+    Agent --> MW2[FilesystemMiddleware<br/>文件操作]
+    Agent --> MW3[SubAgentMiddleware<br/>子智能体]
+    Agent --> MW4[SummarizationMiddleware<br/>对话摘要]
+    Agent --> MW5[HumanInTheLoopMiddleware<br/>人机交互]
+
+    MW2 --> Backend[Backend 存储层]
+    Backend --> StateB[StateBackend<br/>临时存储]
+    Backend --> StoreB[StoreBackend<br/>持久存储]
+    Backend --> SandboxB[SandboxBackend<br/>沙箱执行]
+    Backend --> CompositeB[CompositeBackend<br/>混合存储]
+
+    MW3 --> SubAgent1[通用子智能体]
+    MW3 --> SubAgent2[自定义子智能体]
+
+    Agent --> Store[Store 长期记忆]
+    Agent --> Checkpointer[Checkpointer 会话状态]
+
+    style Agent fill:#4CAF50,color:#fff
+    style Backend fill:#2196F3,color:#fff
+    style Store fill:#FF9800,color:#fff</pre>
+
+
+
+<h2 id="Middleware（中间件）"><a href="#Middleware（中间件）" class="headerlink" title="Middleware（中间件）"></a>Middleware（中间件）</h2><p>给 AI 加装的功能模块，每个中间件负责一个特定功能：</p>
+<ul>
+<li><strong>FilesystemMiddleware</strong>: 文件操作（ls, read, write, edit, glob, grep, execute）</li>
+<li><strong>SubAgentMiddleware</strong>: 子智能体调度</li>
+<li><strong>SummarizationMiddleware</strong>: 对话历史压缩</li>
+<li><strong>HumanInTheLoopMiddleware</strong>: 人机交互控制</li>
+</ul>
+<h2 id="Backend（后端存储）"><a href="#Backend（后端存储）" class="headerlink" title="Backend（后端存储）"></a>Backend（后端存储）</h2><p>决定文件存储在哪里：</p>
+<ul>
+<li><strong>StateBackend</strong>: 临时存储（不跨会话）</li>
+<li><strong>StoreBackend</strong>: 持久存储（跨会话）</li>
+<li><strong>SandboxBackend</strong>: 沙箱执行（支持命令）</li>
+<li><strong>CompositeBackend</strong>: 混合路由（企业级）</li>
+</ul>
+<h2 id="SubAgent（子智能体）"><a href="#SubAgent（子智能体）" class="headerlink" title="SubAgent（子智能体）"></a>SubAgent（子智能体）</h2><p>让主 Agent 能够委派任务给专业助手：</p>
+<ul>
+<li>🎯 任务隔离</li>
+<li>⚡ 并行处理</li>
+<li>💰 节省 Token</li>
+</ul>
+<h2 id="Store（长期记忆）"><a href="#Store（长期记忆）" class="headerlink" title="Store（长期记忆）"></a>Store（长期记忆）</h2><p>跨会话持久化存储，用于保存需要长期记住的信息</p>
+<h2 id="Interrupt-on（人机交互）"><a href="#Interrupt-on（人机交互）" class="headerlink" title="Interrupt_on（人机交互）"></a>Interrupt_on（人机交互）</h2><p>控制 AI 在执行哪些操作前需要人类批准</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangGraph/" rel="tag"># LangGraph</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/10/29/ai/llm/3-context/" rel="prev" title="上下文工程">
+      <i class="fa fa-chevron-left"></i> 上下文工程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/12/04/ai/langchain/deepagent/2-core-concepts/" rel="next" title="核心概念">
+      核心概念 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#DeepAgents%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">DeepAgents介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DeepAgents%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">DeepAgents使用场景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E8%83%BD%E5%8A%9B%EF%BC%88Core-capabilities%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">核心能力（Core capabilities）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">4.</span> <span class="nav-text">架构图</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Middleware%EF%BC%88%E4%B8%AD%E9%97%B4%E4%BB%B6%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">Middleware（中间件）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Backend%EF%BC%88%E5%90%8E%E7%AB%AF%E5%AD%98%E5%82%A8%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">Backend（后端存储）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SubAgent%EF%BC%88%E5%AD%90%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%89"><span class="nav-number">4.3.</span> <span class="nav-text">SubAgent（子智能体）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Store%EF%BC%88%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86%EF%BC%89"><span class="nav-number">4.4.</span> <span class="nav-text">Store（长期记忆）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Interrupt-on%EF%BC%88%E4%BA%BA%E6%9C%BA%E4%BA%A4%E4%BA%92%EF%BC%89"><span class="nav-number">4.5.</span> <span class="nav-text">Interrupt_on（人机交互）</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第四讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain核心组件Memory(记忆)">
+<meta property="og:url" content="https://jinglv.github.io/2025/12/19/ai/langchain/4-langchain-Memory/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第四讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-19T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/12/19/ai/langchain/4-langchain-Memory/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain核心组件Memory(记忆) | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/12/19/ai/langchain/4-langchain-Memory/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain核心组件Memory(记忆)
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-12-19 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2025-12-19T00:00:00+08:00">2025-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第四讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Langchain的v.0.3.x版本中是没有记忆模块的，在v1.x.x版本以后，Langchain与Langraph深度融合以后，Langchain有了短期记忆的模块，官方地址为：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langchain/short-term-memory">https://docs.langchain.com/oss/python/langchain/short-term-memory</a></p>
+<p>因此本章节重点介绍LangChain中的短期记忆，在Langgraph的记忆模块中是支持短期记忆和长期记忆的，会在Langgraph中重点介绍</p>
+<h1 id="什么是记忆"><a href="#什么是记忆" class="headerlink" title="什么是记忆"></a>什么是记忆</h1><h2 id="从定义角度阐述记忆的重要性"><a href="#从定义角度阐述记忆的重要性" class="headerlink" title="从定义角度阐述记忆的重要性"></a>从定义角度阐述记忆的重要性</h2><ul>
+<li><strong>记忆的定义</strong>：记忆是一个能够存储和回忆以往交互信息的系统。对于人工智能代理而言，它就如同一个信息的“仓库”，将过往与用户的每一次互动都记录下来，以便后续能够随时调取使用。</li>
+<li><strong>记忆的作用</strong>：记忆对于人工智能代理来说至关重要。首先，它使得代理能够记住之前的交互过程，当再次遇到类似情境时，可以凭借记忆中的经验来做出更合适的反应。其次，记忆为代理从反馈中学习提供了基础。代理可以根据记忆中的反馈信息，分析哪些行为是有效的、哪些需要改进，从而不断优化自身的行为模式。最后，记忆还能帮助代理适应用户的偏好。通过记住用户的喜好和习惯，代理能够为用户提供更加个性化、贴合需求的服务。</li>
+</ul>
+<h2 id="从任务复杂度角度分析记忆的必要性"><a href="#从任务复杂度角度分析记忆的必要性" class="headerlink" title="从任务复杂度角度分析记忆的必要性"></a>从任务复杂度角度分析记忆的必要性</h2><ul>
+<li><strong>简单任务与复杂任务的对比</strong>：当人工智能代理处理较为简单的任务时，可能仅依靠预设的规则和程序就能完成。然而，随着任务复杂度的增加，涉及到大量的用户交互，记忆的作用就凸显出来了。例如，在一个简单的问答系统中，代理可能只需要根据关键词匹配答案即可。但在一个需要进行多轮对话、理解用户意图并提供连贯建议的复杂场景中，如果没有记忆功能，代理就无法跟踪对话的进展，无法理解用户的上下文信息，从而导致无法给出准确且符合用户需求的回答。</li>
+<li><strong>对效率和用户满意度的影响</strong>：从效率方面来看，具备记忆能力的代理能够更快地找到解决问题的方法。因为它可以避免重复处理相同或类似的问题，而是直接利用记忆中的经验来快速响应。从用户满意度角度来说，用户更倾向于与能够记住自己偏好的代理进行交互。当代理能够根据记忆为用户提供个性化的服务时，用户会感到被尊重和理解，从而提升对代理的满意度。</li>
+</ul>
+<h1 id="短期记忆"><a href="#短期记忆" class="headerlink" title="短期记忆"></a>短期记忆</h1><ul>
+<li><strong>定义</strong>：短期记忆允许应用程序在单个线程或对话中记住之前的交互。</li>
+<li><strong>组织方式</strong>：线程在会话中组织多次交互，类似于电子邮件将消息分组到单个对话中的方式。</li>
+<li><strong>常见形式</strong>：对话历史是短期记忆最常见的形式。</li>
+</ul>
+<h2 id="长对话的挑战"><a href="#长对话的挑战" class="headerlink" title="长对话的挑战"></a>长对话的挑战</h2><ul>
+<li><strong>上下文窗口限制</strong>：对于现代的语言模型（LLMs），长对话是一个挑战。完整的对话历史可能无法完全放入LLM的上下文窗口中，这会导致上下文丢失或出现错误。</li>
+<li><strong>性能问题</strong>：即使你的模型支持完整的上下文长度，大多数LLMs在处理长上下文时仍然表现不佳。它们会被过时的或离题的内容“分心”，同时还会遭受响应速度变慢和成本增加的问题。</li>
+</ul>
+<h2 id="对话的组织和处理"><a href="#对话的组织和处理" class="headerlink" title="对话的组织和处理"></a>对话的组织和处理</h2><ul>
+<li><strong>消息交互</strong>：聊天模型通过消息来接收上下文，这些消息包括指令（系统消息）和输入（人类消息）。在聊天应用中，消息在人类输入和模型响应之间交替出现，随着时间的推移，消息列表会变得越来越长。</li>
+<li><strong>上下文窗口限制的应对</strong>：由于上下文窗口是有限的，许多应用可以从使用技术来移除或“忘记”过时信息中受益。</li>
+</ul>
+<p>短期记忆主要用于 <strong>线程级对话保持</strong>，确保模型持续拥有必要的历史上下文。</p>
+<ul>
+<li><strong>短期记忆操作使用 runtime 对象的 state 属性, 也称之为状态(每一次调用 agent 的 state 是独立的)</strong></li>
+<li>LangChain的 Agent 将短期记忆作为代理状态的一部分来管理。通过将这些数据存储在图的状态中，代理可以在保持不同线程间的分离的同时，访问给定对话的完整上下文。状态通过检查点持久化到数据库（或内存），因此线程可以随时恢复。当调用代理或完成某一步（如工具调用）时，短期内存会更新，并在每步开始时读取状态。</li>
+</ul>
+<h1 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h1><h2 id="如何开启短期记忆：Checkpointer"><a href="#如何开启短期记忆：Checkpointer" class="headerlink" title="如何开启短期记忆：Checkpointer"></a>如何开启短期记忆：Checkpointer</h2><h3 id="基本使用（In-Memory）"><a href="#基本使用（In-Memory）" class="headerlink" title="基本使用（In-Memory）"></a>基本使用（In-Memory）</h3><p>官方示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver  </span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    <span class="string">&quot;gpt-5&quot;</span>,</span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    checkpointer=InMemorySaver(),  </span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">agent.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;Hi! My name is Bob.&quot;</span>&#125;]&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;,  </span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>练习代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[],</span><br><span class="line">    <span class="comment"># 开启短期记忆</span></span><br><span class="line">    checkpointer=InMemorySaver()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用agent,一定要通过参数config传入线程id</span></span><br><span class="line">res = agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我的名字叫小花&quot;</span>&#125;]&#125;, config=&#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;)</span><br><span class="line"><span class="built_in">print</span>(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="生产环境"><a href="#生产环境" class="headerlink" title="生产环境"></a>生产环境</h3><p>数据库来存储其记录的状态信息的，利用数据库的稳定性和可靠性来保证检查点数据的持久化和安全性。</p>
+<p>安装提供的postgres的依赖</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install langgraph-checkpoint-postgres</span><br></pre></td></tr></table></figure>
+<p>官方示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.postgres <span class="keyword">import</span> PostgresSaver  </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">DB_URI = <span class="string">&quot;postgresql://postgres:postgres@localhost:5442/postgres?sslmode=disable&quot;</span></span><br><span class="line"><span class="keyword">with</span> PostgresSaver.from_conn_string(DB_URI) <span class="keyword">as</span> checkpointer:</span><br><span class="line">    checkpointer.setup() <span class="comment"># auto create tables in PostgresSql</span></span><br><span class="line">    agent = create_agent(</span><br><span class="line">        <span class="string">&quot;gpt-5&quot;</span>,</span><br><span class="line">        tools=[get_user_info],</span><br><span class="line">        checkpointer=checkpointer,  </span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+<h3 id="自定义Agent记忆"><a href="#自定义Agent记忆" class="headerlink" title="自定义Agent记忆"></a>自定义Agent记忆</h3><p>默认情况下，智能代理（agents）使用 AgentState 来管理短期记忆。这里的“短期记忆”主要指的是在一次会话（session）或对话线程（thread）中，代理能够记住之前交互的信息，例如用户说过的话、之前的回答等，以便在后续的交互中能够更好地理解和回应。</p>
+<p>通过一个名为 messages 的键来存储对话历史。也就是说，AgentState 中有一个 messages 键，它的值是一个列表，包含了这次会话中所有交互的信息，比如用户发送的消息和代理的回复等。</p>
+<p>你可以对 AgentState 进行扩展，以添加额外的字段。这意味着，除了默认的 messages 字段用于存储对话历史外，你还可以根据自己的需求，为 AgentState 添加其他字段，用于存储更多不同类型的信息，比如用户的偏好设置、会话的上下文信息等。</p>
+<p>自定义的状态模式（state schemas）是通过 state_schema 参数传递给 create_agent 函数的。当你定义了自己的 AgentState 扩展类，包含了额外的字段后，你需要在创建代理时，通过 state_schema 参数将这个自定义的状态模式传递给 create_agent 函数，这样代理在运行时就能够按照你定义的模式来管理和使用状态信息。</p>
+<p>官方示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomAgentState</span>(<span class="title class_ inherited__">AgentState</span>):  </span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    preferences: <span class="built_in">dict</span></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    <span class="string">&quot;gpt-5&quot;</span>,</span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    state_schema=CustomAgentState,  </span><br><span class="line">    checkpointer=InMemorySaver(),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Custom state can be passed in invoke</span></span><br><span class="line">result = agent.invoke(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;Hello&quot;</span>&#125;],</span><br><span class="line">        <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;user_123&quot;</span>,  </span><br><span class="line">        <span class="string">&quot;preferences&quot;</span>: &#123;<span class="string">&quot;theme&quot;</span>: <span class="string">&quot;dark&quot;</span>&#125;  </span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;)</span><br></pre></td></tr></table></figure>
+<p>源码中AgentState的定义</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">AgentState</span>(TypedDict, <span class="type">Generic</span>[ResponseT]):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;State schema for the agent.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    messages: Required[Annotated[<span class="built_in">list</span>[AnyMessage], add_messages]]</span><br><span class="line">    jump_to: NotRequired[Annotated[JumpTo | <span class="literal">None</span>, EphemeralValue, PrivateStateAttr]]</span><br><span class="line">    structured_response: NotRequired[Annotated[ResponseT, OmitFromInput]]</span><br></pre></td></tr></table></figure>
+<h2 id="记忆访问"><a href="#记忆访问" class="headerlink" title="记忆访问"></a>记忆访问</h2><h3 id="在工具中读取短期记忆"><a href="#在工具中读取短期记忆" class="headerlink" title="在工具中读取短期记忆"></a>在工具中读取短期记忆</h3><p>短期记忆（short-term memory）是指代理在当前对话线程（thread）中记住的交互信息。这些信息对于工具来说可能是有用的，因为它们可以帮助工具了解对话的上下文和历史。</p>
+<ul>
+<li><strong>ToolRuntime 参数</strong>：这是传递给工具的一个参数，它包含了代理的运行时信息，包括短期记忆（state）。通过这个参数，工具可以访问代理的短期记忆。</li>
+<li><strong>隐藏的参数</strong>：tool_runtime 参数在工具的签名（signature）中是隐藏的，这意味着模型（model）不会直接看到这个参数。换句话说，模型在调用工具时，不会意识到这个参数的存在，但它仍然可以通过 tool_runtime 参数来访问短期记忆。</li>
+</ul>
+<p>官方示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomState</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params"></span></span><br><span class="line"><span class="params">    runtime: ToolRuntime</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Look up user info.&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 读取短期记忆中的内容</span></span><br><span class="line">    user_id = runtime.state[<span class="string">&quot;user_id&quot;</span>]</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;User is John Smith&quot;</span> <span class="keyword">if</span> user_id == <span class="string">&quot;user_123&quot;</span> <span class="keyword">else</span> <span class="string">&quot;Unknown user&quot;</span></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-5-nano&quot;</span>,</span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    state_schema=CustomState,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: <span class="string">&quot;look up user information&quot;</span>,</span><br><span class="line">    <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;user_123&quot;</span></span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br><span class="line"><span class="comment"># &gt; User is John Smith.</span></span><br></pre></td></tr></table></figure>
+<p>练习代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/19 10:31</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">记忆的访问</span></span><br><span class="line"><span class="string">在工具中传递数据</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">print_stream_result</span>(<span class="params">response</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;流式结果的输出&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> response:</span><br><span class="line">        <span class="keyword">for</span> key, value <span class="keyword">in</span> item.items():</span><br><span class="line">            <span class="keyword">if</span> key == <span class="string">&quot;model&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&quot;-----执行步骤：调用大模型&quot;</span>)</span><br><span class="line">                <span class="keyword">if</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;-----大模型分析的结果:<span class="subst">&#123;value[<span class="string">&quot;messages&quot;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">&quot;-----大模型分析的结果为调用以下工具：&quot;</span>)</span><br><span class="line">                    <span class="keyword">for</span> tool_ <span class="keyword">in</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;工具名称：<span class="subst">&#123;tool_[<span class="string">&#x27;name&#x27;</span>]&#125;</span>,调用工具的入参:<span class="subst">&#123;tool_[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">elif</span> key == <span class="string">&quot;tools&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;智能体执行工具：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].name&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;工具执行结果：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    nickname: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 读取短期记忆中的内容</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_id&quot;</span>: runtime.state.get(<span class="string">&quot;user_id&quot;</span>), <span class="string">&quot;nickname&quot;</span>: runtime.state.get(<span class="string">&quot;nickname&quot;</span>), <span class="string">&quot;age&quot;</span>: <span class="number">18</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[get_user_info],</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">    <span class="comment"># 开启短期记忆</span></span><br><span class="line">    checkpointer=InMemorySaver()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用agent,一定要通过参数config出入线程id</span></span><br><span class="line">res = agent.stream(</span><br><span class="line">    <span class="comment"># agent调用的时候第一个参数input传递的只，最终会保存到runtime.state(短期记忆)中</span></span><br><span class="line">    <span class="built_in">input</span>=&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;获取用户的信息&quot;</span>&#125;], <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;9527&quot;</span>, <span class="string">&quot;nickname&quot;</span>: <span class="string">&quot;花花&quot;</span>&#125;,</span><br><span class="line">    config=&#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">)</span><br><span class="line">print_stream_result(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">-----执行步骤：调用大模型</span><br><span class="line">-----大模型分析的结果:我来帮您获取用户信息。</span><br><span class="line">智能体执行工具：get_user_info</span><br><span class="line">工具执行结果：&#123;&quot;user_id&quot;: &quot;9527&quot;, &quot;nickname&quot;: &quot;花花&quot;, &quot;age&quot;: 18&#125;</span><br><span class="line">-----执行步骤：调用大模型</span><br><span class="line">-----大模型分析的结果:根据获取到的用户信息，以下是您的详细信息：</span><br><span class="line"></span><br><span class="line">**用户信息：**</span><br><span class="line">- **用户ID：** 9527</span><br><span class="line">- **昵称：** 花花</span><br><span class="line">- **年龄：** 18岁</span><br><span class="line"></span><br><span class="line">如果您需要了解其他信息或有其他问题，请随时告诉我！</span><br></pre></td></tr></table></figure>
+<h3 id="在工具中写入短期记忆"><a href="#在工具中写入短期记忆" class="headerlink" title="在工具中写入短期记忆"></a>在工具中写入短期记忆</h3><ul>
+<li>在智能代理执行任务的过程中，可以通过工具直接返回状态更新，以此来修改代理的短期记忆（state）。</li>
+<li>这种做法非常有用，主要有两个方面的益处：<ul>
+<li>持久化中间结果：可以将一些在执行过程中产生的中间结果保存下来，这样在后续的执行过程中就可以直接使用这些中间结果，而无需重新计算，从而提高执行效率。</li>
+<li>使信息对后续工具或提示可用：可以将一些重要的信息通过状态更新传递给后续的工具或提示，让它们能够基于这些信息进行更准确的操作或生成更合适的提示内容，增强智能代理的整体性能和用户体验。</li>
+</ul>
+</li>
+</ul>
+<p>官方示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> ToolMessage</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomState</span>(<span class="title class_ inherited__">AgentState</span>):  </span><br><span class="line">    user_name: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomContext</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">update_user_info</span>(<span class="params"></span></span><br><span class="line"><span class="params">    runtime: ToolRuntime[CustomContext, CustomState],</span></span><br><span class="line"><span class="params"></span>) -&gt; Command:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Look up and update user info.&quot;&quot;&quot;</span></span><br><span class="line">    user_id = runtime.context.user_id</span><br><span class="line">    name = <span class="string">&quot;John Smith&quot;</span> <span class="keyword">if</span> user_id == <span class="string">&quot;user_123&quot;</span> <span class="keyword">else</span> <span class="string">&quot;Unknown user&quot;</span></span><br><span class="line">    <span class="keyword">return</span> Command(update=&#123;  </span><br><span class="line">        <span class="string">&quot;user_name&quot;</span>: name,</span><br><span class="line">        <span class="comment"># update the message history</span></span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            ToolMessage(</span><br><span class="line">                <span class="string">&quot;Successfully looked up user information&quot;</span>,</span><br><span class="line">                tool_call_id=runtime.tool_call_id</span><br><span class="line">            )</span><br><span class="line">        ]</span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">greet</span>(<span class="params"></span></span><br><span class="line"><span class="params">    runtime: ToolRuntime[CustomContext, CustomState]</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">str</span> | Command:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Use this to greet the user once you found their info.&quot;&quot;&quot;</span></span><br><span class="line">    user_name = runtime.state.get(<span class="string">&quot;user_name&quot;</span>, <span class="literal">None</span>)</span><br><span class="line">    <span class="keyword">if</span> user_name <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">       <span class="keyword">return</span> Command(update=&#123;</span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">                ToolMessage(</span><br><span class="line">                    <span class="string">&quot;Please call the &#x27;update_user_info&#x27; tool it will get and update the user&#x27;s name.&quot;</span>,</span><br><span class="line">                    tool_call_id=runtime.tool_call_id</span><br><span class="line">                )</span><br><span class="line">            ]</span><br><span class="line">        &#125;)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;Hello <span class="subst">&#123;user_name&#125;</span>!&quot;</span></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-5-nano&quot;</span>,</span><br><span class="line">    tools=[update_user_info, greet],</span><br><span class="line">    state_schema=CustomState, </span><br><span class="line">    context_schema=CustomContext,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">agent.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;greet the user&quot;</span>&#125;]&#125;,</span><br><span class="line">    context=CustomContext(user_id=<span class="string">&quot;user_123&quot;</span>),</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>练习代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/19 10:31</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">在工具中写入短期记忆</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolRuntime</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> ToolMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">print_stream_result</span>(<span class="params">response</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;流式结果的输出&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> response:</span><br><span class="line">        <span class="keyword">for</span> key, value <span class="keyword">in</span> item.items():</span><br><span class="line">            <span class="keyword">if</span> key == <span class="string">&quot;model&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&quot;-----执行步骤：调用大模型&quot;</span>)</span><br><span class="line">                <span class="keyword">if</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;-----大模型分析的结果:<span class="subst">&#123;value[<span class="string">&quot;messages&quot;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">&quot;-----大模型分析的结果为调用以下工具：&quot;</span>)</span><br><span class="line">                    <span class="keyword">for</span> tool_ <span class="keyword">in</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;工具名称：<span class="subst">&#123;tool_[<span class="string">&#x27;name&#x27;</span>]&#125;</span>,调用工具的入参:<span class="subst">&#123;tool_[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">elif</span> key == <span class="string">&quot;tools&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;智能体执行工具：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].name&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;工具执行结果：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    username: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;get_user_info&quot;</span>, description=<span class="string">&quot;用户获取当前用户信息的工具&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户信息&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_id&quot;</span>: runtime.state.get(<span class="string">&quot;user_id&quot;</span>), <span class="string">&quot;username&quot;</span>: runtime.state.get(<span class="string">&quot;username&quot;</span>), <span class="string">&quot;age&quot;</span>: <span class="number">18</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;save_user_info&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">save_user_info</span>(<span class="params">username: <span class="built_in">str</span>, runtime: ToolRuntime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;保存用户信息&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 在短期记忆中保存记忆</span></span><br><span class="line">    <span class="comment"># state中数据的写入</span></span><br><span class="line">    <span class="keyword">return</span> Command(update=&#123;</span><br><span class="line">        <span class="string">&quot;username&quot;</span>: username,</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            ToolMessage(</span><br><span class="line">                <span class="string">&quot;用户保存成功&quot;</span>,</span><br><span class="line">                tool_call_id=runtime.tool_call_id</span><br><span class="line">            )</span><br><span class="line">        ]</span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 配置智能体工具</span></span><br><span class="line">    tools=[get_user_info, save_user_info],</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">    <span class="comment"># 开启短期记忆</span></span><br><span class="line">    checkpointer=InMemorySaver()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用agent,一定要通过参数config出入线程id</span></span><br><span class="line">res = agent.stream(</span><br><span class="line">    <span class="comment"># agent调用的时候第一个参数input传递的只，最终会保存到runtime.state(短期记忆)中</span></span><br><span class="line">    <span class="built_in">input</span>=&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我的名字叫小红帽，并输出我的用户信息&quot;</span>&#125;], <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;9527&quot;</span>&#125;,</span><br><span class="line">    config=&#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">)</span><br><span class="line">print_stream_result(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">-----执行步骤：调用大模型</span><br><span class="line">-----大模型分析的结果:我来帮您保存用户名并获取您的用户信息。</span><br><span class="line">智能体执行工具：save_user_info</span><br><span class="line">工具执行结果：用户保存成功</span><br><span class="line">-----执行步骤：调用大模型</span><br><span class="line">-----大模型分析的结果:现在让我获取您的用户信息：</span><br><span class="line">智能体执行工具：get_user_info</span><br><span class="line">工具执行结果：&#123;&quot;user_id&quot;: &quot;9527&quot;, &quot;username&quot;: &quot;小红帽&quot;, &quot;age&quot;: 18&#125;</span><br><span class="line">-----执行步骤：调用大模型</span><br><span class="line">-----大模型分析的结果:您好，小红帽！您的用户信息如下：</span><br><span class="line"></span><br><span class="line">- **用户ID**: 9527</span><br><span class="line">- **用户名**: 小红帽  </span><br><span class="line">- **年龄**: 18岁</span><br><span class="line"></span><br><span class="line">您的用户名&quot;小红帽&quot;已经成功保存到系统中了！</span><br></pre></td></tr></table></figure>
+<h2 id="记忆处理中间件"><a href="#记忆处理中间件" class="headerlink" title="记忆处理中间件"></a>记忆处理中间件</h2><h3 id="动态系统提示词"><a href="#动态系统提示词" class="headerlink" title="动态系统提示词"></a>动态系统提示词</h3><p>使用 dynamic_prompt 可以根据短期记忆动态构建构建系统提示词</p>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> dynamic_prompt, ModelRequest</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomContext</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    user_name: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Get the weather in a city.&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;The weather in <span class="subst">&#123;city&#125;</span> is always sunny!&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dynamic_prompt</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">dynamic_system_prompt</span>(<span class="params">request: ModelRequest</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    user_name = request.runtime.context[<span class="string">&quot;user_name&quot;</span>]</span><br><span class="line">    system_prompt = <span class="string">f&quot;You are a helpful assistant. Address the user as <span class="subst">&#123;user_name&#125;</span>.&quot;</span></span><br><span class="line">    <span class="keyword">return</span> system_prompt</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-5-nano&quot;</span>,</span><br><span class="line">    tools=[get_weather],</span><br><span class="line">    middleware=[dynamic_system_prompt],</span><br><span class="line">    context_schema=CustomContext,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = agent.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;What is the weather in SF?&quot;</span>&#125;]&#125;,</span><br><span class="line">    context=CustomContext(user_name=<span class="string">&quot;John Smith&quot;</span>),</span><br><span class="line">)</span><br><span class="line"><span class="keyword">for</span> msg <span class="keyword">in</span> result[<span class="string">&quot;messages&quot;</span>]:</span><br><span class="line">    msg.pretty_print()</span><br></pre></td></tr></table></figure>
+<p>练习代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/12/29 14:18</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">使用 dynamic_prompt 可以根据短期记忆动态构建构建系统提示词</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> AgentState, create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> dynamic_prompt, ModelRequest</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">print_stream_result</span>(<span class="params">response</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;流式结果的输出&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> item <span class="keyword">in</span> response:</span><br><span class="line">        <span class="keyword">for</span> key, value <span class="keyword">in</span> item.items():</span><br><span class="line">            <span class="keyword">if</span> key == <span class="string">&quot;model&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">&quot;-----执行步骤：调用大模型&quot;</span>)</span><br><span class="line">                <span class="keyword">if</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;-----大模型分析的结果:<span class="subst">&#123;value[<span class="string">&quot;messages&quot;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">&quot;-----大模型分析的结果为调用以下工具：&quot;</span>)</span><br><span class="line">                    <span class="keyword">for</span> tool_ <span class="keyword">in</span> value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].tool_calls:</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;工具名称：<span class="subst">&#123;tool_[<span class="string">&#x27;name&#x27;</span>]&#125;</span>,调用工具的入参:<span class="subst">&#123;tool_[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">elif</span> key == <span class="string">&quot;tools&quot;</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;智能体执行工具：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].name&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;工具执行结果：<span class="subst">&#123;value[<span class="string">&#x27;messages&#x27;</span>][<span class="number">0</span>].content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义短期记忆(runtime.state)中其他额外的字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">UserInfo</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    username: <span class="built_in">str</span></span><br><span class="line">    role: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个动态配置系统提示词的中间件</span></span><br><span class="line"><span class="meta">@dynamic_prompt</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_system_prompt</span>(<span class="params">request: ModelRequest</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;动态获取系统提示词的中间件&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 通过state中传递的role来设计提示词, ModelRequest：可以获取上下问信息的</span></span><br><span class="line">    role = request.state.get(<span class="string">&quot;role&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;你是一位<span class="subst">&#123;role&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个agent，开启短期记忆</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    <span class="comment"># 指定短期记忆中额外的字段</span></span><br><span class="line">    state_schema=UserInfo,</span><br><span class="line">    <span class="comment"># 添加中间件</span></span><br><span class="line">    middleware=[get_system_prompt],</span><br><span class="line">    <span class="comment"># 开启短期记忆</span></span><br><span class="line">    checkpointer=InMemorySaver()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用agent,一定要通过参数config出入线程id</span></span><br><span class="line">res = agent.stream(</span><br><span class="line">    <span class="comment"># agent调用的时候第一个参数input传递的只，最终会保存到runtime.state(短期记忆)中</span></span><br><span class="line">    <span class="built_in">input</span>=&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请问什么是变量&quot;</span>&#125;], <span class="string">&quot;role&quot;</span>: <span class="string">&quot;程序员&quot;</span>&#125;,</span><br><span class="line">    config=&#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">)</span><br><span class="line">print_stream_result(res)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="模型前处理"><a href="#模型前处理" class="headerlink" title="模型前处理"></a>模型前处理</h3><p>在模型调用前，访问@before_model中间件中的短期内存（状态）以处理消息。比如消息裁剪</p>
+<p>before_model官方说明：<a target="_blank" rel="noopener" href="https://reference.langchain.com/python/langchain/middleware/#langchain.agents.middleware.before_model">https://reference.langchain.com/python/langchain/middleware/#langchain.agents.middleware.before_model</a></p>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> RemoveMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.graph.message <span class="keyword">import</span> REMOVE_ALL_MESSAGES</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">trim_messages</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Keep only the last few messages to fit context window.&quot;&quot;&quot;</span></span><br><span class="line">    messages = state[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(messages) &lt;= <span class="number">3</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span>  <span class="comment"># No changes needed</span></span><br><span class="line"></span><br><span class="line">    first_msg = messages[<span class="number">0</span>]</span><br><span class="line">    recent_messages = messages[-<span class="number">3</span>:] <span class="keyword">if</span> <span class="built_in">len</span>(messages) % <span class="number">2</span> == <span class="number">0</span> <span class="keyword">else</span> messages[-<span class="number">4</span>:]</span><br><span class="line">    new_messages = [first_msg] + recent_messages</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            RemoveMessage(<span class="built_in">id</span>=REMOVE_ALL_MESSAGES),</span><br><span class="line">            *new_messages</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    <span class="string">&quot;gpt-5-nano&quot;</span>,</span><br><span class="line">    tools=[],</span><br><span class="line">    middleware=[trim_messages],</span><br><span class="line">    checkpointer=InMemorySaver()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">config: RunnableConfig = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line">agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;hi, my name is bob&quot;</span>&#125;, config)</span><br><span class="line">agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;write a short poem about cats&quot;</span>&#125;, config)</span><br><span class="line">agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;now do the same but for dogs&quot;</span>&#125;, config)</span><br><span class="line">final_response = agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;what&#x27;s my name?&quot;</span>&#125;, config)</span><br><span class="line"></span><br><span class="line">final_response[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">================================== Ai Message ==================================</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Your name is Bob. You told me that earlier.</span></span><br><span class="line"><span class="string">If you&#x27;d like me to call you a nickname or use a different name, just say the word.</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="模型后处理"><a href="#模型后处理" class="headerlink" title="模型后处理"></a>模型后处理</h3><p>after_model 中间件可以在模型调用后处理记忆，例如屏蔽敏感词输出</p>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> RemoveMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> after_model</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@after_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">validate_response</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span> | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Remove messages containing sensitive words.&quot;&quot;&quot;</span></span><br><span class="line">    STOP_WORDS = [<span class="string">&quot;password&quot;</span>, <span class="string">&quot;secret&quot;</span>]</span><br><span class="line">    last_message = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">any</span>(word <span class="keyword">in</span> last_message.content <span class="keyword">for</span> word <span class="keyword">in</span> STOP_WORDS):</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [RemoveMessage(<span class="built_in">id</span>=last_message.<span class="built_in">id</span>)]&#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-5-nano&quot;</span>,</span><br><span class="line">    tools=[],</span><br><span class="line">    middleware=[validate_response],</span><br><span class="line">    checkpointer=InMemorySaver(),</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h2 id="短期记忆管理对话消息"><a href="#短期记忆管理对话消息" class="headerlink" title="短期记忆管理对话消息"></a>短期记忆管理对话消息</h2><p>agent 的任务中如果出现长对话，可能超过 模型 上下文的最大限制，因此需要管理消息历史：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>技术</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>截断消息</td>
+<td>保留最近 N 条消息</td>
+</tr>
+<tr>
+<td>删除消息</td>
+<td>删除不需要的消息</td>
+</tr>
+<tr>
+<td>总结消息</td>
+<td>用 summary 替换早期历史</td>
+</tr>
+<tr>
+<td>自定义策略</td>
+<td>过滤、压缩、优先级等</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="截断消息：before-model-中间件"><a href="#截断消息：before-model-中间件" class="headerlink" title="截断消息：before_model 中间件"></a>截断消息：before_model 中间件</h3><p>只保留最近几条消息，示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> RemoveMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.graph.message <span class="keyword">import</span> REMOVE_ALL_MESSAGES</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">trim_messages</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Keep only the last few messages to fit context window.&quot;&quot;&quot;</span></span><br><span class="line">    messages = state[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(messages) &lt;= <span class="number">3</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span>  <span class="comment"># No changes needed</span></span><br><span class="line"></span><br><span class="line">    first_msg = messages[<span class="number">0</span>]</span><br><span class="line">    recent_messages = messages[-<span class="number">3</span>:] <span class="keyword">if</span> <span class="built_in">len</span>(messages) % <span class="number">2</span> == <span class="number">0</span> <span class="keyword">else</span> messages[-<span class="number">4</span>:]</span><br><span class="line">    new_messages = [first_msg] + recent_messages</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            RemoveMessage(<span class="built_in">id</span>=REMOVE_ALL_MESSAGES),</span><br><span class="line">            *new_messages</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model,</span><br><span class="line">    tools=tools,</span><br><span class="line">    middleware=[trim_messages],</span><br><span class="line">    checkpointer=InMemorySaver(),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">config: RunnableConfig = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line">agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;hi, my name is bob&quot;</span>&#125;, config)</span><br><span class="line">agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;write a short poem about cats&quot;</span>&#125;, config)</span><br><span class="line">agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;now do the same but for dogs&quot;</span>&#125;, config)</span><br><span class="line">final_response = agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;what&#x27;s my name?&quot;</span>&#125;, config)</span><br><span class="line"></span><br><span class="line">final_response[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">================================== Ai Message ==================================</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Your name is Bob. You told me that earlier.</span></span><br><span class="line"><span class="string">If you&#x27;d like me to call you a nickname or use a different name, just say the word.</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<h3 id="删除消息：RemoveMessage"><a href="#删除消息：RemoveMessage" class="headerlink" title="删除消息：RemoveMessage"></a>删除消息：RemoveMessage</h3><ul>
+<li><p>删除特定消息，示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> RemoveMessage  </span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete_messages</span>(<span class="params">state</span>):</span><br><span class="line">    messages = state[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(messages) &gt; <span class="number">2</span>:</span><br><span class="line">        <span class="comment"># remove the earliest two messages</span></span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [RemoveMessage(<span class="built_in">id</span>=m.<span class="built_in">id</span>) <span class="keyword">for</span> m <span class="keyword">in</span> messages[:<span class="number">2</span>]]&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p>删除所有消息，示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.graph.message <span class="keyword">import</span> REMOVE_ALL_MESSAGES</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete_messages</span>(<span class="params">state</span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [RemoveMessage(<span class="built_in">id</span>=REMOVE_ALL_MESSAGES)]&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="总结消息：SummarizationMiddleware"><a href="#总结消息：SummarizationMiddleware" class="headerlink" title="总结消息：SummarizationMiddleware"></a>总结消息：SummarizationMiddleware</h3><p>在消息过长时自动总结。示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> SummarizationMiddleware</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[],</span><br><span class="line">    middleware=[</span><br><span class="line">        SummarizationMiddleware(</span><br><span class="line">            model=<span class="string">&quot;gpt-4o-mini&quot;</span>,</span><br><span class="line">            trigger=&#123;<span class="string">&quot;tokens&quot;</span>: <span class="number">4000</span>&#125;,</span><br><span class="line">            keep=&#123;<span class="string">&quot;messages&quot;</span>: <span class="number">20</span>&#125;,</span><br><span class="line">        )</span><br><span class="line">    ],</span><br><span class="line">    checkpointer=checkpointer,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">config: RunnableConfig = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;hi, my name is bob&quot;</span>&#125;, config)</span><br><span class="line">agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;write a short poem about cats&quot;</span>&#125;, config)</span><br><span class="line">agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;now do the same but for dogs&quot;</span>&#125;, config)</span><br><span class="line">final_response = agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;what&#x27;s my name?&quot;</span>&#125;, config)</span><br><span class="line"></span><br><span class="line">final_response[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h1 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h1><p>注意一点，这里和之前提到过的运行上下文的区别</p>
+<ul>
+<li>runtime.context：运行上下文信息<ul>
+<li>运行上下文用来传递不可变的值（数据），在工具中不能修改context中的值</li>
+</ul>
+</li>
+<li>runtime.state：存储在短期记忆中的内容<ul>
+<li>短期记忆state中除了agent运行的message（消息列表）外，还可以像context一样传递数据（短期记忆中可以在工具中修改state的值）</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/12/ai/langchain/3-langchain-Tools/" rel="prev" title="LangChain核心组件Tools(工具)">
+      <i class="fa fa-chevron-left"></i> LangChain核心组件Tools(工具)
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/12/30/ai/langchain/5-langchain-Middleware/" rel="next" title="LangChain核心组件Middleware">
+      LangChain核心组件Middleware <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E8%AE%B0%E5%BF%86"><span class="nav-number">1.</span> <span class="nav-text">什么是记忆</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E5%AE%9A%E4%B9%89%E8%A7%92%E5%BA%A6%E9%98%90%E8%BF%B0%E8%AE%B0%E5%BF%86%E7%9A%84%E9%87%8D%E8%A6%81%E6%80%A7"><span class="nav-number">1.1.</span> <span class="nav-text">从定义角度阐述记忆的重要性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E4%BB%BB%E5%8A%A1%E5%A4%8D%E6%9D%82%E5%BA%A6%E8%A7%92%E5%BA%A6%E5%88%86%E6%9E%90%E8%AE%B0%E5%BF%86%E7%9A%84%E5%BF%85%E8%A6%81%E6%80%A7"><span class="nav-number">1.2.</span> <span class="nav-text">从任务复杂度角度分析记忆的必要性</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">2.</span> <span class="nav-text">短期记忆</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%95%BF%E5%AF%B9%E8%AF%9D%E7%9A%84%E6%8C%91%E6%88%98"><span class="nav-number">2.1.</span> <span class="nav-text">长对话的挑战</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E8%AF%9D%E7%9A%84%E7%BB%84%E7%BB%87%E5%92%8C%E5%A4%84%E7%90%86"><span class="nav-number">2.2.</span> <span class="nav-text">对话的组织和处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">使用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%BC%80%E5%90%AF%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86%EF%BC%9ACheckpointer"><span class="nav-number">3.1.</span> <span class="nav-text">如何开启短期记忆：Checkpointer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8%EF%BC%88In-Memory%EF%BC%89"><span class="nav-number">3.1.1.</span> <span class="nav-text">基本使用（In-Memory）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83"><span class="nav-number">3.1.2.</span> <span class="nav-text">生产环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89Agent%E8%AE%B0%E5%BF%86"><span class="nav-number">3.1.3.</span> <span class="nav-text">自定义Agent记忆</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%B0%E5%BF%86%E8%AE%BF%E9%97%AE"><span class="nav-number">3.2.</span> <span class="nav-text">记忆访问</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8%E5%B7%A5%E5%85%B7%E4%B8%AD%E8%AF%BB%E5%8F%96%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">3.2.1.</span> <span class="nav-text">在工具中读取短期记忆</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8%E5%B7%A5%E5%85%B7%E4%B8%AD%E5%86%99%E5%85%A5%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">3.2.2.</span> <span class="nav-text">在工具中写入短期记忆</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%B0%E5%BF%86%E5%A4%84%E7%90%86%E4%B8%AD%E9%97%B4%E4%BB%B6"><span class="nav-number">3.3.</span> <span class="nav-text">记忆处理中间件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E7%B3%BB%E7%BB%9F%E6%8F%90%E7%A4%BA%E8%AF%8D"><span class="nav-number">3.3.1.</span> <span class="nav-text">动态系统提示词</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E5%89%8D%E5%A4%84%E7%90%86"><span class="nav-number">3.3.2.</span> <span class="nav-text">模型前处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E5%90%8E%E5%A4%84%E7%90%86"><span class="nav-number">3.3.3.</span> <span class="nav-text">模型后处理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86%E7%AE%A1%E7%90%86%E5%AF%B9%E8%AF%9D%E6%B6%88%E6%81%AF"><span class="nav-number">3.4.</span> <span class="nav-text">短期记忆管理对话消息</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%AA%E6%96%AD%E6%B6%88%E6%81%AF%EF%BC%9Abefore-model-%E4%B8%AD%E9%97%B4%E4%BB%B6"><span class="nav-number">3.4.1.</span> <span class="nav-text">截断消息：before_model 中间件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E6%B6%88%E6%81%AF%EF%BC%9ARemoveMessage"><span class="nav-number">3.4.2.</span> <span class="nav-text">删除消息：RemoveMessage</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%E6%B6%88%E6%81%AF%EF%BC%9ASummarizationMiddleware"><span class="nav-number">3.4.3.</span> <span class="nav-text">总结消息：SummarizationMiddleware</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F"><span class="nav-number">4.</span> <span class="nav-text">注意</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'dark',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
