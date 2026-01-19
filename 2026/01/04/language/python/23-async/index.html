@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习Python学习笔记第二十三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="异步编程">
+<meta property="og:url" content="https://jinglv.github.io/2026/01/04/language/python/23-async/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习Python学习笔记第二十三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-01-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-04T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="Python">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/01/04/language/python/23-async/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>异步编程 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/01/04/language/python/23-async/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          异步编程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-01-04 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2026-01-04T00:00:00+08:00">2026-01-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习Python学习笔记第二十三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="异步函数-协程函数"><a href="#异步函数-协程函数" class="headerlink" title="异步函数(协程函数)"></a>异步函数(协程函数)</h1><h2 id="async和协程函数"><a href="#async和协程函数" class="headerlink" title="async和协程函数"></a>async和协程函数</h2><ul>
+<li>在 Python 中，<strong>协程是可暂停的函数</strong>，定义方式为 <code>async def</code>。</li>
+<li>如果直接调用， 它不会立即执行，返回的是一个 <code>coroutine</code> (协程)对象。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">say_hello</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;开始执行say hello这个任务&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;Hello&quot;</span></span><br></pre></td></tr></table></figure>
+<p>不能直接调用协程函数获得结果，必须使用 <code>await</code> 或事件循环调度。</p>
+<p><strong>await</strong> <strong>和可等待对象</strong></p>
+<p>在 Python 异步编程中，<code>await</code> 后面必须是可等待对象，即：</p>
+<p>实现了 <code>__await__()</code> 方法的对象，称为 awaitable（可等待对象）</p>
+<p><strong>Python 中的三种原生 awaitable 类型</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>示例</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>协程对象</td>
+<td>由 <code>async def</code>调用返回</td>
+<td>最常见的 awaitable</td>
+</tr>
+<tr>
+<td>Task 对象</td>
+<td><code>asyncio.create_task()</code>的返回值</td>
+<td>包装协程为并发任务</td>
+</tr>
+<tr>
+<td>Future 对象</td>
+<td><code>asyncio.Future()</code></td>
+<td>底层机制，手动控制结果</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="协程的调用方式"><a href="#协程的调用方式" class="headerlink" title="协程的调用方式"></a>协程的调用方式</h2><p><strong>错误调用方式</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">result = say_hello()  <span class="comment"># 返回 coroutine 对象，不会执行</span></span><br></pre></td></tr></table></figure>
+<p><strong>正确调用方式：</strong></p>
+<ul>
+<li>使用 <code>await</code>（仅限在 <code>async def</code> 中使用）</li>
+<li>或用 <code>asyncio.run()</code> 在顶层运行，asyncio异步编程的核心库</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    result = <span class="keyword">await</span> say_hello()</span><br><span class="line">    <span class="built_in">print</span>(result)</span><br><span class="line"></span><br><span class="line">asyncio.run(main())</span><br></pre></td></tr></table></figure>
+<h2 id="异步编程核心架构及流程"><a href="#异步编程核心架构及流程" class="headerlink" title="异步编程核心架构及流程"></a>异步编程核心架构及流程</h2><pre class="mermaid">graph TB
+    subgraph "Python异步编程架构"
+        A[应用层] --> B[协程 Coroutines]
+        A --> C[任务 Tasks]
+        A --> D[Future对象]
+
+        B --> E[asyncio 运行时]
+        C --> E
+        D --> E
+
+        E --> F[事件循环 Event Loop]
+
+        F --> G[选择器 Selector]
+        F --> H[任务调度器]
+        F --> I[回调管理器]
+
+        G --> J[操作系统I/O多路复用]
+
+        H --> K[就绪队列 Ready Queue]
+        H --> L[定时器队列 Timer Queue]
+        H --> M[完成队列 Done Queue]
+
+        J --> N[网络I/O事件]
+        J --> O[文件I/O事件]
+        J --> P[子进程事件]
+    end
+
+    subgraph "协程执行状态机"
+        Q[协程状态] --> R[未启动 CREATED]
+        R --> S[运行中 RUNNING]
+        S --> T[挂起 SUSPENDED]
+        T --> S
+        S --> U[完成 FINISHED]
+        T --> V[异常 EXCEPTION]
+    end</pre>
+
+<pre class="mermaid">flowchart TD
+    A[异步程序启动] --> B[创建事件循环]
+    B --> C[运行主协程<br>asyncio.run]
+
+    C --> D[协程调用栈初始化]
+    D --> E[创建Task包装主协程]
+
+    E --> F[事件循环开始运行<br>loop.run_until_complete]
+
+    F --> G{就绪队列检查}
+    G -->|有任务| H[取出Task执行]
+    G -->|空| I[等待I/O事件]
+
+    H --> J[执行Task._step]
+
+    J --> K{协程状态}
+    K -->|第一次执行| L[coro.sendNone启动]
+    K -->|恢复执行| M[coro.send结果<br>或 coro.throw异常]
+
+    L --> N{执行结果}
+    M --> N
+
+    N -->|返回新awaitable| O[处理嵌套await]
+    N -->|StopIteration| P[Task完成设置结果]
+    N -->|异常| Q[Task完成设置异常]
+
+    O --> R{awaitable类型分析}
+    R -->|协程| S[递归创建子Task]
+    R -->|Future/Task| T[添加回调等待完成]
+    R -->|其他| U[转换为Future]
+
+    S --> V[新Task加入就绪队列]
+    T --> W[当前Task暂停等待]
+    U --> W
+
+    W --> X[事件循环继续<br>执行其他任务]
+
+    P --> Y[Task标记为完成]
+    Q --> Y
+
+    Y --> Z[触发回调链]
+
+    Z --> AA[清理资源]
+
+    X --> G
+
+    I --> AB[调用select/poll/epoll<br>等待I/O事件]
+    AB --> AC[I/O事件就绪]
+    AC --> AD[对应Future设置结果]
+    AD --> AE[相关Task加入就绪队列]
+    AE --> G
+
+    subgraph "并发执行模式"
+        AF[多个Task并发] --> AG[时间片轮转]
+        AG --> AH[遇到await让出控制权]
+        AH --> AI[事件循环调度下一个Task]
+        AI --> AJ[I/O完成时恢复执行]
+    end</pre>
+
+
+
+<h2 id="协程执行并发"><a href="#协程执行并发" class="headerlink" title="协程执行并发"></a>协程执行并发</h2><h3 id="asyncio-create-task"><a href="#asyncio-create-task" class="headerlink" title="asyncio.create_task()"></a>asyncio.create_task()</h3><p>提前调度多个协程并发执行 </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    task1 = asyncio.create_task(say_hello())</span><br><span class="line">    task2 = asyncio.create_task(say_hello())</span><br><span class="line">    <span class="keyword">await</span> task1</span><br><span class="line">    <span class="keyword">await</span> task2</span><br></pre></td></tr></table></figure>
+<p><code>asyncio.create_task()</code> 是 Python 异步编程的核心函数之一，用于将协程包装为 Task 对象并调度执行。</p>
+<p>执行流程详解</p>
+<pre class="mermaid">flowchart TD
+    A[调用 asyncio.create_task] --> B{参数有效性检查}
+    B -->|无效| C[抛出TypeError异常]
+    B -->|有效| D[获取当前事件循环]
+
+    D --> E[创建Task对象]
+
+    E --> F[初始化Task]
+    F --> G[设置协程对象]
+    F --> H[设置状态为PENDING]
+    F --> I[创建Future对象]
+    F --> J[注册回调函数]
+
+    J --> K[调度Task执行]
+
+    K --> L[将Task加入就绪队列]
+
+    L --> M[事件循环开始调度]
+    M --> N{事件循环是否运行}
+    N -->|是| O[执行Task._step方法]
+    N -->|否| P[等待事件循环启动]
+
+    O --> Q{协程执行状态}
+    Q -->|第一次执行| R[发送None启动协程]
+    Q -->|后续恢复| S[发送结果或异常]
+
+    R --> T{协程执行结果}
+    S --> T
+
+    T -->|返回awaitable对象| U[处理awaitable对象]
+    T -->|抛出StopIteration| V[协程执行完成]
+    T -->|抛出其他异常| W[设置Task异常]
+
+    U --> X{awaitable对象类型}
+    X -->|Future或Task| Y[添加完成回调]
+    X -->|协程| Z[递归创建子Task]
+    X -->|其他类型| AA[转换为Future对象]
+
+    Y --> AB[暂停当前Task执行]
+    Z --> AB
+    AA --> AB
+
+    AB --> AC[事件循环继续其他任务]
+
+    V --> AD[Task状态变为FINISHED]
+    W --> AD
+
+    AD --> AE[执行完成回调函数]
+
+    AE --> AF[清理Task资源]
+    AF --> AG[Task执行完成]
+
+    AC --> M</pre>
+
+
+
+<h3 id="asyncio-gather"><a href="#asyncio-gather" class="headerlink" title="asyncio.gather()"></a>asyncio.gather()</h3><p>批量创建协程任务,并发执行</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">     <span class="keyword">await</span> asyncio.gather(say_hello(),say_hello())</span><br></pre></td></tr></table></figure>
+<p><code>asyncio.gather()</code> 是 Python 异步编程中用于并发运行多个可等待对象的核心函数，它收集所有结果并以列表形式返回，保持原始顺序。</p>
+<p>执行流程详解</p>
+<pre class="mermaid">flowchart TD
+    A[调用 asyncio.gather<br>*aws, return_exceptions=False] --> B[创建 _GatheringFuture 对象]
+
+    B --> C{检查参数}
+    C -->|无参数| D[返回空的已完成 Future]
+    C -->|有参数| E[初始化结果容器和计数器]
+
+    E --> F[遍历所有可等待对象 aws]
+
+    F --> G{是否为协程或 Future?}
+    G -->|协程| H[包装为 Task<br>ensure_future]
+    G -->|Future| I[直接使用]
+    G -->|其他| J[转换为 Future]
+
+    H --> K[设置回调函数]
+    I --> K
+    J --> K
+
+    K --> L[为每个 Future 添加<br>_done_callback 回调]
+
+    L --> M[将所有内部 Future<br>保存到 _children 集合]
+
+    M --> N{所有 Future 已创建?}
+    N -->|否| F
+    N -->|是| O[返回 _GatheringFuture<br>给调用者]
+
+    O --> P{_GatheringFuture 是否被取消?}
+    P -->|是| Q[取消所有子 Future]
+    P -->|否| R[等待所有子 Future 完成]
+
+    subgraph "回调处理流程 (并行执行)"
+        direction LR
+        S[子 Future 完成] --> T[执行 _done_callback]
+
+        T --> U{子 Future 是否有异常?}
+        U -->|是| V{return_exceptions 参数?}
+        V -->|True| W[将异常作为结果保存]
+        V -->|False| X[取消所有其他子 Future]
+        U -->|否| Y[将结果保存到对应位置]
+
+        X --> Z[设置 _GatheringFuture 异常]
+        W --> AA[更新完成计数器]
+        Y --> AA
+
+        AA --> AB{所有子 Future 已完成?}
+        AB -->|是| AC[设置 _GatheringFuture 结果]
+        AB -->|否| AD[继续等待其他]
+    end
+
+    Q --> AE[_GatheringFuture 被取消]
+    Z --> AE
+    AC --> AF[_GatheringFuture 完成<br>返回结果列表]
+
+    R --> S
+    AD --> R</pre>
+
+
+
+<h1 id="迭代器和异步迭代器"><a href="#迭代器和异步迭代器" class="headerlink" title="迭代器和异步迭代器"></a>迭代器和异步迭代器</h1><h2 id="什么是迭代器？"><a href="#什么是迭代器？" class="headerlink" title="什么是迭代器？"></a>什么是迭代器？</h2><ul>
+<li><p>迭代器对象需要实现：</p>
+<ul>
+<li><p><code>__iter__()</code> → 返回迭代器自身</p>
+</li>
+<li><p><code>__next__()</code> → 每次迭代返回一个值，结束时抛出 <code>StopIteration</code></p>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SyncCounter</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, <span class="built_in">max</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.count = <span class="number">0</span></span><br><span class="line">        <span class="variable language_">self</span>.<span class="built_in">max</span> = <span class="built_in">max</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__iter__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__next__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.count &gt;= <span class="variable language_">self</span>.<span class="built_in">max</span>:</span><br><span class="line">            <span class="keyword">raise</span> StopIteration</span><br><span class="line">        <span class="variable language_">self</span>.count += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.count</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> num <span class="keyword">in</span> SyncCounter(<span class="number">3</span>):</span><br><span class="line">    <span class="built_in">print</span>(num)</span><br></pre></td></tr></table></figure>
+<h2 id="什么是异步迭代器？"><a href="#什么是异步迭代器？" class="headerlink" title="什么是异步迭代器？"></a>什么是异步迭代器？</h2><ul>
+<li><p>需要实现两个异步方法：</p>
+<ul>
+<li><p><code>__aiter__()</code> → 返回异步迭代器对象（一般为 self）</p>
+</li>
+<li><p><code>__anext__()</code> → 使用 <code>await</code> 返回下一个值；结束时抛出 <code>StopAsyncIteration</code></p>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">AsyncCounter</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, <span class="built_in">max</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.count = <span class="number">0</span></span><br><span class="line">        <span class="variable language_">self</span>.<span class="built_in">max</span> = <span class="built_in">max</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__aiter__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">__anext__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.count &gt;= <span class="variable language_">self</span>.<span class="built_in">max</span>:</span><br><span class="line">            <span class="keyword">raise</span> StopAsyncIteration</span><br><span class="line">        <span class="keyword">await</span> asyncio.sleep(<span class="number">1</span>)</span><br><span class="line">        <span class="variable language_">self</span>.count += <span class="number">1</span></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.count</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">for</span> i <span class="keyword">in</span> AsyncCounter(<span class="number">3</span>):</span><br><span class="line">        <span class="built_in">print</span>(i)</span><br><span class="line"></span><br><span class="line">asyncio.run(main())</span><br></pre></td></tr></table></figure>
+<h2 id="LangChain中异步迭代器应用"><a href="#LangChain中异步迭代器应用" class="headerlink" title="LangChain中异步迭代器应用"></a>LangChain中异步迭代器应用</h2><p><code>.astream()</code>方法执行返回的就是异步迭代器</p>
+<ul>
+<li>当你运行一个多轮对话、决策链、或 Agent 图谱时，可以通过 <code>.astream()</code> 以“事件流”的形式异步获取每个节点的中间状态或输出。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">run_stream</span>(<span class="params">app, <span class="built_in">input</span></span>):</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">for</span> event <span class="keyword">in</span> app.astream(<span class="built_in">input</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;📦 当前状态片段：&quot;</span>, event)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用方式</span></span><br><span class="line">asyncio.run(run_stream(app, &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;开始执行&quot;</span>&#125;))</span><br></pre></td></tr></table></figure>
+<h1 id="生成器和异步生成器"><a href="#生成器和异步生成器" class="headerlink" title="生成器和异步生成器"></a>生成器和异步生成器</h1><h2 id="同步生成器"><a href="#同步生成器" class="headerlink" title="同步生成器"></a>同步生成器</h2><ul>
+<li>使用 <code>yield</code> 定义生成器函数</li>
+<li>每次 <code>next()</code> 会从上次中断的地方继续执行</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">countdown</span>(<span class="params">n</span>):</span><br><span class="line">    <span class="keyword">while</span> n &gt; <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">yield</span> n</span><br><span class="line">        n -= <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> num <span class="keyword">in</span> countdown(<span class="number">3</span>):</span><br><span class="line">    <span class="built_in">print</span>(num)</span><br></pre></td></tr></table></figure>
+<h2 id="异步生成器的语法与机制"><a href="#异步生成器的语法与机制" class="headerlink" title="异步生成器的语法与机制"></a>异步生成器的语法与机制</h2><ul>
+<li>使用 <code>async def</code> + <code>yield</code></li>
+<li>用 <code>async for</code> 来消费</li>
+<li>在 <code>yield</code> 之间可使用 <code>await</code> 执行异步操作</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">async_countdown</span>(<span class="params">n</span>):</span><br><span class="line">    <span class="keyword">while</span> n &gt; <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">await</span> asyncio.sleep(<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">yield</span> n</span><br><span class="line">        n -= <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">for</span> value <span class="keyword">in</span> async_countdown(<span class="number">3</span>):</span><br><span class="line">        <span class="built_in">print</span>(value)</span><br><span class="line"></span><br><span class="line">asyncio.run(main())</span><br></pre></td></tr></table></figure>
+<h1 id="异步生成器-vs-异步迭代器"><a href="#异步生成器-vs-异步迭代器" class="headerlink" title="异步生成器 vs 异步迭代器"></a>异步生成器 vs 异步迭代器</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>异步迭代器（手写类）</th>
+<th>异步生成器（函数式）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>编写方式</td>
+<td>类 + <code>__anext__()</code></td>
+<td><code>async def</code> + <code>yield</code></td>
+</tr>
+<tr>
+<td>是否简洁</td>
+<td>❌ 复杂</td>
+<td>✅ 简洁</td>
+</tr>
+<tr>
+<td>推荐使用场景</td>
+<td>控制状态较复杂的异步迭代</td>
+<td>异步数据流、分页等</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="上下文管理器和异步上下文"><a href="#上下文管理器和异步上下文" class="headerlink" title="上下文管理器和异步上下文"></a>上下文管理器和异步上下文</h1><h2 id="上下文管理器"><a href="#上下文管理器" class="headerlink" title="上下文管理器"></a>上下文管理器</h2><p><strong>作用</strong></p>
+<ul>
+<li>管理资源的申请与释放</li>
+<li>通过 <code>with</code> 语句保证资源自动关闭（文件、数据库连接等）</li>
+</ul>
+<p><strong>语法</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&#x27;file.txt&#x27;</span>, <span class="string">&#x27;r&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    data = f.read()</span><br></pre></td></tr></table></figure>
+<p><strong>自定义上下文管理器</strong></p>
+<ul>
+<li>实现 <code>__enter__()</code> 和 <code>__exit__()</code> 方法</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MyContext</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__enter__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;进入上下文&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__exit__</span>(<span class="params">self, exc_type, exc_val, exc_tb</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;退出上下文，释放资源&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> MyContext() <span class="keyword">as</span> ctx:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;处理中...&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="异步上下文管理器基础"><a href="#异步上下文管理器基础" class="headerlink" title="异步上下文管理器基础"></a>异步上下文管理器基础</h2><p><strong>作用</strong></p>
+<ul>
+<li>处理异步资源的申请和释放</li>
+<li>用于异步 I/O 操作、数据库连接池、HTTP 客户端等</li>
+</ul>
+<p><strong>语法</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">with</span> aiohttp.ClientSession() <span class="keyword">as</span> session:</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">with</span> session.get(<span class="string">&#x27;https://example.com&#x27;</span>) <span class="keyword">as</span> resp:</span><br><span class="line">        data = <span class="keyword">await</span> resp.text()</span><br></pre></td></tr></table></figure>
+<p><strong>自定义异步上下文管理器</strong></p>
+<ul>
+<li>实现 <code>__aenter__()</code> 和 <code>__aexit__()</code> 异步方法</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">AsyncContext</span>:</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">__aenter__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;异步进入上下文&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">__aexit__</span>(<span class="params">self, exc_type, exc_val, exc_tb</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;异步退出上下文，释放资源&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">with</span> AsyncContext() <span class="keyword">as</span> ctx:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;异步处理中...&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line">asyncio.run(main())</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/31/ai/langchain/7-langchain-Built-in-Middleware/" rel="prev" title="LangChain内置中间件案例">
+      <i class="fa fa-chevron-left"></i> LangChain内置中间件案例
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E5%87%BD%E6%95%B0-%E5%8D%8F%E7%A8%8B%E5%87%BD%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">异步函数(协程函数)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#async%E5%92%8C%E5%8D%8F%E7%A8%8B%E5%87%BD%E6%95%B0"><span class="nav-number">1.1.</span> <span class="nav-text">async和协程函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%8F%E7%A8%8B%E7%9A%84%E8%B0%83%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="nav-number">1.2.</span> <span class="nav-text">协程的调用方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E7%BC%96%E7%A8%8B%E6%A0%B8%E5%BF%83%E6%9E%B6%E6%9E%84%E5%8F%8A%E6%B5%81%E7%A8%8B"><span class="nav-number">1.3.</span> <span class="nav-text">异步编程核心架构及流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%8F%E7%A8%8B%E6%89%A7%E8%A1%8C%E5%B9%B6%E5%8F%91"><span class="nav-number">1.4.</span> <span class="nav-text">协程执行并发</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#asyncio-create-task"><span class="nav-number">1.4.1.</span> <span class="nav-text">asyncio.create_task()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#asyncio-gather"><span class="nav-number">1.4.2.</span> <span class="nav-text">asyncio.gather()</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%AD%E4%BB%A3%E5%99%A8%E5%92%8C%E5%BC%82%E6%AD%A5%E8%BF%AD%E4%BB%A3%E5%99%A8"><span class="nav-number">2.</span> <span class="nav-text">迭代器和异步迭代器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E8%BF%AD%E4%BB%A3%E5%99%A8%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">什么是迭代器？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%BC%82%E6%AD%A5%E8%BF%AD%E4%BB%A3%E5%99%A8%EF%BC%9F"><span class="nav-number">2.2.</span> <span class="nav-text">什么是异步迭代器？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain%E4%B8%AD%E5%BC%82%E6%AD%A5%E8%BF%AD%E4%BB%A3%E5%99%A8%E5%BA%94%E7%94%A8"><span class="nav-number">2.3.</span> <span class="nav-text">LangChain中异步迭代器应用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E5%99%A8%E5%92%8C%E5%BC%82%E6%AD%A5%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">3.</span> <span class="nav-text">生成器和异步生成器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E7%94%9F%E6%88%90%E5%99%A8"><span class="nav-number">3.1.</span> <span class="nav-text">同步生成器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E7%94%9F%E6%88%90%E5%99%A8%E7%9A%84%E8%AF%AD%E6%B3%95%E4%B8%8E%E6%9C%BA%E5%88%B6"><span class="nav-number">3.2.</span> <span class="nav-text">异步生成器的语法与机制</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E7%94%9F%E6%88%90%E5%99%A8-vs-%E5%BC%82%E6%AD%A5%E8%BF%AD%E4%BB%A3%E5%99%A8"><span class="nav-number">4.</span> <span class="nav-text">异步生成器 vs 异步迭代器</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86%E5%99%A8%E5%92%8C%E5%BC%82%E6%AD%A5%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">5.</span> <span class="nav-text">上下文管理器和异步上下文</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86%E5%99%A8"><span class="nav-number">5.1.</span> <span class="nav-text">上下文管理器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86%E5%99%A8%E5%9F%BA%E7%A1%80"><span class="nav-number">5.2.</span> <span class="nav-text">异步上下文管理器基础</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">165</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'neutral',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

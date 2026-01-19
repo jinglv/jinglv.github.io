@@ -349,28 +349,40 @@
 
 
 
-<h2 id="Middleware（中间件）"><a href="#Middleware（中间件）" class="headerlink" title="Middleware（中间件）"></a>Middleware（中间件）</h2><p>给 AI 加装的功能模块，每个中间件负责一个特定功能：</p>
+<h1 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h1><h2 id="create-deep-agent-函数签名"><a href="#create-deep-agent-函数签名" class="headerlink" title="create_deep_agent 函数签名"></a>create_deep_agent 函数签名</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">create_deep_agent</span>(<span class="params"></span></span><br><span class="line"><span class="params">    model: <span class="built_in">str</span> | BaseChatModel | <span class="literal">None</span> = <span class="literal">None</span>,           <span class="comment"># AI 模型</span></span></span><br><span class="line"><span class="params">    tools: <span class="type">Sequence</span>[BaseTool] | <span class="literal">None</span> = <span class="literal">None</span>,            <span class="comment"># 工具列表</span></span></span><br><span class="line"><span class="params">    system_prompt: <span class="built_in">str</span> | <span class="literal">None</span> = <span class="literal">None</span>,                   <span class="comment"># 系统提示词</span></span></span><br><span class="line"><span class="params">    middleware: <span class="type">Sequence</span>[AgentMiddleware] = (<span class="params"></span>),         <span class="comment"># 中间件列表</span></span></span><br><span class="line"><span class="params">    subagents: <span class="built_in">list</span>[SubAgent] | <span class="literal">None</span> = <span class="literal">None</span>,            <span class="comment"># 子智能体列表</span></span></span><br><span class="line"><span class="params">    store: BaseStore | <span class="literal">None</span> = <span class="literal">None</span>,                     <span class="comment"># 长期记忆存储</span></span></span><br><span class="line"><span class="params">    backend: BackendProtocol | <span class="literal">None</span> = <span class="literal">None</span>,             <span class="comment"># 文件存储后端</span></span></span><br><span class="line"><span class="params">    interrupt_on: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">bool</span> | InterruptOnConfig] | <span class="literal">None</span> = <span class="literal">None</span>,  <span class="comment"># 人机交互配置</span></span></span><br><span class="line"><span class="params">    checkpointer: Checkpointer | <span class="literal">None</span> = <span class="literal">None</span>,           <span class="comment"># 会话检查点</span></span></span><br><span class="line"><span class="params">    debug: <span class="built_in">bool</span> = <span class="literal">False</span>,                                <span class="comment"># 调试模式</span></span></span><br><span class="line"><span class="params"></span>) -&gt; CompiledStateGraph:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;创建一个深度智能体&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+<h2 id="默认内置功能"><a href="#默认内置功能" class="headerlink" title="默认内置功能"></a>默认内置功能</h2><p>创建 Deep Agent 时，框架会<strong>自动添加</strong>以下中间件（按顺序）：</p>
+<ol>
+<li><p><strong>TodoListMiddleware</strong> - 任务列表管理</p>
+</li>
+<li><p><strong>FilesystemMiddleware</strong> - 文件系统操作（ls, read_file, write_file, edit_file, glob, grep, execute）</p>
+</li>
+<li><p><strong>SubAgentMiddleware</strong> - 子智能体调度（task 工具）</p>
+</li>
+<li><p><strong>SummarizationMiddleware</strong> - 对话历史摘要（防止上下文溢出）</p>
+</li>
+<li><p><strong>AnthropicPromptCachingMiddleware</strong> - 提示词缓存（节省成本）</p>
+</li>
+<li><p><strong>PatchToolCallsMiddleware</strong> - 修复悬空工具调用</p>
+</li>
+<li><p><strong>HumanInTheLoopMiddleware</strong> - 人机交互（如果配置了 interrupt_on）</p>
+</li>
+</ol>
+<h1 id="Middleware（中间件）"><a href="#Middleware（中间件）" class="headerlink" title="Middleware（中间件）"></a>Middleware（中间件）</h1><p>Middleware（中间件）就像是<strong>给 AI 加装的功能模块</strong>，每个中间件负责一个特定功能。</p>
 <ul>
 <li><strong>FilesystemMiddleware</strong>: 文件操作（ls, read, write, edit, glob, grep, execute）</li>
 <li><strong>SubAgentMiddleware</strong>: 子智能体调度</li>
 <li><strong>SummarizationMiddleware</strong>: 对话历史压缩</li>
 <li><strong>HumanInTheLoopMiddleware</strong>: 人机交互控制</li>
 </ul>
-<h2 id="Backend（后端存储）"><a href="#Backend（后端存储）" class="headerlink" title="Backend（后端存储）"></a>Backend（后端存储）</h2><p>决定文件存储在哪里：</p>
+<h1 id="Backend（后端存储）"><a href="#Backend（后端存储）" class="headerlink" title="Backend（后端存储）"></a>Backend（后端存储）</h1><p>Backend 决定了<strong>文件存储在哪里</strong>，就像给 AI 配置不同的”硬盘”。</p>
 <ul>
 <li><strong>StateBackend</strong>: 临时存储（不跨会话）</li>
 <li><strong>StoreBackend</strong>: 持久存储（跨会话）</li>
 <li><strong>SandboxBackend</strong>: 沙箱执行（支持命令）</li>
 <li><strong>CompositeBackend</strong>: 混合路由（企业级）</li>
 </ul>
-<h2 id="SubAgent（子智能体）"><a href="#SubAgent（子智能体）" class="headerlink" title="SubAgent（子智能体）"></a>SubAgent（子智能体）</h2><p>让主 Agent 能够委派任务给专业助手：</p>
-<ul>
-<li>🎯 任务隔离</li>
-<li>⚡ 并行处理</li>
-<li>💰 节省 Token</li>
-</ul>
-<h2 id="Store（长期记忆）"><a href="#Store（长期记忆）" class="headerlink" title="Store（长期记忆）"></a>Store（长期记忆）</h2><p>跨会话持久化存储，用于保存需要长期记住的信息</p>
-<h2 id="Interrupt-on（人机交互）"><a href="#Interrupt-on（人机交互）" class="headerlink" title="Interrupt_on（人机交互）"></a>Interrupt_on（人机交互）</h2><p>控制 AI 在执行哪些操作前需要人类批准</p>
+<h1 id="Store（长期记忆）"><a href="#Store（长期记忆）" class="headerlink" title="Store（长期记忆）"></a>Store（长期记忆）</h1><p>Store 是 LangGraph 提供的<strong>跨会话持久化存储</strong>，用于保存需要长期记住的信息。</p>
+<h1 id="Interrupt-on（人机交互）"><a href="#Interrupt-on（人机交互）" class="headerlink" title="Interrupt_on（人机交互）"></a>Interrupt_on（人机交互）</h1><p>Interrupt_on 让你能够<strong>控制 AI 在执行哪些操作前需要人类批准</strong>，防止 AI 执行危险操作。</p>
 
     </div>
 
@@ -389,12 +401,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2025/10/29/ai/llm/3-context/" rel="prev" title="上下文工程">
-      <i class="fa fa-chevron-left"></i> 上下文工程
+    <a href="/2025/12/04/ai/langchain/deepagent/2-core-concepts/" rel="prev" title="核心概念（详解）">
+      <i class="fa fa-chevron-left"></i> 核心概念（详解）
     </a></div>
       <div class="post-nav-item">
-    <a href="/2025/12/04/ai/langchain/deepagent/2-core-concepts/" rel="next" title="核心概念">
-      核心概念 <i class="fa fa-chevron-right"></i>
+    <a href="/2025/12/12/ai/langchain/3-langchain-Tools/" rel="next" title="LangChain核心组件Tools(工具)">
+      LangChain核心组件Tools(工具) <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -454,7 +466,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#DeepAgents%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">DeepAgents介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DeepAgents%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">DeepAgents使用场景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E8%83%BD%E5%8A%9B%EF%BC%88Core-capabilities%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">核心能力（Core capabilities）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">4.</span> <span class="nav-text">架构图</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Middleware%EF%BC%88%E4%B8%AD%E9%97%B4%E4%BB%B6%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">Middleware（中间件）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Backend%EF%BC%88%E5%90%8E%E7%AB%AF%E5%AD%98%E5%82%A8%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">Backend（后端存储）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SubAgent%EF%BC%88%E5%AD%90%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%89"><span class="nav-number">4.3.</span> <span class="nav-text">SubAgent（子智能体）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Store%EF%BC%88%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86%EF%BC%89"><span class="nav-number">4.4.</span> <span class="nav-text">Store（长期记忆）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Interrupt-on%EF%BC%88%E4%BA%BA%E6%9C%BA%E4%BA%A4%E4%BA%92%EF%BC%89"><span class="nav-number">4.5.</span> <span class="nav-text">Interrupt_on（人机交互）</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#DeepAgents%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">DeepAgents介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DeepAgents%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">DeepAgents使用场景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E8%83%BD%E5%8A%9B%EF%BC%88Core-capabilities%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">核心能力（Core capabilities）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">4.</span> <span class="nav-text">架构图</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">5.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#create-deep-agent-%E5%87%BD%E6%95%B0%E7%AD%BE%E5%90%8D"><span class="nav-number">5.1.</span> <span class="nav-text">create_deep_agent 函数签名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%BB%98%E8%AE%A4%E5%86%85%E7%BD%AE%E5%8A%9F%E8%83%BD"><span class="nav-number">5.2.</span> <span class="nav-text">默认内置功能</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Middleware%EF%BC%88%E4%B8%AD%E9%97%B4%E4%BB%B6%EF%BC%89"><span class="nav-number">6.</span> <span class="nav-text">Middleware（中间件）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Backend%EF%BC%88%E5%90%8E%E7%AB%AF%E5%AD%98%E5%82%A8%EF%BC%89"><span class="nav-number">7.</span> <span class="nav-text">Backend（后端存储）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Store%EF%BC%88%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86%EF%BC%89"><span class="nav-number">8.</span> <span class="nav-text">Store（长期记忆）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Interrupt-on%EF%BC%88%E4%BA%BA%E6%9C%BA%E4%BA%A4%E4%BA%92%EF%BC%89"><span class="nav-number">9.</span> <span class="nav-text">Interrupt_on（人机交互）</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -470,14 +482,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-count">165</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-count">26</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -631,9 +643,9 @@ window.addEventListener('pjax:success', () => {
 
 <script data-pjax>
 if (document.querySelectorAll('pre.mermaid').length) {
-  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+  NexT.utils.getScript('https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js', () => {
     mermaid.initialize({
-      theme    : 'dark',
+      theme    : 'neutral',
       logLevel : 3,
       flowchart: { curve     : 'linear' },
       gantt    : { axisFormat: '%m/%d/%Y' },

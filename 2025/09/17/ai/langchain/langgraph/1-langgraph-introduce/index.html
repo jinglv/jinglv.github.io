@@ -27,16 +27,14 @@
 <meta property="og:site_name" content="Jean&#39;s Blog">
 <meta property="og:description" content="学习LangGraph学习笔记第一讲">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917095828145.png">
 <meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917100224849.png">
 <meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917100621793.png">
-<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917101404838.png">
 <meta property="article:published_time" content="2025-09-16T16:00:00.000Z">
 <meta property="article:modified_time" content="2025-09-17T01:00:00.000Z">
 <meta property="article:author" content="Jean Lv">
 <meta property="article:tag" content="LangGraph">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917095828145.png">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917100224849.png">
 
 <link rel="canonical" href="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/1-langgraph-introduce/">
 
@@ -229,7 +227,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                  <a href="/categories/LangGraph/" itemprop="url" rel="index"><span itemprop="name">LangGraph</span></a>
                 </span>
             </span>
 
@@ -255,29 +253,37 @@
 <li>适应性/主动性(Proactivity)：智能体能够根据环境变化主动调整其行为策略，适应新的情况。</li>
 <li>学习能力：许多智能体具有通过经验或数据学习和改进的能力。</li>
 </ul>
-<h1 id="单智能体与多智能体"><a href="#单智能体与多智能体" class="headerlink" title="单智能体与多智能体"></a>单智能体与多智能体</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917095828145.png" alt="image-20250917095828145" style="zoom:50%;" /></p>
-<h2 id="LangChain内置"><a href="#LangChain内置" class="headerlink" title="LangChain内置"></a>LangChain内置</h2><p>注意：LangChain内置的Agent模块已经不在支持维护了，智能体开发重点使用LangGraph</p>
-<p>单Agent的特点</p>
+<p>在 LangChain 的语境下，智能体是一个利用 LLM 作为<strong>推理引擎</strong>的系统。它不仅能回答问题，还能根据目标<strong>自主决定</strong>调用哪些工具（如搜索、运行代码、查询数据库）来完成任务。</p>
+<p><strong>智能体的核心公式：</strong></p>
+<blockquote>
+<p><strong>Agent = LLM（大脑） + Planning（规划） + Memory（记忆） + Tool Use（工具使用）</strong></p>
+</blockquote>
 <ul>
-<li>结构简单，只有一个智能体负责所有任务</li>
-<li>决策过程中，不需要协调多个Agent之间的通信</li>
-<li>适合处理相对简单或专一的任务</li>
-<li>通常计算资源需求较少</li>
-<li>响应速度可能更快，因为不需要多Agent间的协调</li>
+<li><strong>规划：</strong> 将复杂任务拆解为小步骤。</li>
+<li><strong>记忆：</strong> 记住之前的对话上下文或中间操作结果。</li>
+<li><strong>工具：</strong> 能够访问外部 API、计算器、搜索引擎等。</li>
 </ul>
-<h2 id="LangGraph内置"><a href="#LangGraph内置" class="headerlink" title="LangGraph内置"></a>LangGraph内置</h2><p>多Agents的特点</p>
+<h1 id="单智能体-Single-Agent"><a href="#单智能体-Single-Agent" class="headerlink" title="单智能体 (Single-Agent)"></a>单智能体 (Single-Agent)</h1><p><strong>概念：</strong> 只有一个核心控制循环。所有的推理、规划和执行都由一个 LLM 驱动。</p>
+<h3 id="在-LangChain-中的实现"><a href="#在-LangChain-中的实现" class="headerlink" title="在 LangChain 中的实现"></a>在 LangChain 中的实现</h3><p>LangChain 最早的火爆就是因为提供了各种 Agent 类型。最经典的模式是 <strong>ReAct</strong> (Reason + Act)：</p>
+<ol>
+<li><strong>Thought（思考）：</strong> LLM 决定下一步做什么。</li>
+<li><strong>Action（行动）：</strong> LLM 选择一个工具并提供参数。</li>
+<li><strong>Observation（观察）：</strong> 运行工具并返回结果给 LLM。</li>
+<li><strong>循环：</strong> 重复上述步骤直到任务完成。</li>
+</ol>
+<p><strong>优缺点：</strong></p>
 <ul>
-<li>系统由多个相互协作的智能体组成</li>
-<li>各Agent可能有不同的专业领域或功能</li>
-<li>需要Agent之间得的通信和协调机制</li>
-<li>可以并行处理多个任务</li>
-<li>系统整体更加复杂但也更加强大</li>
-<li>具有更好的可扩展性和容错能力</li>
+<li><strong>优点：</strong> 结构简单，易于调试，适合处理逻辑线性、目标明确的任务。</li>
+<li><strong>缺点：</strong> 随着任务复杂度增加，LLM 容易陷入循环、丢失目标（上下文过长）或在复杂决策中“断片”。</li>
 </ul>
-<h1 id="多智能体"><a href="#多智能体" class="headerlink" title="多智能体"></a>多智能体</h1><ul>
-<li>更小颗粒度和更低层面的封装</li>
-<li>更灵活</li>
-<li>难度也更高</li>
+<h1 id="多智能体系统-Multi-Agent-System-MAS"><a href="#多智能体系统-Multi-Agent-System-MAS" class="headerlink" title="多智能体系统 (Multi-Agent System, MAS)"></a>多智能体系统 (Multi-Agent System, MAS)</h1><p><strong>概念：</strong> 多个智能体协同工作。每个智能体通常扮演不同的角色（Role），就像一个公司里的不同部门（如：程序员、测试员、产品经理）。</p>
+<p><strong>优缺点：</strong></p>
+<ul>
+<li><strong>优点：</strong> <strong>专业化：</strong> 每个智能体只需要精通一件事（提示词更短、准确度更高）。<ul>
+<li><strong>鲁棒性：</strong> 可以引入“审核员”角色，大幅降低幻觉。</li>
+</ul>
+</li>
+<li><strong>缺点：</strong> 架构复杂，Token 消耗量大，存在通信开销。</li>
 </ul>
 <p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917100224849.png" alt="image-20250917100224849" style="zoom:50%;" /></p>
 <h1 id="常见的多智能体架构"><a href="#常见的多智能体架构" class="headerlink" title="常见的多智能体架构"></a>常见的多智能体架构</h1><p>多智能体架构中的网状结构、监管者模式、分级架构和自定义模式，并通过类比人类工作方式说明多智能体如何协作完成复杂任务。</p>
@@ -289,15 +295,17 @@
 <li>分级架构：多级架构每级都有一个监管者</li>
 <li>自定义：只有部分智能体具备决策权</li>
 </ul>
-<h1 id="LangGraph介绍"><a href="#LangGraph介绍" class="headerlink" title="LangGraph介绍"></a>LangGraph介绍</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917101404838.png" alt="image-20250917101404838" style="zoom:50%;" /></p>
-<p>官方地址：<a target="_blank" rel="noopener" href="https://langchain-ai.github.io/langgraph">https://langchain-ai.github.io/langgraph</a></p>
-<p><strong>LangGraph</strong> 是一个专注于构建、管理和部署 <strong>有状态（Stateful）</strong>、<strong>长期运行（Long-running）</strong> 的 LLM Agent 编排框架。 </p>
+<h1 id="LangGraph介绍"><a href="#LangGraph介绍" class="headerlink" title="LangGraph介绍"></a>LangGraph介绍</h1><p>官方地址：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/overview">https://docs.langchain.com/oss/python/langgraph/overview</a></p>
+<p><strong>LangGraph</strong> 是一个用于构建、管理和部署长期运行、有状态的智能代理（agents）的底层编排框架和运行时环境。</p>
+<p>通过使用 LangGraph，你可以获得控制权，设计出能够可靠处理复杂任务的智能代理。这意味着 LangGraph 提供了强大的工具和能力，帮助开发者构建出能够应对各种复杂场景和任务需求的智能代理系统。</p>
+<p>LangGraph 是一个非常底层的框架，完全专注于智能代理的编排。在使用 LangGraph 之前，建议你先熟悉用于构建智能代理的一些组件，从模型和工具开始。这说明 LangGraph 的定位是底层的基础设施，它主要关注如何将不同的组件（如模型和工具）有效地组织和协调起来，以实现智能代理的功能。注意：LangChain的智能体底层就是基于LangGraph进行实现的。</p>
+<p>LangGraph 关注于智能代理编排中重要的底层能力，包括持久化执行、流式处理、人工干预等。这里列举了 LangGraph 的一些关键特性：</p>
 <ul>
-<li><strong>核心设计思想</strong>：结合状态机模型与现代链式逻辑编排能力。 </li>
-<li><strong>应用场景</strong>：智能代理系统、复杂工作流管理、人机协同任务。 </li>
-<li><strong>行业应用</strong>：被 Klarna、Replit、Elastic 等一线公司广泛采用，逐步成为下一代 Agent 系统的核心底座。</li>
+<li><strong>“durable execution”（持久化执行）</strong>：构建的智能代理能够在发生故障后继续运行，并且可以从上次中断的地方恢复执行，这对于需要长期运行的智能代理来说非常重要，确保了系统的可靠性和稳定性。</li>
+<li><strong>“streaming”（流式处理）</strong>：支持对数据流的处理，能够实时地处理和响应输入的数据，这对于需要及时处理动态数据的智能代理应用非常关键。</li>
+<li><strong>“human-in-the-loop”（人工干预）</strong>：允许在智能代理运行的任何阶段进行人工检查和修改代理的状态，这使得智能代理系统更加灵活可控，能够在必要时引入人类的智慧和决策，提高系统的可靠性和适应性。</li>
 </ul>
-<h2 id="核心优势"><a href="#核心优势" class="headerlink" title="核心优势"></a>核心优势</h2><p>LangGraph 为长期运行/有状态的工作流提供底层基础设施支持，具备以下特性： </p>
+<h2 id="核心优势"><a href="#核心优势" class="headerlink" title="核心优势"></a>核心优势</h2><p>LangGraph为任何长期运行的、有状态的工作流程或智能体提供了底层的支持性基础设施。LangGraph不会对提示（prompts）或架构进行抽象，它提供了以下核心优势：</p>
 <div class="table-container">
 <table>
 <thead>
@@ -309,23 +317,23 @@
 <tbody>
 <tr>
 <td><strong>持久执行</strong></td>
-<td>支持故障恢复，自动从中断点继续执行。</td>
+<td>构建能够在遇到故障时持续运行，并且可以长时间运行的智能体，这些智能体能够从它们停止的地方恢复执行。</td>
 </tr>
 <tr>
 <td><strong>人机交互</strong></td>
-<td>允许实时检查/修改代理状态，无缝集成人工监督。</td>
+<td>通过在任意时刻检查和修改智能体的状态，将人类监督纳入其中。</td>
 </tr>
 <tr>
 <td><strong>综合记忆</strong></td>
-<td>短期工作记忆（推理） + 长期持久记忆（跨会话）。</td>
+<td>创建具有状态的智能体，这些智能体既有用于持续推理的短期工作内存，也有跨越会话的长期内存。</td>
 </tr>
 <tr>
 <td><strong>LangSmith 调试</strong></td>
-<td>通过可视化工具跟踪执行路径、状态转换和运行时指标。</td>
+<td>借助可视化工具追踪执行路径、捕获状态转换以及提供详细的运行时指标，从而深入了解复杂智能体的行为。</td>
 </tr>
 <tr>
 <td><strong>生产就绪部署</strong></td>
-<td>提供可扩展架构，专为有状态工作流的独特挑战设计。</td>
+<td>凭借为处理有状态、长期运行工作流程的独特挑战而设计的可扩展基础设施，自信地部署复杂的智能体系统。</td>
 </tr>
 </tbody>
 </table>
@@ -342,20 +350,54 @@
 <tbody>
 <tr>
 <td><strong>LangSmith</strong></td>
-<td>代理评估与可观测性工具，支持生产环境监控和性能优化。</td>
+<td>用于追踪请求、评估输出以及监控部署，所有这些操作都可以在一个地方完成。你可以使用LangGraph进行本地原型开发，然后借助集成的可观察性和评估功能转移到生产环境中，从而构建更加可靠的代理系统。</td>
 </tr>
 <tr>
-<td><strong>LangGraph 平台</strong></td>
-<td>专为长期工作流设计的部署平台，支持可视化原型设计（LangGraph Studio）。</td>
+<td><strong>LangSmith Agent Server</strong></td>
+<td>这是一个专为长期运行、有状态的工作流设计的部署平台，可以轻松地部署和扩展代理。你可以在这个平台上发现、重用、配置以及共享代理，并且团队成员之间可以进行快速迭代，还可以利用Studio进行可视化原型开发。</td>
 </tr>
 <tr>
 <td><strong>LangChain</strong></td>
-<td>提供可组合的 LLM 开发组件，简化应用构建流程。</td>
+<td>提供了集成和可组合的组件，以简化LLM应用开发。它包含了基于LangGraph构建的代理抽象层。</td>
 </tr>
 </tbody>
 </table>
 </div>
-<h2 id="环境安装"><a href="#环境安装" class="headerlink" title="环境安装"></a>环境安装</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install langgraph</span><br></pre></td></tr></table></figure>
+<h2 id="环境安装"><a href="#环境安装" class="headerlink" title="环境安装"></a>环境安装</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -U langgraph</span><br></pre></td></tr></table></figure>
+<h2 id="Langgraph的使用"><a href="#Langgraph的使用" class="headerlink" title="Langgraph的使用"></a>Langgraph的使用</h2><p>Langgraph提供了两种不同的编程线路：<strong>Graph API（图 API）</strong>和 <strong>Functional API（函数式 API）</strong>。</p>
+<h3 id="Graph-API（图-API）"><a href="#Graph-API（图-API）" class="headerlink" title="Graph API（图 API）"></a>Graph API（图 API）</h3><p><strong>官方描述：</strong> “如果你倾向于将智能体定义为由‘节点’（Nodes）和‘边’（Edges）组成的图，请使用 Graph API。”</p>
+<ul>
+<li><strong>解读：</strong> <em> <strong>核心逻辑：</strong> 这种方式是<em>*显式</em></em>的。你需要像画流程图一样，定义哪一部分是“大脑决策”，哪一部分是“执行计算”，并用线（边）把它们连起来。<ul>
+<li><strong>形象比喻：</strong> 就像一个<strong>工厂流水线</strong>。零件（数据）从一个工位（节点）流向下一个工位。</li>
+<li><strong>适用场景：</strong><ul>
+<li>逻辑非常复杂，包含循环、分支判断（例如：如果计算结果不对，就退回上一步重新算）。</li>
+<li>你希望清晰地可视化智能体的工作流程。</li>
+<li>需要精细控制状态（State）在不同步骤间的传递。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="Functional-API（函数式-API）"><a href="#Functional-API（函数式-API）" class="headerlink" title="Functional API（函数式 API）"></a>Functional API（函数式 API）</h3><p><strong>官方描述：</strong> “如果你倾向于将智能体定义为一个单一的函数，请使用 Functional API。”</p>
+<ul>
+<li><strong>解读：</strong><ul>
+<li><strong>核心逻辑：</strong> 这种方式是<strong>隐式</strong>的。它更接近传统的 Python 编程，你只需要写一个函数，通过装饰器（如 <code>@task</code>）来标识任务。LangGraph 会在后台自动帮你处理状态和异步逻辑。</li>
+<li><strong>形象比喻：</strong> 就像一个<strong>高级主管</strong>。你给他一个指令，他内部怎么协调、怎么计算你不用画图规划得那么细，看起来就是一个简洁的函数调用。</li>
+<li><strong>适用场景：</strong><ul>
+<li>逻辑相对线性或简单。</li>
+<li>你希望代码更简洁，不想去维护复杂的图结构。</li>
+<li>追求快速原型开发，不想处理繁琐的节点连接。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>核心概念对比解读</strong></p>
+<p>这段话里提到的两个核心术语是理解 LangGraph 的关键：</p>
+<ul>
+<li><strong>Graph API Overview（图 API 概览）：</strong> 侧重于<strong>“结构化”</strong>。它强制你思考：智能体有哪些状态？从“思考”到“行动”的跳转条件是什么？这在构建具有高度可靠性的工业级 Agent 时非常有用。</li>
+<li><strong>Functional API Overview（函数式 API 概览）：</strong> 侧重于<strong>“开发体验”</strong>。它是 LangGraph 近期推出的简化版（通常指 <code>EntryPoint</code> 模式），让习惯了普通 Python 开发的人能更平滑地过渡到智能体开发。</li>
+</ul>
 <h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><div id="flowchart-0" class="flow-chart"></div>
 
 
@@ -375,19 +417,13 @@
 <li>边决定了流程如何从一个节点移动到另一个节点。</li>
 <li>LangGraph支持两种主要类型的边：<ul>
 <li>Normal Edges（普通边）：简单的将流程从节点A -&gt; B</li>
-<li>Conditional Edges（条件边）：根据当前状态的内容来决定下一步执行哪个节点，是根据LLM的回复或工具的结果动态的做出决策</li>
-</ul>
-</li>
-</ul>
-<h3 id="Graph（图）"><a href="#Graph（图）" class="headerlink" title="Graph（图）"></a>Graph（图）</h3><ul>
-<li>图是节点及其连接关系的集合，代表整个工作流程</li>
-<li>定义了信息如何从一个节点流向另一个节点</li>
-<li>可以是线性的（A -&gt; B -&gt; C）或包含分支、循环复杂结构</li>
-<li>控制整个应用的执行流程和逻辑<br><script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.2.7/raphael.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/flowchart/1.6.5/flowchart.min.js"></script><textarea id="flowchart-0-code" style="display: none">st=>start: __start__
+<li>Conditional Edges（条件边）：根据当前状态的内容来决定下一步执行哪个节点，是根据LLM的回复或工具的结果动态的做出决策<br><script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.2.7/raphael.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/flowchart/1.6.5/flowchart.min.js"></script><textarea id="flowchart-0-code" style="display: none">st=>start: __start__
 st1=>operation: step_1
 st2=>operation: step_2
 e=>end: step_3
 st->st1->st2->e</textarea><textarea id="flowchart-0-options" style="display: none">{"scale":1,"line-width":2,"line-length":50,"text-margin":10,"font-size":12}</textarea><script>  var code = document.getElementById("flowchart-0-code").value;  var options = JSON.parse(decodeURIComponent(document.getElementById("flowchart-0-options").value));  var diagram = flowchart.parse(code);  diagram.drawSVG("flowchart-0", options);</script></li>
+</ul>
+</li>
 </ul>
 
     </div>
@@ -407,12 +443,12 @@ st->st1->st2->e</textarea><textarea id="flowchart-0-options" style="display: non
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2025/09/17/ai/langchain/langgraph/3-langgraph-memory/" rel="prev" title="LangGraph之记忆">
-      <i class="fa fa-chevron-left"></i> LangGraph之记忆
+    <a href="/2025/09/16/ai/mcp/1-mcp/" rel="prev" title="MCP模型上下文协议介绍">
+      <i class="fa fa-chevron-left"></i> MCP模型上下文协议介绍
     </a></div>
       <div class="post-nav-item">
-    <a href="/2025/09/18/ai/langchain/langgraph/7-langgraph-tools/" rel="next" title="LangGraph之工具调用">
-      LangGraph之工具调用 <i class="fa fa-chevron-right"></i>
+    <a href="/2025/09/17/ai/langchain/langgraph/3-langgraph-memory/" rel="next" title="LangGraph之记忆">
+      LangGraph之记忆 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -472,7 +508,7 @@ st->st1->st2->e</textarea><textarea id="flowchart-0-options" style="display: non
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%99%BA%E8%83%BD%E4%BD%93"><span class="nav-number">1.</span> <span class="nav-text">什么是智能体</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E6%99%BA%E8%83%BD%E4%BD%93%E4%B8%8E%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93"><span class="nav-number">2.</span> <span class="nav-text">单智能体与多智能体</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain%E5%86%85%E7%BD%AE"><span class="nav-number">2.1.</span> <span class="nav-text">LangChain内置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangGraph%E5%86%85%E7%BD%AE"><span class="nav-number">2.2.</span> <span class="nav-text">LangGraph内置</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93"><span class="nav-number">3.</span> <span class="nav-text">多智能体</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%E6%9E%B6%E6%9E%84"><span class="nav-number">4.</span> <span class="nav-text">常见的多智能体架构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangGraph%E4%BB%8B%E7%BB%8D"><span class="nav-number">5.</span> <span class="nav-text">LangGraph介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BC%98%E5%8A%BF"><span class="nav-number">5.1.</span> <span class="nav-text">核心优势</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangGraph-%E7%94%9F%E6%80%81%E7%B3%BB%E7%BB%9F"><span class="nav-number">5.2.</span> <span class="nav-text">LangGraph 生态系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85"><span class="nav-number">5.3.</span> <span class="nav-text">环境安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">5.4.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#State%EF%BC%88%E7%8A%B6%E6%80%81%EF%BC%89"><span class="nav-number">5.4.1.</span> <span class="nav-text">State（状态）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Node%EF%BC%88%E8%8A%82%E7%82%B9%EF%BC%89"><span class="nav-number">5.4.2.</span> <span class="nav-text">Node（节点）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Edges%EF%BC%88%E8%BE%B9%EF%BC%89"><span class="nav-number">5.4.3.</span> <span class="nav-text">Edges（边）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Graph%EF%BC%88%E5%9B%BE%EF%BC%89"><span class="nav-number">5.4.4.</span> <span class="nav-text">Graph（图）</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%99%BA%E8%83%BD%E4%BD%93"><span class="nav-number">1.</span> <span class="nav-text">什么是智能体</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E6%99%BA%E8%83%BD%E4%BD%93-Single-Agent"><span class="nav-number">2.</span> <span class="nav-text">单智能体 (Single-Agent)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8-LangChain-%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.0.1.</span> <span class="nav-text">在 LangChain 中的实现</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%E7%B3%BB%E7%BB%9F-Multi-Agent-System-MAS"><span class="nav-number">3.</span> <span class="nav-text">多智能体系统 (Multi-Agent System, MAS)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%E6%9E%B6%E6%9E%84"><span class="nav-number">4.</span> <span class="nav-text">常见的多智能体架构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangGraph%E4%BB%8B%E7%BB%8D"><span class="nav-number">5.</span> <span class="nav-text">LangGraph介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BC%98%E5%8A%BF"><span class="nav-number">5.1.</span> <span class="nav-text">核心优势</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangGraph-%E7%94%9F%E6%80%81%E7%B3%BB%E7%BB%9F"><span class="nav-number">5.2.</span> <span class="nav-text">LangGraph 生态系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85"><span class="nav-number">5.3.</span> <span class="nav-text">环境安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Langgraph%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">5.4.</span> <span class="nav-text">Langgraph的使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Graph-API%EF%BC%88%E5%9B%BE-API%EF%BC%89"><span class="nav-number">5.4.1.</span> <span class="nav-text">Graph API（图 API）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Functional-API%EF%BC%88%E5%87%BD%E6%95%B0%E5%BC%8F-API%EF%BC%89"><span class="nav-number">5.4.2.</span> <span class="nav-text">Functional API（函数式 API）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">5.5.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#State%EF%BC%88%E7%8A%B6%E6%80%81%EF%BC%89"><span class="nav-number">5.5.1.</span> <span class="nav-text">State（状态）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Node%EF%BC%88%E8%8A%82%E7%82%B9%EF%BC%89"><span class="nav-number">5.5.2.</span> <span class="nav-text">Node（节点）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Edges%EF%BC%88%E8%BE%B9%EF%BC%89"><span class="nav-number">5.5.3.</span> <span class="nav-text">Edges（边）</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -488,14 +524,14 @@ st->st1->st2->e</textarea><textarea id="flowchart-0-options" style="display: non
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">167</span>
+          <span class="site-state-item-count">165</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-count">26</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -649,9 +685,9 @@ window.addEventListener('pjax:success', () => {
 
 <script data-pjax>
 if (document.querySelectorAll('pre.mermaid').length) {
-  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+  NexT.utils.getScript('https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.0/mermaid.min.js', () => {
     mermaid.initialize({
-      theme    : 'dark',
+      theme    : 'neutral',
       logLevel : 3,
       flowchart: { curve     : 'linear' },
       gantt    : { axisFormat: '%m/%d/%Y' },
