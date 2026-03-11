@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第十讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain通过类继承实现自定义中间件">
+<meta property="og:url" content="https://jinglv.github.io/2026/02/28/ai/langchain/10-langchain-AgentMiddleware/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第十讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-02-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-02-28T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/02/28/ai/langchain/10-langchain-AgentMiddleware/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain通过类继承实现自定义中间件 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/02/28/ai/langchain/10-langchain-AgentMiddleware/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain通过类继承实现自定义中间件
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-02-28 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2026-02-28T00:00:00+08:00">2026-02-28</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第十讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>基于类的中间件实现是一种更灵活、功能更强的钩子开发方式，特别适合<strong>需要多个钩子、状态管理或复杂配置</strong>的场景。它通过继承 <code>AgentMiddleware</code> 基类，在一个类中统一实现多个钩子方法，解决了函数式装饰器难以管理多钩子和共享状态的问题。</p>
+<p><strong>类继承方式的工作原理</strong> </p>
+<ol>
+<li><strong>继承基类</strong>：自定义中间件类需要继承框架提供的 <code>AgentMiddleware</code> 基类，这是实现类式中间件的基础。</li>
+<li><strong>实现钩子方法</strong>：在子类中重写 / 实现特定的钩子方法（如 <code>before_model</code>、<code>after_model</code>），这些方法会在对应生命周期阶段被自动调用。</li>
+<li><strong>多钩子整合</strong>：可以在同一个类中同时实现 <code>before_model</code> 和 <code>after_model</code> 等多个钩子，让相关逻辑内聚在一个类中。</li>
+<li><strong>状态管理</strong>：通过类的实例变量（如 <code>self.counter</code>、<code>self.cache</code>）来维护跨请求的状态，实现计数、缓存、会话级别的数据共享。</li>
+</ol>
+<p><strong>与函数式装饰器的核心区别 ✨</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">维度</th>
+<th style="text-align:left">函数式装饰器（<code>@before_model</code>/<code>@after_model</code>）</th>
+<th style="text-align:left">类继承方式（<code>AgentMiddleware</code>）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>适用场景</strong></td>
+<td style="text-align:left">简单、独立的单钩子逻辑</td>
+<td style="text-align:left">复杂、多钩子、需要状态管理的场景</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>钩子数量</strong></td>
+<td style="text-align:left">一个函数对应一个钩子</td>
+<td style="text-align:left">一个类可实现多个钩子（before/after 等）</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>状态管理</strong></td>
+<td style="text-align:left">依赖外部变量或闭包，管理不便</td>
+<td style="text-align:left">直接使用类实例变量，状态管理更清晰</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>代码组织</strong></td>
+<td style="text-align:left">钩子逻辑分散在不同函数中</td>
+<td style="text-align:left">相关逻辑内聚在一个类中，便于维护</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>配置能力</strong></td>
+<td style="text-align:left">装饰器参数简单配置</td>
+<td style="text-align:left">可通过 <code>__init__</code> 实现复杂初始化和配置</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>核心价值总结 💡</strong></p>
+<ul>
+<li><strong>高内聚</strong>：将输入预处理、输出后处理等相关逻辑封装在同一个类中，代码结构更清晰。</li>
+<li><strong>状态可控</strong>：通过实例变量轻松实现跨请求的状态共享（如统计调用次数、缓存结果）。</li>
+<li><strong>扩展性强</strong>：便于继承和复用，可通过子类扩展功能，适合构建复杂的中间件系统。</li>
+<li><strong>配置灵活</strong>：支持在初始化时传入参数，实现高度可配置的中间件。</li>
+</ul>
+<h1 id="AgentMiddleware核心方法详解"><a href="#AgentMiddleware核心方法详解" class="headerlink" title="AgentMiddleware核心方法详解"></a>AgentMiddleware核心方法详解</h1><p>AgentMiddleware导包：<code>from langchain.agents.middleware import AgentMiddleware</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">AgentMiddleware</span>(<span class="type">Generic</span>[StateT, ContextT]):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Base middleware class for an agent.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Subclass this and implement any of the defined methods to customize agent behavior</span></span><br><span class="line"><span class="string">    between steps in the main agent loop.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    state_schema: <span class="built_in">type</span>[StateT] = cast(<span class="string">&quot;type[StateT]&quot;</span>, AgentState)</span><br><span class="line">    <span class="string">&quot;&quot;&quot;The schema for state passed to the middleware nodes.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    tools: <span class="built_in">list</span>[BaseTool]</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Additional tools registered by the middleware.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">name</span>(<span class="params">self</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;The name of the middleware instance.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Defaults to the class name, but can be overridden for custom naming.</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.__class__.__name__</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_agent</span>(<span class="params">self, state: StateT, runtime: Runtime[ContextT]</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;Logic to run before the agent execution starts.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Async version is `abefore_agent`</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">abefore_agent</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self, state: StateT, runtime: Runtime[ContextT]</span></span><br><span class="line"><span class="params">    </span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;Async logic to run before the agent execution starts.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_model</span>(<span class="params">self, state: StateT, runtime: Runtime[ContextT]</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;Logic to run before the model is called.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Async version is `abefore_model`</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">abefore_model</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self, state: StateT, runtime: Runtime[ContextT]</span></span><br><span class="line"><span class="params">    </span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;Async logic to run before the model is called.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">after_model</span>(<span class="params">self, state: StateT, runtime: Runtime[ContextT]</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;Logic to run after the model is called.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Async version is `aafter_model`</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">aafter_model</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self, state: StateT, runtime: Runtime[ContextT]</span></span><br><span class="line"><span class="params">    </span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;Async logic to run after the model is called.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">wrap_model_call</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self,</span></span><br><span class="line"><span class="params">        request: ModelRequest,</span></span><br><span class="line"><span class="params">        handler: <span class="type">Callable</span>[[ModelRequest], ModelResponse],</span></span><br><span class="line"><span class="params">    </span>) -&gt; ModelCallResult:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;Intercept and control model execution via handler callback.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Async version is `awrap_model_call`</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        The handler callback executes the model request and returns a `ModelResponse`.</span></span><br><span class="line"><span class="string">        Middleware can call the handler multiple times for retry logic, skip calling</span></span><br><span class="line"><span class="string">        it to short-circuit, or modify the request/response. Multiple middleware</span></span><br><span class="line"><span class="string">        compose with first in list as outermost layer.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Args:</span></span><br><span class="line"><span class="string">            request: Model request to execute (includes state and runtime).</span></span><br><span class="line"><span class="string">            handler: Callback that executes the model request and returns</span></span><br><span class="line"><span class="string">                `ModelResponse`.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">                Call this to execute the model.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">                Can be called multiple times for retry logic.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">                Can skip calling it to short-circuit.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Returns:</span></span><br><span class="line"><span class="string">            `ModelCallResult`</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        Examples:</span></span><br><span class="line"><span class="string">            !!! example &quot;Retry on error&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">                ```python</span></span><br><span class="line"><span class="string">                def wrap_model_call(self, request, handler):</span></span><br><span class="line"><span class="string">                    for attempt in range(3):</span></span><br><span class="line"><span class="string">                        try:</span></span><br><span class="line"><span class="string">                            return handler(request)</span></span><br><span class="line"><span class="string">                        except Exception:</span></span><br><span class="line"><span class="string">                            if attempt == 2:</span></span><br><span class="line"><span class="string">                                raise</span></span><br><span class="line"><span class="string">                    !!! example &quot;Rewrite response&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">            ```python</span></span><br><span class="line"><span class="string">            def wrap_model_call(self, request, handler):</span></span><br><span class="line"><span class="string">                response = handler(request)</span></span><br><span class="line"><span class="string">                ai_msg = response.result[0]</span></span><br><span class="line"><span class="string">                return ModelResponse(</span></span><br><span class="line"><span class="string">                    result=[AIMessage(content=f&quot;[&#123;ai_msg.content&#125;]&quot;)],</span></span><br><span class="line"><span class="string">                    structured_response=response.structured_response,</span></span><br><span class="line"><span class="string">                )</span></span><br></pre></td></tr></table></figure>
+<pre><code>    !!! example &quot;Error to fallback&quot;
+
+        <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">wrap_model_call</span>(<span class="params">self, request, handler</span>):</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> handler(request)</span><br><span class="line">    <span class="keyword">except</span> Exception:</span><br><span class="line">        <span class="keyword">return</span> ModelResponse(result=[AIMessage(content=<span class="string">&quot;Service unavailable&quot;</span>)])</span><br></pre></td></tr></table></figure>
+
+    !!! example &quot;Cache/short-circuit&quot;
+
+        <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">wrap_model_call</span>(<span class="params">self, request, handler</span>):</span><br><span class="line">    <span class="keyword">if</span> cached := get_cache(request):</span><br><span class="line">        <span class="keyword">return</span> cached  <span class="comment"># Short-circuit with cached result</span></span><br><span class="line">    response = handler(request)</span><br><span class="line">    save_cache(request, response)</span><br><span class="line">    <span class="keyword">return</span> response</span><br></pre></td></tr></table></figure>
+
+    !!! example &quot;Simple `AIMessage` return (converted automatically)&quot;
+
+        <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">wrap_model_call</span>(<span class="params">self, request, handler</span>):</span><br><span class="line">    response = handler(request)</span><br><span class="line">    <span class="comment"># Can return AIMessage directly for simple cases</span></span><br><span class="line">    <span class="keyword">return</span> AIMessage(content=<span class="string">&quot;Simplified response&quot;</span>)</span><br></pre></td></tr></table></figure>
+&quot;&quot;&quot;
+msg = (
+    &quot;Synchronous implementation of wrap_model_call is not available. &quot;
+    &quot;You are likely encountering this error because you defined only the async version &quot;
+    &quot;(awrap_model_call) and invoked your agent in a synchronous context &quot;
+    &quot;(e.g., using `stream()` or `invoke()`). &quot;
+    &quot;To resolve this, either: &quot;
+    &quot;(1) subclass AgentMiddleware and implement the synchronous wrap_model_call method, &quot;
+    &quot;(2) use the @wrap_model_call decorator on a standalone sync function, or &quot;
+    &quot;(3) invoke your agent asynchronously using `astream()` or `ainvoke()`.&quot;
+)
+raise NotImplementedError(msg)
+</code></pre><p>async def awrap_model_call(<br>    self,<br>    request: ModelRequest,<br>    handler: Callable[[ModelRequest], Awaitable[ModelResponse]],<br>) -&gt; ModelCallResult:<br>    “””Intercept and control async model execution via handler callback.</p>
+<pre><code>The handler callback executes the model request and returns a `ModelResponse`.
+
+Middleware can call the handler multiple times for retry logic, skip calling
+it to short-circuit, or modify the request/response. Multiple middleware
+compose with first in list as outermost layer.
+
+Args:
+    request: Model request to execute (includes state and runtime).
+    handler: Async callback that executes the model request and returns
+        `ModelResponse`.
+
+        Call this to execute the model.
+
+        Can be called multiple times for retry logic.
+
+        Can skip calling it to short-circuit.
+
+Returns:
+    `ModelCallResult`
+
+Examples:
+    !!! example &quot;Retry on error&quot;
+
+        <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">awrap_model_call</span>(<span class="params">self, request, handler</span>):</span><br><span class="line">    <span class="keyword">for</span> attempt <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">3</span>):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">await</span> handler(request)</span><br><span class="line">        <span class="keyword">except</span> Exception:</span><br><span class="line">            <span class="keyword">if</span> attempt == <span class="number">2</span>:</span><br><span class="line">                <span class="keyword">raise</span></span><br></pre></td></tr></table></figure>
+&quot;&quot;&quot;
+msg = (
+    &quot;Asynchronous implementation of awrap_model_call is not available. &quot;
+    &quot;You are likely encountering this error because you defined only the sync version &quot;
+    &quot;(wrap_model_call) and invoked your agent in an asynchronous context &quot;
+    &quot;(e.g., using `astream()` or `ainvoke()`). &quot;
+    &quot;To resolve this, either: &quot;
+    &quot;(1) subclass AgentMiddleware and implement the asynchronous awrap_model_call method, &quot;
+    &quot;(2) use the @wrap_model_call decorator on a standalone async function, or &quot;
+    &quot;(3) invoke your agent synchronously using `stream()` or `invoke()`.&quot;
+)
+raise NotImplementedError(msg)
+</code></pre><p>def after_agent(self, state: StateT, runtime: Runtime[ContextT]) -&gt; dict[str, Any] | None:<br>    “””Logic to run after the agent execution completes.”””</p>
+<p>async def aafter_agent(<br>    self, state: StateT, runtime: Runtime[ContextT]<br>) -&gt; dict[str, Any] | None:<br>    “””Async logic to run after the agent execution completes.”””</p>
+<p>def wrap_tool_call(<br>    self,<br>    request: ToolCallRequest,<br>    handler: Callable[[ToolCallRequest], ToolMessage | Command],<br>) -&gt; ToolMessage | Command:<br>    “””Intercept tool execution for retries, monitoring, or modification.</p>
+<pre><code>Async version is `awrap_tool_call`
+
+Multiple middleware compose automatically (first defined = outermost).
+
+Exceptions propagate unless `handle_tool_errors` is configured on `ToolNode`.
+
+Args:
+    request: Tool call request with call `dict`, `BaseTool`, state, and runtime.
+
+        Access state via `request.state` and runtime via `request.runtime`.
+    handler: `Callable` to execute the tool (can be called multiple times).
+
+Returns:
+    `ToolMessage` or `Command` (the final result).
+
+The handler `Callable` can be invoked multiple times for retry logic.
+
+Each call to handler is independent and stateless.
+
+Examples:
+    !!! example &quot;Modify request before execution&quot;
+
+        <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">wrap_tool_call</span>(<span class="params">self, request, handler</span>):</span><br><span class="line">    modified_call = &#123;</span><br><span class="line">        **request.tool_call,</span><br><span class="line">        <span class="string">&quot;args&quot;</span>: &#123;</span><br><span class="line">            **request.tool_call[<span class="string">&quot;args&quot;</span>],</span><br><span class="line">            <span class="string">&quot;value&quot;</span>: request.tool_call[<span class="string">&quot;args&quot;</span>][<span class="string">&quot;value&quot;</span>] * <span class="number">2</span>,</span><br><span class="line">        &#125;,</span><br><span class="line">    &#125;</span><br><span class="line">    request = request.override(tool_call=modified_call)</span><br><span class="line">    <span class="keyword">return</span> handler(request)</span><br></pre></td></tr></table></figure>
+
+    !!! example &quot;Retry on error (call handler multiple times)&quot;
+
+        <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">wrap_tool_call</span>(<span class="params">self, request, handler</span>):</span><br><span class="line">    <span class="keyword">for</span> attempt <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">3</span>):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            result = handler(request)</span><br><span class="line">            <span class="keyword">if</span> is_valid(result):</span><br><span class="line">                <span class="keyword">return</span> result</span><br><span class="line">        <span class="keyword">except</span> Exception:</span><br><span class="line">            <span class="keyword">if</span> attempt == <span class="number">2</span>:</span><br><span class="line">                <span class="keyword">raise</span></span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+
+    !!! example &quot;Conditional retry based on response&quot;
+
+        <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">wrap_tool_call</span>(<span class="params">self, request, handler</span>):</span><br><span class="line">    <span class="keyword">for</span> attempt <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">3</span>):</span><br><span class="line">        result = handler(request)</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(result, ToolMessage) <span class="keyword">and</span> result.status != <span class="string">&quot;error&quot;</span>:</span><br><span class="line">            <span class="keyword">return</span> result</span><br><span class="line">        <span class="keyword">if</span> attempt &lt; <span class="number">2</span>:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+&quot;&quot;&quot;
+msg = (
+    &quot;Synchronous implementation of wrap_tool_call is not available. &quot;
+    &quot;You are likely encountering this error because you defined only the async version &quot;
+    &quot;(awrap_tool_call) and invoked your agent in a synchronous context &quot;
+    &quot;(e.g., using `stream()` or `invoke()`). &quot;
+    &quot;To resolve this, either: &quot;
+    &quot;(1) subclass AgentMiddleware and implement the synchronous wrap_tool_call method, &quot;
+    &quot;(2) use the @wrap_tool_call decorator on a standalone sync function, or &quot;
+    &quot;(3) invoke your agent asynchronously using `astream()` or `ainvoke()`.&quot;
+)
+raise NotImplementedError(msg)
+</code></pre><p>async def awrap_tool_call(<br>    self,<br>    request: ToolCallRequest,<br>    handler: Callable[[ToolCallRequest], Awaitable[ToolMessage | Command]],<br>) -&gt; ToolMessage | Command:<br>    “””Intercept and control async tool execution via handler callback.</p>
+<pre><code>The handler callback executes the tool call and returns a `ToolMessage` or
+`Command`. Middleware can call the handler multiple times for retry logic, skip
+calling it to short-circuit, or modify the request/response. Multiple middleware
+compose with first in list as outermost layer.
+
+Args:
+    request: Tool call request with call `dict`, `BaseTool`, state, and runtime.
+
+        Access state via `request.state` and runtime via `request.runtime`.
+    handler: Async callable to execute the tool and returns `ToolMessage` or
+        `Command`.
+
+        Call this to execute the tool.
+
+        Can be called multiple times for retry logic.
+
+        Can skip calling it to short-circuit.
+
+Returns:
+    `ToolMessage` or `Command` (the final result).
+
+The handler `Callable` can be invoked multiple times for retry logic.
+
+Each call to handler is independent and stateless.
+
+Examples:
+    !!! example &quot;Async retry on error&quot;
+
+        <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">awrap_tool_call</span>(<span class="params">self, request, handler</span>):</span><br><span class="line">    <span class="keyword">for</span> attempt <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">3</span>):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            result = <span class="keyword">await</span> handler(request)</span><br><span class="line">            <span class="keyword">if</span> is_valid(result):</span><br><span class="line">                <span class="keyword">return</span> result</span><br><span class="line">        <span class="keyword">except</span> Exception:</span><br><span class="line">            <span class="keyword">if</span> attempt == <span class="number">2</span>:</span><br><span class="line">                <span class="keyword">raise</span></span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+
+        <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">awrap_tool_call</span>(<span class="params">self, request, handler</span>):</span><br><span class="line">    <span class="keyword">if</span> cached := <span class="keyword">await</span> get_cache_async(request):</span><br><span class="line">        <span class="keyword">return</span> ToolMessage(content=cached, tool_call_id=request.tool_call[<span class="string">&quot;id&quot;</span>])</span><br><span class="line">    result = <span class="keyword">await</span> handler(request)</span><br><span class="line">    <span class="keyword">await</span> save_cache_async(request, result)</span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+&quot;&quot;&quot;
+msg = (
+    &quot;Asynchronous implementation of awrap_tool_call is not available. &quot;
+    &quot;You are likely encountering this error because you defined only the sync version &quot;
+    &quot;(wrap_tool_call) and invoked your agent in an asynchronous context &quot;
+    &quot;(e.g., using `astream()` or `ainvoke()`). &quot;
+    &quot;To resolve this, either: &quot;
+    &quot;(1) subclass AgentMiddleware and implement the asynchronous awrap_tool_call method, &quot;
+    &quot;(2) use the @wrap_tool_call decorator on a standalone async function, or &quot;
+    &quot;(3) invoke your agent synchronously using `stream()` or `invoke()`.&quot;
+)
+raise NotImplementedError(msg)
+</code></pre><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">## before_agent 方法</span><br><span class="line"></span><br><span class="line">在Agent执行流程开始前调用，用于初始化、验证或修改初始状态。</span><br><span class="line"></span><br><span class="line">```python</span><br><span class="line">def before_agent(self, state: AgentState, runtime: Any) -&gt; dict[str, Any] | None:</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    参数:</span><br><span class="line">        state: Agent当前状态，包含messages等信息</span><br><span class="line">        runtime: Agent运行时环境</span><br><span class="line">    返回:</span><br><span class="line">        可选的状态更新字典，或None表示不修改状态</span><br><span class="line">    &quot;&quot;&quot;</span><br><span class="line">    messages = state.get(&#x27;messages&#x27;, [])</span><br><span class="line">    if len(messages) == 0:</span><br><span class="line">        return None  # 不修改状态</span><br><span class="line">    return &#123;&quot;context&quot;: &#123;&quot;message_category&quot;: &quot;short&quot;&#125;&#125;  # 返回状态更新</span><br></pre></td></tr></table></figure>
+<p><strong>方法解读</strong>：</p>
+<ul>
+<li><p><strong>作用</strong>：这是类继承方式中 <code>AgentMiddleware</code> 的一个钩子方法，在<strong>Agent 执行流程开始前</strong>被调用。</p>
+</li>
+<li><p><strong>参数</strong>：</p>
+<ul>
+<li><p><code>self</code>：类实例本身，用于访问实例变量和其他方法。</p>
+</li>
+<li><p><code>state: AgentState</code>：Agent 的当前状态，包含 <code>messages</code>（对话历史）等核心数据。</p>
+</li>
+<li><p><code>runtime: Any</code>：Agent 运行时环境，提供配置、工具等上下文信息。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>返回值</strong>：</p>
+<ul>
+<li><p><code>dict[str, Any]</code>：状态更新字典，用于修改 Agent 的状态。</p>
+</li>
+<li><p><code>None</code>：表示不做任何修改，保持原始状态。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>核心逻辑</strong>：</p>
+<ul>
+<li><p><strong>步骤 1</strong>：从 <code>state</code> 中获取 <code>messages</code> 列表，若不存在则默认空列表。</p>
+</li>
+<li><p><strong>步骤 2</strong>：判断对话历史是否为空：</p>
+<ul>
+<li><p>若为空（<code>len(messages) == 0</code>），返回 <code>None</code>，不修改状态。</p>
+</li>
+<li><p>若不为空，返回状态更新字典，在 <code>context</code> 中新增 <code>message_category: &quot;short&quot;</code> 字段，标记当前消息为 “短消息” 类别。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="after-agent方法"><a href="#after-agent方法" class="headerlink" title="after_agent方法"></a>after_agent方法</h2><p>在Agent执行流程结束后调用，用于分析结果、记录日志或进行后续处理。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">after_agent</span>(<span class="params">self, state: AgentState, runtime: <span class="type">Any</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    参数:</span></span><br><span class="line"><span class="string">        state: Agent当前状态，包含更新后的messages等信息</span></span><br><span class="line"><span class="string">        runtime: Agent运行时环境</span></span><br><span class="line"><span class="string">    返回:</span></span><br><span class="line"><span class="string">        可选的状态更新字典，或None表示不修改状态</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&#x27;messages&#x27;</span>, [])</span><br><span class="line">    <span class="keyword">if</span> messages:</span><br><span class="line">        last_msg = messages[-<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">if</span> last_msg.__class__.__name__ == <span class="string">&#x27;AIMessage&#x27;</span>:</span><br><span class="line">            <span class="keyword">return</span> &#123;<span class="string">&quot;analysis&quot;</span>: &#123;<span class="string">&quot;quality&quot;</span>: <span class="string">&quot;good&quot;</span>&#125;&#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p><strong>方法解读</strong>：</p>
+<ul>
+<li><p><strong>作用</strong>：这是类继承方式中 <code>AgentMiddleware</code> 的钩子方法，在<strong>Agent 执行流程结束后</strong>被调用，用于对最终状态做收尾处理、分析或记录。</p>
+</li>
+<li><p><strong>参数</strong>：</p>
+<ul>
+<li><p><code>self</code>：类实例本身，用于访问实例变量和其他方法。</p>
+</li>
+<li><p><code>state: AgentState</code>：Agent 的当前状态，包含执行完成后更新的 <code>messages</code>（完整对话历史）等数据。</p>
+</li>
+<li><p><code>runtime: Any</code>：Agent 运行时环境，提供配置、工具等上下文信息。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>返回值</strong>：</p>
+<ul>
+<li><p><code>dict[str, Any]</code>：状态更新字典，用于修改 Agent 的最终状态。</p>
+</li>
+<li><p><code>None</code>：表示不做任何修改，保持最终状态。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>核心逻辑</strong>：</p>
+<ul>
+<li><p><strong>步骤 1</strong>：从 <code>state</code> 中获取 <code>messages</code> 列表，若不存在则默认空列表。</p>
+</li>
+<li><p><strong>步骤 2</strong>：判断是否存在消息：</p>
+<ul>
+<li><p>若存在消息，取出最后一条消息 <code>last_msg</code>。</p>
+</li>
+<li><p>检查最后一条消息的类名是否为 <code>AIMessage</code>（即模型生成的回复）。</p>
+</li>
+<li><p>如果是模型回复，则返回状态更新字典，在 <code>analysis</code> 中标记 <code>quality: &quot;good&quot;</code>，表示本次响应质量良好。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>步骤 3</strong>：若不满足条件，返回 <code>None</code>，不修改状态。</p>
+</li>
+</ul>
+<h2 id="before-model方法"><a href="#before-model方法" class="headerlink" title="before_model方法"></a>before_model方法</h2><p>在每次用语言模型前调用，用于处理输入、设置参数或进行安全检查。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">before_model</span>(<span class="params">self, state: AgentState, runtime: <span class="type">Any</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    参数:</span></span><br><span class="line"><span class="string">        state: 包含要发送给模型的messages等信息</span></span><br><span class="line"><span class="string">        runtime: Agent运行时环境</span></span><br><span class="line"><span class="string">    返回:</span></span><br><span class="line"><span class="string">        可选的状态更新字典，或None表示不修改状态</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&#x27;messages&#x27;</span>, [])</span><br><span class="line">    <span class="keyword">if</span> messages:</span><br><span class="line">        last_msg = messages[-<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">hasattr</span>(last_msg, <span class="string">&#x27;content&#x27;</span>):</span><br><span class="line">            content = last_msg.content.lower()</span><br><span class="line">            <span class="keyword">if</span> <span class="string">&#x27;你好&#x27;</span> <span class="keyword">in</span> content:</span><br><span class="line">                <span class="keyword">return</span> &#123;<span class="string">&quot;model_settings&quot;</span>: &#123;<span class="string">&quot;mode&quot;</span>: <span class="string">&quot;friendly&quot;</span>&#125;&#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p><strong>方法解读</strong>：</p>
+<ul>
+<li><p><strong>作用</strong>：这是类继承方式中 <code>AgentMiddleware</code> 的钩子方法，在<strong>调用语言模型之前</strong>执行，用于预处理输入、调整模型参数或控制流程。</p>
+</li>
+<li><p><strong>参数</strong>：</p>
+<ul>
+<li><p><code>self</code>：类实例本身，用于访问实例变量和其他方法。</p>
+</li>
+<li><p><code>state: AgentState</code>：包含即将发送给模型的 <code>messages</code> 等状态数据。</p>
+</li>
+<li><p><code>runtime: Any</code>：Agent 运行时环境，提供配置、工具等上下文信息。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>返回值</strong>：</p>
+<ul>
+<li><p><code>dict[str, Any]</code>：状态更新字典，可修改模型输入或配置。</p>
+</li>
+<li><p><code>None</code>：表示不修改状态，直接调用模型。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>核心逻辑</strong>：</p>
+<ul>
+<li><p><strong>步骤 1</strong>：从 <code>state</code> 中获取 <code>messages</code> 列表，若不存在则默认空列表。</p>
+</li>
+<li><p><strong>步骤 2</strong>：判断是否存在消息：</p>
+<ul>
+<li><p>若存在消息，取出最后一条用户消息 <code>last_msg</code>。</p>
+</li>
+<li><p>检查消息是否有 <code>content</code> 属性，若有则将内容转为小写。</p>
+</li>
+<li><p>若内容中包含关键词 “你好”，则返回状态更新字典，设置 <code>model_settings.mode = &quot;friendly&quot;</code>，告诉模型以友好模式响应。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>步骤 3</strong>：若不满足条件，返回 <code>None</code>，不修改状态。</p>
+</li>
+</ul>
+<h2 id="after-model方法"><a href="#after-model方法" class="headerlink" title="after_model方法"></a>after_model方法</h2><p>在每次模型返回响应调用，用于分析响应、记录日志或进行后处理。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">after_model</span>(<span class="params">self, state: AgentState, runtime: <span class="type">Any</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    参数:</span></span><br><span class="line"><span class="string">        state: 包含模型返回消息的Agent状态</span></span><br><span class="line"><span class="string">        runtime: Agent运行时环境</span></span><br><span class="line"><span class="string">    返回:</span></span><br><span class="line"><span class="string">        可选的状态更新字典，或None表示不修改状态</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&#x27;messages&#x27;</span>, [])</span><br><span class="line">    <span class="keyword">if</span> messages:</span><br><span class="line">        last_msg = messages[-<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">if</span> last_msg.__class__.__name__ == <span class="string">&#x27;AIMessage&#x27;</span>:</span><br><span class="line">            <span class="keyword">return</span> &#123;<span class="string">&quot;response_quality&quot;</span>: <span class="string">&quot;normal&quot;</span>&#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p><strong>方法解读</strong>：</p>
+<ul>
+<li><p><strong>作用</strong>：这是类继承方式中 <code>AgentMiddleware</code> 的钩子方法，在<strong>语言模型生成响应后</strong>执行，用于后处理模型输出、记录或分析结果。</p>
+</li>
+<li><p><strong>参数</strong>：</p>
+<ul>
+<li><p><code>self</code>：类实例本身，用于访问实例变量和其他方法。</p>
+</li>
+<li><p><code>state: AgentState</code>：包含模型返回消息的 Agent 状态，已更新最新的模型响应。</p>
+</li>
+<li><p><code>runtime: Any</code>：Agent 运行时环境，提供配置、工具等上下文信息。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>返回值</strong>：</p>
+<ul>
+<li><p><code>dict[str, Any]</code>：状态更新字典，可修改或补充模型响应数据。</p>
+</li>
+<li><p><code>None</code>：表示不修改状态，直接将模型响应传递给后续流程。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>核心逻辑</strong>：</p>
+<ul>
+<li><p><strong>步骤 1</strong>：从 <code>state</code> 中获取 <code>messages</code> 列表，若不存在则默认空列表。</p>
+</li>
+<li><p><strong>步骤 2</strong>：判断是否存在消息：</p>
+<ul>
+<li><p>若存在消息，取出最后一条消息 <code>last_msg</code>。</p>
+</li>
+<li><p>检查最后一条消息的类名是否为 <code>AIMessage</code>（即模型生成的回复）。</p>
+</li>
+<li><p>如果是模型生成的响应，则返回状态更新字典，添加 <code>response_quality: &quot;normal&quot;</code> 字段，标记本次响应质量为 “普通”。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>步骤 3</strong>：若不满足条件，返回 <code>None</code>，不修改状态。</p>
+</li>
+</ul>
+<h2 id="wrap-model-call方法"><a href="#wrap-model-call方法" class="headerlink" title="wrap_model_call方法"></a>wrap_model_call方法</h2><p>包装模型调用过程，用于控制、监控或修改模型请求和响应。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">wrap_model_call</span>(<span class="params"></span></span><br><span class="line"><span class="params">    self,</span></span><br><span class="line"><span class="params">    request: ModelRequest,</span></span><br><span class="line"><span class="params">    handler: <span class="type">Callable</span>[[ModelRequest], ModelResponse],</span></span><br><span class="line"><span class="params"></span>) -&gt; ModelResponse:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    参数:</span></span><br><span class="line"><span class="string">        request: 模型请求对象，包含要发送给模型的内容</span></span><br><span class="line"><span class="string">        handler: 原始模型调用处理器函数</span></span><br><span class="line"><span class="string">    返回:</span></span><br><span class="line"><span class="string">        模型响应结果</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;self.log_level&#125;</span>] 准备调用模型&quot;</span>)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        result = handler(request)  <span class="comment"># 调用原始处理器</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;self.log_level&#125;</span>] 模型调用成功&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> result</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;self.log_level&#125;</span>] 模型调用异常: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">raise</span></span><br></pre></td></tr></table></figure>
+<p><strong>方法解读</strong>：</p>
+<ul>
+<li><p><strong>作用</strong>：这是类继承中间件中用于<strong>包装模型调用</strong>的核心方法，在模型请求发出前后执行自定义逻辑，实现对模型调用的完整拦截与监控。</p>
+</li>
+<li><p><strong>参数</strong>：</p>
+<ul>
+<li><p><code>self</code>：类实例本身，可访问实例变量（如示例中的 <code>log_level</code>）。</p>
+</li>
+<li><p><code>request: ModelRequest</code>：封装了要发送给模型的完整请求数据（如消息列表、模型参数等）。</p>
+</li>
+<li><p><code>handler: Callable[[ModelRequest], ModelResponse]</code>：原始的模型调用处理函数，是被包装的核心逻辑。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>返回值</strong>：<code>ModelResponse</code>，即模型返回的响应结果。</p>
+</li>
+</ul>
+<p><strong>核心逻辑</strong>：</p>
+<ul>
+<li><strong>前置处理</strong>：在调用模型前，打印日志（包含实例的日志级别 <code>self.log_level</code>），提示 “准备调用模型”。</li>
+<li><strong>核心调用</strong>：通过 <code>handler(request)</code> 执行原始的模型请求逻辑，获取响应结果。</li>
+<li><strong>后置处理</strong>：调用成功后，打印 “模型调用成功” 日志，并将结果返回。</li>
+<li><strong>异常处理</strong>：捕获调用过程中所有异常，打印包含异常信息的错误日志后，重新抛出异常，保证错误能被上层正常捕获。</li>
+</ul>
+<h2 id="wrap-tool-call方法"><a href="#wrap-tool-call方法" class="headerlink" title="wrap_tool_call方法"></a>wrap_tool_call方法</h2><p>包装工具调用过程，用于控制、验证或修改工具调用请求和结果。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">wrap_tool_call</span>(<span class="params"></span></span><br><span class="line"><span class="params">    self,</span></span><br><span class="line"><span class="params">    request: ToolCallRequest,</span></span><br><span class="line"><span class="params">    handler: <span class="type">Callable</span>[[ToolCallRequest], ToolMessage],</span></span><br><span class="line"><span class="params"></span>) -&gt; ToolMessage:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    参数:</span></span><br><span class="line"><span class="string">        request: 工具调用请求对象</span></span><br><span class="line"><span class="string">        handler: 原始工具调用处理器函数</span></span><br><span class="line"><span class="string">    返回:</span></span><br><span class="line"><span class="string">        工具执行结果消息</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    tool_name = request.tool_call.get(<span class="string">&#x27;name&#x27;</span>, <span class="string">&#x27;未知工具&#x27;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;self.log_level&#125;</span>] 调用工具: <span class="subst">&#123;tool_name&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> handler(request)  <span class="comment"># 调用原始处理器</span></span><br></pre></td></tr></table></figure>
+<p><strong>方法解读</strong>：</p>
+<ul>
+<li><p><strong>作用</strong>：这是类继承中间件中用于<strong>包装工具调用</strong>的核心方法，在工具执行前后插入自定义逻辑，实现对工具调用的拦截与监控。</p>
+</li>
+<li><p><strong>参数</strong>：</p>
+<ul>
+<li><p><code>self</code>：类实例本身，可访问实例变量（如示例中的 <code>log_level</code>）。</p>
+</li>
+<li><p><code>request: ToolCallRequest</code>：封装了工具调用的完整请求数据（如工具名称、调用参数等）。</p>
+</li>
+<li><p><code>handler: Callable[[ToolCallRequest], ToolMessage]</code>：原始的工具调用处理函数，是被包装的核心逻辑。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>返回值</strong>：<code>ToolMessage</code>，即工具执行后返回的结果消息。</p>
+</li>
+</ul>
+<p><strong>核心逻辑</strong>：</p>
+<ul>
+<li><p><strong>前置处理</strong>：从 <code>request.tool_call</code> 中提取工具名称（若不存在则默认 “未知工具”），并打印包含日志级别的调用日志，记录即将调用的工具。</p>
+</li>
+<li><p><strong>核心调用</strong>：通过 <code>handler(request)</code> 执行原始的工具调用逻辑，获取工具执行结果。</p>
+</li>
+<li><p><strong>返回结果</strong>：直接将工具执行结果返回，不做额外修改（可在此处扩展后置处理逻辑）。</p>
+</li>
+</ul>
+<h1 id="完整的中间件示例类"><a href="#完整的中间件示例类" class="headerlink" title="完整的中间件示例类"></a>完整的中间件示例类</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 完整的中间件示例类</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> AgentMiddleware, AgentState, ModelRequest, ModelResponse</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware.types <span class="keyword">import</span> ToolCallRequest</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> ToolMessage</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span>, <span class="type">Callable</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CoreMiddlewareDemo</span>(<span class="title class_ inherited__">AgentMiddleware</span>):</span><br><span class="line">    <span class="comment"># 构造函数</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, log_level: <span class="built_in">str</span> = <span class="string">&quot;INFO&quot;</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.log_level = log_level</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Agent生命周期钩子</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_agent</span>(<span class="params">self, state: AgentState, runtime: <span class="type">Any</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        messages = state.get(<span class="string">&#x27;messages&#x27;</span>, [])</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">len</span>(messages) == <span class="number">0</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;self.log_level&#125;</span>] 没有初始消息&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;context&quot;</span>: &#123;<span class="string">&quot;message_count&quot;</span>: <span class="built_in">len</span>(messages)&#125;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">after_agent</span>(<span class="params">self, state: AgentState, runtime: <span class="type">Any</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;self.log_level&#125;</span>] Agent执行完成&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Model生命周期钩子</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_model</span>(<span class="params">self, state: AgentState, runtime: <span class="type">Any</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;self.log_level&#125;</span>] 准备调用模型&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">after_model</span>(<span class="params">self, state: AgentState, runtime: <span class="type">Any</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;self.log_level&#125;</span>] 模型返回响应&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 调用包装钩子</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">wrap_model_call</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self,</span></span><br><span class="line"><span class="params">        request: ModelRequest,</span></span><br><span class="line"><span class="params">        handler: <span class="type">Callable</span>[[ModelRequest], ModelResponse],</span></span><br><span class="line"><span class="params">    </span>) -&gt; ModelResponse:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;self.log_level&#125;</span>] 包装模型调用&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> handler(request)</span><br></pre></td></tr></table></figure>
+<p><strong>代码结构解读 📝</strong></p>
+<ol>
+<li><strong>类定义</strong>：<code>CoreMiddlewareDemo</code> 继承自 <code>AgentMiddleware</code>，是一个完整的中间件类，实现了多种生命周期钩子和包装器。</li>
+<li><strong>构造函数 <code>__init__</code></strong>：初始化日志级别 <code>log_level</code>，默认值为 <code>&quot;INFO&quot;</code>，用于统一控制日志输出。</li>
+<li><strong>Agent 生命周期钩子</strong>：<ul>
+<li><code>before_agent</code>：在 Agent 执行前检查消息数量，记录日志并更新上下文。</li>
+<li><code>after_agent</code>：在 Agent 执行完成后打印日志，不修改状态。</li>
+</ul>
+</li>
+<li><strong>Model 生命周期钩子</strong>：<ul>
+<li><code>before_model</code>：在模型调用前打印日志。</li>
+<li><code>after_model</code>：在模型返回响应后打印日志。</li>
+</ul>
+</li>
+<li><strong>调用包装钩子 <code>wrap_model_call</code></strong>：包装模型调用，打印日志后执行原始调用逻辑。</li>
+</ol>
+<h1 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h1><h2 id="选择合适的钩子类型-🎯"><a href="#选择合适的钩子类型-🎯" class="headerlink" title="选择合适的钩子类型 🎯"></a>选择合适的钩子类型 🎯</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">钩子类型</th>
+<th style="text-align:left">适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Node-style 钩子</strong>（<code>before_agent</code>/<code>after_agent</code>/<code>before_model</code>/<code>after_model</code>）</td>
+<td style="text-align:left">需要在<strong>特定执行点</strong>执行简单逻辑，<strong>不需要控制执行流程</strong>，仅做状态修改或日志记录</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Wrap-style 钩子</strong>（<code>wrap_model_call</code>/<code>wrap_tool_call</code>）</td>
+<td style="text-align:left">需要<strong>控制执行流程</strong>，例如实现重试、缓存、修改请求 / 响应对象等底层拦截逻辑</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>before_agent</code>/<code>after_agent</code></td>
+<td style="text-align:left">适合<strong>Agent 生命周期</strong>的初始化、清理、会话级别的全局操作</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>before_model</code>/<code>after_model</code></td>
+<td style="text-align:left">适合与<strong>模型交互</strong>相关的逻辑，如输入过滤、输出格式化、模型调用监控</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="选择合适的实现方式-🛠️"><a href="#选择合适的实现方式-🛠️" class="headerlink" title="选择合适的实现方式 🛠️"></a>选择合适的实现方式 🛠️</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">实现方式</th>
+<th style="text-align:left">适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>装饰器方式</strong></td>
+<td style="text-align:left">简单中间件，仅需<strong>单个钩子</strong>，无需复杂配置或状态管理，代码轻量直观</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>类继承方式</strong></td>
+<td style="text-align:left">复杂中间件，需要<strong>多个钩子</strong>、状态管理（如计数器、缓存）或自定义配置（如日志级别）</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>中间件工厂函数</strong></td>
+<td style="text-align:left">需要根据<strong>动态参数</strong>创建不同行为的中间件，例如根据环境变量生成不同日志级别的中间件</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="常见注意事项"><a href="#常见注意事项" class="headerlink" title="常见注意事项"></a>常见注意事项</h1><p>这是开发中间件时必须遵守的核心原则：</p>
+<ul>
+<li><strong>避免阻塞操作</strong>：中间件中的长时间运行任务（如网络请求、大文件读写）会阻塞 Agent 流程，严重影响整体性能，应尽量异步化或轻量化。</li>
+<li><strong>错误处理</strong>：必须适当捕获和处理异常，避免中间件内部错误导致整个代理崩溃，同时要保证异常信息能被上层感知。</li>
+<li><strong>返回值处理</strong>：Node-style 钩子中，<code>None</code> 表示不修改状态、继续执行；返回字典则会更新状态，需谨慎设计返回逻辑。</li>
+<li><strong>状态修改</strong>：修改 <code>AgentState</code> 时要小心，避免意外覆盖重要信息（如对话历史、上下文数据），推荐只新增或修改特定字段。</li>
+<li><strong>中间件顺序</strong>：多个中间件的执行顺序非常关键，尤其是存在依赖关系时（例如日志中间件应在业务中间件之前执行）。</li>
+</ul>
+<h1 id="核心总结-✨"><a href="#核心总结-✨" class="headerlink" title="核心总结 ✨"></a>核心总结 ✨</h1><ol>
+<li><strong>先选钩子</strong>：根据要干预的生命周期阶段和是否需要控制流程，选择 Node-style 或 Wrap-style 钩子。</li>
+<li><strong>再选实现</strong>：根据复杂度选择装饰器、类继承或工厂函数方式。</li>
+<li><strong>最后避坑</strong>：遵守性能、错误、状态、顺序等注意事项，保证中间件稳定可靠。</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/02/28/ai/langchain/9-langchain-Custom-Middleware/" rel="prev" title="LangChain自定义中间件的开发">
+      <i class="fa fa-chevron-left"></i> LangChain自定义中间件的开发
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/06/test-action/interface/function/design-idea-of-interface/" rel="next" title="接口测试用例设计思路">
+      接口测试用例设计思路 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#AgentMiddleware%E6%A0%B8%E5%BF%83%E6%96%B9%E6%B3%95%E8%AF%A6%E8%A7%A3"><span class="nav-number">2.</span> <span class="nav-text">AgentMiddleware核心方法详解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#after-agent%E6%96%B9%E6%B3%95"><span class="nav-number">2.1.</span> <span class="nav-text">after_agent方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#before-model%E6%96%B9%E6%B3%95"><span class="nav-number">2.2.</span> <span class="nav-text">before_model方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#after-model%E6%96%B9%E6%B3%95"><span class="nav-number">2.3.</span> <span class="nav-text">after_model方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#wrap-model-call%E6%96%B9%E6%B3%95"><span class="nav-number">2.4.</span> <span class="nav-text">wrap_model_call方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#wrap-tool-call%E6%96%B9%E6%B3%95"><span class="nav-number">2.5.</span> <span class="nav-text">wrap_tool_call方法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%A4%BA%E4%BE%8B%E7%B1%BB"><span class="nav-number">3.</span> <span class="nav-text">完整的中间件示例类</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">4.</span> <span class="nav-text">最佳实践</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E5%90%88%E9%80%82%E7%9A%84%E9%92%A9%E5%AD%90%E7%B1%BB%E5%9E%8B-%F0%9F%8E%AF"><span class="nav-number">4.1.</span> <span class="nav-text">选择合适的钩子类型 🎯</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E5%90%88%E9%80%82%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F-%F0%9F%9B%A0%EF%B8%8F"><span class="nav-number">4.2.</span> <span class="nav-text">选择合适的实现方式 🛠️</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">5.</span> <span class="nav-text">常见注意事项</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%80%BB%E7%BB%93-%E2%9C%A8"><span class="nav-number">6.</span> <span class="nav-text">核心总结 ✨</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangGraph学习笔记第六讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangGraph之流式输出">
+<meta property="og:url" content="https://jinglv.github.io/2025/09/18/ai/langchain/langgraph/6-langgraph-streaming/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangGraph学习笔记第六讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-09-17T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-09-18T09:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangGraph">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/09/18/ai/langchain/langgraph/6-langgraph-streaming/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangGraph之流式输出 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/09/18/ai/langchain/langgraph/6-langgraph-streaming/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangGraph之流式输出
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-09-18 00:00:00 / 修改时间：17:00:00" itemprop="dateCreated datePublished" datetime="2025-09-18T00:00:00+08:00">2025-09-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangGraph/" itemprop="url" rel="index"><span itemprop="name">LangGraph</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangGraph学习笔记第六讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>LangGraph 实现了一个流式传输系统，用于实时更新信息。对于基于大型语言模型（LLMs）构建的应用程序来说，流式传输对于增强其响应性至关重要。这是因为大型语言模型在处理复杂的自然语言任务时，可能会存在一定的延迟。而通过流式传输，可以在模型还在处理数据的过程中，就将部分结果逐步展示给用户，而不是让用户等待一个完整的响应，从而让用户能够更快地获得反馈，提高了应用程序的交互性。</p>
+<p>官方文档：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/streaming">https://docs.langchain.com/oss/python/langgraph/streaming</a></p>
+<ul>
+<li><strong>Stream graph state（流式传输图状态）</strong>：可以通过“updates”和“values”模式获取状态更新/值。其中，“updates”模式会流式传输图在每一步之后的状态更新，如果在同一个步骤中进行了多次更新（例如，运行了多个节点），这些更新将分别流式传输；而“values”模式则会流式传输图在每一步之后的完整状态值。</li>
+<li><strong>Stream subgraph outputs（流式传输子图输出）</strong>：包括父图和任何嵌套子图的输出。通过在父图的.stream()方法中设置subgraphs=True，可以实现这一点。输出将以(namespace, data)元组的形式流式传输，其中namespace是一个包含调用子图的节点路径的元组，例如(“parent_node:<task_id>“, “child_node:<task_id>“)。</li>
+<li><strong>Stream LLM tokens（流式传输LLM令牌）</strong>：可以从任何地方捕获令牌流，包括节点内部、子图内部或工具内部。这使得能够实时获取大型语言模型（LLM）的输出令牌，从而提升应用的响应性和用户体验。</li>
+<li><strong>Stream custom data（流式传输自定义数据）</strong>：可以直接从工具函数发送自定义更新或进度信号。这为开发者提供了更大的灵活性，可以根据需要自定义流式传输的数据内容，以满足特定的应用需求。</li>
+<li><strong>Use multiple streaming modes（使用多种流式传输模式）</strong>：可以选择以下多种流式传输模式：<ul>
+<li>values（完整状态）：流式传输每一步之后图的完整状态值。</li>
+<li>updates（状态增量）：流式传输每一步之后图的状态更新。</li>
+<li>messages（LLM令牌+元数据）：流式传输2元组（LLM令牌，元数据），这些元数据包含有关图节点和LLM调用的详细信息。</li>
+<li>custom（任意用户数据）：流式传输任意用户定义的数据。</li>
+<li>debug（详细跟踪）：在图执行过程中尽可能多地流式传输信息，包括节点名称和完整状态等详细信息。</li>
+</ul>
+</li>
+</ul>
+<h1 id="支持的流模式（stream-mode）"><a href="#支持的流模式（stream-mode）" class="headerlink" title="支持的流模式（stream_mode）"></a>支持的流模式（stream_mode）</h1><p>将以下一种或多种流模式作为列表传递给 <a target="_blank" rel="noopener" href="https://langchain-ai.github.io/langgraph/reference/graphs/#langgraph.graph.state.CompiledStateGraph.stream"><code>stream（）</code></a> 或 <a target="_blank" rel="noopener" href="https://langchain-ai.github.io/langgraph/reference/graphs/#langgraph.graph.state.CompiledStateGraph.astream"><code>astream（）</code></a> 方法：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>values</code></td>
+<td>每个图步骤后流式传输完整状态值。</td>
+</tr>
+<tr>
+<td><code>updates</code></td>
+<td>每个步骤后流式传输状态的增量更新。</td>
+</tr>
+<tr>
+<td><code>custom</code></td>
+<td>从图中节点流式传输自定义数据。</td>
+</tr>
+<tr>
+<td><code>messages</code></td>
+<td>从调用 LLM 的节点流式传输生成的 token 及元数据（元组）。</td>
+</tr>
+<tr>
+<td><code>debug</code></td>
+<td>尽可能多地流式传输调试信息。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>支持将多种模式作为列表同时传递，如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stream_mode=[<span class="string">&quot;updates&quot;</span>, <span class="string">&quot;messages&quot;</span>, <span class="string">&quot;custom&quot;</span>]</span><br></pre></td></tr></table></figure>
+<p>定义一个常见的图</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    topic: <span class="built_in">str</span></span><br><span class="line">    joke: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">refine_topic</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;topic&quot;</span>: state[<span class="string">&quot;topic&quot;</span>] + <span class="string">&quot;和小狗&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_joke</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;joke&quot;</span>: <span class="string">f&quot;这是一个关于<span class="subst">&#123;state[<span class="string">&#x27;topic&#x27;</span>]&#125;</span>的笑话&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">graph = (</span><br><span class="line">    StateGraph(State)</span><br><span class="line">    .add_node(refine_topic)</span><br><span class="line">    .add_node(generate_joke)</span><br><span class="line">    .add_edge(START, <span class="string">&quot;refine_topic&quot;</span>)</span><br><span class="line">    .add_edge(<span class="string">&quot;refine_topic&quot;</span>, <span class="string">&quot;generate_joke&quot;</span>)</span><br><span class="line">    .<span class="built_in">compile</span>()</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h1 id="流式传输stream-mode-”values”"><a href="#流式传输stream-mode-”values”" class="headerlink" title="流式传输stream_mode=”values”"></a>流式传输stream_mode=”values”</h1><p>在图表的每个步骤之后传输状态的完整值</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">    &#123;<span class="string">&quot;topic&quot;</span>: <span class="string">&quot;冰激凌&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;values&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌&#x27;</span>&#125;</span><br><span class="line">&#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌和小狗&#x27;</span>&#125;</span><br><span class="line">&#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌和小狗&#x27;</span>, <span class="string">&#x27;joke&#x27;</span>: <span class="string">&#x27;这是一个关于冰激凌和小狗的笑话&#x27;</span>&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：<code>values</code> 则输出完整状态值。</p>
+<h1 id="流式传输stream-mode-”updates”"><a href="#流式传输stream-mode-”updates”" class="headerlink" title="流式传输stream_mode=”updates”"></a>流式传输stream_mode=”updates”</h1><p>将图表每一步之后的更新流式传输到状态</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">    &#123;<span class="string">&quot;topic&quot;</span>: <span class="string">&quot;冰激凌&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;updates&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&#x27;refine_topic&#x27;</span>: &#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌和小狗&#x27;</span>&#125;&#125;</span><br><span class="line">&#123;<span class="string">&#x27;generate_joke&#x27;</span>: &#123;<span class="string">&#x27;joke&#x27;</span>: <span class="string">&#x27;这是一个关于冰激凌和小狗的笑话&#x27;</span>&#125;&#125;</span><br></pre></td></tr></table></figure>
+<p>说明：updates 模式输出节点的状态更新</p>
+<h1 id="流式传输stream-mode-”debug”"><a href="#流式传输stream-mode-”debug”" class="headerlink" title="流式传输stream_mode=”debug”"></a>流式传输stream_mode=”debug”</h1><p>在图表的整个执行过程中传输尽可能多的信息</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">    &#123;<span class="string">&quot;topic&quot;</span>: <span class="string">&quot;冰激凌&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;debug&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&#x27;step&#x27;</span>: 1, <span class="string">&#x27;timestamp&#x27;</span>: <span class="string">&#x27;2025-09-18T08:51:31.478123+00:00&#x27;</span>, <span class="string">&#x27;type&#x27;</span>: <span class="string">&#x27;task&#x27;</span>, <span class="string">&#x27;payload&#x27;</span>: &#123;<span class="string">&#x27;id&#x27;</span>: <span class="string">&#x27;671c3949-69b8-8e90-b997-e76a1f711f5f&#x27;</span>, <span class="string">&#x27;name&#x27;</span>: <span class="string">&#x27;refine_topic&#x27;</span>, <span class="string">&#x27;input&#x27;</span>: &#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌&#x27;</span>&#125;, <span class="string">&#x27;triggers&#x27;</span>: (<span class="string">&#x27;branch:to:refine_topic&#x27;</span>,)&#125;&#125;</span><br><span class="line">&#123;<span class="string">&#x27;step&#x27;</span>: 1, <span class="string">&#x27;timestamp&#x27;</span>: <span class="string">&#x27;2025-09-18T08:51:31.478680+00:00&#x27;</span>, <span class="string">&#x27;type&#x27;</span>: <span class="string">&#x27;task_result&#x27;</span>, <span class="string">&#x27;payload&#x27;</span>: &#123;<span class="string">&#x27;id&#x27;</span>: <span class="string">&#x27;671c3949-69b8-8e90-b997-e76a1f711f5f&#x27;</span>, <span class="string">&#x27;name&#x27;</span>: <span class="string">&#x27;refine_topic&#x27;</span>, <span class="string">&#x27;error&#x27;</span>: None, <span class="string">&#x27;result&#x27;</span>: [(<span class="string">&#x27;topic&#x27;</span>, <span class="string">&#x27;冰激凌和小狗&#x27;</span>)], <span class="string">&#x27;interrupts&#x27;</span>: []&#125;&#125;</span><br><span class="line">&#123;<span class="string">&#x27;step&#x27;</span>: 2, <span class="string">&#x27;timestamp&#x27;</span>: <span class="string">&#x27;2025-09-18T08:51:31.478828+00:00&#x27;</span>, <span class="string">&#x27;type&#x27;</span>: <span class="string">&#x27;task&#x27;</span>, <span class="string">&#x27;payload&#x27;</span>: &#123;<span class="string">&#x27;id&#x27;</span>: <span class="string">&#x27;b7f1816a-7dab-4847-e8e6-78ae4d691a8e&#x27;</span>, <span class="string">&#x27;name&#x27;</span>: <span class="string">&#x27;generate_joke&#x27;</span>, <span class="string">&#x27;input&#x27;</span>: &#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌和小狗&#x27;</span>&#125;, <span class="string">&#x27;triggers&#x27;</span>: (<span class="string">&#x27;branch:to:generate_joke&#x27;</span>,)&#125;&#125;</span><br><span class="line">&#123;<span class="string">&#x27;step&#x27;</span>: 2, <span class="string">&#x27;timestamp&#x27;</span>: <span class="string">&#x27;2025-09-18T08:51:31.479006+00:00&#x27;</span>, <span class="string">&#x27;type&#x27;</span>: <span class="string">&#x27;task_result&#x27;</span>, <span class="string">&#x27;payload&#x27;</span>: &#123;<span class="string">&#x27;id&#x27;</span>: <span class="string">&#x27;b7f1816a-7dab-4847-e8e6-78ae4d691a8e&#x27;</span>, <span class="string">&#x27;name&#x27;</span>: <span class="string">&#x27;generate_joke&#x27;</span>, <span class="string">&#x27;error&#x27;</span>: None, <span class="string">&#x27;result&#x27;</span>: [(<span class="string">&#x27;joke&#x27;</span>, <span class="string">&#x27;这是一个关于冰激凌和小狗的笑话&#x27;</span>)], <span class="string">&#x27;interrupts&#x27;</span>: []&#125;&#125;</span><br></pre></td></tr></table></figure>
+<p>从以上结果来看，可以看打执行的详细信息，每一个步骤执行</p>
+<h1 id="LLM-token-流式传输stream-mode-”messages”"><a href="#LLM-token-流式传输stream-mode-”messages”" class="headerlink" title="LLM token 流式传输stream_mode=”messages”"></a>LLM token 流式传输stream_mode=”messages”</h1><p>为调用LLM的图形节点传输LLM令牌和元数据</p>
+<p>需要接入大模型</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_deepseek <span class="keyword">import</span> ChatDeepSeek</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line">llm = ChatDeepSeek(</span><br><span class="line">    model=<span class="string">&quot;deepseek-chat&quot;</span>,</span><br><span class="line">    temperature=<span class="number">0</span>,</span><br><span class="line">    api_key=os.environ.get(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),</span><br><span class="line">    base_url=os.environ.get(<span class="string">&quot;DEEPSEEK_API_BASE&quot;</span>),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_joke</span>(<span class="params">state: State</span>):</span><br><span class="line">    llm_response = llm.invoke(</span><br><span class="line">        [</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">f&quot;生成一个关于 <span class="subst">&#123;state[<span class="string">&#x27;topic&#x27;</span>]&#125;</span>的笑话&quot;</span>&#125;</span><br><span class="line">        ]</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;joke&quot;</span>: llm_response.content&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">graph = (</span><br><span class="line">    StateGraph(State)</span><br><span class="line">    .add_node(refine_topic)</span><br><span class="line">    .add_node(generate_joke)</span><br><span class="line">    .add_edge(START, <span class="string">&quot;refine_topic&quot;</span>)</span><br><span class="line">    .add_edge(<span class="string">&quot;refine_topic&quot;</span>, <span class="string">&quot;generate_joke&quot;</span>)</span><br><span class="line">    .<span class="built_in">compile</span>()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> message_chunk, metadata <span class="keyword">in</span> graph.stream(</span><br><span class="line">    &#123;<span class="string">&quot;topic&quot;</span>: <span class="string">&quot;冰激凌&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;messages&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="keyword">if</span> message_chunk.content:</span><br><span class="line">        <span class="built_in">print</span>(message_chunk.content, end=<span class="string">&quot;|&quot;</span>, flush=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>执行结果(流式输出的)</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">小狗|走进|一家|冰|激|凌|店|，|店员|问|：“|想要|什么|口|味的|？”</span><br><span class="line">|小狗|说|：“|汪|草|味的|！”</span><br><span class="line">|店员|愣|住|：“|抱歉|…|我们没有|汪|草|口味|。”</span><br><span class="line">|小狗|叹气|：“|那|好吧|，|给我|一个|‘|爪子|’|饼干|筒|装|香|草|味|——|但|记住|，|这次|别|再把|我的|球|藏|进|冰|激|凌|里|了|，|上次|我|挖|了|半小时|！”|🍦|🐶|</span><br><span class="line"></span><br><span class="line">|（|注|：|谐|音|梗|：|汪|草|=|香|草|，|爪子|=|甜|筒|品牌|“|可爱|多|”|的|经典|筒|身|设计|）|</span><br></pre></td></tr></table></figure>
+<p>说明：每生成一个 token 就会立即输出，并附带上下文信息。</p>
+<h1 id="工具中自定义数据流式输出stream-mode-”custom”"><a href="#工具中自定义数据流式输出stream-mode-”custom”" class="headerlink" title="工具中自定义数据流式输出stream_mode=”custom”"></a>工具中自定义数据流式输出stream_mode=”custom”</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/9/30 14:48</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> langgraph.config <span class="keyword">import</span> get_stream_writer</span><br><span class="line"><span class="keyword">from</span> langgraph.constants <span class="keyword">import</span> START, END</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> app.agent.model.llms <span class="keyword">import</span> qv_llm</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义状态</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;状态&quot;&quot;&quot;</span></span><br><span class="line">    user_input: <span class="built_in">str</span></span><br><span class="line">    test_cases: <span class="built_in">str</span></span><br><span class="line">    result: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义运行时的上下文参数</span></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RuntimeContext</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;运行时上下文参数&quot;&quot;&quot;</span></span><br><span class="line">    test_env: <span class="built_in">str</span>  <span class="comment"># 测试环境</span></span><br><span class="line">    tester_name: <span class="built_in">str</span>  <span class="comment"># 测试人员名称</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generator_test_case</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;生成测试用例&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行生成测试用例的节点&quot;</span>)</span><br><span class="line">    prompt = <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请帮我生成用户5条登录的测试用例，登录账号密码的长度限制为8到16位     </span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    cases = qv_llm.invoke(prompt)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;test_cases&quot;</span>: cases&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">run_test_cases</span>(<span class="params">state: State, runtime: Runtime[RuntimeContext]</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;执行测试用例&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行【分析测试用例】的节点&quot;</span>)</span><br><span class="line">    cases = state[<span class="string">&#x27;test_cases&#x27;</span>]</span><br><span class="line">    prompt = <span class="string">f&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请分析当前的五条测试用例，是否有缺陷,</span></span><br><span class="line"><span class="string">    用例数据如下：<span class="subst">&#123;cases&#125;</span></span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    result = qv_llm.invoke(prompt)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;result&quot;</span>: result&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generator_test_report</span>(<span class="params">state: State, config: RunnableConfig</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;生成测试报告&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始【生成测试报告】的节点运行&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;report&quot;</span>: <span class="string">&quot;这个是一个测试报告&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># =================工作流的创建个编排===================</span></span><br><span class="line">graph = StateGraph(State, context_schema=RuntimeContext)</span><br><span class="line">graph.add_node(<span class="string">&quot;生成测试用例&quot;</span>, generator_test_case)</span><br><span class="line">graph.add_node(<span class="string">&quot;执行测试用例&quot;</span>, run_test_cases)</span><br><span class="line">graph.add_node(<span class="string">&quot;生成测试报告&quot;</span>, generator_test_report)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置起点</span></span><br><span class="line"><span class="comment"># graph.set_entry_point(&quot;生成测试用例&quot;)</span></span><br><span class="line">graph.add_edge(START, <span class="string">&quot;生成测试用例&quot;</span>)</span><br><span class="line">graph.add_edge(<span class="string">&quot;生成测试用例&quot;</span>, <span class="string">&quot;执行测试用例&quot;</span>)</span><br><span class="line">graph.add_edge(<span class="string">&quot;执行测试用例&quot;</span>, <span class="string">&quot;生成测试报告&quot;</span>)</span><br><span class="line"><span class="comment"># graph.set_finish_point(&quot;生成测试报告&quot;)</span></span><br><span class="line">graph.add_edge(<span class="string">&quot;生成测试报告&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">app = graph.<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line">response = app.stream(&#123;<span class="string">&quot;user_input&quot;</span>: <span class="string">&quot;测试项目A&quot;</span>&#125;,</span><br><span class="line">                      config=&#123;<span class="string">&quot;recursion_limit&quot;</span>: <span class="number">5</span>&#125;,</span><br><span class="line">                      context=RuntimeContext(test_env=<span class="string">&quot;测试环境A&quot;</span>, tester_name=<span class="string">&quot;张三&quot;</span>),</span><br><span class="line">                      stream_mode=[<span class="string">&#x27;messages&#x27;</span>, <span class="string">&#x27;custom&#x27;</span>]</span><br><span class="line">                      )</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> input_type, chunk <span class="keyword">in</span> response:</span><br><span class="line">    <span class="keyword">if</span> input_type == <span class="string">&quot;messages&quot;</span>:</span><br><span class="line">        <span class="comment"># ai的输出内容</span></span><br><span class="line">        <span class="built_in">print</span>(chunk[<span class="number">0</span>].content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">elif</span> input_type == <span class="string">&quot;custom&quot;</span>:</span><br><span class="line">        <span class="comment"># 工具执行的输出内容</span></span><br><span class="line">        <span class="built_in">print</span>(chunk)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>注意：必须在 LangGraph 执行上下文中调用 get_stream_writer()，否则无效。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangGraph/" rel="tag"># LangGraph</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/09/17/ai/langchain/langgraph/1-langgraph-introduce/" rel="prev" title="LangGraph介绍">
+      <i class="fa fa-chevron-left"></i> LangGraph介绍
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/09/18/ai/langchain/langgraph/5-langgraph-time-travel/" rel="next" title="LangGraph之时光旅行">
+      LangGraph之时光旅行 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E6%B5%81%E6%A8%A1%E5%BC%8F%EF%BC%88stream-mode%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">支持的流模式（stream_mode）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Dvalues%E2%80%9D"><span class="nav-number">2.</span> <span class="nav-text">流式传输stream_mode&#x3D;”values”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Dupdates%E2%80%9D"><span class="nav-number">3.</span> <span class="nav-text">流式传输stream_mode&#x3D;”updates”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Ddebug%E2%80%9D"><span class="nav-number">4.</span> <span class="nav-text">流式传输stream_mode&#x3D;”debug”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LLM-token-%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Dmessages%E2%80%9D"><span class="nav-number">5.</span> <span class="nav-text">LLM token 流式传输stream_mode&#x3D;”messages”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E4%B8%AD%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BAstream-mode-%E2%80%9Dcustom%E2%80%9D"><span class="nav-number">6.</span> <span class="nav-text">工具中自定义数据流式输出stream_mode&#x3D;”custom”</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

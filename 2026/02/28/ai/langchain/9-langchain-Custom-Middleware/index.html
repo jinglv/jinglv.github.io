@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第九讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain自定义中间件的开发">
+<meta property="og:url" content="https://jinglv.github.io/2026/02/28/ai/langchain/9-langchain-Custom-Middleware/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第九讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-02-27T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-02-28T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/02/28/ai/langchain/9-langchain-Custom-Middleware/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain自定义中间件的开发 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/02/28/ai/langchain/9-langchain-Custom-Middleware/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain自定义中间件的开发
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-02-28 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2026-02-28T00:00:00+08:00">2026-02-28</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第九讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>中间件的章节中已经介绍了自定义中间件的内容，这章节主要详细说明自定义中间件的开发。</p>
+<h1 id="before-agent"><a href="#before-agent" class="headerlink" title="@before_agent"></a>@before_agent</h1><p><code>@before_agent</code> 装饰器，它是在代理执行流程开始前运行的钩子函数，主要用于初始化、数据准备或权限验证等操作。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">模块</th>
+<th style="text-align:left">内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>作用</strong></td>
+<td style="text-align:left">在代理处理用户请求前执行，用于拦截初始状态，进行初始化、数据准备或权限验证。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>装饰器参数</strong></td>
+<td style="text-align:left"><code>can_jump_to</code>：可选参数，字符串列表，指定钩子函数可合法跳转到的工作流节点。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>回调函数参数</strong></td>
+<td style="text-align:left">- <code>state: AgentState</code>：代理完整状态对象，包含 <code>messages</code>（消息历史）、<code>user_id</code>（用户标识）、<code>workflow_state</code>（工作流状态）及其他自定义字段。<br />- <code>runtime: Runtime</code>：运行时实例，提供执行环境、配置信息和可用工具。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>返回值</strong></td>
+<td style="text-align:left">- <code>None</code>：不修改状态，继续正常流程。<br />- <code>dict[str, Any]</code>：修改后的状态字典。若包含 <code>jump_to</code> 键且值在 <code>can_jump_to</code> 列表中，则系统会跳转到指定节点，绕过正常流程。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="工作流程解析"><a href="#工作流程解析" class="headerlink" title="工作流程解析"></a>工作流程解析</h2><ol>
+<li>用户发起请求，代理开始执行。</li>
+<li>所有被 <code>@before_agent</code> 装饰的函数，会按照注册顺序依次执行。</li>
+<li>每个钩子函数都可以修改代理状态，或者触发流程跳转。</li>
+<li>经过所有钩子处理后的最终状态，会被传递给代理的主处理逻辑。</li>
+</ol>
+<h2 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">会话初始化</td>
+<td style="text-align:left">添加系统提示、初始化会话上下文、设置默认参数等。</td>
+</tr>
+<tr>
+<td style="text-align:left">用户身份验证</td>
+<td style="text-align:left">验证用户凭证、检查访问权限、记录用户活动等。</td>
+</tr>
+<tr>
+<td style="text-align:left">输入预处理</td>
+<td style="text-align:left">规范化输入格式、补充缺失信息、验证必要参数等。</td>
+</tr>
+<tr>
+<td style="text-align:left">条件拦截</td>
+<td style="text-align:left">根据特定条件提前终止流程，或跳转到其他处理路径。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@before_agent(<span class="params">can_jump_to=[<span class="string">&quot;end&quot;</span>]</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">initialize_session</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="comment"># 检查是否为首次调用，添加系统提示</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">any</span>(<span class="built_in">isinstance</span>(msg, SystemMessage) <span class="keyword">for</span> msg <span class="keyword">in</span> state[<span class="string">&quot;messages&quot;</span>]):</span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">                SystemMessage(content=<span class="string">&quot;你是一个有帮助的AI助手。&quot;</span>),</span><br><span class="line">                *state[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line">            ]</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> state.get(<span class="string">&quot;user_id&quot;</span>):</span><br><span class="line">        <span class="comment"># 如果没有用户ID，拒绝处理</span></span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: state[<span class="string">&quot;messages&quot;</span>] + [SystemMessage(content=<span class="string">&quot;缺少必要的用户信息。&quot;</span>)],</span><br><span class="line">            <span class="string">&quot;jump_to&quot;</span>: <span class="string">&quot;end&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p>这段代码实现了一个 <code>@before_agent</code> 中间件，主要做了两件事：</p>
+<ol>
+<li><strong>会话初始化</strong>：在首次调用时，自动添加系统提示，设定 AI 助手的角色。</li>
+<li><strong>用户身份验证</strong>：检查 <code>user_id</code> 是否存在，如果不存在则添加错误提示，并直接跳转到流程结束节点 <code>end</code>，拒绝后续处理。</li>
+</ol>
+<h1 id="after-agent"><a href="#after-agent" class="headerlink" title="@after_agent"></a>@after_agent</h1><p><code>@after_agent</code> 是在代理执行完成后执行的钩子函数，主要用于<strong>清理工作、结果汇总</strong>等后置处理场景。</p>
+<ol>
+<li><p>核心作用</p>
+<ul>
+<li><p><strong>执行时机</strong>：在代理的主处理逻辑执行完毕后触发。</p>
+</li>
+<li><p><strong>主要用途</strong>：</p>
+<ul>
+<li><p>清理临时资源、关闭连接。</p>
+</li>
+<li><p>对代理的输出结果进行格式化、汇总或日志记录。</p>
+</li>
+<li><p>进行后置的权限检查或审计。</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>装饰器参数</p>
+<p>| 参数名        | 类型               | 说明                                                         |<br>| :—————— | :————————- | :—————————————————————————————- |<br>| <code>can_jump_to</code> | list [str]（可选） | 指定当前钩子函数可以合法跳转到的节点名称列表。当钩子返回包含 <code>jump_to</code> 键的字典时，系统会验证目标节点是否在此列表中。 |</p>
+</li>
+<li><p>回调函数参数</p>
+<p>| 参数名    | 类型         | 说明                                                         |<br>| :———— | :—————- | :—————————————————————————————- |<br>| <code>state</code>   | <code>AgentState</code> | 当前代理的完整状态对象，包含消息历史、用户 ID、工作流状态等所有信息。 |<br>| <code>runtime</code> | <code>Runtime</code>    | 当前运行时实例，提供执行环境上下文，包括配置信息、可用工具等。 |</p>
+</li>
+<li><p>返回值</p>
+<p>| 返回类型         | 说明                                                         |<br>| :———————- | :—————————————————————————————- |<br>| <code>None</code>           | 表示不修改状态，继续执行后续的正常流程。                     |<br>| <code>dict[str, Any]</code> | 返回修改后的状态字典。可以更新现有状态字段，或添加新字段。如果字典中包含 <code>jump_to</code> 键，且其值在 <code>can_jump_to</code> 列表中，系统会跳转到指定节点。 |</p>
+</li>
+</ol>
+<h2 id="工作流程解析-1"><a href="#工作流程解析-1" class="headerlink" title="工作流程解析"></a>工作流程解析</h2><p><code>@after_agent</code> 钩子的执行流程如下：</p>
+<ol>
+<li><strong>触发时机</strong>：代理的主处理逻辑执行完成后，自动触发此钩子。</li>
+<li><strong>参数传入</strong>：系统会将当前代理的完整状态对象（<code>state</code>）和运行时实例（<code>runtime</code>）传入回调函数。</li>
+<li><strong>逻辑处理</strong>：回调函数根据业务逻辑处理状态，并决定是否对其进行修改。</li>
+<li><strong>状态更新</strong>：<ul>
+<li>返回 <code>None</code>：保持原状态不变，流程继续。</li>
+<li>返回修改后的状态字典：系统将使用新的状态覆盖原有状态。</li>
+</ul>
+</li>
+</ol>
+<h2 id="适用场景-1"><a href="#适用场景-1" class="headerlink" title="适用场景"></a>适用场景</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">会话总结和记录</td>
+<td style="text-align:left">收集会话统计信息，生成会话摘要，用于后续复盘或存档。</td>
+</tr>
+<tr>
+<td style="text-align:left">结果优化</td>
+<td style="text-align:left">对代理生成的最终结果进行增强、修正或格式化，提升输出质量。</td>
+</tr>
+<tr>
+<td style="text-align:left">资源清理</td>
+<td style="text-align:left">释放会话中使用的临时文件、数据库连接或内存缓存等资源。</td>
+</tr>
+<tr>
+<td style="text-align:left">日志记录</td>
+<td style="text-align:left">记录会话完成情况、耗时、用户 ID 等信息，便于分析和调试。</td>
+</tr>
+<tr>
+<td style="text-align:left">状态重置</td>
+<td style="text-align:left">清空或重置部分状态字段，为下一次用户交互准备干净的初始环境。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="使用示例-1"><a href="#使用示例-1" class="headerlink" title="使用示例"></a>使用示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> after_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@after_agent</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">session_summary</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="comment"># 收集会话统计信息</span></span><br><span class="line">    human_messages = <span class="built_in">sum</span>(<span class="number">1</span> <span class="keyword">for</span> msg <span class="keyword">in</span> state[<span class="string">&quot;messages&quot;</span>] <span class="keyword">if</span> msg.<span class="built_in">type</span> == <span class="string">&quot;human&quot;</span>)</span><br><span class="line">    ai_messages = <span class="built_in">sum</span>(<span class="number">1</span> <span class="keyword">for</span> msg <span class="keyword">in</span> state[<span class="string">&quot;messages&quot;</span>] <span class="keyword">if</span> msg.<span class="built_in">type</span> == <span class="string">&quot;ai&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 创建会话摘要</span></span><br><span class="line">    summary = <span class="string">f&quot;会话已完成。\n&quot;</span> \</span><br><span class="line">              <span class="string">f&quot;- 人类消息：<span class="subst">&#123;human_messages&#125;</span>\n&quot;</span> \</span><br><span class="line">              <span class="string">f&quot;- AI消息：<span class="subst">&#123;ai_messages&#125;</span>\n&quot;</span> \</span><br><span class="line">              <span class="string">f&quot;- 总消息数：<span class="subst">&#123;<span class="built_in">len</span>(state[<span class="string">&#x27;messages&#x27;</span>])&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 保存会话记录</span></span><br><span class="line">    timestamp = time.strftime(<span class="string">&quot;%Y%m%d-%H%M%S&quot;</span>)</span><br><span class="line">    session_id = <span class="string">f&quot;session_<span class="subst">&#123;timestamp&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 在实际应用中，这里会将会话信息保存到数据库或文件系统</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;会话 <span class="subst">&#123;session_id&#125;</span> 已保存：<span class="subst">&#123;summary&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 添加会话结束消息</span></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: state[<span class="string">&quot;messages&quot;</span>] + [</span><br><span class="line">            SystemMessage(content=summary)</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h1 id="before-model"><a href="#before-model" class="headerlink" title="@before_model"></a>@before_model</h1><p><code>@before_model</code>，这是一个专门的装饰器，用于标记后续定义的函数是模型调用前的钩子。在每次调用语言模型生成响应<strong>之前</strong>执行。作为<strong>代理决策调用模型前的最后一道关卡</strong>，用于对输入进行<strong>处理、优化、过滤</strong>，是实现输入质量控制和安全检查的关键。</p>
+<ol>
+<li><p>装饰器参数 @before_model</p>
+<p>| 项目       | 内容详情                                            |<br>| :————- | :————————————————————————— |<br>| 装饰器名称 | <code>@before_model</code>                                     |<br>| 作用       | 标记函数为<strong>模型调用前钩子</strong>，在 LLM 生成响应前执行 |<br>| 核心参数   | <code>can_jump</code> / <code>can_jump_to</code>                          |<br>| 参数类型   | <code>List[str]</code>（字符串列表）                           |<br>| 参数含义   | 声明当前钩子<strong>允许跳转到的工作流节点</strong>              |<br>| 使用规则   | 跳转目标必须是已定义的<strong>合法节点</strong>                  |<br>| 核心价值   | 实现<strong>流程控制、中断模型调用、分支跳转</strong>            |</p>
+</li>
+<li><p>回调函数参数（钩子固定入参）</p>
+<p>钩子函数被调用时，<strong>自动传入</strong>这两个固定参数，无需手动传参：</p>
+<p>| 参数名    | 类型                | 核心作用               | 包含关键内容                                                 |<br>| :———— | :————————— | :——————————- | :—————————————————————————————- |<br>| <code>state</code>   | <code>AgentState</code> / 字典 | 存储<strong>会话全量状态</strong>   | 1. <code>messages</code>：对话历史列表2. <code>model_input</code>：模型入参3. 会话上下文数据 |<br>| <code>runtime</code> | <code>Runtime</code>           | 提供<strong>运行时环境能力</strong> | 1. 配置信息2. 可用工具 / 接口3. 环境实例                     |</p>
+</li>
+<li><p>回调函数返回值（决定执行流程）</p>
+<p>| 返回值类型       | 返回值示例                      | 执行逻辑                             | 业务场景                        |<br>| :———————- | :——————————————— | :—————————————————- | :——————————————— |<br>| <code>None</code>           | <code>return None</code>                   | <strong>不修改状态</strong>，直接调用模型         | 无需处理，直接放行              |<br>| 普通字典 <code>dict</code>  | <code>return &#123;&quot;model_input&quot;: &quot;xxx&quot;&#125;</code> | <strong>修改输入状态</strong>，再调用模型         | 数据清洗、优化 Prompt、过滤内容 |<br>| 带跳转指令的字典 | <code>return &#123;&quot;jump_to&quot;: &quot;节点名&quot;&#125;</code>  | <strong>中断模型调用</strong>，强制跳转到指定节点 | 输入违规、流程分支、异常拦截    |</p>
+</li>
+</ol>
+<h2 id="工作流程解析-2"><a href="#工作流程解析-2" class="headerlink" title="工作流程解析"></a>工作流程解析</h2><p>这是 <code>@before_model</code> 钩子的完整执行链路，清晰描述了从 “代理决定调用模型” 到 “最终执行” 的全过程：</p>
+<ol>
+<li><p><strong>触发起点</strong>：代理判断当前需要调用语言模型来生成响应。</p>
+</li>
+<li><p><strong>钩子执行</strong>：所有被 <code>@before_model</code> 装饰的函数，会<strong>按照注册的先后顺序依次执行</strong>，形成一个处理流水线。</p>
+</li>
+<li><p><strong>状态干预</strong>：每个钩子函数都可以对输入状态做两件事：</p>
+<ul>
+<li>修改输入内容（如清洗数据、优化提示词）</li>
+<li>触发流程跳转（返回 <code>jump_to</code> 指令）</li>
+</ul>
+</li>
+</ol>
+<ol>
+<li><p><strong>正常流程</strong>：如果所有钩子都没有触发跳转，最终处理后的状态会被传递给语言模型，执行正常的生成逻辑。</p>
+</li>
+<li><p><strong>跳转流程</strong>：如果任意一个钩子函数返回了 <code>jump_to</code> 指令，则立即<strong>中断后续钩子执行和模型调用</strong>，直接跳转到工作流中指定的节点去处理。</p>
+</li>
+</ol>
+<h2 id="适用场景-2"><a href="#适用场景-2" class="headerlink" title="适用场景"></a>适用场景</h2><p><code>@before_model</code> 钩子的核心价值在于<strong>前置干预</strong>，以下是它的典型业务场景：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景分类</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">具体实现示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>1. 内容安全过滤</strong></td>
+<td style="text-align:left">防止有害输入进入模型</td>
+<td style="text-align:left">检测敏感词、不当言论，直接拦截或替换后再发送</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>2. 输入优化与规范化</strong></td>
+<td style="text-align:left">提升模型输入质量</td>
+<td style="text-align:left">格式化用户输入、修正拼写错误、自动补充上下文信息</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>3. 上下文管理</strong></td>
+<td style="text-align:left">控制对话历史长度与质量</td>
+<td style="text-align:left">截断过长的对话历史、优化提示词工程、注入系统指令</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>4. 条件控制</strong></td>
+<td style="text-align:left">实现灵活的流程分支</td>
+<td style="text-align:left">根据输入内容判断是否需要调用模型，或切换到其他处理路径</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>5. 成本控制</strong></td>
+<td style="text-align:left">降低模型调用开销</td>
+<td style="text-align:left">限制输入长度、合并相似请求、拦截重复查询以减少无效调用</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>6. 业务规则集成</strong></td>
+<td style="text-align:left">嵌入业务逻辑</td>
+<td style="text-align:left">验证业务规则（如权限校验、格式校验）、添加业务专属处理逻辑</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>核心价值总结 ✨</strong></p>
+<ul>
+<li><strong>流程可控</strong>：通过多钩子顺序执行和跳转机制，实现高度灵活的工作流控制。</li>
+<li><strong>安全前置</strong>：把安全检查、内容过滤放在模型调用前，从源头规避风险。</li>
+<li><strong>性能优化</strong>：通过上下文裁剪、请求合并等手段，有效降低模型调用成本。</li>
+<li><strong>业务解耦</strong>：将业务逻辑（如权限、规则）与模型调用解耦，便于维护和扩展。</li>
+</ul>
+<h2 id="使用示例-2"><a href="#使用示例-2" class="headerlink" title="使用示例"></a>使用示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage, SystemMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@before_model(<span class="params">can_jump_to=[<span class="string">&quot;end&quot;</span>]</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">filter_sensitive_content</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="comment"># 检查是否包含敏感内容</span></span><br><span class="line">    sensitive_words = [<span class="string">&quot;敏感词1&quot;</span>, <span class="string">&quot;敏感词2&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> msg <span class="keyword">in</span> state[<span class="string">&quot;messages&quot;</span>]:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(msg, HumanMessage):</span><br><span class="line">            <span class="keyword">for</span> word <span class="keyword">in</span> sensitive_words:</span><br><span class="line">                <span class="keyword">if</span> word <span class="keyword">in</span> msg.content.lower():</span><br><span class="line">                    <span class="keyword">return</span> &#123;</span><br><span class="line">                        <span class="string">&quot;messages&quot;</span>: [SystemMessage(content=<span class="string">&quot;检测到敏感内容，请重新输入。&quot;</span>)],</span><br><span class="line">                        <span class="string">&quot;jump_to&quot;</span>: <span class="string">&quot;end&quot;</span></span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 截断过长的消息</span></span><br><span class="line">    processed_messages = []</span><br><span class="line">    <span class="keyword">for</span> msg <span class="keyword">in</span> state[<span class="string">&quot;messages&quot;</span>]:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">len</span>(msg.content) &gt; <span class="number">1000</span>:</span><br><span class="line">            msg.content = msg.content[:<span class="number">990</span>] + <span class="string">&quot;...[内容已截断]&quot;</span></span><br><span class="line">        processed_messages.append(msg)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: processed_messages&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>导入模块</strong></p>
+<ul>
+<li>从 <code>langchain.agents.middleware</code> 导入核心装饰器 <code>before_model</code> 和状态类型 <code>AgentState</code></li>
+<li>导入消息类型 <code>HumanMessage</code>、<code>SystemMessage</code> 用于构造对话</li>
+<li>导入 <code>Runtime</code> 获取运行时环境信息</li>
+<li>导入 <code>Any</code> 用于类型注解</li>
+</ul>
+<p><strong>装饰器定义</strong></p>
+<ul>
+<li><code>@before_model(can_jump_to=[&quot;end&quot;])</code>：将函数标记为模型调用前钩子，并声明允许跳转到 <code>end</code> 节点</li>
+</ul>
+<p><strong>敏感内容过滤逻辑</strong></p>
+<ul>
+<li>遍历会话消息，仅检查用户消息（<code>HumanMessage</code>）</li>
+<li>若检测到敏感词，返回包含系统提示和 <code>jump_to: &quot;end&quot;</code> 的字典，直接中断流程并跳转至结束节点</li>
+</ul>
+<p><strong>消息截断逻辑</strong></p>
+<ul>
+<li>遍历所有消息，将长度超过 1000 字符的内容截断为前 990 字符并添加截断提示</li>
+<li>返回处理后的消息列表，继续正常模型调用流程</li>
+</ul>
+<p><strong>返回值逻辑</strong></p>
+<ul>
+<li>检测到敏感内容：返回带 <code>jump_to</code> 的字典，中断模型调用</li>
+<li>未检测到敏感内容：返回处理后的消息字典，将截断后的消息传递给模型</li>
+</ul>
+<h1 id="after-model"><a href="#after-model" class="headerlink" title="@after_model"></a>@after_model</h1><p><code>@after_model</code> 是<strong>模型生成响应后、返回给用户前</strong>执行的钩子函数，它是对模型输出进行<strong>后处理、优化、格式化和分析</strong>的关键环节，用于实现输出质量控制、内容增强与结果优化。</p>
+<p><strong>装饰器参数：<code>can_jump_to</code></strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">项目</th>
+<th style="text-align:left">详情</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">参数类型</td>
+<td style="text-align:left">可选参数，字符串列表（<code>List[str]</code>）</td>
+</tr>
+<tr>
+<td style="text-align:left">作用</td>
+<td style="text-align:left">声明当前钩子函数<strong>允许跳转到的工作流节点名称</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">约束</td>
+<td style="text-align:left">跳转目标必须是工作流中已定义的<strong>有效节点</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">使用场景</td>
+<td style="text-align:left">当检测到模型输出需要重新处理、纠错或特殊操作时，返回包含 <code>&#39;jump_to&#39;</code> 键的字典，实现流程跳转（如重跑模型、切换处理分支）</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>回调函数参数（钩子固定入参）</strong></p>
+<p>钩子执行时会自动传入两个核心参数，提供模型调用后的完整上下文：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">参数名</th>
+<th style="text-align:left">类型</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">包含关键内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>state</code></td>
+<td style="text-align:left"><code>AgentState</code>（字典类型）</td>
+<td style="text-align:left">存储模型调用后的<strong>完整会话状态</strong></td>
+<td style="text-align:left">1. <code>messages</code>：包含模型最新响应的完整消息历史2. <code>model_response</code>：模型的原始响应数据3. 当前会话的上下文信息</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>runtime</code></td>
+<td style="text-align:left"><code>Runtime</code></td>
+<td style="text-align:left">提供<strong>运行时环境能力</strong></td>
+<td style="text-align:left">1. 运行环境信息2. 可用工具与配置参数3. 用于访问外部服务或执行额外操作</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>返回值：决定后续流程</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">返回值类型</th>
+<th style="text-align:left">含义</th>
+<th style="text-align:left">执行逻辑</th>
+<th style="text-align:left">典型场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>None</code></td>
+<td style="text-align:left">不修改状态</td>
+<td style="text-align:left">直接将模型原始响应传递给后续处理（如返回给用户）</td>
+<td style="text-align:left">无需后处理，直接放行</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>dict[str, Any]</code></td>
+<td style="text-align:left">修改后的状态字典</td>
+<td style="text-align:left">对模型输出进行干预：・修改响应内容・添加额外信息・格式化输出・纠正错误若包含 <code>&#39;jump_to&#39;</code> 键，则中断当前流程，跳转到指定节点</td>
+<td style="text-align:left">内容格式化、结果增强、错误修正、触发重试逻辑</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>与 <code>@before_model</code> 的核心区别 ✨</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">维度</th>
+<th style="text-align:left"><code>@before_model</code></th>
+<th style="text-align:left"><code>@after_model</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">触发时机</td>
+<td style="text-align:left">模型调用<strong>前</strong></td>
+<td style="text-align:left">模型生成响应<strong>后</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">核心目标</td>
+<td style="text-align:left">输入质量控制、安全检查、流程前置拦截</td>
+<td style="text-align:left">输出质量控制、内容增强、结果后处理</td>
+</tr>
+<tr>
+<td style="text-align:left">状态内容</td>
+<td style="text-align:left">待发送给模型的输入消息与参数</td>
+<td style="text-align:left">已生成的模型响应与完整消息历史</td>
+</tr>
+<tr>
+<td style="text-align:left">典型用途</td>
+<td style="text-align:left">敏感词过滤、输入规范化、上下文裁剪</td>
+<td style="text-align:left">输出格式化、错误修正、内容补充、结果分析</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>核心价值总结 💡</strong></p>
+<ul>
+<li><strong>输出可控</strong>：在返回用户前对模型结果做最后一层校验与优化，提升输出质量。</li>
+<li><strong>灵活流程</strong>：通过 <code>jump_to</code> 实现输出异常时的重试、分支处理或特殊业务逻辑。</li>
+<li><strong>业务增强</strong>：可集成业务规则（如格式校验、数据补充），让模型输出更贴合业务需求。</li>
+</ul>
+<h2 id="工作流程解析-3"><a href="#工作流程解析-3" class="headerlink" title="工作流程解析"></a>工作流程解析</h2><p>这是 <code>@after_model</code> 钩子的完整执行链路，清晰描述了从 “模型生成响应” 到 “最终返回用户” 的全过程：</p>
+<ol>
+<li><strong>触发起点</strong>：语言模型生成响应并返回给代理。</li>
+<li><strong>钩子执行</strong>：所有被 <code>@after_model</code> 装饰的函数，会<strong>按照注册的先后顺序依次执行</strong>，形成一条后处理流水线。</li>
+<li><strong>状态干预</strong>：每个钩子函数都可以对响应做两件事：<ul>
+<li>处理响应内容（如格式化、增强、纠错）</li>
+<li>触发流程跳转（返回 <code>jump_to</code> 指令）</li>
+</ul>
+</li>
+<li><strong>正常流程</strong>：如果所有钩子都没有触发跳转，最终处理后的响应会被返回给用户。</li>
+<li><strong>跳转流程</strong>：如果任意一个钩子函数返回了 <code>jump_to</code> 指令，则立即<strong>中断后续钩子执行和返回流程</strong>，直接跳转到工作流中指定的节点去执行后续逻辑（如重新调用模型、调用工具、追问用户等）。</li>
+</ol>
+<h2 id="适用场景-3"><a href="#适用场景-3" class="headerlink" title="适用场景"></a>适用场景</h2><p><code>@after_model</code> 钩子的核心价值在于<strong>后置干预</strong>，以下是它的典型业务场景：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景分类</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">具体实现示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>1. 输出格式化</strong></td>
+<td style="text-align:left">美化输出样式，适配不同终端</td>
+<td style="text-align:left">将 Markdown 转为 HTML、添加代码高亮、生成表格、适配聊天框样式</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>2. 内容增强</strong></td>
+<td style="text-align:left">补充信息，提升回答完整性</td>
+<td style="text-align:left">给专业术语加注释、插入资料来源链接、补充背景知识说明</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>3. 响应监控与日志</strong></td>
+<td style="text-align:left">记录与分析模型行为</td>
+<td style="text-align:left">记录响应耗时、内容长度、用户反馈，统计调用频次，分析回答质量</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>4. 结果验证与修正</strong></td>
+<td style="text-align:left">校验输出准确性，修正错误</td>
+<td style="text-align:left">检查事实错误、补充缺失数据、纠正逻辑偏差，必要时触发模型重试</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>5. 条件处理</strong></td>
+<td style="text-align:left">实现灵活的后续流程</td>
+<td style="text-align:left">判断是否需要调用工具（如查数据库）、是否需要追问用户获取更多信息</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>6. 多语言处理</strong></td>
+<td style="text-align:left">适配多语言环境</td>
+<td style="text-align:left">将模型输出翻译为目标语言、处理中英混合内容、根据区域设置调整表述</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="使用示例-3"><a href="#使用示例-3" class="headerlink" title="使用示例"></a>使用示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> after_model, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> AIMessage, SystemMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"><span class="meta">@after_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">format_response</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="comment"># 分析最后一条AI消息</span></span><br><span class="line">    <span class="keyword">if</span> state[<span class="string">&quot;messages&quot;</span>] <span class="keyword">and</span> <span class="built_in">isinstance</span>(state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>], AIMessage):</span><br><span class="line">        last_message = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 记录响应内容到日志</span></span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&quot;model_responses.log&quot;</span>, <span class="string">&quot;a&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">            log_entry = &#123;</span><br><span class="line">                <span class="string">&quot;timestamp&quot;</span>: <span class="string">&quot;2023-05-15T12:00:00Z&quot;</span>,</span><br><span class="line">                <span class="string">&quot;response_length&quot;</span>: <span class="built_in">len</span>(last_message.content),</span><br><span class="line">                <span class="string">&quot;has_code&quot;</span>: <span class="string">&quot;```&quot;</span> <span class="keyword">in</span> last_message.content</span><br><span class="line">            &#125;</span><br><span class="line">            f.write(json.dumps(log_entry) + <span class="string">&quot;\n&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 为包含代码的响应添加提示</span></span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;```&quot;</span> <span class="keyword">in</span> last_message.content:</span><br><span class="line">            enhanced_content = last_message.content + <span class="string">&quot;\n\n提示：以上代码仅供参考，请根据实际需求进行调整。&quot;</span></span><br><span class="line"></span><br><span class="line">            <span class="comment"># 创建新的消息列表，替换最后一条消息</span></span><br><span class="line">            new_messages = state[<span class="string">&quot;messages&quot;</span>][:-<span class="number">1</span>] + [</span><br><span class="line">                AIMessage(content=enhanced_content, name=last_message.name)</span><br><span class="line">            ]</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: new_messages&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p><strong>导入模块</strong></p>
+<ul>
+<li>从 <code>langchain.agents.middleware</code> 导入 <code>after_model</code> 装饰器和 <code>AgentState</code> 状态类型</li>
+<li>导入消息类型 <code>AIMessage</code>、<code>SystemMessage</code></li>
+<li>导入 <code>Runtime</code> 运行时实例和 <code>Any</code> 类型注解</li>
+<li>导入 <code>json</code> 用于日志格式化</li>
+</ul>
+<p><strong>装饰器定义</strong></p>
+<ul>
+<li><code>@after_model</code>：将函数标记为模型响应后的钩子函数，无跳转节点配置</li>
+</ul>
+<p><strong>消息判断与日志记录</strong></p>
+<ul>
+<li>检查消息列表是否存在且最后一条为 <code>AIMessage</code></li>
+<li>提取最后一条模型响应消息，记录时间戳、响应长度、是否包含代码到日志文件 <code>model_responses.log</code></li>
+</ul>
+<p><strong>内容增强与替换</strong></p>
+<ul>
+<li>若响应包含代码块（`````），在末尾添加提示语</li>
+<li>构造新的消息列表，替换原模型响应为增强后的内容</li>
+<li>返回修改后的消息状态，传递给后续处理</li>
+</ul>
+<p><strong>默认返回</strong></p>
+<ul>
+<li>若未触发任何处理逻辑，返回 <code>None</code>，保持原始响应不变</li>
+</ul>
+<h1 id="wrap-model-call"><a href="#wrap-model-call" class="headerlink" title="@wrap_model_call"></a>@wrap_model_call</h1><p><code>@wrap_model_call</code> 是<strong>包装并拦截模型调用</strong>的钩子，属于 <strong>Wrap-style 钩子</strong>，核心能力是对模型请求 / 响应做底层拦截与控制，适用于重试、缓存、修改请求 / 响应等场景。</p>
+<p><strong>回调函数参数详解</strong> </p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">参数名</th>
+<th style="text-align:left">类型</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">关键信息</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>request</code></td>
+<td style="text-align:left"><code>ModelRequest</code></td>
+<td style="text-align:left">封装模型请求的完整数据</td>
+<td style="text-align:left">包含发送给模型的所有参数：<code>messages</code>（对话历史）、<code>model</code>（模型名称）、<code>temperature</code>（采样温度）等</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>handler</code></td>
+<td style="text-align:left"><code>Callable[[ModelRequest], ModelResponse]</code></td>
+<td style="text-align:left">原始模型调用处理函数</td>
+<td style="text-align:left">调用 <code>handler(request)</code> 会执行<strong>真实的模型请求</strong>，是被包装的核心逻辑</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>返回值要求</strong> </p>
+<p>必须返回 <strong><code>ModelResponse</code> 类型</strong>的对象，且必须包含：</p>
+<ul>
+<li><code>content</code>：模型生成的响应内容</li>
+<li><code>model</code>：调用的模型标识</li>
+<li>其他必要字段（如 <code>usage</code> token 统计等）</li>
+</ul>
+<blockquote>
+<p>注意：不能返回 <code>None</code> 或字典，必须返回完整的 <code>ModelResponse</code> 对象，否则会中断流程。</p>
+</blockquote>
+<h2 id="工作流程解析-4"><a href="#工作流程解析-4" class="headerlink" title="工作流程解析"></a>工作流程解析</h2><p><strong>触发时机</strong>：当系统准备调用模型时，自动触发 <code>@wrap_model_call</code> 包装器。</p>
+<p><strong>参数传入</strong>：系统自动传入 <code>request</code>（模型请求对象）和 <code>handler</code>（原始处理函数）。</p>
+<p><strong>自定义逻辑</strong>：回调函数可以在 <code>handler(request)</code> 之前 / 之后插入自定义逻辑：</p>
+<ul>
+<li>前置：修改请求参数、记录日志、权限校验、缓存检查</li>
+<li>核心：调用 <code>handler(request)</code> 执行模型请求</li>
+<li>后置：修改响应内容、缓存结果、异常重试、统计耗时</li>
+</ul>
+<p><strong>返回响应</strong>：回调函数必须返回处理后的 <code>ModelResponse</code> 对象。</p>
+<p><strong>流程继续</strong>：系统使用返回的 <code>ModelResponse</code> 继续后续 Agent 流程。</p>
+<h2 id="适用场景-4"><a href="#适用场景-4" class="headerlink" title="适用场景"></a>适用场景</h2><p><code>@wrap_model_call</code> 最核心的业务场景，每个场景都对应了<strong>底层拦截与控制</strong>的能力：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">实现思路</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>请求 / 响应缓存</strong></td>
+<td style="text-align:left">缓存常见查询，减少 API 调用、提升响应速度</td>
+<td style="text-align:left">调用前根据 <code>request</code> 生成缓存键（如消息哈希），命中则直接返回缓存的 <code>ModelResponse</code>；未命中则调用 <code>handler</code> 并缓存结果</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>重试机制</strong></td>
+<td style="text-align:left">为失败的模型调用添加自动重试逻辑</td>
+<td style="text-align:left">捕获 <code>handler(request)</code> 抛出的异常（如网络错误、限流），在异常后重试调用，直到成功或达到最大重试次数</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>请求修改</strong></td>
+<td style="text-align:left">发送前动态调整模型参数</td>
+<td style="text-align:left">在调用 <code>handler</code> 前修改 <code>request</code> 对象，如调整 <code>temperature</code>、<code>max_tokens</code>、<code>model</code>名称等</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>响应增强</strong></td>
+<td style="text-align:left">对模型原始输出做后处理与优化</td>
+<td style="text-align:left">调用 <code>handler</code> 获取响应后，修改 <code>ModelResponse.content</code>，如格式转换、内容补充、错误修正</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>监控和日志</strong></td>
+<td style="text-align:left">记录调用详情，用于性能分析与问题排查</td>
+<td style="text-align:left">在调用前后记录时间戳、参数、耗时、token 用量、异常信息等，输出到日志或监控系统</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>请求限流</strong></td>
+<td style="text-align:left">限制调用频率，避免超出 API 配额</td>
+<td style="text-align:left">在调用前检查频率阈值，超出则等待或抛出限流异常；也可实现滑动窗口、令牌桶等限流算法</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>场景背后的核心逻辑 💡</strong></p>
+<p>这些场景都依赖 <code>@wrap_model_call</code> 的两个关键能力：</p>
+<ol>
+<li><strong>完全控制调用流程</strong>：可以决定是否调用 <code>handler</code>（如缓存命中时直接返回）、何时调用（如重试、限流等待）。</li>
+<li><strong>直接操作请求 / 响应对象</strong>：可以读写 <code>ModelRequest</code> 的所有参数，也能修改或替换 <code>ModelResponse</code> 的内容。</li>
+</ol>
+<h2 id="使用示例-4"><a href="#使用示例-4" class="headerlink" title="使用示例"></a>使用示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> wrap_model_call, ModelRequest, ModelResponse</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Callable</span>, <span class="type">Dict</span>, <span class="type">Any</span></span><br><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="comment"># 简单的内存缓存</span></span><br><span class="line">response_cache: <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]] = &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cached_model_call</span>(<span class="params"></span></span><br><span class="line"><span class="params">    request: ModelRequest,</span></span><br><span class="line"><span class="params">    handler: <span class="type">Callable</span>[[ModelRequest], ModelResponse],</span></span><br><span class="line"><span class="params"></span>) -&gt; ModelResponse:</span><br><span class="line">    <span class="comment"># 生成更可靠的缓存键，只使用消息内容和模型名称</span></span><br><span class="line">    messages_content = <span class="string">&quot;&quot;</span>.join([msg.content <span class="keyword">for</span> msg <span class="keyword">in</span> request.messages])</span><br><span class="line">    cache_key = hashlib.md5(<span class="string">f&quot;<span class="subst">&#123;messages_content&#125;</span>:<span class="subst">&#123;request.model&#125;</span>&quot;</span>.encode()).hexdigest()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 检查缓存</span></span><br><span class="line">    <span class="keyword">if</span> cache_key <span class="keyword">in</span> response_cache:</span><br><span class="line">        cached = response_cache[cache_key]</span><br><span class="line">        <span class="keyword">if</span> time.time() - cached[<span class="string">&quot;timestamp&quot;</span>] &lt; <span class="number">3600</span>:  <span class="comment"># 1小时缓存</span></span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;从缓存获取响应&quot;</span>)</span><br><span class="line">            <span class="comment"># 直接返回缓存的响应对象，避免创建新的ModelResponse</span></span><br><span class="line">            <span class="keyword">return</span> cached[<span class="string">&quot;response&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 执行原始调用并添加重试逻辑</span></span><br><span class="line">    <span class="keyword">for</span> attempt <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">3</span>):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            response = handler(request)</span><br><span class="line">            <span class="comment"># 缓存响应对象本身，而不是尝试访问其内部属性</span></span><br><span class="line">            response_cache[cache_key] = &#123;</span><br><span class="line">                <span class="string">&quot;response&quot;</span>: response,  <span class="comment"># 缓存完整响应对象</span></span><br><span class="line">                <span class="string">&quot;timestamp&quot;</span>: time.time()</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> response</span><br><span class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">            <span class="keyword">if</span> attempt == <span class="number">2</span>:</span><br><span class="line">                <span class="keyword">raise</span></span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;模型调用失败，第 <span class="subst">&#123;attempt + <span class="number">1</span>&#125;</span> 次重试...&quot;</span>)</span><br><span class="line">            time.sleep(<span class="number">2</span>)  <span class="comment"># 等待后重试</span></span><br></pre></td></tr></table></figure>
+<p><strong>代码完整解读 📝</strong></p>
+<ol>
+<li><p>导入与全局缓存</p>
+<ul>
+<li><p>导入 <code>wrap_model_call</code> 装饰器和模型请求 / 响应类型，用于实现模型调用拦截。</p>
+</li>
+<li><p>定义全局字典 <code>response_cache</code>，用于存储缓存的响应对象和时间戳。</p>
+</li>
+</ul>
+</li>
+<li><p>缓存键生成</p>
+<ul>
+<li>拼接所有消息内容和模型名称，生成 MD5 哈希作为缓存键，保证相同请求命中同一缓存。</li>
+</ul>
+</li>
+<li><p>缓存检查逻辑</p>
+<ul>
+<li>若缓存键存在且未过期（1 小时内），直接返回缓存的 <code>ModelResponse</code>，避免重复调用模型。</li>
+</ul>
+</li>
+<li><p>重试 + 缓存写入逻辑</p>
+<ul>
+<li><p>最多重试 3 次模型调用，捕获异常后等待 2 秒重试，最后一次失败则抛出异常。</p>
+</li>
+<li><p>调用成功后，将完整的 <code>ModelResponse</code> 对象和当前时间戳存入缓存，供后续请求复用。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="wrap-tool-call"><a href="#wrap-tool-call" class="headerlink" title="@wrap_tool_call"></a>@wrap_tool_call</h1><p><code>@wrap_tool_call</code> 是<strong>包装并拦截工具调用</strong>的钩子，属于 <strong>Wrap-style 钩子</strong>，核心能力是对工具调用做底层拦截与控制，适用于工具调用前检查、权限控制、参数校验等场景。</p>
+<p><strong>回调函数参数详解</strong> </p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">参数名</th>
+<th style="text-align:left">类型</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">关键信息</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>request</code></td>
+<td style="text-align:left"><code>Any</code></td>
+<td style="text-align:left">封装工具调用的完整请求数据</td>
+<td style="text-align:left">包含 <code>tool_call</code> 属性，其中有<strong>工具名称</strong>、<strong>调用参数</strong>、<strong>工具调用 ID</strong> 等核心信息</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>handler</code></td>
+<td style="text-align:left"><code>Callable[[Any], Any]</code></td>
+<td style="text-align:left">原始工具调用处理函数</td>
+<td style="text-align:left">调用 <code>handler(request)</code> 会执行<strong>真实的工具调用逻辑</strong>，是被包装的核心执行单元</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>返回值要求</strong></p>
+<p>必须返回一个<strong>有效的响应对象</strong>，通常是 <code>ToolMessage</code> 类型，且需包含：</p>
+<ul>
+<li><code>content</code>：工具执行后的结果内容</li>
+<li><code>tool_call_id</code>：与本次工具调用对应的 ID，用于关联请求</li>
+<li>其他必要字段（如工具名称、执行状态等）</li>
+</ul>
+<blockquote>
+<p>注意：不能返回 <code>None</code>，必须返回可被系统识别的响应对象，否则会中断流程。</p>
+</blockquote>
+<h2 id="工作流程解析-5"><a href="#工作流程解析-5" class="headerlink" title="工作流程解析"></a>工作流程解析</h2><p><strong>触发时机</strong>：当代理决定调用工具时，自动触发 <code>@wrap_tool_call</code> 包装器。</p>
+<p><strong>参数传入</strong>：系统自动传入 <code>request</code>（工具请求对象）和 <code>handler</code>（原始处理函数）。</p>
+<p><strong>自定义逻辑</strong>：回调函数可以在 <code>handler(request)</code> 之前 / 之后插入自定义逻辑：</p>
+<ul>
+<li>前置：权限校验、参数合法性检查、工具调用频率限制、日志记录</li>
+<li>核心：调用 <code>handler(request)</code> 执行真实工具调用</li>
+<li>后置：结果格式化、错误处理、结果缓存、审计日志</li>
+</ul>
+<p><strong>返回响应</strong>：回调函数必须返回处理后的响应对象（通常是 <code>ToolMessage</code>）。</p>
+<p><strong>流程继续</strong>：系统使用返回的响应对象继续后续 Agent 流程（如将工具结果喂给模型生成最终回答）。</p>
+<h2 id="适用场景-5"><a href="#适用场景-5" class="headerlink" title="适用场景"></a>适用场景</h2><p><code>@wrap_tool_call</code> 最核心的业务场景，每个场景都对应了<strong>底层拦截与控制</strong>的能力：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">实现思路</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>权限控制</strong></td>
+<td style="text-align:left">验证用户是否有权限调用特定工具</td>
+<td style="text-align:left">调用前从请求或上下文获取用户权限信息，判断是否允许调用该工具；无权限则直接返回拒绝的 <code>ToolMessage</code>，不执行工具</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>参数校验</strong></td>
+<td style="text-align:left">检查工具参数的有效性和安全性</td>
+<td style="text-align:left">解析工具调用参数，验证格式、数值范围、敏感内容等；非法参数则返回错误提示，避免工具执行失败</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>调用监控</strong></td>
+<td style="text-align:left">记录工具调用详情，用于审计与分析</td>
+<td style="text-align:left">调用前后记录工具名称、参数、执行耗时、结果状态等，输出到日志或审计系统</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>错误处理</strong></td>
+<td style="text-align:left">为工具调用失败提供自定义错误响应</td>
+<td style="text-align:left">捕获工具执行异常，返回友好的错误信息（如 “工具暂时不可用，请稍后再试”），避免异常向上层扩散</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>结果过滤</strong></td>
+<td style="text-align:left">对工具返回结果进行过滤或增强</td>
+<td style="text-align:left">工具执行成功后，修改 <code>ToolMessage.content</code>，如过滤敏感信息、补充说明、格式化输出</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>限流保护</strong></td>
+<td style="text-align:left">限制工具调用频率，防止滥用</td>
+<td style="text-align:left">调用前检查调用频次，超出阈值则等待或返回限流提示；可实现滑动窗口、令牌桶等限流算法</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>场景背后的核心逻辑 💡</strong></p>
+<p>这些场景都依赖 <code>@wrap_tool_call</code> 的两个关键能力：</p>
+<ol>
+<li><strong>完全控制调用流程</strong>：可以决定是否调用 <code>handler</code>（如无权限 / 限流时直接拒绝）、何时调用（如限流等待）。</li>
+<li><strong>直接操作请求 / 响应对象</strong>：可以读写工具调用的参数、工具名称，也能修改或替换工具返回的 <code>ToolMessage</code> 内容。</li>
+</ol>
+<h2 id="使用示例-5"><a href="#使用示例-5" class="headerlink" title="使用示例"></a>使用示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> wrap_tool_call</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span>, <span class="type">Callable</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> ToolMessage</span><br><span class="line"></span><br><span class="line"><span class="meta">@wrap_tool_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">tool_permission_check</span>(<span class="params"></span></span><br><span class="line"><span class="params">    request: <span class="type">Any</span>,</span></span><br><span class="line"><span class="params">    handler: <span class="type">Callable</span>[[<span class="type">Any</span>], <span class="type">Any</span>],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="type">Any</span>:</span><br><span class="line">    <span class="comment"># 获取工具名称和参数</span></span><br><span class="line">    tool_name = request.tool_call.get(<span class="string">&quot;name&quot;</span>)</span><br><span class="line">    tool_args = request.tool_call.get(<span class="string">&quot;args&quot;</span>, &#123;&#125;)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 工具权限控制</span></span><br><span class="line">    admin_tools = [<span class="string">&quot;get_weather&quot;</span>]</span><br><span class="line">    restricted_tools = [<span class="string">&quot;payment_processor&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 获取用户角色（在实际应用中，这会从状态或上下文获取）</span></span><br><span class="line">    user_role = <span class="string">&quot;user&quot;</span>  <span class="comment"># 示例值，实际使用时需要从上下文获取</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 检查是否有权限调用该工具</span></span><br><span class="line">    <span class="keyword">if</span> tool_name <span class="keyword">in</span> admin_tools <span class="keyword">and</span> user_role != <span class="string">&quot;admin&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> ToolMessage(</span><br><span class="line">            content=<span class="string">f&quot;权限不足：需要管理员权限才能使用 <span class="subst">&#123;tool_name&#125;</span> 工具。&quot;</span>,</span><br><span class="line">            tool_call_id=request.tool_call.get(<span class="string">&quot;id&quot;</span>)</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 执行原始工具调用</span></span><br><span class="line">    <span class="keyword">return</span> handler(request)</span><br></pre></td></tr></table></figure>
+<p><strong>代码完整解读 📝</strong></p>
+<ol>
+<li><p>导入部分</p>
+<ul>
+<li><p>导入 <code>wrap_tool_call</code> 装饰器，用于拦截工具调用。</p>
+</li>
+<li><p>导入 <code>ToolMessage</code>，用于返回权限不足的错误响应。</p>
+</li>
+<li><p>导入类型注解 <code>Any</code>、<code>Callable</code> 保证类型安全。</p>
+</li>
+</ul>
+</li>
+<li><p>工具信息提取</p>
+<ul>
+<li>从 <code>request.tool_call</code> 中获取工具名称 <code>tool_name</code> 和参数 <code>tool_args</code>。</li>
+</ul>
+</li>
+<li><p>权限控制逻辑</p>
+<ul>
+<li><p>定义两类工具：<code>admin_tools</code>（仅管理员可用）和 <code>restricted_tools</code>（受限工具）。</p>
+</li>
+<li><p>模拟用户角色 <code>user_role = &quot;user&quot;</code>，实际场景中应从 Agent 状态或上下文获取。</p>
+</li>
+<li><p>若用户尝试调用管理员工具但角色不是 <code>admin</code>，直接返回 <code>ToolMessage</code>，提示权限不足，<strong>不执行工具调用</strong>。</p>
+</li>
+</ul>
+</li>
+<li><p>正常流程</p>
+<ul>
+<li>权限校验通过后，调用 <code>handler(request)</code> 执行原始工具调用，并返回结果。</li>
+</ul>
+</li>
+</ol>
+<h2 id="与-wrap-model-call-的核心区别-⚡"><a href="#与-wrap-model-call-的核心区别-⚡" class="headerlink" title="与 @wrap_model_call 的核心区别 ⚡"></a>与 <code>@wrap_model_call</code> 的核心区别 ⚡</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">维度</th>
+<th style="text-align:left"><code>@wrap_tool_call</code></th>
+<th style="text-align:left"><code>@wrap_model_call</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>拦截目标</strong></td>
+<td style="text-align:left">工具调用（ToolCall）</td>
+<td style="text-align:left">模型调用（ModelRequest）</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>操作对象</strong></td>
+<td style="text-align:left">工具请求 / 响应（ToolCallRequest/ToolMessage）</td>
+<td style="text-align:left">模型请求 / 响应（ModelRequest/ModelResponse）</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>典型场景</strong></td>
+<td style="text-align:left">权限控制、参数校验、工具调用审计</td>
+<td style="text-align:left">请求缓存、重试、模型参数调整</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>返回值</strong></td>
+<td style="text-align:left"><code>ToolMessage</code>（工具结果）</td>
+<td style="text-align:left"><code>ModelResponse</code>（模型回答）</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="dynamic-prompt"><a href="#dynamic-prompt" class="headerlink" title="@dynamic_prompt"></a>@dynamic_prompt</h1><p><code>@dynamic_prompt</code> 是<strong>动态生成系统提示</strong>的钩子，属于 <strong>Node-style 钩子</strong>，核心能力是根据对话上下文<strong>实时生成个性化系统提示</strong>，适用于个性化提示、上下文感知提示、角色化交互等场景。</p>
+<p><strong>回调函数参数详解</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">参数名</th>
+<th style="text-align:left">类型</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">关键信息</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>request</code></td>
+<td style="text-align:left"><code>Any</code></td>
+<td style="text-align:left">封装模型请求的完整上下文</td>
+<td style="text-align:left">包含要发送给模型的<strong>消息历史</strong>、模型配置（如模型名称、temperature）等信息，是生成动态提示的依据</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>返回值要求</strong></p>
+<p>必须返回 <strong><code>str</code> 类型</strong>的文本：</p>
+<ul>
+<li>该文本会被系统自动包装为 <code>SystemMessage</code>，添加到模型输入的系统提示部分。</li>
+<li>用于替换或增强原有的静态系统提示，实现个性化引导。</li>
+</ul>
+<blockquote>
+<p>注意：返回值必须是字符串，不能返回 <code>None</code> 或其他类型，否则无法生成有效系统提示。</p>
+</blockquote>
+<h2 id="工作流程解析-6"><a href="#工作流程解析-6" class="headerlink" title="工作流程解析"></a>工作流程解析</h2><ol>
+<li><strong>触发时机</strong>：当代理准备构建模型提示时，自动触发 <code>@dynamic_prompt</code> 钩子。</li>
+<li><strong>上下文传入</strong>：系统传入包含完整对话历史的 <code>request</code> 对象，作为分析依据。</li>
+<li><strong>上下文分析</strong>：回调函数分析消息历史，识别用户的语言类型（如中文 / 英文）、对话主题（如技术问题 / 生活咨询）、用户意图等。</li>
+<li><strong>动态提示生成</strong>：根据分析结果，选择合适的角色（如 “技术专家”/“生活顾问”）、专业领域知识或个性化规则，生成对应的系统提示文本。</li>
+<li><strong>提示注入</strong>：系统将生成的文本作为 <code>SystemMessage</code> 添加 / 替换到模型输入中。</li>
+<li><strong>模型执行</strong>：模型基于增强后的个性化提示生成回答，输出更贴合用户需求的结果。</li>
+</ol>
+<h2 id="适用场景-6"><a href="#适用场景-6" class="headerlink" title="适用场景"></a>适用场景</h2><p><code>@dynamic_prompt</code> 最强大的业务场景，每个场景都对应了<strong>提示词的动态注入与定制</strong>：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">实现思路</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>角色化交互</strong></td>
+<td style="text-align:left">给 AI 设定特定身份，使其回答更专业</td>
+<td style="text-align:left">分析用户问题主题，生成对应的角色指令。例：用户问代码→生成 “你是资深 Python 专家”；用户问数学→生成 “你是数学大师”。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>上下文感知提示</strong></td>
+<td style="text-align:left">确保 AI 回复与当前话题高度相关</td>
+<td style="text-align:left">分析对话历史，根据上下文动态调整提示。例：用户前句聊 “Python 异步”，后句问 “如何处理”→自动在提示中加入异步相关背景。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>领域专家模式</strong></td>
+<td style="text-align:left">提供专业、深入的领域回答</td>
+<td style="text-align:left">识别用户输入的专业领域，注入领域知识和规范。例：医疗问题→注入医疗术语规范；法律问题→注入法律问答逻辑。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>多语言智能切换</strong></td>
+<td style="text-align:left">自动适配语言环境</td>
+<td style="text-align:left">检测用户输入语言，切换提示语和回答风格。例：用户输入英文→生成英文系统提示；输入日文→切换日文风格。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>个性化体验定制</strong></td>
+<td style="text-align:left">定制专属的 AI 助手</td>
+<td style="text-align:left">根据用户交互习惯（如偏好简洁 / 详细 / 幽默）生成对应风格的提示。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>任务特定指令增强</strong></td>
+<td style="text-align:left">针对特定任务添加专属指导</td>
+<td style="text-align:left">识别任务类型，插入任务专用指令。例：编程→添加 “代码需符合 PEP8 规范”；写作→添加 “需分点清晰、逻辑严密”。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>跨文化交流支持</strong></td>
+<td style="text-align:left">确保交流的文化适配性</td>
+<td style="text-align:left">在多语言环境中，添加文化背景相关的表达，避免文化冲突。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>背后的核心逻辑 💡</strong></p>
+<p>这些场景都依赖 <code>@dynamic_prompt</code> 的两个核心能力：</p>
+<ol>
+<li><strong>上下文分析</strong>：能读取 <code>request</code> 中的对话历史，识别<strong>主题、语言、领域、任务类型</strong>。</li>
+<li><strong>动态生成</strong>：根据分析结果，<strong>程序化生成</strong>系统提示文本（<code>str</code>），实现一劳永逸的 “动态 Prompt 工程”。</li>
+</ol>
+<h2 id="使用示例-6"><a href="#使用示例-6" class="headerlink" title="使用示例"></a>使用示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> dynamic_prompt</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage, ToolMessage</span><br><span class="line"><span class="keyword">import</span> re</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义正则表达式模式，用于识别用户意图</span></span><br><span class="line"><span class="comment"># 预编译正则表达式，提升匹配效率</span></span><br><span class="line">re_code = re.<span class="built_in">compile</span>(<span class="string">r&#x27;代码|编程|开发|python|javascript|java|c\+\+|html|css&#x27;</span>, re.IGNORECASE)</span><br><span class="line">re_math = re.<span class="built_in">compile</span>(<span class="string">r&#x27;数学|计算|算法|统计&#x27;</span>, re.IGNORECASE)</span><br><span class="line">re_history = re.<span class="built_in">compile</span>(<span class="string">r&#x27;历史|科学|文化|艺术&#x27;</span>, re.IGNORECASE)</span><br><span class="line"></span><br><span class="line"><span class="meta">@dynamic_prompt</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_contextual_prompt</span>(<span class="params">request: <span class="type">Any</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="comment"># 基础提示模板</span></span><br><span class="line">    base_prompt = <span class="string">&quot;你是一个有帮助的AI助手。&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 分析上下文，确定对话主题和领域</span></span><br><span class="line">    last_user_message = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 从 request 对象中获取最后一条用户消息</span></span><br><span class="line">    <span class="comment"># 兼容不同结构的 request 对象</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">hasattr</span>(request, <span class="string">&#x27;messages&#x27;</span>):</span><br><span class="line">        <span class="comment"># 反向遍历消息列表，寻找最近的 HumanMessage</span></span><br><span class="line">        <span class="keyword">for</span> msg <span class="keyword">in</span> <span class="built_in">reversed</span>(request.messages):</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">isinstance</span>(msg, HumanMessage):</span><br><span class="line">                last_user_message = msg.content</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">    <span class="keyword">elif</span> <span class="built_in">hasattr</span>(request, <span class="string">&#x27;state&#x27;</span>) <span class="keyword">and</span> <span class="string">&#x27;messages&#x27;</span> <span class="keyword">in</span> request.state:</span><br><span class="line">        <span class="comment"># 兼容 state 结构的 request 对象</span></span><br><span class="line">        <span class="keyword">for</span> msg <span class="keyword">in</span> <span class="built_in">reversed</span>(request.state[<span class="string">&#x27;messages&#x27;</span>]):</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">isinstance</span>(msg, HumanMessage):</span><br><span class="line">                last_user_message = msg.content</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 如果获取到了用户最后一条消息，根据内容添加专属领域提示</span></span><br><span class="line">    <span class="keyword">if</span> last_user_message:</span><br><span class="line">        <span class="comment"># 1. 匹配编程/代码相关问题</span></span><br><span class="line">        <span class="keyword">if</span> re_code.search(last_user_message):</span><br><span class="line">            base_prompt += <span class="string">&quot;\n\n你是一名专业的编程助手，你叫吉米。请提供清晰、正确的代码示例，并解释关键概念。&quot;</span></span><br><span class="line">            base_prompt += <span class="string">&quot;\n确保代码具有良好的结构和注释。&quot;</span></span><br><span class="line">        <span class="comment"># 2. 匹配数学/算法相关问题</span></span><br><span class="line">        <span class="keyword">elif</span> re_math.search(last_user_message):</span><br><span class="line">            base_prompt += <span class="string">&quot;\n\n你是一名数学专家，你叫鲁班大师。请详细解释计算过程，并确保准确性。&quot;</span></span><br><span class="line">            base_prompt += <span class="string">&quot;\n使用适当的数学符号和公式来表达复杂概念。&quot;</span></span><br><span class="line">        <span class="comment"># 3. 匹配历史/文化/科学相关问题</span></span><br><span class="line">        <span class="keyword">elif</span> re_history.search(last_user_message):</span><br><span class="line">            base_prompt += <span class="string">&quot;\n\n你是一名知识渊博的学者，你叫维多利+爱因斯坦。请提供准确、全面的信息。&quot;</span></span><br><span class="line">            base_prompt += <span class="string">&quot;\n包含相关背景知识和关键事实。&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 添加通用指导原则（无论什么主题都适用）</span></span><br><span class="line">    base_prompt += <span class="string">&quot;\n\n请始终保持礼貌，提供专业的回答。如果不确定，如实说明并提供可能的解决方案。&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> base_prompt</span><br></pre></td></tr></table></figure>
+<p>这段代码实现了 <strong>“智能角色切换”</strong> 的动态 Prompt 工程：</p>
+<ol>
+<li><strong>自动识别</strong>：通过正则识别用户问题属于编程、数学还是历史文化。</li>
+<li><strong>自动换装</strong>：根据主题切换 AI 的身份（吉米 / 鲁班大师 / 爱因斯坦）。</li>
+<li><strong>增强能力</strong>：给不同身份赋予专属的知识规范和回答风格。</li>
+<li><strong>最终效果</strong>：用户问什么，AI 就自动变成最懂该领域的专家进行回答。</li>
+</ol>
+<h2 id="与其他钩子的核心区别-⚡"><a href="#与其他钩子的核心区别-⚡" class="headerlink" title="与其他钩子的核心区别 ⚡"></a>与其他钩子的核心区别 ⚡</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">维度</th>
+<th style="text-align:left"><code>@dynamic_prompt</code></th>
+<th style="text-align:left"><code>@before_model</code></th>
+<th style="text-align:left"><code>@wrap_model_call</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>核心目标</strong></td>
+<td style="text-align:left">动态生成系统提示，个性化引导模型行为</td>
+<td style="text-align:left">预处理输入、修改模型状态</td>
+<td style="text-align:left">拦截模型调用流程，控制请求 / 响应</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>操作对象</strong></td>
+<td style="text-align:left">生成系统提示文本（<code>str</code>）</td>
+<td style="text-align:left">操作 <code>AgentState</code> 状态</td>
+<td style="text-align:left">操作 <code>ModelRequest</code>/<code>ModelResponse</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>返回值</strong></td>
+<td style="text-align:left">必须返回 <code>str</code>（提示文本）</td>
+<td style="text-align:left">返回 <code>None</code> 或状态字典</td>
+<td style="text-align:left">必须返回 <code>ModelResponse</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>典型场景</strong></td>
+<td style="text-align:left">角色化交互、领域专属提示、多语言自适应</td>
+<td style="text-align:left">输入过滤、日志记录</td>
+<td style="text-align:left">缓存、重试、参数修改</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/01/04/language/python/23-async/" rel="prev" title="异步编程">
+      <i class="fa fa-chevron-left"></i> 异步编程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/02/28/ai/langchain/10-langchain-AgentMiddleware/" rel="next" title="LangChain通过类继承实现自定义中间件">
+      LangChain通过类继承实现自定义中间件 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#before-agent"><span class="nav-number">1.</span> <span class="nav-text">@before_agent</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90"><span class="nav-number">1.1.</span> <span class="nav-text">工作流程解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">1.2.</span> <span class="nav-text">适用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B"><span class="nav-number">1.3.</span> <span class="nav-text">使用示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#after-agent"><span class="nav-number">2.</span> <span class="nav-text">@after_agent</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90-1"><span class="nav-number">2.1.</span> <span class="nav-text">工作流程解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-1"><span class="nav-number">2.2.</span> <span class="nav-text">适用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">2.3.</span> <span class="nav-text">使用示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#before-model"><span class="nav-number">3.</span> <span class="nav-text">@before_model</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90-2"><span class="nav-number">3.1.</span> <span class="nav-text">工作流程解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-2"><span class="nav-number">3.2.</span> <span class="nav-text">适用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B-2"><span class="nav-number">3.3.</span> <span class="nav-text">使用示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#after-model"><span class="nav-number">4.</span> <span class="nav-text">@after_model</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90-3"><span class="nav-number">4.1.</span> <span class="nav-text">工作流程解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-3"><span class="nav-number">4.2.</span> <span class="nav-text">适用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B-3"><span class="nav-number">4.3.</span> <span class="nav-text">使用示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#wrap-model-call"><span class="nav-number">5.</span> <span class="nav-text">@wrap_model_call</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90-4"><span class="nav-number">5.1.</span> <span class="nav-text">工作流程解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-4"><span class="nav-number">5.2.</span> <span class="nav-text">适用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B-4"><span class="nav-number">5.3.</span> <span class="nav-text">使用示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#wrap-tool-call"><span class="nav-number">6.</span> <span class="nav-text">@wrap_tool_call</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90-5"><span class="nav-number">6.1.</span> <span class="nav-text">工作流程解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-5"><span class="nav-number">6.2.</span> <span class="nav-text">适用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B-5"><span class="nav-number">6.3.</span> <span class="nav-text">使用示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E-wrap-model-call-%E7%9A%84%E6%A0%B8%E5%BF%83%E5%8C%BA%E5%88%AB-%E2%9A%A1"><span class="nav-number">6.4.</span> <span class="nav-text">与 @wrap_model_call 的核心区别 ⚡</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dynamic-prompt"><span class="nav-number">7.</span> <span class="nav-text">@dynamic_prompt</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B%E8%A7%A3%E6%9E%90-6"><span class="nav-number">7.1.</span> <span class="nav-text">工作流程解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-6"><span class="nav-number">7.2.</span> <span class="nav-text">适用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B-6"><span class="nav-number">7.3.</span> <span class="nav-text">使用示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E%E5%85%B6%E4%BB%96%E9%92%A9%E5%AD%90%E7%9A%84%E6%A0%B8%E5%BF%83%E5%8C%BA%E5%88%AB-%E2%9A%A1"><span class="nav-number">7.4.</span> <span class="nav-text">与其他钩子的核心区别 ⚡</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

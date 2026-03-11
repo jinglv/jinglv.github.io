@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain核心组件Message(消息)">
+<meta property="og:url" content="https://jinglv.github.io/2025/12/12/ai/langchain/3-langchain-Message/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-12T06:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/12/12/ai/langchain/3-langchain-Message/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain核心组件Message(消息) | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/12/12/ai/langchain/3-langchain-Message/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain核心组件Message(消息)
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-12-12 00:00:00 / 修改时间：14:00:00" itemprop="dateCreated datePublished" datetime="2025-12-12T00:00:00+08:00">2025-12-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><strong>LangChain 的 Message 模块</strong>核心是它作为 LangChain 中处理对话交互的<strong>基础组件</strong>，用结构化方式标准化了与大模型的交流形式。</p>
+<h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><h2 id="模块核心定位"><a href="#模块核心定位" class="headerlink" title="模块核心定位"></a>模块核心定位</h2><p>Message 模块是 LangChain 处理<strong>对话上下文</strong>和<strong>交互</strong>的基础组件，核心作用是提供<strong>结构化的表示方式</strong>，来定义与大语言模型之间的所有交流内容。同时明确了核心属性：<strong>消息是模型交互的基本单位</strong>，每个消息都包含「内容」和「元数据」，用于表征对话的实时状态。</p>
+<h2 id="核心价值"><a href="#核心价值" class="headerlink" title="核心价值"></a>核心价值</h2><p>该模块的设计核心是解决复杂对话应用开发中的兼容性、可维护性和扩展性问题，具体体现在四点：</p>
+<ol>
+<li><strong>结构化表示</strong>：提供统一的消息格式，能清晰区分对话中的不同角色（如系统、用户、AI 助手、工具），避免消息类型混乱。</li>
+<li><strong>上下文管理</strong>：为多轮对话历史的维护、存储和调用提供标准化支撑，让复杂的多轮交互逻辑更易管理。</li>
+<li><strong>跨模型兼容</strong>：通过统一的消息接口，屏蔽不同模型提供商（如 OpenAI、Anthropic、Google）的消息格式差异，实现 “一次开发，多模型适配”。</li>
+<li><strong>多媒体支持</strong>：突破纯文本交互限制，原生支持文本、图像、音频等多种内容形式，适配多模态大模型的交互需求。</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Message 模块是 LangChain 对话应用的 <strong>“通信标准”</strong>—— 它以结构化消息为载体，串联起模型调用、上下文记忆、多模态交互等核心能力，既降低了多模型适配的开发成本，也为复杂对话场景的管理提供了基础支撑。</p>
+<h1 id="基本组成"><a href="#基本组成" class="headerlink" title="基本组成"></a>基本组成</h1><h2 id="1-角色-Role"><a href="#1-角色-Role" class="headerlink" title="1. 角色 (Role)"></a>1. 角色 (Role)</h2><ul>
+<li><strong>作用</strong>：标识消息的来源和类型，决定了这条消息在对话中的功能和权重。</li>
+<li><strong>常见角色</strong>：<ul>
+<li><strong>系统 (System)</strong>：定义 AI 助手的行为、角色和规则（如 “你是一个专业的 Python 编程助手”）。</li>
+<li><strong>用户 (User)</strong>：代表用户的提问或输入。</li>
+<li><strong>助手 (Assistant)</strong>：代表 AI 模型的回复。</li>
+<li><strong>工具 (Tool)</strong>：代表工具调用的结果或中间信息。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-内容-Content"><a href="#2-内容-Content" class="headerlink" title="2. 内容 (Content)"></a>2. 内容 (Content)</h2><ul>
+<li><strong>作用</strong>：承载消息的实际信息，是与模型交互的核心载体。</li>
+<li><strong>特点</strong>：<ul>
+<li>支持纯文本，也支持图像、音频等多模态内容。</li>
+<li>可以是单一内容，也可以是混合内容（如 “文本 + 图片”）。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3-元数据-Metadata"><a href="#3-元数据-Metadata" class="headerlink" title="3. 元数据 (Metadata)"></a>3. 元数据 (Metadata)</h2><ul>
+<li><strong>作用</strong>：提供额外的上下文信息和追踪能力，不直接参与模型生成，但用于系统管理。</li>
+<li><strong>常见元数据</strong>：<ul>
+<li>消息 ID、会话 ID</li>
+<li>用户标识、设备信息</li>
+<li>令牌使用情况、时间戳</li>
+<li>自定义业务标签（如优先级、来源渠道）</li>
+</ul>
+</li>
+</ul>
+<hr>
+<p>简单来说，<strong>角色定义了 “谁说的”，内容是 “说了什么”，元数据是 “这条消息的背景信息”</strong>，三者共同构成了 LangChain 中完整的消息对象，支撑起复杂的对话交互和上下文管理。</p>
+<h1 id="使用Message模块"><a href="#使用Message模块" class="headerlink" title="使用Message模块"></a>使用Message模块</h1><h2 id="导入消息类型"><a href="#导入消息类型" class="headerlink" title="导入消息类型"></a>导入消息类型</h2><p>首先从 <code>langchain.messages</code> 导入常用的消息类，这是构建对话的基础：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage, AIMessage, SystemMessage</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>HumanMessage</code>：用户输入</li>
+<li><code>AIMessage</code>：AI 助手回复</li>
+<li><code>SystemMessage</code>：系统提示，定义 AI 角色和行为</li>
+</ul>
+<h2 id="创建消息对象"><a href="#创建消息对象" class="headerlink" title="创建消息对象"></a>创建消息对象</h2><p>根据角色创建对应的消息实例，构建对话的基本单元：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 系统消息：定义 AI 的角色和行为</span></span><br><span class="line">system_msg = SystemMessage(<span class="string">&quot;You are a helpful assistant&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 用户消息：用户的输入内容</span></span><br><span class="line">human_msg = HumanMessage(<span class="string">&quot;Hello, how are you?&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 助手消息：AI 的回复（可用于手动构建对话历史）</span></span><br><span class="line">ai_msg = AIMessage(<span class="string">&quot;I&#x27;m doing well, thank you! How can I help you today?&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>每个消息对象都明确了角色和内容，为后续的上下文管理提供了结构化基础。</p>
+<h2 id="与模型一起使用"><a href="#与模型一起使用" class="headerlink" title="与模型一起使用"></a>与模型一起使用</h2><p>将消息列表传入模型，完成一次完整的对话交互：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage, AIMessage, SystemMessage</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化模型</span></span><br><span class="line">model = init_chat_model(<span class="string">&quot;gpt-4o&quot;</span>, model_provider=<span class="string">&quot;openai&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建消息列表（系统提示 + 用户输入）</span></span><br><span class="line">messages = [</span><br><span class="line">    SystemMessage(<span class="string">&quot;你是一个诗歌专家&quot;</span>),</span><br><span class="line">    HumanMessage(<span class="string">&quot;写一首关于春天的绝句&quot;</span>)</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用模型，返回 AIMessage 对象</span></span><br><span class="line">response = model.invoke(messages)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打印生成的内容</span></span><br><span class="line"><span class="built_in">print</span>(response.content)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>消息列表按顺序传递，模型会根据上下文生成回复。</li>
+<li>返回的 <code>response</code> 是一个 <code>AIMessage</code> 对象，包含了 AI 的回复内容。</li>
+</ul>
+<h1 id="类型详解"><a href="#类型详解" class="headerlink" title="类型详解"></a>类型详解</h1><h2 id="系统消息-SystemMessage"><a href="#系统消息-SystemMessage" class="headerlink" title="系统消息 (SystemMessage)"></a>系统消息 (SystemMessage)</h2><ul>
+<li><p><strong>作用</strong>：为模型提供初始指令，设定其行为、角色和响应指南，是对话的 “规则书”。</p>
+</li>
+<li><p><strong>示例</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 基本指令</span></span><br><span class="line">system_msg = SystemMessage(<span class="string">&quot;你是一个有帮助的编程助手&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 详细角色设定</span></span><br><span class="line">detailed_system_msg = SystemMessage(<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">你是一位资深Python开发者，精通Web框架。</span></span><br><span class="line"><span class="string">总是提供代码示例并解释你的推理过程。</span></span><br><span class="line"><span class="string">解释要简洁但全面。</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="用户消息-HumanMessage"><a href="#用户消息-HumanMessage" class="headerlink" title="用户消息 (HumanMessage)"></a>用户消息 (HumanMessage)</h2><ul>
+<li><p><strong>作用</strong>：代表用户的输入和交互，可包含文本、图像、音频等多模态内容。</p>
+</li>
+<li><p><strong>示例</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 基本文本内容</span></span><br><span class="line">human_msg = HumanMessage(<span class="string">&quot;如何创建REST API？&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 带元数据的消息</span></span><br><span class="line">human_msg_with_metadata = HumanMessage(</span><br><span class="line">    content=<span class="string">&quot;Hello!&quot;</span>,</span><br><span class="line">    name=<span class="string">&quot;alice&quot;</span>,  <span class="comment"># 可选：标识不同用户</span></span><br><span class="line">    <span class="built_in">id</span>=<span class="string">&quot;msg_123&quot;</span>   <span class="comment"># 可选：唯一标识符用于追踪</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="助手消息-AIMessage"><a href="#助手消息-AIMessage" class="headerlink" title="助手消息 (AIMessage)"></a>助手消息 (AIMessage)</h2><ul>
+<li><p><strong>作用</strong>：代表模型的输出，包含生成的内容和相关元数据，也可手动创建用于构建对话历史。</p>
+</li>
+<li><p><strong>示例</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 模型生成的响应</span></span><br><span class="line">response = model.invoke(<span class="string">&quot;解释什么是AI&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(response))  <span class="comment"># &lt;class &#x27;langchain_core.messages.ai.AIMessage&#x27;&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 手动创建AI消息（用于对话历史）</span></span><br><span class="line">manual_ai_msg = AIMessage(<span class="string">&quot;我很乐意帮你解决这个问题！&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在对话历史中插入AI消息</span></span><br><span class="line">messages = [</span><br><span class="line">    SystemMessage(<span class="string">&quot;你是一个有帮助的助手&quot;</span>),</span><br><span class="line">    HumanMessage(<span class="string">&quot;你能帮我吗？&quot;</span>),</span><br><span class="line">    manual_ai_msg,  <span class="comment"># 插入人工创建的AI消息</span></span><br><span class="line">    HumanMessage(<span class="string">&quot;太好了！2+2等于多少？&quot;</span>)</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="工具消息-ToolMessage"><a href="#工具消息-ToolMessage" class="headerlink" title="工具消息 (ToolMessage)"></a>工具消息 (ToolMessage)</h2><ul>
+<li><p><strong>作用</strong>：代表工具调用的输出，用于模型和外部工具之间的交互，是实现工具调用能力的关键。</p>
+</li>
+<li><p><strong>示例</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> ToolMessage</span><br><span class="line"></span><br><span class="line">tool_response = ToolMessage(</span><br><span class="line">    content=<span class="string">&#x27;&#123;&quot;temperature&quot;: 25, &quot;condition&quot;: &quot;sunny&quot;&#125;&#x27;</span>,  <span class="comment"># 工具返回的内容</span></span><br><span class="line">    tool_call_id=<span class="string">&quot;tool_call_123&quot;</span>  <span class="comment"># 关联的工具调用ID</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>总结</p>
+<p>这四种消息类型构成了 LangChain 对话交互的核心：</p>
+<ul>
+<li><strong>SystemMessage</strong>：定规则</li>
+<li><strong>HumanMessage</strong>：提问题</li>
+<li><strong>AIMessage</strong>：做回答</li>
+<li><strong>ToolMessage</strong>：连工具</li>
+</ul>
+<h1 id="使用模式"><a href="#使用模式" class="headerlink" title="使用模式"></a>使用模式</h1><h2 id="文本提示-Text-Prompts"><a href="#文本提示-Text-Prompts" class="headerlink" title="文本提示 (Text Prompts)"></a>文本提示 (Text Prompts)</h2><p>这是最简单直接的方式，直接传递字符串给模型，无需构建复杂的消息结构。</p>
+<ul>
+<li><p><strong>使用示例</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">response = model.invoke(<span class="string">&quot;写一首关于春天的俳句&quot;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p><strong>适用场景</strong>：</p>
+<ul>
+<li>单个、独立的请求</li>
+<li>不需要维护对话历史</li>
+<li>希望代码复杂度最小，快速验证想法</li>
+</ul>
+</li>
+</ul>
+<h2 id="消息提示-Message-Prompts"><a href="#消息提示-Message-Prompts" class="headerlink" title="消息提示 (Message Prompts)"></a>消息提示 (Message Prompts)</h2><p>使用消息对象列表（<code>SystemMessage</code>、<code>HumanMessage</code>、<code>AIMessage</code> 等），可以管理复杂的多轮对话和上下文。</p>
+<ul>
+<li><p><strong>使用示例</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> SystemMessage, HumanMessage, AIMessage</span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    SystemMessage(<span class="string">&quot;你是一位诗歌专家&quot;</span>),</span><br><span class="line">    HumanMessage(<span class="string">&quot;写一首关于春天的俳句&quot;</span>),</span><br><span class="line">    AIMessage(<span class="string">&quot;樱花盛开...&quot;</span>)  <span class="comment"># 上一轮AI回复，用于构建对话历史</span></span><br><span class="line">]</span><br><span class="line">response = model.invoke(messages)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p><strong>适用场景</strong>：</p>
+<ul>
+<li>需要管理多轮对话历史</li>
+<li>处理多模态内容（图像、音频、文件）</li>
+<li>需要包含系统指令来定义 AI 角色</li>
+</ul>
+</li>
+</ul>
+<h2 id="字典格式-Dictionary-Format"><a href="#字典格式-Dictionary-Format" class="headerlink" title="字典格式 (Dictionary Format)"></a>字典格式 (Dictionary Format)</h2><p>直接使用 OpenAI 兼容的聊天完成格式，以字典列表的形式传递消息，适合从其他 OpenAI 兼容框架迁移代码。</p>
+<ul>
+<li><p><strong>使用示例</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一位诗歌专家&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;写一首关于春天的俳句&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;樱花盛开...&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line">response = model.invoke(messages)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p><strong>特点</strong>：</p>
+<ul>
+<li>与 OpenAI API 格式完全兼容</li>
+<li>便于从其他框架（如 <code>openai</code> 库）迁移代码</li>
+<li>LangChain 会自动将这些字典转换为内部的消息对象</li>
+</ul>
+</li>
+</ul>
+<p>总结</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">提示方式</th>
+<th style="text-align:left">特点</th>
+<th style="text-align:left">适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>文本提示</strong></td>
+<td style="text-align:left">简单直接，代码最少</td>
+<td style="text-align:left">独立请求、快速验证</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>消息提示</strong></td>
+<td style="text-align:left">结构化，支持多轮对话和多模态</td>
+<td style="text-align:left">复杂对话、需要系统指令</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>字典格式</strong></td>
+<td style="text-align:left">OpenAI 兼容，便于迁移</td>
+<td style="text-align:left">从 OpenAI 生态迁移代码</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="标准内容块（Standard-Content-Blocks）"><a href="#标准内容块（Standard-Content-Blocks）" class="headerlink" title="标准内容块（Standard Content Blocks）"></a>标准内容块（Standard Content Blocks）</h1><h2 id="什么是-Content-Blocks？"><a href="#什么是-Content-Blocks？" class="headerlink" title="什么是 Content Blocks？"></a>什么是 Content Blocks？</h2><p>Content Blocks 是 LangChain v1 引入的<strong>标准化数据结构</strong>，用于在单条消息中组合文本、图像、音频等多种内容类型，为大模型提供更丰富的输入信息。</p>
+<ul>
+<li>它不是 <code>content</code> 属性的替代品，而是作为新属性补充，提供<strong>标准化的消息内容访问方式</strong>。</li>
+<li>核心价值：<ul>
+<li>提供统一的多模态内容表示标准</li>
+<li>支持复杂的多模态交互场景开发</li>
+<li>实现模型与外部工具的无缝集成</li>
+<li>显著提升 AI 应用的表达能力与交互体验</li>
+</ul>
+</li>
+</ul>
+<h2 id="如何使用-content-blocks-属性"><a href="#如何使用-content-blocks-属性" class="headerlink" title="如何使用 content_blocks 属性"></a>如何使用 content_blocks 属性</h2><ol>
+<li><p><strong>基础使用</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建使用 content_blocks 属性的消息</span></span><br><span class="line">message = HumanMessage(</span><br><span class="line">    content_blocks=[&#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>, <span class="string">&quot;text&quot;</span>: <span class="string">&quot;今天天气如何？&quot;</span>&#125;]</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ol>
+<li><p><strong>在 Agent 中使用</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line"><span class="comment"># 运行 Agent</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">        HumanMessage(</span><br><span class="line">            content_blocks=[&#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>, <span class="string">&quot;text&quot;</span>: <span class="string">&quot;今天天气如何？&quot;</span>&#125;]</span><br><span class="line">        )</span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="主要内容块类型"><a href="#主要内容块类型" class="headerlink" title="主要内容块类型"></a>主要内容块类型</h2><p>LangChain 支持多种内容块类型，适配不同场景：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">类型</th>
+<th style="text-align:left">示例</th>
+<th style="text-align:left">用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">文本内容块</td>
+<td style="text-align:left"><code>&#123;&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: &quot;这是一段文本内容&quot;&#125;</code></td>
+<td style="text-align:left">承载纯文本信息</td>
+</tr>
+<tr>
+<td style="text-align:left">图像内容块</td>
+<td style="text-align:left"><code>&#123;&quot;type&quot;: &quot;image_url&quot;, &quot;image_url&quot;: &#123;&quot;url&quot;: &quot;https://example.com/image.jpg&quot;&#125;&#125;</code></td>
+<td style="text-align:left">传递图像链接或数据</td>
+</tr>
+<tr>
+<td style="text-align:left">音频内容块</td>
+<td style="text-align:left"><code>&#123;&quot;type&quot;: &quot;audio_url&quot;, &quot;audio_url&quot;: &#123;&quot;url&quot;: &quot;https://example.com/audio.mp3&quot;&#125;&#125;</code></td>
+<td style="text-align:left">传递音频链接或数据</td>
+</tr>
+<tr>
+<td style="text-align:left">工具使用内容块</td>
+<td style="text-align:left"><code>&#123;&quot;type&quot;: &quot;tool_use&quot;, &quot;id&quot;: &quot;tool_call_123&quot;, &quot;name&quot;: &quot;get_weather&quot;, &quot;params&quot;: &#123;&quot;city&quot;: &quot;北京&quot;&#125;&#125;</code></td>
+<td style="text-align:left">表示模型发起的工具调用</td>
+</tr>
+<tr>
+<td style="text-align:left">工具结果内容块</td>
+<td style="text-align:left"><code>&#123;&quot;type&quot;: &quot;tool_result&quot;, &quot;tool_call_id&quot;: &quot;tool_call_123&quot;, &quot;content&quot;: &#39;&#123;&quot;temperature&quot;: 25, &quot;condition&quot;: &quot;sunny&quot;&#125;&#39;&#125;</code></td>
+<td style="text-align:left">表示工具返回的结果</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="最佳实践与场景划分"><a href="#最佳实践与场景划分" class="headerlink" title="最佳实践与场景划分"></a>最佳实践与场景划分</h2><p>LangChain 官方对 Content Blocks 的使用有明确推荐：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">推荐用法</th>
+<th style="text-align:left">原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">简单文本</td>
+<td style="text-align:left"><code>HumanMessage(&quot;你是谁&quot;)</code></td>
+<td style="text-align:left">简洁、向后兼容，官方示例中大量使用</td>
+</tr>
+<tr>
+<td style="text-align:left">多媒体混合</td>
+<td style="text-align:left"><code>HumanMessage(content_blocks=[...])</code></td>
+<td style="text-align:left">多媒体支持、跨提供商统一、结构化访问</td>
+</tr>
+<tr>
+<td style="text-align:left">访问响应</td>
+<td style="text-align:left"><code>response.content_blocks</code></td>
+<td style="text-align:left">标准化跨提供商访问</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>为什么这样划分：</strong></p>
+<ul>
+<li><code>content_blocks</code> 不是替代品，只是一个新属性。</li>
+<li>简单文本用 <code>content</code>：没有必要为简单文本包装成 <code>content_blocks</code>。</li>
+<li>多媒体用 <code>content_blocks</code>：需要混合文本、图片、音频时，明确指定每个块的类型和格式。</li>
+</ul>
+<h2 id="实际代码对比"><a href="#实际代码对比" class="headerlink" title="实际代码对比"></a>实际代码对比</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line"><span class="comment"># ✅ 简单文本：保持简洁</span></span><br><span class="line">msg1 = HumanMessage(<span class="string">&quot;你是谁&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ✅ 多媒体：用 content_blocks</span></span><br><span class="line">msg2 = HumanMessage(</span><br><span class="line">    content_blocks=[</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>, <span class="string">&quot;text&quot;</span>: <span class="string">&quot;分析这张图&quot;</span>&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;image&quot;</span>, <span class="string">&quot;url&quot;</span>: <span class="string">&quot;https://example.com/image.png&quot;</span>, <span class="string">&quot;mime_type&quot;</span>: <span class="string">&quot;image/png&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ✅ 读取响应时标准化访问</span></span><br><span class="line">response = model.invoke([msg1])</span><br><span class="line"><span class="keyword">for</span> block <span class="keyword">in</span> response.content_blocks:</span><br><span class="line">    <span class="keyword">if</span> block[<span class="string">&quot;type&quot;</span>] == <span class="string">&quot;text&quot;</span>:</span><br><span class="line">        <span class="built_in">print</span>(block[<span class="string">&quot;text&quot;</span>])</span><br></pre></td></tr></table></figure>
+<p>总结</p>
+<p>Content Blocks 是 LangChain 为<strong>多模态交互</strong>设计的核心机制：</p>
+<ul>
+<li>简单场景：继续使用传统的 <code>content</code> 属性，保持代码简洁。</li>
+<li>多模态 / 工具交互场景：使用 <code>content_blocks</code>，获得标准化、跨模型兼容的能力。</li>
+<li>响应处理：通过 <code>response.content_blocks</code> 实现统一的结构化访问。</li>
+</ul>
+<h1 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h1><ul>
+<li><p>角色与规则定义（基础定位）</p>
+<ul>
+<li><strong>使用系统消息设置上下文</strong>：必须通过系统消息明确界定模型的角色、行为准则和回复要求，为对话奠定统一的执行基准。</li>
+</ul>
+</li>
+<li><p>对话流程与结构管理（核心逻辑）</p>
+<ul>
+<li><strong>遵循标准消息顺序</strong>：严格按照「系统消息→用户消息→助手消息」的固定顺序组织，确保模型能正确识别对话角色与上下文逻辑。</li>
+<li><strong>妥善维护消息历史</strong>：多轮对话场景中，需实时、准确地更新对话历史（追加新消息），保障上下文的连续性。</li>
+<li><strong>匹配任务选对格式</strong>：简单独立请求用文本提示（极简高效），复杂多轮对话用消息对象（结构化管理）。</li>
+</ul>
+</li>
+<li><p>性能与资源管控（优化关键）</p>
+<ul>
+<li><strong>监控上下文长度</strong>：时刻关注模型的上下文窗口限制，对超长对话及时进行截断、摘要或优化，避免超出限制导致的调用失败或上下文丢失。</li>
+</ul>
+</li>
+<li><p>工程化落地保障（稳定性支撑）</p>
+<ul>
+<li><strong>利用消息元数据</strong>：借助元数据记录会话 ID、用户标识、时间戳等信息，实现应用的追踪、审计与调试。</li>
+<li><strong>完善错误处理</strong>：在消息构建、模型调用、响应解析等全流程，实现合理的错误捕获、重试机制，提升应用的健壮性。</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/12/ai/langchain/2-langchain-Models/" rel="prev" title="LangChain核心组件Models（模型）">
+      <i class="fa fa-chevron-left"></i> LangChain核心组件Models（模型）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/12/19/ai/langchain/6-langchain-Structured/" rel="next" title="LangChain核心功能之结构化输出">
+      LangChain核心功能之结构化输出 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E6%A0%B8%E5%BF%83%E5%AE%9A%E4%BD%8D"><span class="nav-number">1.1.</span> <span class="nav-text">模块核心定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BB%B7%E5%80%BC"><span class="nav-number">1.2.</span> <span class="nav-text">核心价值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.3.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%BB%84%E6%88%90"><span class="nav-number">2.</span> <span class="nav-text">基本组成</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E8%A7%92%E8%89%B2-Role"><span class="nav-number">2.1.</span> <span class="nav-text">1. 角色 (Role)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%86%85%E5%AE%B9-Content"><span class="nav-number">2.2.</span> <span class="nav-text">2. 内容 (Content)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%85%83%E6%95%B0%E6%8D%AE-Metadata"><span class="nav-number">2.3.</span> <span class="nav-text">3. 元数据 (Metadata)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8Message%E6%A8%A1%E5%9D%97"><span class="nav-number">3.</span> <span class="nav-text">使用Message模块</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E5%85%A5%E6%B6%88%E6%81%AF%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.1.</span> <span class="nav-text">导入消息类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%B6%88%E6%81%AF%E5%AF%B9%E8%B1%A1"><span class="nav-number">3.2.</span> <span class="nav-text">创建消息对象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E%E6%A8%A1%E5%9E%8B%E4%B8%80%E8%B5%B7%E4%BD%BF%E7%94%A8"><span class="nav-number">3.3.</span> <span class="nav-text">与模型一起使用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B1%BB%E5%9E%8B%E8%AF%A6%E8%A7%A3"><span class="nav-number">4.</span> <span class="nav-text">类型详解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E6%B6%88%E6%81%AF-SystemMessage"><span class="nav-number">4.1.</span> <span class="nav-text">系统消息 (SystemMessage)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E6%B6%88%E6%81%AF-HumanMessage"><span class="nav-number">4.2.</span> <span class="nav-text">用户消息 (HumanMessage)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A9%E6%89%8B%E6%B6%88%E6%81%AF-AIMessage"><span class="nav-number">4.3.</span> <span class="nav-text">助手消息 (AIMessage)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E6%B6%88%E6%81%AF-ToolMessage"><span class="nav-number">4.4.</span> <span class="nav-text">工具消息 (ToolMessage)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%A8%A1%E5%BC%8F"><span class="nav-number">5.</span> <span class="nav-text">使用模式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E6%9C%AC%E6%8F%90%E7%A4%BA-Text-Prompts"><span class="nav-number">5.1.</span> <span class="nav-text">文本提示 (Text Prompts)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E6%8F%90%E7%A4%BA-Message-Prompts"><span class="nav-number">5.2.</span> <span class="nav-text">消息提示 (Message Prompts)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%97%E5%85%B8%E6%A0%BC%E5%BC%8F-Dictionary-Format"><span class="nav-number">5.3.</span> <span class="nav-text">字典格式 (Dictionary Format)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E5%86%85%E5%AE%B9%E5%9D%97%EF%BC%88Standard-Content-Blocks%EF%BC%89"><span class="nav-number">6.</span> <span class="nav-text">标准内容块（Standard Content Blocks）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-Content-Blocks%EF%BC%9F"><span class="nav-number">6.1.</span> <span class="nav-text">什么是 Content Blocks？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-content-blocks-%E5%B1%9E%E6%80%A7"><span class="nav-number">6.2.</span> <span class="nav-text">如何使用 content_blocks 属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E5%86%85%E5%AE%B9%E5%9D%97%E7%B1%BB%E5%9E%8B"><span class="nav-number">6.3.</span> <span class="nav-text">主要内容块类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5%E4%B8%8E%E5%9C%BA%E6%99%AF%E5%88%92%E5%88%86"><span class="nav-number">6.4.</span> <span class="nav-text">最佳实践与场景划分</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E4%BB%A3%E7%A0%81%E5%AF%B9%E6%AF%94"><span class="nav-number">6.5.</span> <span class="nav-text">实际代码对比</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">7.</span> <span class="nav-text">最佳实践</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

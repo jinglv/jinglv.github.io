@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangGraph学习笔记第三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangGraph之记忆">
+<meta property="og:url" content="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/3-langgraph-memory/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangGraph学习笔记第三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917142203967.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251030143301189.png">
+<meta property="article:published_time" content="2025-09-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-09-17T06:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangGraph">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917142203967.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/3-langgraph-memory/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangGraph之记忆 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/3-langgraph-memory/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangGraph之记忆
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-09-17 00:00:00 / 修改时间：14:30:00" itemprop="dateCreated datePublished" datetime="2025-09-17T00:00:00+08:00">2025-09-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangGraph/" itemprop="url" rel="index"><span itemprop="name">LangGraph</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangGraph学习笔记第三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="记忆"><a href="#记忆" class="headerlink" title="记忆"></a>记忆</h1><h2 id="记忆的重要性"><a href="#记忆的重要性" class="headerlink" title="记忆的重要性"></a>记忆的重要性</h2><ul>
+<li><strong>记忆的定义</strong>：记忆是一个系统，用于记住之前的交互信息。</li>
+<li><strong>对AI代理的重要性</strong>：对于AI代理来说，记忆至关重要。它使代理能够记住之前的交互，从反馈中学习，并适应用户的偏好。当代理处理更复杂的任务和大量用户交互时，这种能力对于提高效率和用户满意度变得必不可少。</li>
+</ul>
+<h2 id="LangGraph框架中有两种类型的记忆"><a href="#LangGraph框架中有两种类型的记忆" class="headerlink" title="LangGraph框架中有两种类型的记忆"></a>LangGraph框架中有两种类型的记忆</h2><ul>
+<li><strong>短期记忆（Short-term memory）定义</strong>：短期记忆，也称为<strong>线程范围</strong>（内存、持久化—文件系统、数据库等）内的记忆，通过在会话中维护消息历史来跟踪正在进行的对话。<strong>注意：是以线程为单位，则代码中要设置线程id</strong>。<ul>
+<li><strong>管理方式</strong>：LangGraph将短期记忆作为代理状态的一部分进行管理。状态通过检查点（<strong>checkpointer</strong>）持久化到数据库中，以便随时恢复线程。当图被调用或完成一个步骤时，短期记忆会更新，并且在每个步骤开始时读取状态。</li>
+</ul>
+</li>
+<li><strong>长期记忆（Long-term memory）定义</strong>：长期记忆存储<strong>跨会话</strong>（跨线程）的用户特定或应用级别的数据，并且可以在任何线程中共享和随时回忆。记忆可以被限定在任何自定义的命名空间内，而不仅仅是一个单独的线程ID。本质：将需要的有价值的信息存入数据库中（全文数据库 —关键字检索、向量数据库 — 相似性检索）<ul>
+<li><strong>管理方式</strong>：LangGraph提供了存储（<strong>stores</strong>）来让你保存和回忆长期记忆。</li>
+<li>生产使用方式：定义嵌入模型、定义向量数据库，基于Langgraph提供的接口完成记忆的入库及查询</li>
+<li>长期记忆默认的数据入库和查询，都需要手动完成</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917142203967.png" alt="image-20250917142203967" style="zoom:50%;" /></p>
+<h1 id="短期记忆"><a href="#短期记忆" class="headerlink" title="短期记忆"></a>短期记忆</h1><h2 id="短期记忆代码Langchain智能体示例"><a href="#短期记忆代码Langchain智能体示例" class="headerlink" title="短期记忆代码Langchain智能体示例"></a>短期记忆代码Langchain智能体示例</h2><p>官方示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.postgres <span class="keyword">import</span> PostgresSaver  </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">DB_URI = <span class="string">&quot;postgresql://postgres:postgres@localhost:5442/postgres?sslmode=disable&quot;</span></span><br><span class="line"><span class="keyword">with</span> PostgresSaver.from_conn_string(DB_URI) <span class="keyword">as</span> checkpointer:</span><br><span class="line">    checkpointer.setup() <span class="comment"># auto create tables in PostgresSql</span></span><br><span class="line">    agent = create_agent(</span><br><span class="line">        <span class="string">&quot;gpt-5&quot;</span>,</span><br><span class="line">        tools=[get_user_info],</span><br><span class="line">        checkpointer=checkpointer,  </span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+<p>需要安装依赖：<code>pip install langgraph-checkpoint-postgres</code></p>
+<p>根据官方示例，来讲解，以postgresql做存储，示例代码如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/29 16:34</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.postgres <span class="keyword">import</span> PostgresSaver</span><br><span class="line"><span class="keyword">from</span> psycopg_pool <span class="keyword">import</span> ConnectionPool</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">DB_URI = <span class="string">&quot;postgresql://postgres:12345678@localhost:15432/langgraph_db?sslmode=disable&amp;keepalives=1&amp;keepalives_idle=30&amp;keepalives_interval=10&amp;keepalives_count=5&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用连接池提高稳定性，防止远程连接断开</span></span><br><span class="line"><span class="keyword">with</span> ConnectionPool(conninfo=DB_URI, max_size=<span class="number">10</span>, check=ConnectionPool.check_connection) <span class="keyword">as</span> pool:</span><br><span class="line">    checkpointer = PostgresSaver(pool)</span><br><span class="line">    <span class="comment"># 创建初始化表，只需要执行一次</span></span><br><span class="line">    <span class="comment"># checkpointer.setup()</span></span><br><span class="line">    agent = create_agent(</span><br><span class="line">        model_client,</span><br><span class="line">        [],</span><br><span class="line">        checkpointer=checkpointer,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    config = &#123;</span><br><span class="line">        <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你好，我是小花&quot;</span>&#125;]&#125;,</span><br><span class="line">            config,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span></span><br><span class="line">    ):</span><br><span class="line">        chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br><span class="line">    config = &#123;</span><br><span class="line">        <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是谁？&quot;</span>&#125;]&#125;,</span><br><span class="line">            config,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span></span><br><span class="line">    ):</span><br><span class="line">        chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">================================ Human Message =================================</span><br><span class="line"></span><br><span class="line">你好，我是小花</span><br><span class="line">================================== Ai Message ==================================</span><br><span class="line"></span><br><span class="line">你好，小花！🌸  </span><br><span class="line">很高兴再次见到你～  </span><br><span class="line">今天有什么想和我聊聊的吗？无论是分享心情、讨论问题，还是需要帮助，我都在这里呢！ 😊</span><br><span class="line">================================ Human Message =================================</span><br><span class="line"></span><br><span class="line">我是谁？</span><br><span class="line">================================== Ai Message ==================================</span><br><span class="line"></span><br><span class="line">你好！😊  </span><br><span class="line">在我们的对话中，你一直告诉我你的名字是**小花**，所以我始终用这个名字来称呼你。  </span><br><span class="line"></span><br><span class="line">如果“我是谁”这个问题指向**更深层的自我探索**——比如：  </span><br><span class="line">- 你可能是一个正在思考自我定义的人；  </span><br><span class="line">- 你可能在寻找身份、目标或生命意义的答案；  </span><br><span class="line">- 你也可能是一个喜欢用重复对话测试AI的可爱用户～  </span><br><span class="line"></span><br><span class="line">无论哪种情况，我都很愿意陪你聊聊：  </span><br><span class="line">如果你有具体困惑，我们可以一起梳理；  </span><br><span class="line">如果你只是需要确认，那么我的答案是：**你是小花，而我是DeepSeek，你的AI伙伴**。  </span><br></pre></td></tr></table></figure>
+<p>其中代码智能体创建</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">agent = create_agent(</span><br><span class="line">       model_client,</span><br><span class="line">       [],</span><br><span class="line">       checkpointer=checkpointer,</span><br><span class="line">   )</span><br></pre></td></tr></table></figure>
+<p>参数<strong>checkpointer</strong>详解：</p>
+<ul>
+<li>类型：检查点保存器对象或标志（flag）</li>
+<li>作用：如果提供了检查点保存器，它将作为图的版本化“短期记忆”，允许图在任意点暂停、恢复和重放。</li>
+<li>不同取值：<ul>
+<li>如果为<code>None</code>，当该图作为子图使用时，可能会继承父图的检查点保存器。</li>
+<li>如果为<code>False</code>，则不会使用也不会继承任何检查点保存器。</li>
+</ul>
+</li>
+</ul>
+<p>如果去掉checkpointer参数，则执行的结果为</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">================================ Human Message =================================</span><br><span class="line"></span><br><span class="line">你好，我是小花</span><br><span class="line">================================== Ai Message ==================================</span><br><span class="line"></span><br><span class="line">你好呀，小花！🌼 这个名字真好听，充满了春天的气息呢～很高兴认识你！今天有什么想聊的，或者需要我帮忙的事情吗？无论是学习、生活还是想分享小故事，我都在这儿听着呢✨</span><br><span class="line">================================ Human Message =================================</span><br><span class="line"></span><br><span class="line">我是谁？</span><br><span class="line">================================== Ai Message ==================================</span><br><span class="line"></span><br><span class="line">很抱歉，我无法直接知道您的身份信息。我是DeepSeek助手，每次对话对我来说都是全新的开始，我无法获取您的个人信息，比如姓名、身份或历史对话记录。</span><br><span class="line"></span><br><span class="line">不过，从我们的对话中，我可以知道您是一位正在与我交流的用户。如果您愿意告诉我一些关于您的信息，比如您的兴趣爱好、今天想讨论的问题，或者需要我帮助解决什么困难，我会很乐意更好地为您服务！😊</span><br><span class="line"></span><br><span class="line">有什么特别想聊的话题或者需要我帮助的地方吗？我很期待能够为您提供有用的帮助！</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>那么短期记忆就无效了，AI不知道我上次说的内容。</p>
+<h2 id="短期记忆代码Langgraph图示例"><a href="#短期记忆代码Langgraph图示例" class="headerlink" title="短期记忆代码Langgraph图示例"></a>短期记忆代码Langgraph图示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/29 17:26</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.postgres <span class="keyword">import</span> PostgresSaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> MessagesState, StateGraph, START</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">DB_URI = <span class="string">&quot;postgresql://postgres:12345678@localhost:15432/langgraph_db?sslmode=disable&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> PostgresSaver.from_conn_string(DB_URI) <span class="keyword">as</span> checkpointer:</span><br><span class="line">    <span class="comment"># 创建初始化表</span></span><br><span class="line">    <span class="comment"># checkpointer.setup()</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">call_model</span>(<span class="params">state: MessagesState</span>):</span><br><span class="line">        response = model_client.invoke(state[<span class="string">&quot;messages&quot;</span>])</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: response&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    builder = StateGraph(MessagesState)</span><br><span class="line">    builder.add_node(call_model)</span><br><span class="line">    builder.add_edge(START, <span class="string">&quot;call_model&quot;</span>)</span><br><span class="line"></span><br><span class="line">    graph = builder.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line">    config = &#123;</span><br><span class="line">        <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;2&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你好，我是小红&quot;</span>&#125;]&#125;,</span><br><span class="line">            config,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span></span><br><span class="line">    ):</span><br><span class="line">        chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是谁？&quot;</span>&#125;]&#125;,</span><br><span class="line">            config,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span></span><br><span class="line">    ):</span><br><span class="line">        chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">================================ Human Message =================================</span><br><span class="line"></span><br><span class="line">你好，我是小红</span><br><span class="line">================================== Ai Message ==================================</span><br><span class="line"></span><br><span class="line">你好，小红！😊  </span><br><span class="line">很高兴认识你～谢谢您告诉我这个称呼，我会记住的，之后就用“小红”来称呼你。  </span><br><span class="line"></span><br><span class="line">今天有什么想聊的，或者需要我帮忙的事情吗？无论是学习、工作、生活，还是随便聊聊，我都很乐意～</span><br><span class="line">================================ Human Message =================================</span><br><span class="line"></span><br><span class="line">我是谁？</span><br><span class="line">================================== Ai Message ==================================</span><br><span class="line"></span><br><span class="line">你是小红。这是我目前知道的、你告诉我的名字。如果你希望我调整这个称呼，请随时告诉我。  </span><br><span class="line"></span><br><span class="line">当然，如果这个问题指向更深层的自我认知——  </span><br><span class="line">从对话的此刻来看，你是：  </span><br><span class="line">1️⃣ 一个拥有独特身份和经历的人  </span><br><span class="line">2️⃣ 正在与AI交流的探索者  </span><br><span class="line">3️⃣ 会思考“我是谁”的自觉存在  </span><br><span class="line"></span><br><span class="line">需要我陪你聊聊身份、记忆，或任何其他话题吗？ 🌟</span><br></pre></td></tr></table></figure>
+<p>以上示例是将记忆存储到postgresql数据库中，也可以将记忆存储到内存中，代码示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/29 17:26</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver  <span class="comment"># 这是一个短期记忆的存储类，它将记忆存储在内存中。这意味着记忆只在当前会话中有效，当程序重启后，记忆会丢失。</span></span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> MessagesState, StateGraph, START</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">call_model</span>(<span class="params">state: MessagesState</span>):</span><br><span class="line">    response = model_client.invoke(state[<span class="string">&quot;messages&quot;</span>])</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: response&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(MessagesState)</span><br><span class="line">builder.add_node(call_model)</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;call_model&quot;</span>)</span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()  <span class="comment"># 创建了一个InMemorySaver的实例，用于管理短期记忆。</span></span><br><span class="line"></span><br><span class="line">graph = builder.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line">config = &#123;</span><br><span class="line">    <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;2&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">        &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你好，我是小红&quot;</span>&#125;]&#125;,</span><br><span class="line">        config,</span><br><span class="line">        stream_mode=<span class="string">&quot;values&quot;</span></span><br><span class="line">):</span><br><span class="line">    chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">        &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是谁？&quot;</span>&#125;]&#125;,</span><br><span class="line">        config,</span><br><span class="line">        stream_mode=<span class="string">&quot;values&quot;</span></span><br><span class="line">):</span><br><span class="line">    chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="Trim-Messages-修剪消息"><a href="#Trim-Messages-修剪消息" class="headerlink" title="Trim Messages(修剪消息)"></a>Trim Messages(修剪消息)</h2><p>当消息历史（即对话中的所有消息）的token数量接近或超过模型的最大上下文窗口时，就需要对消息历史进行修剪，以确保模型能够正常处理输入。如果不进行修剪，模型可能会因为上下文窗口溢出而无法正确理解或生成响应。</p>
+<p>代码示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/30 08:43</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.messages.utils <span class="keyword">import</span> trim_messages <span class="keyword">as</span> trim_messages_util, count_tokens_approximately</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model</span><br><span class="line"><span class="keyword">from</span> langgraph.graph.message <span class="keyword">import</span> REMOVE_ALL_MESSAGES</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> RemoveMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">trim_messages</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Keep only the last few messages to fit context window.&quot;&quot;&quot;</span></span><br><span class="line">    messages = state[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line"></span><br><span class="line">    trimmed_messages = trim_messages_util(</span><br><span class="line">        messages,</span><br><span class="line">        strategy=<span class="string">&quot;last&quot;</span>,  <span class="comment"># 裁剪策略</span></span><br><span class="line">        token_counter=count_tokens_approximately,  <span class="comment"># 计算token数的方法</span></span><br><span class="line">        max_tokens=<span class="number">384</span>,  <span class="comment"># 最大token数</span></span><br><span class="line">        start_on=<span class="string">&quot;human&quot;</span>,  <span class="comment"># 从human消息开始裁剪</span></span><br><span class="line">        end_on=(<span class="string">&quot;human&quot;</span>, <span class="string">&quot;tool&quot;</span>),  <span class="comment"># 裁剪结束的</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            RemoveMessage(<span class="built_in">id</span>=REMOVE_ALL_MESSAGES),</span><br><span class="line">            *trimmed_messages</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    tools=[],</span><br><span class="line">    middleware=[trim_messages],</span><br><span class="line">    checkpointer=checkpointer,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="comment"># Stream the agent</span></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">for</span> chunk <span class="keyword">in</span> agent.astream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;写一首关于冬天的文言文&quot;</span>&#125;]&#125;,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span>,</span><br><span class="line">            config=config</span><br><span class="line">    ):</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;messages&quot;</span> <span class="keyword">in</span> chunk:</span><br><span class="line">            chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line">            </span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">for</span> chunk <span class="keyword">in</span> agent.astream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;再一首夏天的&quot;</span>&#125;]&#125;,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span>,</span><br><span class="line">            config=config</span><br><span class="line">    ):</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;messages&quot;</span> <span class="keyword">in</span> chunk:</span><br><span class="line">            chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    asyncio.run(main())</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="Delete-Messages-删除消息"><a href="#Delete-Messages-删除消息" class="headerlink" title="Delete Messages(删除消息)"></a>Delete Messages(删除消息)</h2><p>你可以从图状态中删除消息以管理消息历史。这在你想要删除特定消息或者清除整个消息历史时非常有用。</p>
+<p>要从图状态中删除消息，你可以使用RemoveMessage。为了让RemoveMessage能够正常工作，你需要使用带有add_messages归并器的状态键，例如MessagesState。</p>
+<p>示例代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/30 14:22</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> RemoveMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> MessagesState, StateGraph, START</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete_messages</span>(<span class="params">state</span>):</span><br><span class="line">    messages = state[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(messages) &gt; <span class="number">2</span>:</span><br><span class="line">        <span class="comment"># 删除前两个消息</span></span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [RemoveMessage(<span class="built_in">id</span>=m.<span class="built_in">id</span>) <span class="keyword">for</span> m <span class="keyword">in</span> messages[:<span class="number">2</span>]]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">call_model</span>(<span class="params">state: MessagesState</span>):</span><br><span class="line">    response = model_client.invoke(state[<span class="string">&quot;messages&quot;</span>])</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: response&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(MessagesState)</span><br><span class="line">builder.add_sequence([call_model, delete_messages])</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;call_model&quot;</span>)</span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">app = builder.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line"><span class="keyword">for</span> event <span class="keyword">in</span> app.stream(</span><br><span class="line">        &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是红红&quot;</span>&#125;]&#125;,</span><br><span class="line">        config,</span><br><span class="line">        stream_mode=<span class="string">&quot;values&quot;</span></span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>([(message.<span class="built_in">type</span>, message.content) <span class="keyword">for</span> message <span class="keyword">in</span> event[<span class="string">&quot;messages&quot;</span>]])</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> event <span class="keyword">in</span> app.stream(</span><br><span class="line">        &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是谁?&quot;</span>&#125;]&#125;,</span><br><span class="line">        config,</span><br><span class="line">        stream_mode=<span class="string">&quot;values&quot;</span></span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>([(message.<span class="built_in">type</span>, message.content) <span class="keyword">for</span> message <span class="keyword">in</span> event[<span class="string">&quot;messages&quot;</span>]])</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><strong>删除消息需要注意</strong>：</p>
+<p>当你在处理（比如删除）消息记录时，要确保剩下的消息记录符合逻辑和规则。因为不同的语言模型（LLM）提供商可能有各自的限制和要求。比如，有的提供商规定消息记录的开头必须是用户发出的消息；还有的提供商要求，如果助手的消息中包含了对某个工具的调用，那么在消息记录中，这个助手消息后面必须紧跟着该工具调用的结果消息。</p>
+<h2 id="Summarize-messages-消息总结"><a href="#Summarize-messages-消息总结" class="headerlink" title="Summarize messages(消息总结)"></a>Summarize messages(消息总结)</h2><p>以上的对消息进行修剪或删除的方法，可能会导致信息丢失。因为这些操作会减少消息队列中的消息数量，而这些被移除的消息可能包含一些重要的信息。鉴于上述问题，一些应用程序会采用一种更复杂、更高级的方法来解决，即利用<strong>聊天模型对消息历史进行总结</strong>。通过这种方式，可以在不丢失重要信息的前提下，对大量的消息进行有效的管理和处理，从而更好地支持应用程序的功能和性能。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251030143301189.png" alt="image-20251030143301189" style="zoom:50%;" /></p>
+<p>该代码示例用到了LangMem，这个会在后续详细讲解，需要安装依赖：<code>pip install -U langmem</code></p>
+<p>示例代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/30 14:33</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> AgentState, create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> RemoveMessage</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages.utils <span class="keyword">import</span> count_tokens_approximately</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph.message <span class="keyword">import</span> REMOVE_ALL_MESSAGES</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"><span class="keyword">from</span> langmem.short_term <span class="keyword">import</span> SummarizationNode, RunningSummary</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">summarization_node = SummarizationNode(</span><br><span class="line">    token_counter=count_tokens_approximately,</span><br><span class="line">    model=model_client,</span><br><span class="line">    max_tokens=<span class="number">384</span>,</span><br><span class="line">    max_summary_tokens=<span class="number">128</span>,</span><br><span class="line">    output_messages_key=<span class="string">&quot;llm_input_messages&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">AgentState</span>):</span><br><span class="line">    <span class="comment"># <span class="doctag">NOTE:</span> we&#x27;re adding this key to keep track of previous summary information</span></span><br><span class="line">    <span class="comment"># to make sure we&#x27;re not summarizing on every LLM call</span></span><br><span class="line">    context: <span class="built_in">dict</span>[<span class="built_in">str</span>, RunningSummary]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">summarize_messages</span>(<span class="params">state: State, runtime: Runtime</span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    result: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span> = summarization_node.invoke(state)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> result <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    llm_messages = (</span><br><span class="line">        result.get(<span class="string">&quot;llm_input_messages&quot;</span>)</span><br><span class="line">        <span class="keyword">or</span> result.get(<span class="string">&quot;summarized_messages&quot;</span>)</span><br><span class="line">        <span class="keyword">or</span> result.get(<span class="string">&quot;messages&quot;</span>)</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    updates = <span class="built_in">dict</span>(result)</span><br><span class="line">    <span class="keyword">if</span> llm_messages <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        updates.pop(<span class="string">&quot;llm_input_messages&quot;</span>, <span class="literal">None</span>)</span><br><span class="line">        updates.pop(<span class="string">&quot;summarized_messages&quot;</span>, <span class="literal">None</span>)</span><br><span class="line">        updates[<span class="string">&quot;messages&quot;</span>] = [RemoveMessage(<span class="built_in">id</span>=REMOVE_ALL_MESSAGES), *llm_messages]</span><br><span class="line">    <span class="keyword">return</span> updates</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model_client,</span><br><span class="line">    tools=[],</span><br><span class="line">    middleware=[summarize_messages],</span><br><span class="line">    state_schema=State,</span><br><span class="line">    checkpointer=checkpointer,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="comment"># Stream the agent</span></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">for</span> chunk <span class="keyword">in</span> agent.astream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;写一首关于冬天的文言文&quot;</span>&#125;]&#125;,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span>,</span><br><span class="line">            config=config</span><br><span class="line">    ):</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;messages&quot;</span> <span class="keyword">in</span> chunk:</span><br><span class="line">            chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">for</span> chunk <span class="keyword">in</span> agent.astream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;再一首夏天的&quot;</span>&#125;]&#125;,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span>,</span><br><span class="line">            config=config</span><br><span class="line">    ):</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;messages&quot;</span> <span class="keyword">in</span> chunk:</span><br><span class="line">            chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    asyncio.run(main())</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>代码使用到参数详解：</p>
+<ul>
+<li>参数：<strong>max_tokens</strong><ul>
+<li>含义：这是最终输出中返回的最大标记数量。也就是说，经过所有处理（包括总结）后，最终返回的消息列表中，所有消息的标记总数不能超过这个值。</li>
+<li>作用：它主要用于限制最终输出的大小，确保输出不会过于庞大，适合输入到后续的模型中。</li>
+</ul>
+</li>
+<li>参数：<strong>max_tokens_before_summary</strong><ul>
+<li>含义：这是在触发总结之前累积的最大标记数量。也就是说，当处理消息时，一旦累积的消息标记数量达到这个值，就会触发总结操作。</li>
+<li>作用：它用于控制何时进行总结，避免一次性处理过多的消息，从而确保总结的效率和质量。</li>
+</ul>
+</li>
+<li>参数：<strong>max_summary_tokens</strong><ul>
+<li>含义：这是为总结预算的最大标记数量。也就是说，生成的总结消息本身的最大标记数量不能超过这个值。</li>
+<li>作用：它用于控制总结的长度，确保总结不会过于冗长，同时也能保证总结的简洁性和信息密度。</li>
+</ul>
+</li>
+</ul>
+<p>使用Langgraph图的示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/30 14:49</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> AnyMessage</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages.utils <span class="keyword">import</span> count_tokens_approximately</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START, MessagesState</span><br><span class="line"><span class="keyword">from</span> langmem.short_term <span class="keyword">import</span> SummarizationNode, RunningSummary</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">summarization_model = model_client.bind(max_tokens=<span class="number">128</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">MessagesState</span>):</span><br><span class="line">    context: <span class="built_in">dict</span>[<span class="built_in">str</span>, RunningSummary]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LLMInputState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    summarized_messages: <span class="built_in">list</span>[AnyMessage]</span><br><span class="line">    context: <span class="built_in">dict</span>[<span class="built_in">str</span>, RunningSummary]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># max_tokens：控制最终输出的大小，确保输出不会超过这个限制。</span></span><br><span class="line"><span class="comment"># max_tokens_before_summary：控制何时触发总结，避免一次性处理过多消息。</span></span><br><span class="line"><span class="comment"># max_summary_tokens：控制总结消息的长度，确保总结不会过于冗长。</span></span><br><span class="line"><span class="comment"># 这三个参数共同作用，确保在处理大量消息时，既能有效地进行总结，又能保证最终输出的大小在可控范围内。</span></span><br><span class="line">summarization_node = SummarizationNode(</span><br><span class="line">    token_counter=count_tokens_approximately,</span><br><span class="line">    model=summarization_model,</span><br><span class="line">    max_tokens=<span class="number">256</span>,</span><br><span class="line">    max_tokens_before_summary=<span class="number">256</span>,</span><br><span class="line">    max_summary_tokens=<span class="number">128</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">call_model</span>(<span class="params">state: LLMInputState</span>):</span><br><span class="line">    response = model_client.invoke(state[<span class="string">&quot;summarized_messages&quot;</span>])</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [response]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">builder = StateGraph(State)</span><br><span class="line">builder.add_node(call_model)</span><br><span class="line">builder.add_node(<span class="string">&quot;summarize&quot;</span>, summarization_node)</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;summarize&quot;</span>)</span><br><span class="line">builder.add_edge(<span class="string">&quot;summarize&quot;</span>, <span class="string">&quot;call_model&quot;</span>)</span><br><span class="line">graph = builder.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Invoke the graph</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;我的名字是小花&quot;</span>&#125;, config)</span><br><span class="line">graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;写一首关于猫的短诗&quot;</span>&#125;, config)</span><br><span class="line">graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;对狗也做同样的操作&quot;</span>&#125;, config)</span><br><span class="line">response = graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;我的名字是什么？&quot;</span>&#125;, config)</span><br><span class="line"></span><br><span class="line">response[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h1 id="长期记忆"><a href="#长期记忆" class="headerlink" title="长期记忆"></a>长期记忆</h1><h2 id="基本使用"><a href="#基本使用" class="headerlink" title="基本使用"></a>基本使用</h2><h3 id="记忆存储"><a href="#记忆存储" class="headerlink" title="记忆存储"></a>记忆存储</h3><h4 id="1-创建-Memory-Store"><a href="#1-创建-Memory-Store" class="headerlink" title="1. 创建 Memory Store"></a>1. 创建 Memory Store</h4><p>Store 使用 langgraph 中的存储器InMemoryStore 来创建：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"></span><br><span class="line">in_memory_store = InMemoryStore()</span><br></pre></td></tr></table></figure>
+<h4 id="2-命名空间-Namespace"><a href="#2-命名空间-Namespace" class="headerlink" title="2. 命名空间 Namespace"></a>2. 命名空间 Namespace</h4><p>命名空间用于隔离不同用户/不同类型的记忆，通常以 tuple 表示 </p>
+<p>命名空间可以是任意长度，代表任何事物，不必是特定用户的。<strong>tuple</strong> <strong>(<user_id>, “memories”)</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">user_id = <span class="string">&quot;1&quot;</span></span><br><span class="line">namespace_for_memory = (user_id, <span class="string">&quot;memories&quot;</span>)</span><br></pre></td></tr></table></figure>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>用例</th>
+<th>命名空间示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>多用户系统</td>
+<td><code>(&quot;user123&quot;, &quot;memories&quot;)</code></td>
+</tr>
+<tr>
+<td>测试 Agent</td>
+<td><code>(&quot;agent&quot;, &quot;test_cases&quot;)</code></td>
+</tr>
+<tr>
+<td>API 历史</td>
+<td><code>(&quot;api&quot;, &quot;call_history&quot;)</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id="3-存储记忆（put）"><a href="#3-存储记忆（put）" class="headerlink" title="3. 存储记忆（put）"></a>3. 存储记忆（put）</h4><p>我们用这种方法把记忆保存到商店的命名空间。在此过程中，我们指定了上述定义的命名空间和内存的键值对：键仅是内存的唯一标识符（），值（字典）即存储器本身。<strong>store.put</strong> <strong>memory_id</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">memory_id = <span class="built_in">str</span>(uuid.uuid4())</span><br><span class="line">memory = &#123;<span class="string">&quot;food_preference&quot;</span> : <span class="string">&quot;I like pizza&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line">user_id = <span class="string">&quot;1&quot;</span></span><br><span class="line">namespace_for_memory = (user_id, <span class="string">&quot;memories&quot;</span>)</span><br><span class="line"></span><br><span class="line">in_memory_store.put(namespace_for_memory, memory_id, memory)</span><br></pre></td></tr></table></figure>
+<h3 id="记忆读取"><a href="#记忆读取" class="headerlink" title="记忆读取"></a>记忆读取</h3><h4 id="1-通过-id-获取记忆"><a href="#1-通过-id-获取记忆" class="headerlink" title="1.通过 id 获取记忆"></a>1.通过 id 获取记忆</h4><p>通过 记忆的 id 获取命名空间中的具体某一条记忆</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 传入命名空间和 记忆id</span></span><br><span class="line">item = store.get(namespace, <span class="string">&quot;memory_id&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h4 id="2-检索记忆（search）"><a href="#2-检索记忆（search）" class="headerlink" title="2.检索记忆（search）"></a>2.检索记忆（search）</h4><p>我们可以用<strong>store.search</strong>方法读取命名空间中的记忆，该方法会以列表形式返回给定用户的所有记忆。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">memories = in_memory_store.search(namespace_for_memory)</span><br></pre></td></tr></table></figure>
+<p>每种内存类型都是一个带有特定属性的 Python 类（<a target="_blank" rel="noopener" href="https://langchain-ai.github.io/langgraph/reference/store/#langgraph.store.base.Item">Item</a>）。我们可以通过上述方式转换，作为词典访问。<strong>.dict</strong>它具备以下特征：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>value</strong></td>
+<td>实际存储的数据（dict）</td>
+</tr>
+<tr>
+<td><strong>key</strong></td>
+<td>该命名空间内的唯一 ID</td>
+</tr>
+<tr>
+<td><strong>namespace</strong></td>
+<td>命名空间，字符串列表</td>
+</tr>
+<tr>
+<td><strong>created_at</strong></td>
+<td>创建时间</td>
+</tr>
+<tr>
+<td><strong>updated_at</strong></td>
+<td>更新（修改）时间</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="Memory-Types"><a href="#Memory-Types" class="headerlink" title="Memory Types"></a>Memory Types</h2><p>官方地址说明：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/javascript/concepts/memory">https://docs.langchain.com/oss/javascript/concepts/memory</a></p>
+<ul>
+<li>不同的应用场景需要不同类型的记忆。这意味着根据具体的应用需求，AI代理需要具备不同种类的记忆能力，以便更好地完成任务</li>
+<li>尽管这种类比并不完美，但研究人类记忆的类型可以提供一些有价值的见解。这里提到人类记忆的类型可以为设计AI代理的记忆系统提供参考和启发。</li>
+<li>一些研究（例如CoALA论文）甚至已经将人类记忆的类型映射到AI代理所使用的记忆类型上。在AI领域，人们已经开始借鉴人类记忆的分类方式来构建和优化AI代理的记忆系统。</li>
+</ul>
+<p>三种类型如下：</p>
+<ul>
+<li><strong>Semantic Memory（语义记忆）What is Stored（存储内容）</strong>： Facts（事实）<ul>
+<li><strong>Human Example（人类例子）</strong>： Things I learned in school（我在学校学到的东西） 例如，你记得的数学公式、历史事件、科学概念等。</li>
+<li><strong>Agent Example（代理例子）</strong>： Facts about a user（关于用户的信息） 例如，AI代理可以记住用户的名字、偏好、过去的交互记录等，以便更好地个性化服务。</li>
+</ul>
+</li>
+<li><strong>Episodic Memory（情景记忆）What is Stored（存储内容）</strong>： Experiences（经历）<ul>
+<li><strong>Human Example（人类例子）</strong>： Things I did（我做过的事情） 例如，你记得的某次旅行、参加的活动、经历的事件等。</li>
+<li><strong>Agent Example（代理例子）</strong>： Past agent actions（代理过去的行动） 例如，AI代理可以记住它之前执行的任务、与用户的对话内容等，以便从中学习和改进。</li>
+</ul>
+</li>
+<li><strong>Procedural Memory（程序记忆）What is Stored（存储内容）</strong>： Instructions（指令）<ul>
+<li><strong>Human Example（人类例子）</strong>： Instincts or motor skills（本能或运动技能） 例如，你学会的骑自行车、打字、游泳等技能，这些技能通常不需要有意识地回忆，而是自动执行。</li>
+<li><strong>Agent Example（代理例子）</strong>： Agent system prompt（代理系统提示） 例如，AI代理的系统提示（system prompt）可以被视为程序记忆，它定义了代理的行为规则和任务执行方式。</li>
+</ul>
+</li>
+</ul>
+<p>示例代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/30 15:09</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.postgres <span class="keyword">import</span> PostgresSaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> MessagesState, StateGraph, START</span><br><span class="line"><span class="keyword">from</span> langgraph.store.base <span class="keyword">import</span> BaseStore</span><br><span class="line"><span class="keyword">from</span> langgraph.store.postgres <span class="keyword">import</span> PostgresStore</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">DB_URI = <span class="string">&quot;postgresql://postgres:12345678@localhost:15432/langgraph_db?sslmode=disable&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> (</span><br><span class="line">    PostgresStore.from_conn_string(DB_URI) <span class="keyword">as</span> store,</span><br><span class="line">    PostgresSaver.from_conn_string(DB_URI) <span class="keyword">as</span> checkpointer,</span><br><span class="line">):</span><br><span class="line">    <span class="comment"># 创建初始化，只需要首次执行一次</span></span><br><span class="line">    store.setup()</span><br><span class="line">    checkpointer.setup()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">call_model</span>(<span class="params"></span></span><br><span class="line"><span class="params">            state: MessagesState,</span></span><br><span class="line"><span class="params">            config: RunnableConfig,</span></span><br><span class="line"><span class="params">            *,</span></span><br><span class="line"><span class="params">            store: BaseStore,</span></span><br><span class="line"><span class="params">    </span>):</span><br><span class="line">        user_id = config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;user_id&quot;</span>]</span><br><span class="line">        <span class="comment"># thread_id = config[&quot;configurable&quot;][&quot;thread_id&quot;]</span></span><br><span class="line">        namespace = (<span class="string">&quot;memories&quot;</span>, user_id)  <span class="comment"># 命名空间</span></span><br><span class="line">        <span class="comment"># 全文检索</span></span><br><span class="line">        memories = store.search(namespace, query=<span class="built_in">str</span>(state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content))</span><br><span class="line">        info = <span class="string">&quot;\n&quot;</span>.join([d.value[<span class="string">&quot;data&quot;</span>] <span class="keyword">for</span> d <span class="keyword">in</span> memories])</span><br><span class="line">        system_msg = <span class="string">f&quot;You are a helpful assistant talking to the user. User info: <span class="subst">&#123;info&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># Store new memories if the user asks the model to remember</span></span><br><span class="line">        last_message = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;记住&quot;</span> <span class="keyword">in</span> last_message.content.lower():</span><br><span class="line">            memory = <span class="string">&quot;用户的名称是小花&quot;</span></span><br><span class="line">            store.put(namespace, <span class="built_in">str</span>(uuid.uuid4()), &#123;<span class="string">&quot;data&quot;</span>: memory&#125;)</span><br><span class="line"></span><br><span class="line">        response = model_client.invoke(</span><br><span class="line">            [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: system_msg&#125;] + state[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line">        )</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: response&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    builder = StateGraph(MessagesState)</span><br><span class="line">    builder.add_node(call_model)</span><br><span class="line">    builder.add_edge(START, <span class="string">&quot;call_model&quot;</span>)</span><br><span class="line"></span><br><span class="line">    graph = builder.<span class="built_in">compile</span>(</span><br><span class="line">        checkpointer=checkpointer,</span><br><span class="line">        store=store,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    config = &#123;</span><br><span class="line">        <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">            <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;记住，我是小花&quot;</span>&#125;]&#125;,</span><br><span class="line">            config,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span>,</span><br><span class="line">    ):</span><br><span class="line">        chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br><span class="line">    config = &#123;</span><br><span class="line">        <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">            <span class="string">&quot;user_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;what is my name?&quot;</span>&#125;]&#125;,</span><br><span class="line">            config,</span><br><span class="line">            stream_mode=<span class="string">&quot;values&quot;</span>,</span><br><span class="line">    ):</span><br><span class="line">        chunk[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="Semantic-Memory（语义记忆）"><a href="#Semantic-Memory（语义记忆）" class="headerlink" title="Semantic Memory（语义记忆）"></a>Semantic Memory（语义记忆）</h2><p>示例代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/30 15:15</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">语义记忆</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> langchain.embeddings <span class="keyword">import</span> init_embeddings</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> START, MessagesState, StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.store.base <span class="keyword">import</span> BaseStore</span><br><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">embeddings = init_embeddings(<span class="string">&quot;ollama:qwen3-embedding:8b&quot;</span>, base_url=<span class="string">&quot;http://localhost:11434&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 长期记忆的数据可以存储到向量数据库中</span></span><br><span class="line">store = InMemoryStore(</span><br><span class="line">    index=&#123;</span><br><span class="line">        <span class="string">&quot;embed&quot;</span>: embeddings,</span><br><span class="line">        <span class="string">&quot;dims&quot;</span>: <span class="number">4096</span>,</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 入库数据</span></span><br><span class="line">store.put((<span class="string">&quot;user_123&quot;</span>, <span class="string">&quot;memories&quot;</span>), <span class="string">&quot;1&quot;</span>, &#123;<span class="string">&quot;text&quot;</span>: <span class="string">&quot;我喜欢吃肉夹馍&quot;</span>&#125;)</span><br><span class="line">store.put((<span class="string">&quot;user_123&quot;</span>, <span class="string">&quot;memories&quot;</span>), <span class="string">&quot;2&quot;</span>, &#123;<span class="string">&quot;text&quot;</span>: <span class="string">&quot;我是一名软件工程师&quot;</span>&#125;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">chat</span>(<span class="params">state, *, store: BaseStore</span>):</span><br><span class="line">    <span class="comment"># 搜索</span></span><br><span class="line">    items = store.search(</span><br><span class="line">        (<span class="string">&quot;user_123&quot;</span>, <span class="string">&quot;memories&quot;</span>), query=state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content, limit=<span class="number">1</span></span><br><span class="line">    )</span><br><span class="line">    memories = <span class="string">&quot;\n&quot;</span>.join(item.value[<span class="string">&quot;text&quot;</span>] <span class="keyword">for</span> item <span class="keyword">in</span> items)</span><br><span class="line">    memories = <span class="string">f&quot;## Memories of user\n<span class="subst">&#123;memories&#125;</span>&quot;</span> <span class="keyword">if</span> memories <span class="keyword">else</span> <span class="string">&quot;&quot;</span></span><br><span class="line">    response = model_client.invoke(</span><br><span class="line">        [</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">f&quot;You are a helpful assistant.\n<span class="subst">&#123;memories&#125;</span>&quot;</span>&#125;,</span><br><span class="line">            *state[<span class="string">&quot;messages&quot;</span>],</span><br><span class="line">        ]</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [response]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">builder = StateGraph(MessagesState)</span><br><span class="line">builder.add_node(chat)</span><br><span class="line">builder.add_edge(START, <span class="string">&quot;chat&quot;</span>)</span><br><span class="line">graph = builder.<span class="built_in">compile</span>(store=store)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> message, metadata <span class="keyword">in</span> graph.stream(</span><br><span class="line">        <span class="built_in">input</span>=&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是一名python开发工程师，我该学习什么语言呢？&quot;</span>&#125;]&#125;,</span><br><span class="line">        stream_mode=<span class="string">&quot;messages&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(message.content, end=<span class="string">&quot;&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>使用PostgresStore的示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/30 15:15</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">语义记忆</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> langchain.embeddings <span class="keyword">import</span> init_embeddings</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> START, MessagesState, StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.store.base <span class="keyword">import</span> BaseStore</span><br><span class="line"><span class="keyword">from</span> langgraph.store.postgres <span class="keyword">import</span> PostgresStore</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">embeddings = init_embeddings(<span class="string">&quot;ollama:qwen3-embedding:8b&quot;</span>, base_url=<span class="string">&quot;https://ollama.guozhe.vip:8889&quot;</span>)</span><br><span class="line">DB_URI = <span class="string">&quot;postgresql://postgres:12345678@localhost:15432/langgraph_db?sslmode=disable&amp;keepalives=1&amp;keepalives_idle=30&amp;keepalives_interval=10&amp;keepalives_count=5&quot;</span></span><br><span class="line"><span class="keyword">with</span> PostgresStore.from_conn_string(</span><br><span class="line">        DB_URI,</span><br><span class="line">        index=&#123;</span><br><span class="line">            <span class="string">&quot;embed&quot;</span>: embeddings,</span><br><span class="line">            <span class="string">&quot;dims&quot;</span>: <span class="number">4096</span>,</span><br><span class="line">        &#125;,</span><br><span class="line">) <span class="keyword">as</span> store:</span><br><span class="line">    <span class="comment"># store.setup()</span></span><br><span class="line"></span><br><span class="line">    store.put((<span class="string">&quot;user_123&quot;</span>, <span class="string">&quot;memories&quot;</span>), <span class="string">&quot;1&quot;</span>, &#123;<span class="string">&quot;text&quot;</span>: <span class="string">&quot;我喜欢吃肉夹馍&quot;</span>&#125;)</span><br><span class="line">    store.put((<span class="string">&quot;user_123&quot;</span>, <span class="string">&quot;memories&quot;</span>), <span class="string">&quot;2&quot;</span>, &#123;<span class="string">&quot;text&quot;</span>: <span class="string">&quot;我是一名软件工程师&quot;</span>&#125;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">chat</span>(<span class="params">state, *, store: BaseStore</span>):</span><br><span class="line">        <span class="comment"># Search based on user&#x27;s last message</span></span><br><span class="line">        items = store.search(</span><br><span class="line">            (<span class="string">&quot;user_123&quot;</span>, <span class="string">&quot;memories&quot;</span>), query=state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content, limit=<span class="number">1</span></span><br><span class="line">        )</span><br><span class="line">        memories = <span class="string">&quot;\n&quot;</span>.join(item.value[<span class="string">&quot;text&quot;</span>] <span class="keyword">for</span> item <span class="keyword">in</span> items)</span><br><span class="line">        memories = <span class="string">f&quot;## Memories of user\n<span class="subst">&#123;memories&#125;</span>&quot;</span> <span class="keyword">if</span> memories <span class="keyword">else</span> <span class="string">&quot;&quot;</span></span><br><span class="line">        response = model_client.invoke(</span><br><span class="line">            [</span><br><span class="line">                &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">f&quot;You are a helpful assistant.\n<span class="subst">&#123;memories&#125;</span>&quot;</span>&#125;,</span><br><span class="line">                *state[<span class="string">&quot;messages&quot;</span>],</span><br><span class="line">            ]</span><br><span class="line">        )</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [response]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    builder = StateGraph(MessagesState)</span><br><span class="line">    builder.add_node(chat)</span><br><span class="line">    builder.add_edge(START, <span class="string">&quot;chat&quot;</span>)</span><br><span class="line">    graph = builder.<span class="built_in">compile</span>(store=store)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> message, metadata <span class="keyword">in</span> graph.stream(</span><br><span class="line">            <span class="built_in">input</span>=&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是一个吃货，非常喜欢吃各种食物&quot;</span>&#125;]&#125;,</span><br><span class="line">            stream_mode=<span class="string">&quot;messages&quot;</span>,</span><br><span class="line">    ):</span><br><span class="line">        <span class="built_in">print</span>(message.content, end=<span class="string">&quot;&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h1 id="LangMem"><a href="#LangMem" class="headerlink" title="LangMem"></a>LangMem</h1><p>官方文档：<a target="_blank" rel="noopener" href="https://langchain-ai.github.io/langmem/#installation">https://langchain-ai.github.io/langmem/#installation</a></p>
+<h2 id="功能讲解"><a href="#功能讲解" class="headerlink" title="功能讲解"></a>功能讲解</h2><ul>
+<li><strong>学习与适应</strong>：LangMem能够帮助智能代理（agents）从它们随时间的交互中学习并适应。这意味着代理可以根据与用户的互动经历来不断调整和优化自己的行为，以更好地满足用户的需求。</li>
+<li><strong>信息提取与行为优化</strong>：它提供了工具来从对话中提取重要信息，通过提示词优化来优化代理的行为，并维护长期记忆。例如，在对话过程中，代理可以识别出关键信息并将其存储起来，同时根据这些信息调整自己的回答方式，以更准确地回应用户。</li>
+<li><strong>存储系统兼容与集成</strong>：LangMem既提供了可以与任何存储系统一起使用的功能原语，还提供了与LangGraph存储层的本地集成。这使得代理能够灵活地选择存储方式，并且能够与LangGraph平台无缝协作，更好地管理和利用记忆数据。</li>
+</ul>
+<h2 id="核心特点"><a href="#核心特点" class="headerlink" title="核心特点"></a>核心特点</h2><ul>
+<li><strong>通用核心记忆API</strong>：提供了一个核心记忆API，可以与任何存储系统配合使用，这使得开发者可以根据自己的需求选择不同的存储解决方案，而无需担心与LangMem的兼容性问题。</li>
+<li><strong>对话中的记忆管理工具</strong>：代理可以使用这些工具在活跃对话期间记录和搜索信息，即在“热路径”中进行记忆管理。这允许代理在与用户交流的过程中实时地存储和检索信息，从而更自然地进行对话，并且能够根据之前的信息来做出更准确的回应。</li>
+<li><strong>后台记忆管理器</strong>：自动提取、整合和更新代理的知识。这个功能在后台运行，无需人工干预，能够帮助代理不断学习和更新自己的知识库，使其能够更好地理解和处理各种情况。</li>
+<li><strong>与LangGraph长期记忆存储的本地集成</strong>：在所有LangGraph平台部署中默认提供与LangGraph长期记忆存储的本地集成。这意味着代理可以方便地利用LangGraph提供的长期记忆存储功能，确保记忆数据的持久化和一致性，从而在不同的会话之间保持一致的行为。</li>
+</ul>
+<h2 id="作用"><a href="#作用" class="headerlink" title="作用"></a>作用</h2><ul>
+<li><strong>持续改进</strong>：通过不断学习和适应，代理能够持续改进自己的性能，更好地满足用户的需求。</li>
+<li><strong>个性化回应</strong>：代理可以根据存储的记忆信息，为用户提供个性化的回应，提高用户体验。</li>
+<li><strong>跨会话一致行为</strong>：确保代理在不同的会话中保持一致的行为，避免出现前后矛盾的情况，增强用户的信任感。</li>
+</ul>
+<p><strong>安装依赖</strong>：<code>pip install -U langmem</code></p>
+<h2 id="示例代码"><a href="#示例代码" class="headerlink" title="示例代码"></a>示例代码</h2><h3 id="示例1-—-Memory-Tools"><a href="#示例1-—-Memory-Tools" class="headerlink" title="示例1 — Memory Tools:"></a>示例1 — Memory Tools:</h3><ul>
+<li><strong>create_manage_memory_tool</strong> ：创建一个用于管理对话中持久记忆的工具。这个工具允许人工智能助手创建、更新和删除在对话之间持续存在的记忆。它有助于在不同会话中保持上下文和用户偏好。</li>
+<li><strong>create_search_memory_tool</strong> ：创建一个用于搜索存储在LangGraph BaseStore中的记忆的工具。这个工具允许人工智能助手通过语义或精确匹配的方式搜索之前存储的记忆。该工具会返回记忆内容以及原始记忆对象，以便于高级使用。</li>
+</ul>
+<p>示例代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/30 15:59</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain.embeddings <span class="keyword">import</span> init_embeddings</span><br><span class="line"><span class="keyword">from</span> langgraph.prebuilt <span class="keyword">import</span> create_react_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"><span class="keyword">from</span> langmem <span class="keyword">import</span> create_manage_memory_tool, create_search_memory_tool</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">embeddings = init_embeddings(<span class="string">&quot;ollama:qwen3-embedding:8b&quot;</span>, base_url=<span class="string">&quot;https://localhost:11434&quot;</span>)</span><br><span class="line"></span><br><span class="line">store = InMemoryStore(</span><br><span class="line">    index=&#123;</span><br><span class="line">        <span class="string">&quot;embed&quot;</span>: embeddings,</span><br><span class="line">        <span class="string">&quot;dims&quot;</span>: <span class="number">4096</span>,</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 自动入库和自动查询</span></span><br><span class="line">agent_a_tools = [</span><br><span class="line">    <span class="comment"># Write to agent-specific namespace 入库工具</span></span><br><span class="line">    create_manage_memory_tool(namespace=(<span class="string">&quot;memories&quot;</span>, <span class="string">&quot;team_a&quot;</span>, <span class="string">&quot;agent_a&quot;</span>)),</span><br><span class="line">    <span class="comment"># Read from shared team namespace 检索工具</span></span><br><span class="line">    create_search_memory_tool(namespace=(<span class="string">&quot;memories&quot;</span>, <span class="string">&quot;team_a&quot;</span>))</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># Agents with different prompts sharing read access</span></span><br><span class="line">agent_a = create_react_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    tools=agent_a_tools,</span><br><span class="line">    store=store,</span><br><span class="line">    prompt=<span class="string">&quot;You are a research assistant&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">s = agent_a.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是小花，请记住我的名字&quot;</span>&#125;]&#125;)</span><br><span class="line"><span class="built_in">print</span>(s)</span><br><span class="line">s = agent_a.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是谁？&quot;</span>&#125;]&#125;)</span><br><span class="line"><span class="built_in">print</span>(s)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create tools for agent B with different write space</span></span><br><span class="line">agent_b_tools = [</span><br><span class="line">    create_manage_memory_tool(namespace=(<span class="string">&quot;memories&quot;</span>, <span class="string">&quot;team_a&quot;</span>)),</span><br><span class="line">    create_search_memory_tool(namespace=(<span class="string">&quot;memories&quot;</span>, <span class="string">&quot;team_a&quot;</span>))</span><br><span class="line">]</span><br><span class="line">agent_b = create_react_agent(</span><br><span class="line">    model_client,</span><br><span class="line">    tools=agent_b_tools,</span><br><span class="line">    store=store,</span><br><span class="line">    prompt=<span class="string">&quot;You are a report writer.&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">s = agent_b.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是小花，请记住我的名字&quot;</span>&#125;]&#125;)</span><br><span class="line"><span class="built_in">print</span>(s)</span><br><span class="line">s = agent_b.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我是谁？&quot;</span>&#125;]&#125;)</span><br><span class="line"><span class="built_in">print</span>(s)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="示例2-—-Memory-Management"><a href="#示例2-—-Memory-Management" class="headerlink" title="示例2 — Memory Management:"></a>示例2 — Memory Management:</h3><ul>
+<li><strong>create_memory_manager</strong><ul>
+<li><strong>功能</strong>：创建一个内存管理器，用于处理对话消息并生成结构化的内存条目。该函数创建一个异步可调用对象，能够分析对话消息和现有内存，以生成或更新结构化的内存条目。它可以识别对话中的隐含偏好、重要上下文和关键信息，并将它们组织成结构良好的内存，用于改善未来的交互。</li>
+<li><strong>支持的内存类型</strong>：支持无结构的基于字符串的内存以及由 Pydantic 模型定义的结构化内存，所有这些内存都会自动持久化到配置的存储中。</li>
+</ul>
+</li>
+<li><strong>create_memory_store_manager</strong><ul>
+<li><strong>功能</strong>：丰富配置的 BaseStore 中存储的内存。该系统会自动搜索相关的内存，提取新信息，更新现有的内存，并维护所有更改的版本历史</li>
+</ul>
+</li>
+</ul>
+<p>示例代码如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/30 16:02</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain.embeddings <span class="keyword">import</span> init_embeddings</span><br><span class="line"><span class="keyword">from</span> langgraph.func <span class="keyword">import</span> entrypoint</span><br><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"><span class="keyword">from</span> langmem <span class="keyword">import</span> create_memory_store_manager</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> src.core.llms <span class="keyword">import</span> model_client</span><br><span class="line"></span><br><span class="line">embeddings = init_embeddings(<span class="string">&quot;ollama:qwen3-embedding:8b&quot;</span>, base_url=<span class="string">&quot;https://ollama.guozhe.vip:8889&quot;</span>)</span><br><span class="line">store = InMemoryStore(</span><br><span class="line">    index=&#123;</span><br><span class="line">        <span class="string">&quot;embed&quot;</span>: embeddings,</span><br><span class="line">        <span class="string">&quot;dims&quot;</span>: <span class="number">4096</span>,</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Episode</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;用智能体自己的话，把这次经历写下来。事后回想，把当时脑子里最重要的想法记下来，让它以后能学着长记性。&quot;&quot;&quot;</span></span><br><span class="line">    observation: <span class="built_in">str</span> = Field(..., description=<span class="string">&quot;The context and setup - what happened&quot;</span>)</span><br><span class="line">    thoughts: <span class="built_in">str</span> = Field(</span><br><span class="line">        ...,</span><br><span class="line">        description=<span class="string">&quot;内部推理过程与智能体在本轮中的观察，使其得以得出正确的行动与结果。“我……”&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">    action: <span class="built_in">str</span> = Field(</span><br><span class="line">        ...,</span><br><span class="line">        description=<span class="string">&quot;做了什么、如何做的、以何种格式呈现。（包含对行动成功至关重要的任何要素）。我……&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">    result: <span class="built_in">str</span> = Field(</span><br><span class="line">        ...,</span><br><span class="line">        description=<span class="string">&quot;结果与回顾。哪些地方做得好？下次可以在哪些方面改进？我……&quot;</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">manager = create_memory_store_manager(</span><br><span class="line">    model_client,</span><br><span class="line">    namespace=(<span class="string">&quot;memories&quot;</span>, <span class="string">&quot;episodes&quot;</span>),</span><br><span class="line">    schemas=[Episode],</span><br><span class="line">    instructions=<span class="string">&quot;提取成功解释的示例，捕捉完整的推理链条。解释要简洁，推理逻辑要精确。&quot;</span>,</span><br><span class="line">    enable_inserts=<span class="literal">True</span>,</span><br><span class="line">    store=store</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 构造对话数据</span></span><br><span class="line">conversation = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;什么是二叉树？我从事家谱工作，如果这有帮助的话&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;二叉树就像家谱一样，但每个父节点最多有2个子节点。这里有个简单示例：\n   鲍勃\n  /  \\\n艾米  卡尔\n\n就像在家谱中一样，我们称鲍勃为&#x27;父节点&#x27;，艾米和卡尔为&#x27;子节点&#x27;。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;哦，有道理！那么在二叉搜索树中，是不是就像按年龄来组织家庭成员？&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;开始更新记忆&quot;</span>)</span><br><span class="line">episodes = manager.invoke(&#123;<span class="string">&quot;messages&quot;</span>: conversation&#125;)</span><br><span class="line"><span class="built_in">print</span>(episodes)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;记忆更新成功&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@entrypoint(<span class="params">store=store</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">app</span>(<span class="params">messages: <span class="built_in">list</span></span>):</span><br><span class="line">    <span class="comment"># Step 1: Find similar past episodes</span></span><br><span class="line">    <span class="comment"># memories = manager.search(</span></span><br><span class="line">    <span class="comment">#     query=messages[-1][&quot;content&quot;],</span></span><br><span class="line">    <span class="comment">#     limit=1,</span></span><br><span class="line">    <span class="comment"># )</span></span><br><span class="line">    similar = store.search(</span><br><span class="line">        (<span class="string">&quot;memories&quot;</span>, <span class="string">&quot;episodes&quot;</span>),</span><br><span class="line">        query=messages[-<span class="number">1</span>][<span class="string">&quot;content&quot;</span>],</span><br><span class="line">        limit=<span class="number">1</span>,</span><br><span class="line">    )</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;similar::&quot;</span>, similar)</span><br><span class="line">    <span class="comment"># Step 2: Build system message with relevant experience</span></span><br><span class="line">    system_message = <span class="string">&quot;You are a helpful assistant.&quot;</span></span><br><span class="line">    <span class="keyword">if</span> similar:</span><br><span class="line">        system_message += <span class="string">&quot;\n\n### EPISODIC MEMORY:&quot;</span></span><br><span class="line">        <span class="keyword">for</span> i, item <span class="keyword">in</span> <span class="built_in">enumerate</span>(similar, start=<span class="number">1</span>):</span><br><span class="line">            episode = item.value[<span class="string">&quot;content&quot;</span>]</span><br><span class="line">            system_message += <span class="string">f&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Episode <span class="subst">&#123;i&#125;</span>:</span></span><br><span class="line"><span class="string">When: <span class="subst">&#123;episode[<span class="string">&#x27;observation&#x27;</span>]&#125;</span></span></span><br><span class="line"><span class="string">Thought: <span class="subst">&#123;episode[<span class="string">&#x27;thoughts&#x27;</span>]&#125;</span></span></span><br><span class="line"><span class="string">Did: <span class="subst">&#123;episode[<span class="string">&#x27;action&#x27;</span>]&#125;</span></span></span><br><span class="line"><span class="string">Result: <span class="subst">&#123;episode[<span class="string">&#x27;result&#x27;</span>]&#125;</span></span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># Step 3: Generate response using past experience</span></span><br><span class="line">    response = model_client.invoke([&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: system_message&#125;, *messages])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Step 4: Store this interaction if successful</span></span><br><span class="line">    manager.invoke(&#123;<span class="string">&quot;messages&quot;</span>: messages&#125;)</span><br><span class="line">    <span class="keyword">return</span> response</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">result = app.invoke(</span><br><span class="line">    [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: <span class="string">&quot;什么是二叉树？通俗易懂的给我解释一下&quot;</span>,</span><br><span class="line">        &#125;,</span><br><span class="line">    ],</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br><span class="line"><span class="built_in">print</span>(store.search((<span class="string">&quot;memories&quot;</span>, <span class="string">&quot;episodes&quot;</span>), query=<span class="string">&quot;Trees&quot;</span>))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">开始更新记忆</span><br><span class="line">[&#123;&#x27;namespace&#x27;: (&#x27;memories&#x27;, &#x27;episodes&#x27;), &#x27;key&#x27;: &#x27;ab695e26-8996-40ca-b349-87892d6885c9&#x27;, &#x27;value&#x27;: &#123;&#x27;kind&#x27;: &#x27;Episode&#x27;, &#x27;content&#x27;: &#123;&#x27;observation&#x27;: &#x27;用户询问&quot;什么是二叉树？&quot;，并提到自己从事家谱工作。我通过类比家谱来解释二叉树的概念，使用了家谱中的术语（父节点、子节点）。用户理解了并进一步询问二叉搜索树是否像按年龄组织家庭成员。&#x27;, &#x27;thoughts&#x27;: &#x27;这是一个成功的教学互动示例。我识别到用户有家谱工作的背景，所以立即使用家谱作为类比来解释二叉树。这种个性化解释帮助用户快速理解抽象概念。当用户进一步询问二叉搜索树时，表明他们不仅理解了基础概念，还能进行类比推理，想知道更高级的概念是否也有类似的现实对应。&#x27;, &#x27;action&#x27;: &#x27;1. 识别用户的背景知识（家谱工作）\n2. 使用相关类比：将二叉树比作家谱结构\n3. 使用用户熟悉的术语：父节点、子节点\n4. 提供具体可视化示例：鲍勃（父节点）有艾米和卡尔（子节点）\n5. 解释简洁明了，直接对应用户已知概念&#x27;, &#x27;result&#x27;: &#x27;成功！用户不仅理解了二叉树的基本概念，还能进行延伸思考，询问二叉搜索树的类比。这表明：\n1. 个性化类比有效：使用用户熟悉的领域解释新概念\n2. 术语一致性：使用用户领域的术语（家谱术语）\n3. 可视化帮助：具体示例让抽象概念更易理解\n4. 激发进一步思考：用户主动想了解更高级概念\n下次可以：当用户表现出理解并进一步提问时，继续使用相同的类比框架解释更复杂的概念。&#x27;&#125;&#125;&#125;]</span><br><span class="line">记忆更新成功</span><br><span class="line">similar:: [Item(namespace=[&#x27;memories&#x27;, &#x27;episodes&#x27;], key=&#x27;ab695e26-8996-40ca-b349-87892d6885c9&#x27;, value=&#123;&#x27;kind&#x27;: &#x27;Episode&#x27;, &#x27;content&#x27;: &#123;&#x27;observation&#x27;: &#x27;用户询问&quot;什么是二叉树？&quot;，并提到自己从事家谱工作。我通过类比家谱来解释二叉树的概念，使用了家谱中的术语（父节点、子节点）。用户理解了并进一步询问二叉搜索树是否像按年龄组织家庭成员。&#x27;, &#x27;thoughts&#x27;: &#x27;这是一个成功的教学互动示例。我识别到用户有家谱工作的背景，所以立即使用家谱作为类比来解释二叉树。这种个性化解释帮助用户快速理解抽象概念。当用户进一步询问二叉搜索树时，表明他们不仅理解了基础概念，还能进行类比推理，想知道更高级的概念是否也有类似的现实对应。&#x27;, &#x27;action&#x27;: &#x27;1. 识别用户的背景知识（家谱工作）\n2. 使用相关类比：将二叉树比作家谱结构\n3. 使用用户熟悉的术语：父节点、子节点\n4. 提供具体可视化示例：鲍勃（父节点）有艾米和卡尔（子节点）\n5. 解释简洁明了，直接对应用户已知概念&#x27;, &#x27;result&#x27;: &#x27;成功！用户不仅理解了二叉树的基本概念，还能进行延伸思考，询问二叉搜索树的类比。这表明：\n1. 个性化类比有效：使用用户熟悉的领域解释新概念\n2. 术语一致性：使用用户领域的术语（家谱术语）\n3. 可视化帮助：具体示例让抽象概念更易理解\n4. 激发进一步思考：用户主动想了解更高级概念\n下次可以：当用户表现出理解并进一步提问时，继续使用相同的类比框架解释更复杂的概念。&#x27;&#125;&#125;, created_at=&#x27;2025-12-30T05:53:22.735683+00:00&#x27;, updated_at=&#x27;2025-12-30T05:53:22.735694+00:00&#x27;, score=0.7523176771262952)]</span><br><span class="line">content=&#x27;二叉树是一种数据结构，可以想象成一个**家谱图**：\n\n- 最上面有一个**根节点**（就像家族的最早祖先）\n- 每个节点最多有两个**子节点**（就像一个人最多有两个孩子）\n- 每个子节点只能有一个**父节点**（就像每个人只有一个亲生父亲）\n\n**简单比喻：**\n想象一棵倒过来的树🌳，从树根开始分叉，每次最多分成两个树枝。每个分叉点就是一个“节点”，连接线就是“边”。\n\n**关键特点：**\n1. **最多两个分支**：每个节点最多连接两个子节点\n2. **层次结构**：有明显的上下级关系\n3. **没有循环**：不会出现“我是我自己的祖先”这种情况\n\n**常见用途：**\n- 文件系统的目录结构\n- 决策树（是/否问题）\n- 表达式计算（如数学公式）\n- 数据库索引\n\n这样解释清楚吗？需要我用更具体的例子说明吗？&#x27; additional_kwargs=&#123;&#x27;refusal&#x27;: None&#125; response_metadata=&#123;&#x27;token_usage&#x27;: &#123;&#x27;completion_tokens&#x27;: 203, &#x27;prompt_tokens&#x27;: 343, &#x27;total_tokens&#x27;: 546, &#x27;completion_tokens_details&#x27;: None, &#x27;prompt_tokens_details&#x27;: &#123;&#x27;audio_tokens&#x27;: None, &#x27;cached_tokens&#x27;: 0&#125;, &#x27;prompt_cache_hit_tokens&#x27;: 0, &#x27;prompt_cache_miss_tokens&#x27;: 343&#125;, &#x27;model_provider&#x27;: &#x27;deepseek&#x27;, &#x27;model_name&#x27;: &#x27;deepseek-chat&#x27;, &#x27;system_fingerprint&#x27;: &#x27;fp_eaab8d114b_prod0820_fp8_kvcache&#x27;, &#x27;id&#x27;: &#x27;86d1ce32-f581-44b8-a81e-c64b77f7a652&#x27;, &#x27;finish_reason&#x27;: &#x27;stop&#x27;, &#x27;logprobs&#x27;: None&#125; id=&#x27;lc_run--71fc6b41-d248-402e-9c2b-5742fe6e800c-0&#x27; usage_metadata=&#123;&#x27;input_tokens&#x27;: 343, &#x27;output_tokens&#x27;: 203, &#x27;total_tokens&#x27;: 546, &#x27;input_token_details&#x27;: &#123;&#x27;cache_read&#x27;: 0&#125;, &#x27;output_token_details&#x27;: &#123;&#125;&#125;</span><br><span class="line">[Item(namespace=[&#x27;memories&#x27;, &#x27;episodes&#x27;], key=&#x27;ab695e26-8996-40ca-b349-87892d6885c9&#x27;, value=&#123;&#x27;kind&#x27;: &#x27;Episode&#x27;, &#x27;content&#x27;: &#123;&#x27;observation&#x27;: &quot;用户再次询问&#x27;什么是二叉树？&#x27;，要求通俗易懂的解释。这是一个新的教学机会，用户可能之前听说过但需要更直观的理解。我准备使用家谱类比来解释二叉树，因为这是大多数人熟悉的家庭关系结构。&quot;, &#x27;thoughts&#x27;: &quot;这是一个新的教学互动，用户明确要求&#x27;通俗易懂&#x27;的解释。我需要使用最直观的类比来帮助用户理解抽象概念。家谱是一个完美的类比，因为：1. 每个人都熟悉家庭关系；2. 家庭树有明确的层级结构；3. 父节点、子节点的概念自然对应。我应该从最简单的例子开始，逐步建立概念。&quot;, &#x27;action&#x27;: &#x27;1. 识别用户的背景知识（家谱工作）\n2. 使用相关类比：将二叉树比作家谱结构\n3. 使用用户熟悉的术语：父节点、子节点\n4. 提供具体可视化示例：鲍勃（父节点）有艾米和卡尔（子节点）\n5. 解释简洁明了，直接对应用户已知概念&#x27;, &#x27;result&#x27;: &quot;成功！通过使用家谱类比，我能够：\n1. 将抽象概念具体化：二叉树→家谱结构\n2. 使用熟悉术语：父节点、子节点→父母、子女\n3. 提供可视化示例：具体人物关系让概念更易理解\n4. 建立基础框架：为后续更复杂概念（如二叉搜索树）打下基础\n\n教学启示：当用户要求&#x27;通俗易懂&#x27;时，立即寻找他们最熟悉的现实世界类比。家谱是一个通用且有效的类比，适用于大多数用户群体。&quot;&#125;&#125;, created_at=&#x27;2025-12-30T05:53:53.298243+00:00&#x27;, updated_at=&#x27;2025-12-30T05:53:53.298252+00:00&#x27;, score=0.4001063434640949)]</span><br></pre></td></tr></table></figure>
+<h1 id="扩展"><a href="#扩展" class="headerlink" title="扩展"></a>扩展</h1><p>如果使用的不是Langgraph的记忆体，可以使用<strong>mem0</strong>，该框架可在任意智能体框架运行</p>
+<p>mem0官方网站：<a target="_blank" rel="noopener" href="https://docs.mem0.ai/introduction">https://docs.mem0.ai/introduction</a></p>
+<p>mem0 Github地址：<a target="_blank" rel="noopener" href="https://github.com/mem0ai/mem0">https://github.com/mem0ai/mem0</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangGraph/" rel="tag"># LangGraph</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/09/16/ai/mcp/1-mcp/" rel="prev" title="MCP模型上下文协议介绍">
+      <i class="fa fa-chevron-left"></i> MCP模型上下文协议介绍
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/09/17/ai/langchain/langgraph/2-langgraph-graph-control/" rel="next" title="LangGraph之图构建和核心概念详解">
+      LangGraph之图构建和核心概念详解 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%B0%E5%BF%86"><span class="nav-number">1.</span> <span class="nav-text">记忆</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%B0%E5%BF%86%E7%9A%84%E9%87%8D%E8%A6%81%E6%80%A7"><span class="nav-number">1.1.</span> <span class="nav-text">记忆的重要性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangGraph%E6%A1%86%E6%9E%B6%E4%B8%AD%E6%9C%89%E4%B8%A4%E7%A7%8D%E7%B1%BB%E5%9E%8B%E7%9A%84%E8%AE%B0%E5%BF%86"><span class="nav-number">1.2.</span> <span class="nav-text">LangGraph框架中有两种类型的记忆</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">2.</span> <span class="nav-text">短期记忆</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86%E4%BB%A3%E7%A0%81Langchain%E6%99%BA%E8%83%BD%E4%BD%93%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.1.</span> <span class="nav-text">短期记忆代码Langchain智能体示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9F%AD%E6%9C%9F%E8%AE%B0%E5%BF%86%E4%BB%A3%E7%A0%81Langgraph%E5%9B%BE%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.</span> <span class="nav-text">短期记忆代码Langgraph图示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Trim-Messages-%E4%BF%AE%E5%89%AA%E6%B6%88%E6%81%AF"><span class="nav-number">2.3.</span> <span class="nav-text">Trim Messages(修剪消息)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Delete-Messages-%E5%88%A0%E9%99%A4%E6%B6%88%E6%81%AF"><span class="nav-number">2.4.</span> <span class="nav-text">Delete Messages(删除消息)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Summarize-messages-%E6%B6%88%E6%81%AF%E6%80%BB%E7%BB%93"><span class="nav-number">2.5.</span> <span class="nav-text">Summarize messages(消息总结)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">3.</span> <span class="nav-text">长期记忆</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8"><span class="nav-number">3.1.</span> <span class="nav-text">基本使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%B0%E5%BF%86%E5%AD%98%E5%82%A8"><span class="nav-number">3.1.1.</span> <span class="nav-text">记忆存储</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E5%88%9B%E5%BB%BA-Memory-Store"><span class="nav-number">3.1.1.1.</span> <span class="nav-text">1. 创建 Memory Store</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4-Namespace"><span class="nav-number">3.1.1.2.</span> <span class="nav-text">2. 命名空间 Namespace</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E5%AD%98%E5%82%A8%E8%AE%B0%E5%BF%86%EF%BC%88put%EF%BC%89"><span class="nav-number">3.1.1.3.</span> <span class="nav-text">3. 存储记忆（put）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%B0%E5%BF%86%E8%AF%BB%E5%8F%96"><span class="nav-number">3.1.2.</span> <span class="nav-text">记忆读取</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E9%80%9A%E8%BF%87-id-%E8%8E%B7%E5%8F%96%E8%AE%B0%E5%BF%86"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">1.通过 id 获取记忆</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E6%A3%80%E7%B4%A2%E8%AE%B0%E5%BF%86%EF%BC%88search%EF%BC%89"><span class="nav-number">3.1.2.2.</span> <span class="nav-text">2.检索记忆（search）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Memory-Types"><span class="nav-number">3.2.</span> <span class="nav-text">Memory Types</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Semantic-Memory%EF%BC%88%E8%AF%AD%E4%B9%89%E8%AE%B0%E5%BF%86%EF%BC%89"><span class="nav-number">3.3.</span> <span class="nav-text">Semantic Memory（语义记忆）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangMem"><span class="nav-number">4.</span> <span class="nav-text">LangMem</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD%E8%AE%B2%E8%A7%A3"><span class="nav-number">4.1.</span> <span class="nav-text">功能讲解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%89%B9%E7%82%B9"><span class="nav-number">4.2.</span> <span class="nav-text">核心特点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%9C%E7%94%A8"><span class="nav-number">4.3.</span> <span class="nav-text">作用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81"><span class="nav-number">4.4.</span> <span class="nav-text">示例代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B1-%E2%80%94-Memory-Tools"><span class="nav-number">4.4.1.</span> <span class="nav-text">示例1 — Memory Tools:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B2-%E2%80%94-Memory-Management"><span class="nav-number">4.4.2.</span> <span class="nav-text">示例2 — Memory Management:</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%89%A9%E5%B1%95"><span class="nav-number">5.</span> <span class="nav-text">扩展</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangGraph学习笔记第一讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangGraph介绍">
+<meta property="og:url" content="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/1-langgraph-introduce/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangGraph学习笔记第一讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917100224849.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917100621793.png">
+<meta property="article:published_time" content="2025-09-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-09-17T01:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangGraph">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917100224849.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/1-langgraph-introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangGraph介绍 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/1-langgraph-introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangGraph介绍
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-09-17 00:00:00 / 修改时间：09:00:00" itemprop="dateCreated datePublished" datetime="2025-09-17T00:00:00+08:00">2025-09-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangGraph/" itemprop="url" rel="index"><span itemprop="name">LangGraph</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangGraph学习笔记第一讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="什么是智能体"><a href="#什么是智能体" class="headerlink" title="什么是智能体"></a>什么是智能体</h1><p>智能体（AI Agents或Agents）是指能够<strong>自主感知环境、做出决策并执行行动的系统或程序</strong>。根据IBM的定义，智能体是“能够通过设计其工作流和利用可用工具，代表用户或其他系统自主执行任务的系统或程序”[<a target="_blank" rel="noopener" href="https://www.ibm.com/cn-zh/think/topics/ai-agents">IBM</a>]。英伟达则将智能体描述为“AI 智能体是先进的 AI 系统，旨在<strong>根据高级目标自主进行推理，制定计划并执行复杂任务</strong>。”，代表了“从简单自动化向能够管理复杂工作流的自主系统过渡”的演进方向[<a target="_blank" rel="noopener" href="https://www.nvidia.cn/glossary/ai-agents/">NVIDIA</a>]。</p>
+<p>在更专业的学术定义中，百度百科指出：“智能体是指能够感知环境并自主采取行动以实现特定目标的实体。这一概念最早由“人工智能之父”马文·明斯基提出，他认为某些问题可经由社会中的一些个体经过协商后解决，这些个体就是智能体。”[<a target="_blank" rel="noopener" href="https://baike.baidu.com/item/智能体/9446647">百度百科</a>]</p>
+<p>智能体具有以下基本特征：</p>
+<ul>
+<li>自主性(Autonomy)：智能体能够在没有人类或其他实体的直接干预下运行，并对其行动和内部状态具有某种程度的控制。</li>
+<li>反应性(Reactivity)：智能体能够感知其环境，并对环境变化做出实时响应。</li>
+<li>交互性/社交性(Socialability)：智能体能够与其他智能体或人类进行交互和协作。</li>
+<li>适应性/主动性(Proactivity)：智能体能够根据环境变化主动调整其行为策略，适应新的情况。</li>
+<li>学习能力：许多智能体具有通过经验或数据学习和改进的能力。</li>
+</ul>
+<p>在 LangChain 的语境下，智能体是一个利用 LLM 作为<strong>推理引擎</strong>的系统。它不仅能回答问题，还能根据目标<strong>自主决定</strong>调用哪些工具（如搜索、运行代码、查询数据库）来完成任务。</p>
+<p><strong>智能体的核心公式：</strong></p>
+<blockquote>
+<p><strong>Agent = LLM（大脑） + Planning（规划） + Memory（记忆） + Tool Use（工具使用）</strong></p>
+</blockquote>
+<ul>
+<li><strong>规划：</strong> 将复杂任务拆解为小步骤。</li>
+<li><strong>记忆：</strong> 记住之前的对话上下文或中间操作结果。</li>
+<li><strong>工具：</strong> 能够访问外部 API、计算器、搜索引擎等。</li>
+</ul>
+<h1 id="单智能体-Single-Agent"><a href="#单智能体-Single-Agent" class="headerlink" title="单智能体 (Single-Agent)"></a>单智能体 (Single-Agent)</h1><p><strong>概念：</strong> 只有一个核心控制循环。所有的推理、规划和执行都由一个 LLM 驱动。</p>
+<h3 id="在-LangChain-中的实现"><a href="#在-LangChain-中的实现" class="headerlink" title="在 LangChain 中的实现"></a>在 LangChain 中的实现</h3><p>LangChain 最早的火爆就是因为提供了各种 Agent 类型。最经典的模式是 <strong>ReAct</strong> (Reason + Act)：</p>
+<ol>
+<li><strong>Thought（思考）：</strong> LLM 决定下一步做什么。</li>
+<li><strong>Action（行动）：</strong> LLM 选择一个工具并提供参数。</li>
+<li><strong>Observation（观察）：</strong> 运行工具并返回结果给 LLM。</li>
+<li><strong>循环：</strong> 重复上述步骤直到任务完成。</li>
+</ol>
+<p><strong>优缺点：</strong></p>
+<ul>
+<li><strong>优点：</strong> 结构简单，易于调试，适合处理逻辑线性、目标明确的任务。</li>
+<li><strong>缺点：</strong> 随着任务复杂度增加，LLM 容易陷入循环、丢失目标（上下文过长）或在复杂决策中“断片”。</li>
+</ul>
+<h1 id="多智能体系统-Multi-Agent-System-MAS"><a href="#多智能体系统-Multi-Agent-System-MAS" class="headerlink" title="多智能体系统 (Multi-Agent System, MAS)"></a>多智能体系统 (Multi-Agent System, MAS)</h1><p><strong>概念：</strong> 多个智能体协同工作。每个智能体通常扮演不同的角色（Role），就像一个公司里的不同部门（如：程序员、测试员、产品经理）。</p>
+<p><strong>优缺点：</strong></p>
+<ul>
+<li><strong>优点：</strong> <strong>专业化：</strong> 每个智能体只需要精通一件事（提示词更短、准确度更高）。<ul>
+<li><strong>鲁棒性：</strong> 可以引入“审核员”角色，大幅降低幻觉。</li>
+</ul>
+</li>
+<li><strong>缺点：</strong> 架构复杂，Token 消耗量大，存在通信开销。</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917100224849.png" alt="image-20250917100224849" style="zoom:50%;" /></p>
+<h1 id="常见的多智能体架构"><a href="#常见的多智能体架构" class="headerlink" title="常见的多智能体架构"></a>常见的多智能体架构</h1><p>多智能体架构中的网状结构、监管者模式、分级架构和自定义模式，并通过类比人类工作方式说明多智能体如何协作完成复杂任务。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250917100621793.png" alt="image-20250917100621793" style="zoom:67%;" /></p>
+<ul>
+<li>网状结构：任何一个智能体都可以进行决策</li>
+<li>监督者结构：由主管来决策下一步操作</li>
+<li>监管者架构（工具）：智能体作为工具，接受一个LLM主管的调用</li>
+<li>分级架构：多级架构每级都有一个监管者</li>
+<li>自定义：只有部分智能体具备决策权</li>
+</ul>
+<h1 id="LangGraph介绍"><a href="#LangGraph介绍" class="headerlink" title="LangGraph介绍"></a>LangGraph介绍</h1><p>官方地址：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/overview">https://docs.langchain.com/oss/python/langgraph/overview</a></p>
+<p><strong>LangGraph</strong> 是一个用于构建、管理和部署长期运行、有状态的智能代理（agents）的底层编排框架和运行时环境。</p>
+<p>通过使用 LangGraph，你可以获得控制权，设计出能够可靠处理复杂任务的智能代理。这意味着 LangGraph 提供了强大的工具和能力，帮助开发者构建出能够应对各种复杂场景和任务需求的智能代理系统。</p>
+<p>LangGraph 是一个非常底层的框架，完全专注于智能代理的编排。在使用 LangGraph 之前，建议你先熟悉用于构建智能代理的一些组件，从模型和工具开始。这说明 LangGraph 的定位是底层的基础设施，它主要关注如何将不同的组件（如模型和工具）有效地组织和协调起来，以实现智能代理的功能。注意：LangChain的智能体底层就是基于LangGraph进行实现的。</p>
+<p>LangGraph 关注于智能代理编排中重要的底层能力，包括持久化执行、流式处理、人工干预等。这里列举了 LangGraph 的一些关键特性：</p>
+<ul>
+<li><strong>“durable execution”（持久化执行）</strong>：构建的智能代理能够在发生故障后继续运行，并且可以从上次中断的地方恢复执行，这对于需要长期运行的智能代理来说非常重要，确保了系统的可靠性和稳定性。</li>
+<li><strong>“streaming”（流式处理）</strong>：支持对数据流的处理，能够实时地处理和响应输入的数据，这对于需要及时处理动态数据的智能代理应用非常关键。</li>
+<li><strong>“human-in-the-loop”（人工干预）</strong>：允许在智能代理运行的任何阶段进行人工检查和修改代理的状态，这使得智能代理系统更加灵活可控，能够在必要时引入人类的智慧和决策，提高系统的可靠性和适应性。</li>
+</ul>
+<h2 id="核心优势"><a href="#核心优势" class="headerlink" title="核心优势"></a>核心优势</h2><p>LangGraph为任何长期运行的、有状态的工作流程或智能体提供了底层的支持性基础设施。LangGraph不会对提示（prompts）或架构进行抽象，它提供了以下核心优势：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>优势</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>持久执行</strong></td>
+<td>构建能够在遇到故障时持续运行，并且可以长时间运行的智能体，这些智能体能够从它们停止的地方恢复执行。</td>
+</tr>
+<tr>
+<td><strong>人机交互</strong></td>
+<td>通过在任意时刻检查和修改智能体的状态，将人类监督纳入其中。</td>
+</tr>
+<tr>
+<td><strong>综合记忆</strong></td>
+<td>创建具有状态的智能体，这些智能体既有用于持续推理的短期工作内存，也有跨越会话的长期内存。</td>
+</tr>
+<tr>
+<td><strong>LangSmith 调试</strong></td>
+<td>借助可视化工具追踪执行路径、捕获状态转换以及提供详细的运行时指标，从而深入了解复杂智能体的行为。</td>
+</tr>
+<tr>
+<td><strong>生产就绪部署</strong></td>
+<td>凭借为处理有状态、长期运行工作流程的独特挑战而设计的可扩展基础设施，自信地部署复杂的智能体系统。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="LangGraph-生态系统"><a href="#LangGraph-生态系统" class="headerlink" title="LangGraph 生态系统"></a>LangGraph 生态系统</h2><p>LangGraph 可独立使用，也可与 LangChain 生态深度集成： </p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LangSmith</strong></td>
+<td>用于追踪请求、评估输出以及监控部署，所有这些操作都可以在一个地方完成。你可以使用LangGraph进行本地原型开发，然后借助集成的可观察性和评估功能转移到生产环境中，从而构建更加可靠的代理系统。</td>
+</tr>
+<tr>
+<td><strong>LangSmith Agent Server</strong></td>
+<td>这是一个专为长期运行、有状态的工作流设计的部署平台，可以轻松地部署和扩展代理。你可以在这个平台上发现、重用、配置以及共享代理，并且团队成员之间可以进行快速迭代，还可以利用Studio进行可视化原型开发。</td>
+</tr>
+<tr>
+<td><strong>LangChain</strong></td>
+<td>提供了集成和可组合的组件，以简化LLM应用开发。它包含了基于LangGraph构建的代理抽象层。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="环境安装"><a href="#环境安装" class="headerlink" title="环境安装"></a>环境安装</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -U langgraph</span><br></pre></td></tr></table></figure>
+<h2 id="Langgraph的使用"><a href="#Langgraph的使用" class="headerlink" title="Langgraph的使用"></a>Langgraph的使用</h2><p>Langgraph提供了两种不同的编程线路：<strong>Graph API（图 API）</strong>和 <strong>Functional API（函数式 API）</strong>。</p>
+<h3 id="Graph-API（图-API）"><a href="#Graph-API（图-API）" class="headerlink" title="Graph API（图 API）"></a>Graph API（图 API）</h3><p><strong>官方描述：</strong> “如果你倾向于将智能体定义为由‘节点’（Nodes）和‘边’（Edges）组成的图，请使用 Graph API。”</p>
+<ul>
+<li><strong>解读：</strong> <em> <strong>核心逻辑：</strong> 这种方式是<em>*显式</em></em>的。你需要像画流程图一样，定义哪一部分是“大脑决策”，哪一部分是“执行计算”，并用线（边）把它们连起来。<ul>
+<li><strong>形象比喻：</strong> 就像一个<strong>工厂流水线</strong>。零件（数据）从一个工位（节点）流向下一个工位。</li>
+<li><strong>适用场景：</strong><ul>
+<li>逻辑非常复杂，包含循环、分支判断（例如：如果计算结果不对，就退回上一步重新算）。</li>
+<li>你希望清晰地可视化智能体的工作流程。</li>
+<li>需要精细控制状态（State）在不同步骤间的传递。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="Functional-API（函数式-API）"><a href="#Functional-API（函数式-API）" class="headerlink" title="Functional API（函数式 API）"></a>Functional API（函数式 API）</h3><p><strong>官方描述：</strong> “如果你倾向于将智能体定义为一个单一的函数，请使用 Functional API。”</p>
+<ul>
+<li><strong>解读：</strong><ul>
+<li><strong>核心逻辑：</strong> 这种方式是<strong>隐式</strong>的。它更接近传统的 Python 编程，你只需要写一个函数，通过装饰器（如 <code>@task</code>）来标识任务。LangGraph 会在后台自动帮你处理状态和异步逻辑。</li>
+<li><strong>形象比喻：</strong> 就像一个<strong>高级主管</strong>。你给他一个指令，他内部怎么协调、怎么计算你不用画图规划得那么细，看起来就是一个简洁的函数调用。</li>
+<li><strong>适用场景：</strong><ul>
+<li>逻辑相对线性或简单。</li>
+<li>你希望代码更简洁，不想去维护复杂的图结构。</li>
+<li>追求快速原型开发，不想处理繁琐的节点连接。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>核心概念对比解读</strong></p>
+<p>这段话里提到的两个核心术语是理解 LangGraph 的关键：</p>
+<ul>
+<li><strong>Graph API Overview（图 API 概览）：</strong> 侧重于<strong>“结构化”</strong>。它强制你思考：智能体有哪些状态？从“思考”到“行动”的跳转条件是什么？这在构建具有高度可靠性的工业级 Agent 时非常有用。</li>
+<li><strong>Functional API Overview（函数式 API 概览）：</strong> 侧重于<strong>“开发体验”</strong>。它是 LangGraph 近期推出的简化版（通常指 <code>EntryPoint</code> 模式），让习惯了普通 Python 开发的人能更平滑地过渡到智能体开发。</li>
+</ul>
+<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><div id="flowchart-0" class="flow-chart"></div>
+
+
+
+<h3 id="State（状态）"><a href="#State（状态）" class="headerlink" title="State（状态）"></a>State（状态）</h3><ul>
+<li>状态是一个在整个图中共享和传递的对象，包含了流程执行过程中所有信息。</li>
+<li>有状态（stateful）：程序具有“记忆”，能记住过去的步骤和结果，并根据这些信息来决定下一步</li>
+<li>可变（mutable）：每个节点都可以修改状态。例如，一个节点可能会将LLM的回复写入状态中，而下一个节点则会读取这个回复并根据它来做决策</li>
+</ul>
+<h3 id="Node（节点）"><a href="#Node（节点）" class="headerlink" title="Node（节点）"></a>Node（节点）</h3><ul>
+<li>节点是图中的基本单元，代表一个具体的功能或操作，视作流程中的一个步骤</li>
+<li>每个节点负责完成一项特定任务（如查询数据、生成文本、做决策等）</li>
+<li>节点接受输入，处理后产生输出</li>
+<li>可以是简单的函数、API调用、LLM调用或其他复杂操作</li>
+</ul>
+<h3 id="Edges（边）"><a href="#Edges（边）" class="headerlink" title="Edges（边）"></a>Edges（边）</h3><ul>
+<li>边决定了流程如何从一个节点移动到另一个节点。</li>
+<li>LangGraph支持两种主要类型的边：<ul>
+<li>Normal Edges（普通边）：简单的将流程从节点A -&gt; B</li>
+<li>Conditional Edges（条件边）：根据当前状态的内容来决定下一步执行哪个节点，是根据LLM的回复或工具的结果动态的做出决策<br><script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.2.7/raphael.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/flowchart/1.6.5/flowchart.min.js"></script><textarea id="flowchart-0-code" style="display: none">st=>start: __start__
+st1=>operation: step_1
+st2=>operation: step_2
+e=>end: step_3
+st->st1->st2->e</textarea><textarea id="flowchart-0-options" style="display: none">{"scale":1,"line-width":2,"line-length":50,"text-margin":10,"font-size":12}</textarea><script>  var code = document.getElementById("flowchart-0-code").value;  var options = JSON.parse(decodeURIComponent(document.getElementById("flowchart-0-options").value));  var diagram = flowchart.parse(code);  diagram.drawSVG("flowchart-0", options);</script></li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangGraph/" rel="tag"># LangGraph</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/09/17/ai/langchain/langgraph/2-langgraph-graph-control/" rel="prev" title="LangGraph之图构建和核心概念详解">
+      <i class="fa fa-chevron-left"></i> LangGraph之图构建和核心概念详解
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/09/18/ai/langchain/langgraph/6-langgraph-streaming/" rel="next" title="LangGraph之流式输出">
+      LangGraph之流式输出 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%99%BA%E8%83%BD%E4%BD%93"><span class="nav-number">1.</span> <span class="nav-text">什么是智能体</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E6%99%BA%E8%83%BD%E4%BD%93-Single-Agent"><span class="nav-number">2.</span> <span class="nav-text">单智能体 (Single-Agent)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8-LangChain-%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.0.1.</span> <span class="nav-text">在 LangChain 中的实现</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%E7%B3%BB%E7%BB%9F-Multi-Agent-System-MAS"><span class="nav-number">3.</span> <span class="nav-text">多智能体系统 (Multi-Agent System, MAS)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%E6%9E%B6%E6%9E%84"><span class="nav-number">4.</span> <span class="nav-text">常见的多智能体架构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangGraph%E4%BB%8B%E7%BB%8D"><span class="nav-number">5.</span> <span class="nav-text">LangGraph介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BC%98%E5%8A%BF"><span class="nav-number">5.1.</span> <span class="nav-text">核心优势</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangGraph-%E7%94%9F%E6%80%81%E7%B3%BB%E7%BB%9F"><span class="nav-number">5.2.</span> <span class="nav-text">LangGraph 生态系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%AE%89%E8%A3%85"><span class="nav-number">5.3.</span> <span class="nav-text">环境安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Langgraph%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">5.4.</span> <span class="nav-text">Langgraph的使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Graph-API%EF%BC%88%E5%9B%BE-API%EF%BC%89"><span class="nav-number">5.4.1.</span> <span class="nav-text">Graph API（图 API）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Functional-API%EF%BC%88%E5%87%BD%E6%95%B0%E5%BC%8F-API%EF%BC%89"><span class="nav-number">5.4.2.</span> <span class="nav-text">Functional API（函数式 API）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">5.5.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#State%EF%BC%88%E7%8A%B6%E6%80%81%EF%BC%89"><span class="nav-number">5.5.1.</span> <span class="nav-text">State（状态）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Node%EF%BC%88%E8%8A%82%E7%82%B9%EF%BC%89"><span class="nav-number">5.5.2.</span> <span class="nav-text">Node（节点）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Edges%EF%BC%88%E8%BE%B9%EF%BC%89"><span class="nav-number">5.5.3.</span> <span class="nav-text">Edges（边）</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

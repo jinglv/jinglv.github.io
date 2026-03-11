@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangGraph学习笔记第十一讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangGraph之多智能体交互">
+<meta property="og:url" content="https://jinglv.github.io/2025/10/10/ai/langchain/langgraph/8-langgraph-multi/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangGraph学习笔记第十一讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251010105717597.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251010105858518.png">
+<meta property="article:published_time" content="2025-10-09T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-10-10T03:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangGraph">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251010105717597.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/10/10/ai/langchain/langgraph/8-langgraph-multi/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangGraph之多智能体交互 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/10/10/ai/langchain/langgraph/8-langgraph-multi/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangGraph之多智能体交互
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-10-10 00:00:00 / 修改时间：11:00:00" itemprop="dateCreated datePublished" datetime="2025-10-10T00:00:00+08:00">2025-10-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangGraph学习笔记第十一讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="为什么使用多智能体？"><a href="#为什么使用多智能体？" class="headerlink" title="为什么使用多智能体？"></a>为什么使用多智能体？</h1><p>智能体是一个使用 LLM 来决定应用程序控制流的系统。随着你开发这些系统，它们可能会随着时间的推移变得越来越复杂，使得管理和扩展变得更加困难。例如，你可能会遇到以下问题：</p>
+<ul>
+<li>智能体有太多工具可供使用，导致在决定下一步调用哪个工具时做出糟糕的决策</li>
+<li>上下文变得过于复杂，单个智能体难以跟踪</li>
+<li>系统中需要多个专业领域（例如，规划器、研究员、数学专家等）</li>
+</ul>
+<p>在多智能体系统中，智能体之间需要相互通信。它们通过交接（handoffs）来实现这一点——这是一种描述将控制权交给哪个智能体以及向该智能体发送什么负载的原始操作。</p>
+<p>两种最流行的多智能体架构：</p>
+<ul>
+<li><strong>主管（supervisor）</strong>—— 各个智能体由一个中央主管智能体协调。主管控制所有的通信流和任务委派，根据当前上下文和任务需求决定调用哪个智能体。</li>
+<li><strong>群组（swarm）</strong>—— 智能体根据各自的专长动态地将控制权移交给彼此。系统会记住最后一个活跃的智能体，以确保在后续交互中，对话能从该智能体恢复。</li>
+</ul>
+<h1 id="主管型多智能体（Supervisor）"><a href="#主管型多智能体（Supervisor）" class="headerlink" title="主管型多智能体（Supervisor）"></a>主管型多智能体（Supervisor）</h1><ul>
+<li>一个中央智能体协调所有子智能体</li>
+<li>所有控制流决策集中在主管节点</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251010105717597.png" alt="image-20251010105717597" style="zoom:67%;" /></p>
+<p>安装依赖</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install langgraph-supervisor</span><br></pre></td></tr></table></figure>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph_supervisor <span class="keyword">import</span> create_supervisor</span><br><span class="line"></span><br><span class="line">supervisor = create_supervisor(</span><br><span class="line">    agents=[flight_assistant, hotel_assistant],</span><br><span class="line">    model=ChatOpenAI(model=<span class="string">&quot;gpt-4o&quot;</span>),</span><br><span class="line">    prompt=<span class="string">&quot;You manage a hotel and flight booking assistant. Assign work to them.&quot;</span></span><br><span class="line">).<span class="built_in">compile</span>()</span><br></pre></td></tr></table></figure>
+<h1 id="群组型多智能体（Swarm）"><a href="#群组型多智能体（Swarm）" class="headerlink" title="群组型多智能体（Swarm）"></a>群组型多智能体（Swarm）</h1><ul>
+<li>无主管，智能体根据专长动态交接</li>
+<li>系统会记录“最后活跃的智能体”，对话自动恢复</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20251010105858518.png" alt="image-20251010105858518" style="zoom:67%;" /></p>
+<p>安装依赖</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install langgraph-swarm</span><br></pre></td></tr></table></figure>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph_swarm <span class="keyword">import</span> create_swarm</span><br><span class="line"></span><br><span class="line">swarm = create_swarm(</span><br><span class="line">    agents=[flight_assistant, hotel_assistant],</span><br><span class="line">    default_active_agent=<span class="string">&quot;flight_assistant&quot;</span></span><br><span class="line">).<span class="built_in">compile</span>()</span><br></pre></td></tr></table></figure>
+<h1 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h1><p>先创建两个智能体</p>
+<ul>
+<li><p>data_search_agent.py</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/10 11:11</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langgraph.config <span class="keyword">import</span> get_stream_writer</span><br><span class="line"><span class="keyword">from</span> langgraph.prebuilt <span class="keyword">import</span> create_react_agent</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> app.agent.model.llms <span class="keyword">import</span> qv_llm</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">database_search</span>(<span class="params">sql: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    使用数据库进行搜索</span></span><br><span class="line"><span class="string">    :param sql: sql语句</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行【数据库查询工具】，执行的sql为：<span class="subst">&#123;sql&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;查询数据&quot;</span> <span class="keyword">in</span> sql:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;用户注册注册功能&quot;</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;无匹配内容&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">web_search</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    使用网页进行搜索</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行【网络搜索】工具，搜索的内容为：<span class="subst">&#123;query&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;用户登录&quot;</span> <span class="keyword">in</span> query:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;用户注册注册功能&quot;</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;无匹配内容&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 向量数据库语义查询</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">vector_database_search</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    向量数据库查询</span></span><br><span class="line"><span class="string">    :param query: 查询内容</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行【向量数据库查询】，查询的问题为：<span class="subst">&#123;query&#125;</span>&quot;</span>)</span><br><span class="line">    result = <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    功能说明文档：</span></span><br><span class="line"><span class="string">    #### 📌 F1.1 用户注册</span></span><br><span class="line"><span class="string">    ##### 🧩 功能背景</span></span><br><span class="line"><span class="string">    新用户通过注册方式创建账户，支持邮箱/用户名+密码的注册方式。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    ##### 🚶 主流程</span></span><br><span class="line"><span class="string">    1. 用户打开注册页，填写注册信息</span></span><br><span class="line"><span class="string">    2. 系统校验格式与唯一性（用户名、邮箱）</span></span><br><span class="line"><span class="string">    3. 提交注册，后台创建账户，初始状态为“正常”</span></span><br><span class="line"><span class="string">    4. 注册成功后自动登录并跳转首页</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    ##### ⚠️ 异常流程</span></span><br><span class="line"><span class="string">    - 邮箱/用户名已被注册：提示“已存在”</span></span><br><span class="line"><span class="string">    - 两次密码不一致：提示用户重新输入</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    ##### 📌 状态规则</span></span><br><span class="line"><span class="string">    - 新用户状态为 “正常”</span></span><br><span class="line"><span class="string">    - 注册时间记录为创建时间，头像为默认图</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    ##### 📌 业务规则</span></span><br><span class="line"><span class="string">    - 用户名唯一，支持 4~20 位字母数字组合</span></span><br><span class="line"><span class="string">    - 密码长度不少于 6 位</span></span><br><span class="line"><span class="string">    - 邮箱必须符合格式 `xxx@xxx.xx`</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;用户注册&quot;</span> <span class="keyword">in</span> query:</span><br><span class="line">        <span class="keyword">return</span> result</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;无匹配内容&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个用于数据搜索的智能体</span></span><br><span class="line">data_search_agent = create_react_agent(</span><br><span class="line">    <span class="comment"># 设置agent的名字</span></span><br><span class="line">    name=<span class="string">&quot;data_search_agent&quot;</span>,</span><br><span class="line">    <span class="comment"># 配置模型</span></span><br><span class="line">    model=qv_llm,</span><br><span class="line">    <span class="comment"># 绑定工具</span></span><br><span class="line">    tools=[database_search, web_search, vector_database_search],</span><br><span class="line">    prompt=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">            你是一位数据检索专家，擅长从多种数据源中查找信息，包括结构化数据库、网页和向量数据库。</span></span><br><span class="line"><span class="string">            你拥有以下三种工具，每种工具适用于不同的场景：</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">            1. `database_search(sql)`</span></span><br><span class="line"><span class="string">               - 检索结构化信息，如：接口文档、需求文档、测试用例。</span></span><br><span class="line"><span class="string">               - 适合精确字段查询。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">            2. `web_search(query)`  </span></span><br><span class="line"><span class="string">               - 检索互联网公开网页，适合实时性或广泛性问题。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">            3. `vector_database_search(query)`  </span></span><br><span class="line"><span class="string">               - 检索语义相关文档，如模糊表达、知识库、上下文相关资料。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">            行为准则：</span></span><br><span class="line"><span class="string">                - 优先根据语义理解选择合适工具。</span></span><br><span class="line"><span class="string">                - 如果一个工具未检索成功，请尝试更换表达方式或使用其他工具。</span></span><br><span class="line"><span class="string">                - 最多连续尝试不超过10次。超过10次，请停止任务并输出：“未找到相关内容，请补充更详细的功能描述或需求信息。”</span></span><br><span class="line"><span class="string">            注意点：</span></span><br><span class="line"><span class="string">                如果是调用数据库查找数据，则需要你先查询数据库中的表结构，然后根据表结构和用户的需求，编写对应的sql语句，调用该数据库操作的工具，执行sql语句，并返回执行的结果,    </span></span><br><span class="line"><span class="string">                每一步执行完都需要去分析当前的执行进度，以及规划下一步的任务执行    </span></span><br><span class="line"><span class="string">            输出要求：</span></span><br><span class="line"><span class="string">                - 展示最终有用的信息，展示任何工具调用过程。</span></span><br><span class="line"><span class="string">            &quot;&quot;&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p>case_genarator_agent.py</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/10 11:15</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langgraph.config <span class="keyword">import</span> get_stream_writer</span><br><span class="line"><span class="keyword">from</span> langgraph.prebuilt <span class="keyword">import</span> create_react_agent</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> app.agent.model.llms <span class="keyword">import</span> qv_llm</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_test_case</span>(<span class="params">requirement: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    根据需求生成测试用例</span></span><br><span class="line"><span class="string">    :param requirement: 需求文档</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行【需求生成测试用例】工具，需求文档的内容为：<span class="subst">&#123;requirement&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;1、正常登录，2、密码为空&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 覆盖率校验的工具</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">coverage_check</span>(<span class="params">test_case: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    检查测试用例的覆盖率</span></span><br><span class="line"><span class="string">    :param test_case: 测试用例</span></span><br><span class="line"><span class="string">    :return:</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行【检查测试用例的覆盖率】工具，测试用例的内容为：<span class="subst">&#123;test_case&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;覆盖率100%&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个用于测试用例生成的智能体</span></span><br><span class="line">test_case_agent = create_react_agent(</span><br><span class="line">    model=qv_llm,</span><br><span class="line">    tools=[generate_test_case, coverage_check],</span><br><span class="line">    name=<span class="string">&quot;test_case_agent&quot;</span>,</span><br><span class="line">    prompt=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    你是一位资深测试专家，擅长根据需求文档自动生成高质量的测试用例，并进行用例覆盖率校验。</span></span><br><span class="line"><span class="string">    你拥有以下两个工具：</span></span><br><span class="line"><span class="string">    1. `generate_test_case(requirement)`</span></span><br><span class="line"><span class="string">       - 输入需求 → 输出测试用例</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    2. `coverage_check(test_case)`</span></span><br><span class="line"><span class="string">       - 输入测试用例 → 检查覆盖率</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    任务流程：</span></span><br><span class="line"><span class="string">    1. 根据输入的“需求描述”调用 `generate_test_case`</span></span><br><span class="line"><span class="string">    2. 生成测试用例后立即调用 `coverage_check` 验证覆盖率</span></span><br><span class="line"><span class="string">    3. 如果存在遗漏，返回诊断信息并补充用例</span></span><br><span class="line"><span class="string">    4. 直到覆盖率达到 100%，才输出最终结果</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    ❗特别注意：</span></span><br><span class="line"><span class="string">    - 如果输入的需求信息过于模糊或不完整，无法生成有意义的测试用例：</span></span><br><span class="line"><span class="string">      → 请直接返回：“无法生成测试用例，请补充更完整的需求说明或接口文档。”</span></span><br><span class="line"><span class="string">    - 请勿暴露工具调用过程，仅返回结构化、清晰的测试用例列表</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="主管型智能体（Supervisor）"><a href="#主管型智能体（Supervisor）" class="headerlink" title="主管型智能体（Supervisor）"></a>主管型智能体（Supervisor）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/10 13:53</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langgraph_supervisor <span class="keyword">import</span> create_supervisor</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> app.agent.model.llms <span class="keyword">import</span> qv_llm</span><br><span class="line"><span class="keyword">from</span> demo.langgraph_multi_agent.agents.case_genarator_agent <span class="keyword">import</span> test_case_agent</span><br><span class="line"><span class="keyword">from</span> demo.langgraph_multi_agent.agents.data_search_agent <span class="keyword">import</span> data_search_agent</span><br><span class="line"></span><br><span class="line">agent = create_supervisor(</span><br><span class="line">    supervisor_name=<span class="string">&quot;测试专家智能体&quot;</span>,</span><br><span class="line">    model=qv_llm,</span><br><span class="line">    <span class="comment"># 配置子智能体</span></span><br><span class="line">    agents=[data_search_agent, test_case_agent],</span><br><span class="line">    prompt=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">        - Role: 主管智能体调度专家</span></span><br><span class="line"><span class="string">        - Background: 用户需要一个主管智能体来高效地调度两个子智能体，以确保请求被合理拆解并进行任务分配。用户希望主管智能体能够根据不同的需求，精准地分配任务给两个子智能体，并且在任务执行过程中进行有效的监控和调整。</span></span><br><span class="line"><span class="string">        - Profile: 你是一位精通智能体调度与任务规划的专家，对任务拆解、子智能体能力匹配以及执行流程监控有着丰富的经验。你能够精准地识别用户需求的类型，并根据需求的性质合理地分配任务给子智能体，同时确保任务执行的顺序性和连贯性。</span></span><br><span class="line"><span class="string">        - Skills: 你具备任务拆解能力、智能体能力匹配能力、执行流程监控能力以及逻辑推理能力。能够根据用户输入的需求，快速识别任务类型，并规划出合理的任务执行步骤，同时确保每个步骤的执行条件得到满足。</span></span><br><span class="line"><span class="string">        - Goals: </span></span><br><span class="line"><span class="string">          1. 根据用户输入的需求，准确拆解任务并分配给合适的子智能体。</span></span><br><span class="line"><span class="string">          2. 确保任务执行的顺序性和连贯性，特别是在需要多个子智能体协同完成任务时。</span></span><br><span class="line"><span class="string">          3. 在每个任务执行步骤完成后，进行反思和评估，确保下一步骤能够顺利执行。</span></span><br><span class="line"><span class="string">        - Constrains: </span></span><br><span class="line"><span class="string">          1. 仅负责规划和调度子智能体执行任务，不直接参与任务执行。</span></span><br><span class="line"><span class="string">          2. 在任务执行过程中，需要等待子智能体`data_search_agent`的任务执行完毕后，再执行后续步骤。</span></span><br><span class="line"><span class="string">          3. 严格遵守任务分配规则，根据任务类型分配给相应的子智能体。</span></span><br><span class="line"><span class="string">        - OutputFormat: 输出应包括任务拆解结果、子智能体分配计划以及任务执行步骤的详细规划。</span></span><br><span class="line"><span class="string">        - Workflow:</span></span><br><span class="line"><span class="string">          1. 接收用户输入的需求，进行需求分析和任务拆解。</span></span><br><span class="line"><span class="string">          2. 根据任务类型，分配给相应的子智能体执行任务。</span></span><br><span class="line"><span class="string">          3. 在子智能体执行任务过程中，监控执行进度并进行必要的调整。</span></span><br><span class="line"><span class="string">          4. 在每个任务执行步骤完成后，进行反思和评估，确保下一步骤能够顺利执行。</span></span><br><span class="line"><span class="string">          5. 如果需要多个子智能体协同完成任务，则按照预定顺序依次调用对应的子智能体。</span></span><br><span class="line"><span class="string">        - Examples:</span></span><br><span class="line"><span class="string">          - 例子1：用户需求：“查询某个功能的文档并生成测试用例。”</span></span><br><span class="line"><span class="string">            任务拆解：</span></span><br><span class="line"><span class="string">            1. 调用`data_search_agent`查询功能文档。</span></span><br><span class="line"><span class="string">            2. 等待`data_search_agent`任务执行完毕，获取查询结果。</span></span><br><span class="line"><span class="string">            3. 根据查询结果，调用`test_case_agent`生成测试用例。</span></span><br><span class="line"><span class="string">            4. 等待`test_case_agent`任务执行完毕，验证用例覆盖率。</span></span><br><span class="line"><span class="string">            5. 反思整个任务执行过程，确保任务顺利完成。</span></span><br><span class="line"><span class="string">          - 例子2：用户需求：“查找某个接口的文档。”</span></span><br><span class="line"><span class="string">            任务拆解：</span></span><br><span class="line"><span class="string">            1. 调用`data_search_agent`查找接口文档。</span></span><br><span class="line"><span class="string">            2. 等待`data_search_agent`任务执行完毕，获取查询结果。</span></span><br><span class="line"><span class="string">            3. 反思任务执行结果，确保查询结果准确无误。</span></span><br><span class="line"><span class="string">          - 例子3：用户需求：“根据需求文档生成测试用例。”</span></span><br><span class="line"><span class="string">            任务拆解：</span></span><br><span class="line"><span class="string">            1. 调用`test_case_agent`根据需求文档生成测试用例。</span></span><br><span class="line"><span class="string">            2. 等待`test_case_agent`任务执行完毕，验证用例覆盖率。</span></span><br><span class="line"><span class="string">            3. 反思任务执行结果，确保测试用例的完整性和准确性。</span></span><br><span class="line"><span class="string">        - Initialization: 在第一次对话中，请直接输出以下：您好！作为主管智能体调度专家，我将根据您的需求，合理地调度两个子智能体完成任务。请告诉我您的具体需求，我会为您规划任务执行步骤。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">).<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    response = agent.stream(</span><br><span class="line">        <span class="built_in">input</span>=&#123;</span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;查找用户注册的功能说明文档，再基于需求文档去生成测试用例&quot;</span>&#125;],</span><br><span class="line">        &#125;,</span><br><span class="line">        subgraphs=<span class="literal">True</span>,</span><br><span class="line">        stream_mode=[<span class="string">&quot;messages&quot;</span>, <span class="string">&quot;custom&quot;</span>]</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">for</span> chunk <span class="keyword">in</span> response:</span><br><span class="line">        <span class="keyword">if</span> chunk[<span class="number">1</span>] == <span class="string">&quot;custom&quot;</span>:</span><br><span class="line">            <span class="built_in">print</span>()</span><br><span class="line">            <span class="built_in">print</span>(chunk[<span class="number">2</span>])</span><br><span class="line">        <span class="keyword">elif</span> chunk[<span class="number">1</span>] == <span class="string">&quot;messages&quot;</span>:</span><br><span class="line">            <span class="built_in">print</span>(chunk[<span class="number">2</span>][<span class="number">0</span>].content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="群组型多智能体（Swarm）-1"><a href="#群组型多智能体（Swarm）-1" class="headerlink" title="群组型多智能体（Swarm）"></a>群组型多智能体（Swarm）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/10/10 14:25</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> langgraph_swarm <span class="keyword">import</span> create_swarm</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> app.agent.model.llms <span class="keyword">import</span> qv_llm</span><br><span class="line"><span class="keyword">from</span> demo.langgraph_multi_agent.agents.case_genarator_agent <span class="keyword">import</span> test_case_agent</span><br><span class="line"><span class="keyword">from</span> demo.langgraph_multi_agent.agents.data_search_agent <span class="keyword">import</span> data_search_agent</span><br><span class="line"></span><br><span class="line">agent = create_swarm(</span><br><span class="line">    model=qv_llm,</span><br><span class="line">    <span class="comment"># 配置子智能体</span></span><br><span class="line">    agents=[data_search_agent, test_case_agent],</span><br><span class="line">    default_active_agent=<span class="string">&quot;data_search_agent&quot;</span>,</span><br><span class="line">).<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    response = agent.stream(</span><br><span class="line">        <span class="built_in">input</span>=&#123;</span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;查找用户注册的功能说明文档，再基于需求文档去生成测试用例&quot;</span>&#125;],</span><br><span class="line">        &#125;,</span><br><span class="line">        subgraphs=<span class="literal">True</span>,</span><br><span class="line">        stream_mode=[<span class="string">&quot;messages&quot;</span>, <span class="string">&quot;custom&quot;</span>]</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">for</span> chunk <span class="keyword">in</span> response:</span><br><span class="line">        <span class="keyword">if</span> chunk[<span class="number">1</span>] == <span class="string">&quot;custom&quot;</span>:</span><br><span class="line">            <span class="built_in">print</span>()</span><br><span class="line">            <span class="built_in">print</span>(chunk[<span class="number">2</span>])</span><br><span class="line">        <span class="keyword">elif</span> chunk[<span class="number">1</span>] == <span class="string">&quot;messages&quot;</span>:</span><br><span class="line">            <span class="built_in">print</span>(chunk[<span class="number">2</span>][<span class="number">0</span>].content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h1 id="架构对比总结"><a href="#架构对比总结" class="headerlink" title="架构对比总结"></a>架构对比总结</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>架构类型</th>
+<th>控制流设计</th>
+<th>调度角色</th>
+<th>灵活性</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Supervisor</td>
+<td>中央调度</td>
+<td>统一主管</td>
+<td>中等</td>
+<td>中小型、结构化任务</td>
+</tr>
+<tr>
+<td>Swarm</td>
+<td>分布协商</td>
+<td>去中心化</td>
+<td>高</td>
+<td>动态协作、多专业系统</td>
+</tr>
+<tr>
+<td>自定义图（StateGraph）</td>
+<td>明确控制流</td>
+<td>无/可选</td>
+<td>高</td>
+<td>高度可控流程需求</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangGraph/" rel="tag"># LangGraph</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/10/10/ai/langchain/langgraph/7-langgraph-subgraph/" rel="prev" title="LangGraph之父子图（多工作流）">
+      <i class="fa fa-chevron-left"></i> LangGraph之父子图（多工作流）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/10/29/ai/llm/3-context/" rel="next" title="上下文工程">
+      上下文工程 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">为什么使用多智能体？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E7%AE%A1%E5%9E%8B%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%88Supervisor%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">主管型多智能体（Supervisor）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BE%A4%E7%BB%84%E5%9E%8B%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%88Swarm%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">群组型多智能体（Swarm）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B"><span class="nav-number">4.</span> <span class="nav-text">案例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E7%AE%A1%E5%9E%8B%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%88Supervisor%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">主管型智能体（Supervisor）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BE%A4%E7%BB%84%E5%9E%8B%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%88Swarm%EF%BC%89-1"><span class="nav-number">4.2.</span> <span class="nav-text">群组型多智能体（Swarm）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">架构对比总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

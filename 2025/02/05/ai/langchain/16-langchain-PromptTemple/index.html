@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain组件PromptTemple -- Langchain v0.3">
+<meta property="og:url" content="https://jinglv.github.io/2025/02/05/ai/langchain/16-langchain-PromptTemple/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250829153036422.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250829163851831.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902111419077.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902135805609.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250915105216387.png">
+<meta property="article:published_time" content="2025-02-04T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-08-29T07:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250829153036422.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/02/05/ai/langchain/16-langchain-PromptTemple/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain组件PromptTemple -- Langchain v0.3 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/02/05/ai/langchain/16-langchain-PromptTemple/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain组件PromptTemple -- Langchain v0.3
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-02-05 00:00:00" itemprop="dateCreated datePublished" datetime="2025-02-05T00:00:00+08:00">2025-02-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-08-29 15:30:00" itemprop="dateModified" datetime="2025-08-29T15:30:00+08:00">2025-08-29</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="提示词：大模型工作的核心部件"><a href="#提示词：大模型工作的核心部件" class="headerlink" title="提示词：大模型工作的核心部件"></a>提示词：大模型工作的核心部件</h1><p>大模型中提示词的工作原理及组成部分，包括提示词模板、大模型处理和输出解析器三部分，通过模板将变量填入固定结构生成提示词，输入大模型后得到自然语言回答，并由输出解析器转换为结构化数据，便于后续应用处理。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250829153036422.png" alt="image-20250829153036422" style="zoom:50%;" /></p>
+<ul>
+<li>大模型整体工作流程的三大组件：提示词模板、语言模型、输出解析器</li>
+<li>提示词模板的作用是将可变部分抽象为变量，固定不易变化的部分，实现复用和管理</li>
+<li>语言模型组件接收提示词模板生成的完整提示词，并返回自然语言响应</li>
+<li>输出解析器将自然语言响应转换为结构化数据（如JSON），便于后续程序处理</li>
+</ul>
+<h1 id="prompts模板：大模型推理的关键"><a href="#prompts模板：大模型推理的关键" class="headerlink" title="prompts模板：大模型推理的关键"></a>prompts模板：大模型推理的关键</h1><p>提示词撰写的重要性及技巧，指出不会提问会导致大模型回答质量低下，强调好的提示词应包含角色设定、背景信息、目标和约束条件等要素，并提到提示词模板在应用开发中的关键作用。</p>
+<ul>
+<li>不会写提示词的人 —  仅提供一句话提问，缺乏上下文和约束条件<ul>
+<li>例子：我想去海南玩，请你帮我做一份旅行攻略</li>
+</ul>
+</li>
+<li>会写提示词的人 — 好的提示词应包括角色设定、背景信息、目标需求和回答要求<ul>
+<li>例子：假如你是导游，我要到海南玩，预算一万元，跟行人数三个人，行程7天，请帮我做一份旅行攻略。请注意：我不喜欢行程太紧凑，我不喜欢网红景点，更喜欢有文化底蕴的景点，另外，推荐景点请附上各个景点的价格。</li>
+</ul>
+</li>
+</ul>
+<p>优秀的提示词(非推理型)：</p>
+<p>【立角色】：引导AI进入具体场景，赋予其行家身份</p>
+<p>【述问题】：告诉AI你的困惑和问题，以及背景信息</p>
+<p>【定目标】：告诉AI你的需求，希望达成的目标</p>
+<p>【补要求】：告诉AI回答时注意什么，或者如何回复</p>
+<p>提示词模板的好处：</p>
+<ol>
+<li>将提示词提炼成模板</li>
+<li>实现提示词复用、版本管理、动态变化等</li>
+</ol>
+<h1 id="PromptTemplate（字符串提示模板）"><a href="#PromptTemplate（字符串提示模板）" class="headerlink" title="PromptTemplate（字符串提示模板）"></a>PromptTemplate（字符串提示模板）</h1><p><strong>适用场景</strong>：</p>
+<ul>
+<li>用于<strong>文本补全模型</strong>，输入是纯文本（单字符串）。</li>
+<li>适用于简单的任务，例如生成一段文本、回答问题或执行指令。</li>
+</ul>
+<p><strong>特点</strong>：</p>
+<ul>
+<li><strong>输入变量插值</strong>：通过 <code>&#123;&#125;</code> 占位符动态替换变量。</li>
+<li><strong>模板格式</strong>：支持 <code>f-string</code>。</li>
+<li><p><strong>输出形式</strong>：生成一个完整的字符串作为模型输入。</p>
+</li>
+<li><p>字符串模版 - PromptTemplate（LLMs，偏向于文本处理，不太能处理输出结构化数据）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建提示词模版</span></span><br><span class="line"><span class="comment"># 方式一</span></span><br><span class="line">prompt_ = PromptTemplate(</span><br><span class="line">	input_variables=[<span class="string">&#x27;name&#x27;</span>, <span class="string">&#x27;county&#x27;</span>, <span class="string">&#x27;sex&#x27;</span>],</span><br><span class="line">  template=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">  # 角色定位</span></span><br><span class="line"><span class="string">  你是一个&#123;name&#125;,帮我起一个具有&#123;county&#125;特色的&#123;sex&#125;名字</span></span><br><span class="line"><span class="string">  &quot;&quot;&quot;</span></span><br><span class="line">)</span><br><span class="line"><span class="comment"># 方式二</span></span><br><span class="line">prompt = PromptTemplate.from_template(</span><br><span class="line">    <span class="string">&quot;你是一个&#123;name&#125;,帮我起一个具有&#123;county&#125;特色的&#123;sex&#125;名字&quot;</span></span><br><span class="line">)</span><br><span class="line"><span class="comment"># 模版 + 变量 = 提示词</span></span><br><span class="line">prompts = prompt.<span class="built_in">format</span>(name=<span class="string">&quot;算命大师&quot;</span>,county=<span class="string">&quot;日本&quot;</span>, sex=<span class="string">&quot;男孩子&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(prompts)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h1 id="ChatPromptTemple（聊天提示模板）"><a href="#ChatPromptTemple（聊天提示模板）" class="headerlink" title="ChatPromptTemple（聊天提示模板）"></a>ChatPromptTemple（聊天提示模板）</h1><p><strong>适用场景</strong>：</p>
+<ul>
+<li>用于<strong>聊天模型</strong>（如 ChatGPT / 通义千问等），输入是多轮对话的消息列表（<code>SystemMessage</code>、<code>HumanMessage</code>、<code>AIMessage</code> 等）。</li>
+<li>适用于需要模拟多轮对话或角色扮演的场景。</li>
+</ul>
+<p><strong>特点</strong>：</p>
+<ul>
+<li><strong>多消息类型支持</strong>：可以组合系统指令、用户输入和助手回复。</li>
+<li><strong>消息格式化</strong>：生成结构化的消息列表，供聊天模型处理。</li>
+<li><p><strong>灵活性</strong>：支持动态替换变量（如 <code>SystemMessage</code> 中的占位符）。</p>
+</li>
+<li><p>对话模版 - ChatPromptTemple（ChatLLMs，主流）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line">chat_template = ChatPromptTemplate.from_messages(</span><br><span class="line">    [</span><br><span class="line">        (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一个起名大师，你的名字叫&#123;name&#125;&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;你好&#123;name&#125;，你感觉如何？&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;ai&quot;</span>, <span class="string">&quot;我感觉还不错，谢谢&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;你叫什么名字？&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;ai&quot;</span>, <span class="string">&quot;你好，我叫&#123;name&#125;&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;user_input&#125;&quot;</span>),</span><br><span class="line">    ]</span><br><span class="line">)</span><br><span class="line">chats = chat_template.format_messages(name=<span class="string">&quot;算命大师&quot;</span>,user_input=<span class="string">&quot;你好我是谁呢？&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(chats)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p>消息占位符</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate, MessagesPlaceholder</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line">prompt_template = ChatPromptTemplate([</span><br><span class="line">    (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一个厉害的人工智能助手&quot;</span>),</span><br><span class="line">    MessagesPlaceholder(<span class="string">&quot;messages&quot;</span>), <span class="comment"># 相当插入了一个叫messages的变量，用于占了个位置</span></span><br><span class="line">    <span class="comment"># (&quot;placeholder&quot;, &quot;&#123;messages&#125;&quot;), # 与MessagesPlaceholder(&quot;messages&quot;)等效写法</span></span><br><span class="line">])</span><br><span class="line">result = prompt_template.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(<span class="string">&quot;你好&quot;</span>)]&#125;)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p>使用Message组合模版</p>
+<ul>
+<li><code>HumanMessage</code>：代表用户的消息</li>
+<li><code>AIMessage</code>：代表模型输出的消息</li>
+<li><code>SystemMessage</code>：代表系统消息</li>
+<li><code>FunctionMessage</code>：表示函数调用的结果，该参数为被调用的函数的名称</li>
+<li><code>ToolMessage</code>：表示工具调用的结果，与FunctionMessage不同，是为了匹配OpenAI的function和tool消息类型</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> SystemMessage, HumanMessage, AIMessage</span><br><span class="line"></span><br><span class="line">sy = SystemMessage(</span><br><span class="line">    content=<span class="string">&quot;你是一名起名大师&quot;</span>,</span><br><span class="line">    additional_kwargs=&#123;<span class="string">&quot;大师姓名&quot;</span>: <span class="string">&quot;陈瞎子&quot;</span>&#125;</span><br><span class="line">)</span><br><span class="line">hu = HumanMessage(</span><br><span class="line">    content=<span class="string">&quot;请问大师叫什么&quot;</span></span><br><span class="line">)</span><br><span class="line">ai = AIMessage(</span><br><span class="line">    content=<span class="string">&quot;我叫陈瞎子&quot;</span></span><br><span class="line">)</span><br><span class="line">messages = [sy, hu, ai]</span><br><span class="line"><span class="built_in">print</span>(messages)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ul>
+<li><p>自定义提示词模版（不常用）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">import</span> inspect</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAI</span><br><span class="line"><span class="keyword">from</span> langchain.prompts <span class="keyword">import</span> StringPromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载 .env 文件中的环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个简单的函数作为示例效果</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hello_word</span>(<span class="params">abc</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Hello World&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> abc</span><br><span class="line"></span><br><span class="line">PROMPT = <span class="string">&quot;&quot;&quot;\</span></span><br><span class="line"><span class="string">你是一个非常有经验和天赋的程序员，现在给你如下函数名称，你会按照如下格式，输出这段代码的名称、源代码、中文解释。</span></span><br><span class="line"><span class="string">函数名称：&#123;function_name&#125;</span></span><br><span class="line"><span class="string">源代码：</span></span><br><span class="line"><span class="string">&#123;source_code&#125;</span></span><br><span class="line"><span class="string">代码解释：</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_source_code</span>(<span class="params">function_name</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    获取函数的源代码</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> inspect.getsource(function_name)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomPromptTemplate</span>(<span class="title class_ inherited__">StringPromptTemplate</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    自定义模版</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">format</span>(<span class="params">self, **kwargs</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="comment"># 获取函数的源代码</span></span><br><span class="line">        source_code = get_source_code(kwargs[<span class="string">&quot;function_name&quot;</span>])</span><br><span class="line">        <span class="comment"># 生成提示词模版</span></span><br><span class="line">        prompt = PROMPT.<span class="built_in">format</span>(</span><br><span class="line">            function_name=kwargs[<span class="string">&quot;function_name&quot;</span>].__name__,</span><br><span class="line">            source_code=source_code</span><br><span class="line">        )</span><br><span class="line">        <span class="keyword">return</span> prompt</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用自定义的提示词模版，而不是类似对话提示词模版</span></span><br><span class="line">a = CustomPromptTemplate(input_variables=[<span class="string">&quot;function_name&quot;</span>])</span><br><span class="line">res = a.<span class="built_in">format</span>(function_name=hello_word)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;格式化之后的提示词为==============&gt;&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(res)</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm = OpenAI(</span><br><span class="line">    <span class="comment"># model_name=&quot;gpt-3.5-turbo&quot;,</span></span><br><span class="line">    temperature=<span class="number">0.2</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;结合LLM输出的结果==============&gt;&quot;</span>)</span><br><span class="line">msg = llm.invoke(res)</span><br><span class="line"><span class="built_in">print</span>(msg)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="ChatMessagePromptTemplate"><a href="#ChatMessagePromptTemplate" class="headerlink" title="ChatMessagePromptTemplate"></a>ChatMessagePromptTemplate</h2><p><code>ChatMessagePromptTemplate</code>可以结合 <code>ChatPromptTemplate</code>使用，同时对提示词模板和消息体进行抽象和复用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate, ChatMessagePromptTemplate</span><br><span class="line"></span><br><span class="line">system_template = ChatMessagePromptTemplate.from_template(</span><br><span class="line">    template=<span class="string">&quot;你是一位&#123;role&#125;专家，擅长回答&#123;domain&#125;领域的问题。&quot;</span>,</span><br><span class="line">    role=<span class="string">&quot;system&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">human_template = ChatMessagePromptTemplate.from_template(</span><br><span class="line">    template=<span class="string">&quot;用户问题：&#123;question&#125;&quot;</span>,</span><br><span class="line">    role=<span class="string">&quot;human&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">chat_prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    system_template,</span><br><span class="line">    human_template,</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line">messages = chat_prompt.format_messages(</span><br><span class="line">    role=<span class="string">&quot;技术&quot;</span>,</span><br><span class="line">    domain=<span class="string">&quot;Web开发&quot;</span>,</span><br><span class="line">    question=<span class="string">&quot;如何构建一个基于Vue的前端应用？&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(messages)</span><br></pre></td></tr></table></figure>
+<h1 id="FewShotPromptTemplate（少样本提示模板）"><a href="#FewShotPromptTemplate（少样本提示模板）" class="headerlink" title="FewShotPromptTemplate（少样本提示模板）"></a><code>FewShotPromptTemplate</code>（少样本提示模板）</h1><p>FueShot（少量示例）提示词技巧，通过举例子帮助大模型快速理解新任务，结合代码演示在lunchin中如何使用Few Shot提升回答准确性，强调示例质量与任务相关性的重要性。</p>
+<p>FueShout的核心思想是给模型提供示例，模仿输出完成新任务</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250829163851831.png" alt="image-20250829163851831" style="zoom:50%;" /></p>
+<p><strong>适用场景</strong>：</p>
+<ul>
+<li>用于<strong>少样本学习</strong>（Few-Shot Learning），在提示中包含示例（Examples），帮助模型理解任务。</li>
+<li>适用于复杂任务（如翻译、分类、推理），需要通过示例引导模型行为。</li>
+</ul>
+<p><strong>特点</strong>：</p>
+<ul>
+<li><strong>示例嵌入</strong>：通过 <code>examples</code> 参数提供示例输入和输出。</li>
+<li><strong>动态示例选择</strong>：支持 <code>ExampleSelector</code> 动态选择最相关的示例。</li>
+<li><strong>模板格式</strong>：通常包含前缀（Prefix）、示例（Examples）和后缀（Suffix）。</li>
+</ul>
+<h2 id="ZeroShot（零示例）"><a href="#ZeroShot（零示例）" class="headerlink" title="ZeroShot（零示例）"></a>ZeroShot（零示例）</h2><p>会导致低质量回答，代码示例如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载 .env 文件中的环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">model = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.2</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">res = model.invoke(<span class="string">&quot;What is 2 🐦 9？&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(res)</span><br></pre></td></tr></table></figure>
+<h2 id="FewShot（少量示例）"><a href="#FewShot（少量示例）" class="headerlink" title="FewShot（少量示例）"></a>FewShot（少量示例）</h2><p>代码示例如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="comment"># 增加提示词</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate, FewShotChatMessagePromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载 .env 文件中的环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">model = ChatOpenAI(</span><br><span class="line">    temperature=<span class="number">0.2</span>,</span><br><span class="line">    base_url=api_base,</span><br><span class="line">    api_key=api_key,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 增加示例组</span></span><br><span class="line">examples = [</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;2 🐦 2&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;4&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;2 🐦 3&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;5&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"><span class="comment"># 构造提示词模板</span></span><br><span class="line">example_prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;input&#125;&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;ai&quot;</span>, <span class="string">&quot;&#123;output&#125;&quot;</span>),</span><br><span class="line">])</span><br><span class="line"><span class="comment"># 组合示例与提示词</span></span><br><span class="line">few_shot_prompt = FewShotChatMessagePromptTemplate(</span><br><span class="line">    <span class="comment"># 提示词模板</span></span><br><span class="line">    example_prompt=example_prompt,</span><br><span class="line">    <span class="comment"># 示例组</span></span><br><span class="line">    examples=examples,</span><br><span class="line">)</span><br><span class="line"><span class="comment"># 打印提示词模板</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;组合之后的提示词为=====================》&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(few_shot_prompt.invoke(&#123;&#125;).to_messages())</span><br><span class="line"><span class="comment"># 构造最终提示词</span></span><br><span class="line">final_prompt = ChatPromptTemplate.from_messages([</span><br><span class="line">    (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一位神奇的数学奇才.&quot;</span>),</span><br><span class="line">    few_shot_prompt,</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;input&#125;&quot;</span>)</span><br><span class="line">])</span><br><span class="line"><span class="comment"># 重新提问</span></span><br><span class="line">chain = final_prompt | model</span><br><span class="line">result = chain.invoke(&#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;what is 2 🐦 9?&quot;</span>&#125;)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;重新提问结果为=====================》&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+<p>比较实际的一个场景：输入Bug文本 —&gt; 输出Bug类型</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> FewShotPromptTemplate, PromptTemplate</span><br><span class="line"></span><br><span class="line">examples = [</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;点击登录按钮无反应&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;功能缺失&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;加载页面卡顿超过10秒&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;性能问题&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">example_prompt = PromptTemplate(</span><br><span class="line">    input_variables=[<span class="string">&quot;input&quot;</span>, <span class="string">&quot;output&quot;</span>],</span><br><span class="line">    template=<span class="string">&quot;Bug描述：&#123;input&#125;\nBug类型：&#123;output&#125;&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">few_shot_prompt = FewShotPromptTemplate(</span><br><span class="line">    <span class="comment"># 样本</span></span><br><span class="line">    examples=examples,</span><br><span class="line">    <span class="comment"># 样板格式</span></span><br><span class="line">    example_prompt=example_prompt,</span><br><span class="line">    <span class="comment"># 提示词最前的一句话</span></span><br><span class="line">    prefix=<span class="string">&quot;请根据以下示例判断Bug类型：&quot;</span>,</span><br><span class="line">    <span class="comment"># 提示词最后面的一句话</span></span><br><span class="line">    suffix=<span class="string">&quot;Bug描述：&#123;user_input&#125;\nBug类型：&quot;</span>,</span><br><span class="line">    <span class="comment"># 用户输入的变量</span></span><br><span class="line">    input_variables=[<span class="string">&quot;user_input&quot;</span>]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(few_shot_prompt.<span class="built_in">format</span>(user_input=<span class="string">&quot;用户头像无法上传&quot;</span>))</span><br></pre></td></tr></table></figure>
+<h1 id="MessagesPlaceholder-插入对话历史"><a href="#MessagesPlaceholder-插入对话历史" class="headerlink" title="MessagesPlaceholder(插入对话历史)"></a>MessagesPlaceholder(插入对话历史)</h1><p>可将历史对话的信息插入到一个多轮朵花中</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate, MessagesPlaceholder</span><br><span class="line"></span><br><span class="line">chat_template = ChatPromptTemplate.from_messages([</span><br><span class="line">    (<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一个 AI 测试助手&quot;</span>),</span><br><span class="line">    MessagesPlaceholder(variable_name=<span class="string">&quot;history&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;input&#125;&quot;</span>)</span><br><span class="line">])</span><br></pre></td></tr></table></figure>
+<h1 id="示例选择器"><a href="#示例选择器" class="headerlink" title="示例选择器"></a>示例选择器</h1><p>动态示例是指根据任务需求动态选择合适的提示词示例，以适应模型上下文窗口限制并提高相关性。与静态示例不同，动态示例不固定在模板中，而是通过选择器按需筛选示例，如根据长度、语义相似度或向量相似度进行选择，从而优化提示词组成，确保模型输入既符合长度要求又与任务高度相关。</p>
+<p>动态提示词示例与静态提示词示例的区别</p>
+<ul>
+<li><p>动态提示词示例可以根据任务需求动态选择合适的提示词内容，而静态示例是写死在模板中的，无法改变。</p>
+</li>
+<li><p>静态示例的长度固定，可能占用模型上下文窗口，限制灵活性。</p>
+</li>
+<li><p>动态示例通过参数控制，可以在不同任务中切换不同的提示词内容，优化上下文窗口使用。</p>
+</li>
+</ul>
+<p>动态提示词示例的选择策略</p>
+<ul>
+<li><p>根据长度选择：基于输入和上下文窗口剩余长度动态选择合适的提示词示例。</p>
+</li>
+<li><p>根据语义相似度选择：通过向量空间计算任务与示例之间的语义匹配度进行筛选。</p>
+</li>
+<li><p>最大边际相关性（MMR）选择：综合考虑语义相关性和多样性，避免重复信息。</p>
+</li>
+</ul>
+<h2 id="根据长度动态选择提示词示例"><a href="#根据长度动态选择提示词示例" class="headerlink" title="根据长度动态选择提示词示例"></a>根据长度动态选择提示词示例</h2><p>使用LengthBasedExampleSelector实现基于长度的动态提示词选择。</p>
+<p>示例代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.example_selectors <span class="keyword">import</span> LengthBasedExampleSelector</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> FewShotPromptTemplate, PromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 假设已经有这么多的提示词示例组：</span></span><br><span class="line">examples = [</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;happy&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;sad&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;tall&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;short&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;sunny&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;gloomy&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;windy&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;calm&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;高兴&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;悲伤&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 构造提示词模板</span></span><br><span class="line">example_prompt = PromptTemplate(</span><br><span class="line">    input_variables=[<span class="string">&quot;input&quot;</span>, <span class="string">&quot;output&quot;</span>],</span><br><span class="line">    template=<span class="string">&quot;原词: &#123;input&#125;\n反义: &#123;output&#125;&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用长度示例选择器</span></span><br><span class="line">example_selector = LengthBasedExampleSelector(</span><br><span class="line">    <span class="comment"># 传入提示词模板</span></span><br><span class="line">    example_prompt=example_prompt,</span><br><span class="line">    <span class="comment"># 传入示例组</span></span><br><span class="line">    examples=examples,</span><br><span class="line">    <span class="comment"># 设置格式化后的提示词最大长度</span></span><br><span class="line">    max_length=<span class="number">25</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用小样本提示词模板来实现动态示例的调用</span></span><br><span class="line">dynamic_prompt = FewShotPromptTemplate(</span><br><span class="line">    <span class="comment"># 传入示例选择器</span></span><br><span class="line">    example_selector=example_selector,</span><br><span class="line">    <span class="comment"># 传入提示词模板</span></span><br><span class="line">    example_prompt=example_prompt,</span><br><span class="line">    <span class="comment"># 传入前缀</span></span><br><span class="line">    prefix=<span class="string">&quot;请给出以下词的反义词：&quot;</span>,</span><br><span class="line">    <span class="comment"># 传入后缀</span></span><br><span class="line">    suffix=<span class="string">&quot;原词：&#123;adjective&#125;\n反义：&quot;</span>,</span><br><span class="line">    <span class="comment"># 传入输入变量</span></span><br><span class="line">    input_variables=[<span class="string">&quot;adjective&quot;</span>],</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 小样本获得所有示例，这样可以有效减少输入的提示词长度</span></span><br><span class="line"><span class="built_in">print</span>(dynamic_prompt.<span class="built_in">format</span>(adjective=<span class="string">&quot;big&quot;</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果输入长度很长，最终输出会根据长度要求减少(长度溢出，会将示例组进行删除，可能就会匹配不到想要的示例组)</span></span><br><span class="line">long_string = <span class="string">&quot;really big and huge and massive and gigantic and enormous and large and much bigger than very big&quot;</span></span><br><span class="line"><span class="built_in">print</span>(dynamic_prompt.<span class="built_in">format</span>(adjective=long_string))</span><br></pre></td></tr></table></figure>
+<ul>
+<li>优点：提高上下文窗口利用率，减少不必要干扰；支持多任务复用提示词模板。</li>
+<li>缺点：基于长度的选择方式较为机械，可能忽略语义相关性（长度溢出，会将示例组进行删除，可能就会匹配不到想要的示例组）；语义相似度方法需要额外计算资源。</li>
+</ul>
+<h2 id="根据语义相似度选择提示词示例"><a href="#根据语义相似度选择提示词示例" class="headerlink" title="根据语义相似度选择提示词示例"></a>根据语义相似度选择提示词示例</h2><p>通过语义相似度匹配输入与示例组中的向量数据，利用余弦相似度算法在向量数据库中搜索最相关的结果，并返回Top K条匹配内容，实现动态筛选和精准输出。</p>
+<ul>
+<li>筛选示例组中与输入的语义相似度最高的示例</li>
+<li>本质：将问题与示例嵌入向量空间后进行搜索比对</li>
+<li>依赖：向量数据库</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902111419077.png" alt="image-20250902111419077" style="zoom:80%;" /></p>
+<p>使用SemanticSimilarityExampleSelector实现基于语义相似度的动态提示词选择。</p>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用最大余弦相似度来检索相关示例，以使示例尽量符合输入</span></span><br><span class="line"><span class="comment"># Use the maximum cosine similarity to retrieve relevant examples to make the examples as close as possible to the input</span></span><br><span class="line"><span class="keyword">from</span> langchain_community.vectorstores <span class="keyword">import</span> Chroma</span><br><span class="line"><span class="keyword">from</span> langchain_core.example_selectors <span class="keyword">import</span> SemanticSimilarityExampleSelector</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> FewShotPromptTemplate, PromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAIEmbeddings</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">example_prompt = PromptTemplate(</span><br><span class="line">    input_variables=[<span class="string">&quot;input&quot;</span>, <span class="string">&quot;output&quot;</span>],</span><br><span class="line">    template=<span class="string">&quot;原词: &#123;input&#125;\n反义: &#123;output&#125;&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">#  一组示例包含各种性质的反义词</span></span><br><span class="line"><span class="comment"># Examples of a pretend task of creating antonyms.</span></span><br><span class="line">examples = [</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;happy&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;sad&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;tall&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;short&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;energetic&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;lethargic&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;sunny&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;gloomy&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>: <span class="string">&quot;windy&quot;</span>, <span class="string">&quot;output&quot;</span>: <span class="string">&quot;calm&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>:<span class="string">&quot;高兴&quot;</span>,<span class="string">&quot;output&quot;</span>:<span class="string">&quot;悲伤&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">example_selector = SemanticSimilarityExampleSelector.from_examples(</span><br><span class="line">    <span class="comment"># 传入示例组.</span></span><br><span class="line">    <span class="comment"># Pass in the example group.</span></span><br><span class="line">    examples,</span><br><span class="line">    <span class="comment"># 使用openAI嵌入来做相似性搜索</span></span><br><span class="line">    <span class="comment"># Use openAI embeddings for similarity search</span></span><br><span class="line">    OpenAIEmbeddings(openai_api_key=api_key,openai_api_base=api_base),</span><br><span class="line">    <span class="comment"># 使用Chroma向量数据库来实现对相似结果的过程存储</span></span><br><span class="line">    <span class="comment"># Use the Chroma vector database to implement the process storage of similar results</span></span><br><span class="line">    Chroma,</span><br><span class="line">    <span class="comment"># 结果条数</span></span><br><span class="line">    <span class="comment"># Number of results</span></span><br><span class="line">    k=<span class="number">2</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">#使用小样本提示词模板</span></span><br><span class="line">similar_prompt = FewShotPromptTemplate(</span><br><span class="line">    <span class="comment"># 传入选择器和模板以及前缀后缀和输入变量</span></span><br><span class="line">    <span class="comment"># Pass in the selector and template, as well as the prefix and suffix and input variables</span></span><br><span class="line">    example_selector=example_selector,</span><br><span class="line">    example_prompt=example_prompt,</span><br><span class="line">    prefix=<span class="string">&quot;给出每个输入词的反义词&quot;</span>,</span><br><span class="line">    suffix=<span class="string">&quot;原词: &#123;adjective&#125;\n反义:&quot;</span>,</span><br><span class="line">    input_variables=[<span class="string">&quot;adjective&quot;</span>],</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输入一个形容感觉的词语，应该查找近似的 happy/sad 示例</span></span><br><span class="line"><span class="built_in">print</span>(similar_prompt.<span class="built_in">format</span>(adjective=<span class="string">&quot;难过&quot;</span>))</span><br></pre></td></tr></table></figure>
+<h2 id="根据MMR与最大余弦相似度选择示例"><a href="#根据MMR与最大余弦相似度选择示例" class="headerlink" title="根据MMR与最大余弦相似度选择示例"></a>根据MMR与最大余弦相似度选择示例</h2><p>最大边际相关性（MMR）是一种在信息检索中常用的方法，旨在平衡相关性和多样性。它通过选择与输入高度相关且彼此间具有足够差异性的样本来避免重复或过于相似的结果，从而提高检索质量。</p>
+<ul>
+<li>筛选示例组中符合MMR规则的示例</li>
+<li>本质：将问题与示例嵌入向量空间后进行搜索比对</li>
+<li>依赖：向量数据库</li>
+<li>MMR: 是一种在信息检索中常用的方法，它的目标是在相关性和多样性之间找到一个平衡。MMR会首先找出与输入最相似（即余弦相似度最大）的样本。然后在迭代添加样本的过程中，对于与已选择样本过于接近（即相似度过高）的样本进行惩罚。MMR既能确保选出的样本与输入高度相关，又能保证选出的样本之间有足够的多样性。关注如何在相关性和多样性之间找到一个平衡。</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#使用MMR来检索相关示例，以使示例尽量符合输入</span></span><br><span class="line"><span class="comment"># Use MMR to retrieve relevant examples to make the examples as close as possible to the input</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_community.vectorstores <span class="keyword">import</span> FAISS</span><br><span class="line"><span class="keyword">from</span> langchain_core.example_selectors <span class="keyword">import</span> (</span><br><span class="line">    MaxMarginalRelevanceExampleSelector,</span><br><span class="line">)</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> FewShotPromptTemplate, PromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> OpenAIEmbeddings</span><br><span class="line"></span><br><span class="line">api_base = os.getenv(<span class="string">&quot;OPENAI_API_BASE&quot;</span>)</span><br><span class="line">api_key = os.getenv(<span class="string">&quot;OPENAI_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#假设已经有这么多的提示词示例组：</span></span><br><span class="line"><span class="comment"># Suppose there are so many prompt examples:</span></span><br><span class="line">examples = [</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>:<span class="string">&quot;happy&quot;</span>,<span class="string">&quot;output&quot;</span>:<span class="string">&quot;sad&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>:<span class="string">&quot;tall&quot;</span>,<span class="string">&quot;output&quot;</span>:<span class="string">&quot;short&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>:<span class="string">&quot;sunny&quot;</span>,<span class="string">&quot;output&quot;</span>:<span class="string">&quot;gloomy&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>:<span class="string">&quot;windy&quot;</span>,<span class="string">&quot;output&quot;</span>:<span class="string">&quot;calm&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;input&quot;</span>:<span class="string">&quot;高兴&quot;</span>,<span class="string">&quot;output&quot;</span>:<span class="string">&quot;悲伤&quot;</span>&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment">#构造提示词模版</span></span><br><span class="line"><span class="comment"># Construct prompt template</span></span><br><span class="line">example_prompt = PromptTemplate(</span><br><span class="line">    input_variables=[<span class="string">&quot;input&quot;</span>,<span class="string">&quot;output&quot;</span>],</span><br><span class="line">    template=<span class="string">&quot;原词：&#123;input&#125;\n反义：&#123;output&#125;&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">#调用MMR</span></span><br><span class="line"><span class="comment"># Call MMR</span></span><br><span class="line">example_selector = MaxMarginalRelevanceExampleSelector.from_examples(</span><br><span class="line">    <span class="comment">#传入示例组</span></span><br><span class="line">    <span class="comment"># Pass in the example group</span></span><br><span class="line">    examples,</span><br><span class="line">    <span class="comment">#使用openai的嵌入来做相似性搜索</span></span><br><span class="line">    <span class="comment"># Use openai&#x27;s embedding for similarity search</span></span><br><span class="line">    OpenAIEmbeddings(openai_api_base=api_base,openai_api_key=api_key),</span><br><span class="line">    <span class="comment">#设置使用的向量数据库是什么</span></span><br><span class="line">    <span class="comment"># Set what vector database is used</span></span><br><span class="line">    FAISS,</span><br><span class="line">    <span class="comment">#结果条数</span></span><br><span class="line">    <span class="comment"># Number of results</span></span><br><span class="line">    k=<span class="number">2</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">#使用小样本模版</span></span><br><span class="line">mmr_prompt = FewShotPromptTemplate(</span><br><span class="line">    example_selector=example_selector,</span><br><span class="line">    example_prompt=example_prompt,</span><br><span class="line">    prefix=<span class="string">&quot;给出每个输入词的反义词&quot;</span>,</span><br><span class="line">    suffix=<span class="string">&quot;原词：&#123;adjective&#125;\n反义：&quot;</span>,</span><br><span class="line">    input_variables=[<span class="string">&quot;adjective&quot;</span>]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">#当我们输入一个描述情绪的词语的时候，应该选择同样是描述情绪的一对示例组来填充提示词模版</span></span><br><span class="line"><span class="comment"># When we enter a word describing emotions, we should choose a pair of examples that also describe emotions to fill the prompt template</span></span><br><span class="line"><span class="built_in">print</span>(mmr_prompt.<span class="built_in">format</span>(adjective=<span class="string">&quot;难过&quot;</span>))</span><br></pre></td></tr></table></figure>
+<h1 id="使用Partial进行部分格式化效果"><a href="#使用Partial进行部分格式化效果" class="headerlink" title="使用Partial进行部分格式化效果"></a>使用Partial进行部分格式化效果</h1><p>提示词模板部分格式化的功能，通过Partial属性实现分步填充参数，适用于异步获取参数值或需动态生成内容（如当前时间）的场景，提升模板使用的灵活性。</p>
+<h2 id="部分格式化（Partial-Formatting）及其应用场景"><a href="#部分格式化（Partial-Formatting）及其应用场景" class="headerlink" title="部分格式化（Partial Formatting）及其应用场景"></a>部分格式化（Partial Formatting）及其应用场景</h2><p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line">prompt = PromptTemplate.from_template(<span class="string">&quot;&#123;foo&#125;---&#123;bar&#125;&quot;</span>)</span><br><span class="line">partial_prompt = prompt.partial(foo=<span class="string">&quot;foo-test&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(partial_prompt)</span><br><span class="line"><span class="built_in">print</span>(partial_prompt.<span class="built_in">format</span>(bar=<span class="string">&quot;bar-test&quot;</span>))</span><br></pre></td></tr></table></figure>
+<h2 id="动态内容处理与函数式参数传递"><a href="#动态内容处理与函数式参数传递" class="headerlink" title="动态内容处理与函数式参数传递"></a>动态内容处理与函数式参数传递</h2><p>将模板中的参数替换为函数以支持更灵活的格式化逻辑</p>
+<p>示例代码：使用函数动态生成当前时间并嵌入提示词模板中</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这些场景非常有用，比如：当你希望提示词被执行的时候，始终是当前的时间</span></span><br><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime</span><br><span class="line"><span class="keyword">from</span> langchain.prompts <span class="keyword">import</span> PromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">_get_datetime</span>():</span><br><span class="line">    <span class="keyword">return</span> datetime.now().strftime(<span class="string">&quot;%Y-%m-%d %H:%M:%S&quot;</span>)</span><br><span class="line"></span><br><span class="line">prompt = PromptTemplate(</span><br><span class="line">    template=<span class="string">&quot;Tell me a &#123;adjective&#125; joke about the day &#123;date&#125;&quot;</span>,</span><br><span class="line">    input_variables=[<span class="string">&quot;adjective&quot;</span>, <span class="string">&quot;date&quot;</span>],</span><br><span class="line">)</span><br><span class="line">partial_prompt = prompt.partial(date=_get_datetime)</span><br><span class="line"><span class="built_in">print</span>(partial_prompt.<span class="built_in">format</span>(adjective=<span class="string">&quot;funny&quot;</span>))</span><br></pre></td></tr></table></figure>
+<h1 id="LangChain-hub加载提示词管理"><a href="#LangChain-hub加载提示词管理" class="headerlink" title="LangChain hub加载提示词管理"></a>LangChain hub加载提示词管理</h1><p>Lang Smith 是 LangChain 生态中的商业化产品，主要用于提示词管理，包含可观测性、评估和提示词工程三方面功能。它支持应用监控、AI 应用测试及提示词版本化管理，适合团队协作与长期项目开发使用。</p>
+<ul>
+<li>使用hub加载别人分享的提示词模板</li>
+<li>使用langsmith sdk来做提示词管理</li>
+</ul>
+<p>langchain hub：<a target="_blank" rel="noopener" href="https://smith.langchain.com/hub">https://smith.langchain.com/hub</a></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250902135805609.png" alt="image-20250902135805609" style="zoom:30%;" /></p>
+<p>安装依赖</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -qU langsmith </span><br></pre></td></tr></table></figure>
+<h2 id="从hub上加载提示词"><a href="#从hub上加载提示词" class="headerlink" title="从hub上加载提示词"></a>从hub上加载提示词</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://smith.langchain.com">https://smith.langchain.com</a> 注册并获取API KEY</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain <span class="keyword">import</span> hub</span><br><span class="line"></span><br><span class="line">LANGCHAIN_API_KEY=os.environ.get(<span class="string">&quot;API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line">prompt = hub.pull(<span class="string">&quot;rlm/rag-prompt&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(prompt)</span><br></pre></td></tr></table></figure>
+<h2 id="使用langsmith来管理提示词"><a href="#使用langsmith来管理提示词" class="headerlink" title="使用langsmith来管理提示词"></a>使用langsmith来管理提示词</h2><ul>
+<li>创建提示词</li>
+<li>测试提示词</li>
+<li>迭代提示词</li>
+</ul>
+<p>创建提示词后上传到langsmith</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langsmith <span class="keyword">import</span> Client</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">client = Client(api_key=os.environ.get(<span class="string">&quot;API_KEY&quot;</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment"># Define the prompt</span></span><br><span class="line"></span><br><span class="line">prompt = ChatPromptTemplate([</span><br><span class="line">(<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你的名字叫Jean，是一名帮助的聊天机器人.&quot;</span>),</span><br><span class="line">(<span class="string">&quot;user&quot;</span>, <span class="string">&quot;&#123;question&#125;&quot;</span>),</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line"><span class="comment"># Push the prompt</span></span><br><span class="line"></span><br><span class="line">client.push_prompt(<span class="string">&quot;test1&quot;</span>, <span class="built_in">object</span>=prompt)</span><br></pre></td></tr></table></figure>
+<p>远程拉取自己的提示词并使用DeepSeek测试</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langsmith <span class="keyword">import</span> Client</span><br><span class="line"><span class="keyword">from</span> langchain_deepseek <span class="keyword">import</span> ChatDeepSeek</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">client = Client(api_key=os.environ.get(<span class="string">&quot;API_KEY&quot;</span>))</span><br><span class="line"></span><br><span class="line">llm = ChatDeepSeek(</span><br><span class="line">    model=<span class="string">&quot;deepseek-chat&quot;</span>,</span><br><span class="line">    api_base=<span class="string">&quot;xxxxxxxxxxxx&quot;</span>,</span><br><span class="line">    api_key=os.environ.get(<span class="string">&quot;API_KEY&quot;</span>),</span><br><span class="line">    temperature=<span class="number">0</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Pull the prompt to use</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># You can also specify a specific commit by passing the commit hash &quot;my-prompt:&lt;commit-hash&gt;&quot;</span></span><br><span class="line"></span><br><span class="line">prompt = client.pull_prompt(<span class="string">&quot;test1&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Since our prompt only has one variable we could also pass in the value directly</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># The code below is equivalent to formatted_prompt = prompt.invoke(&quot;What is the color of the sky?&quot;)</span></span><br><span class="line"></span><br><span class="line">formatted_prompt = prompt.invoke(&#123;<span class="string">&quot;question&quot;</span>: <span class="string">&quot;天空是什么颜色的?&quot;</span>&#125;)</span><br><span class="line"><span class="built_in">print</span>(formatted_prompt)</span><br><span class="line"><span class="comment"># Test the prompt</span></span><br><span class="line"></span><br><span class="line">llm.invoke(formatted_prompt)</span><br></pre></td></tr></table></figure>
+<p>团队迭代提示词</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langsmith <span class="keyword">import</span> Client</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> ChatPromptTemplate</span><br><span class="line"></span><br><span class="line"><span class="comment"># Connect to the LangSmith client</span></span><br><span class="line"></span><br><span class="line">client = Client(api_key=os.environ.get(<span class="string">&quot;API_KEY&quot;</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment"># Define the prompt to update</span></span><br><span class="line"></span><br><span class="line">new_prompt = ChatPromptTemplate([</span><br><span class="line">(<span class="string">&quot;system&quot;</span>, <span class="string">&quot;你是一个有趣的机器人. 使用中文回复.&quot;</span>),</span><br><span class="line">(<span class="string">&quot;user&quot;</span>, <span class="string">&quot;&#123;question&#125;&quot;</span>),</span><br><span class="line">])</span><br><span class="line"></span><br><span class="line"><span class="comment"># Push the updated prompt making sure to use the correct prompt name</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 注意tags可以更方便进行版本管理,你也可以打成v0.0.1这样</span></span><br><span class="line"></span><br><span class="line">client.push_prompt(<span class="string">&quot;test1&quot;</span>, <span class="built_in">object</span>=new_prompt, tags=[<span class="string">&quot;Chinese&quot;</span>])</span><br></pre></td></tr></table></figure>
+<h1 id="常用模板类特性和使用场景对比"><a href="#常用模板类特性和使用场景对比" class="headerlink" title="常用模板类特性和使用场景对比"></a>常用模板类特性和使用场景对比</h1><p>常用提示词模板类的继承关系</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250915105216387.png" alt="image-20250915105216387" style="zoom:80%;" /></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th><strong>子类</strong></th>
+<th><strong>适用模型类型</strong></th>
+<th><strong>输入类型</strong></th>
+<th><strong>主要用途</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PromptTemplate</code></td>
+<td>文本补全模型</td>
+<td>单字符串</td>
+<td>生成单轮文本任务的提示</td>
+</tr>
+<tr>
+<td><code>ChatPromptTemplate</code></td>
+<td>聊天模型</td>
+<td>多消息列表</td>
+<td>模拟多轮对话或角色扮演</td>
+</tr>
+<tr>
+<td><code>FewShotPromptTemplate</code></td>
+<td>所有模型</td>
+<td>包含示例的模板</td>
+<td>通过示例引导模型完成复杂任务</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/01/08/ai/ai-basic/1-introduce/" rel="prev" title="人工智能概念基础">
+      <i class="fa fa-chevron-left"></i> 人工智能概念基础
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/02/05/ai/langchain/19-langchain-LCELChain/" rel="next" title="LangChain LCEL表达式语言  -- Langchain v0.3">
+      LangChain LCEL表达式语言  -- Langchain v0.3 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8F%90%E7%A4%BA%E8%AF%8D%EF%BC%9A%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%B7%A5%E4%BD%9C%E7%9A%84%E6%A0%B8%E5%BF%83%E9%83%A8%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">提示词：大模型工作的核心部件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#prompts%E6%A8%A1%E6%9D%BF%EF%BC%9A%E5%A4%A7%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86%E7%9A%84%E5%85%B3%E9%94%AE"><span class="nav-number">2.</span> <span class="nav-text">prompts模板：大模型推理的关键</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#PromptTemplate%EF%BC%88%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%8F%90%E7%A4%BA%E6%A8%A1%E6%9D%BF%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">PromptTemplate（字符串提示模板）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ChatPromptTemple%EF%BC%88%E8%81%8A%E5%A4%A9%E6%8F%90%E7%A4%BA%E6%A8%A1%E6%9D%BF%EF%BC%89"><span class="nav-number">4.</span> <span class="nav-text">ChatPromptTemple（聊天提示模板）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ChatMessagePromptTemplate"><span class="nav-number">4.1.</span> <span class="nav-text">ChatMessagePromptTemplate</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#FewShotPromptTemplate%EF%BC%88%E5%B0%91%E6%A0%B7%E6%9C%AC%E6%8F%90%E7%A4%BA%E6%A8%A1%E6%9D%BF%EF%BC%89"><span class="nav-number">5.</span> <span class="nav-text">FewShotPromptTemplate（少样本提示模板）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ZeroShot%EF%BC%88%E9%9B%B6%E7%A4%BA%E4%BE%8B%EF%BC%89"><span class="nav-number">5.1.</span> <span class="nav-text">ZeroShot（零示例）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FewShot%EF%BC%88%E5%B0%91%E9%87%8F%E7%A4%BA%E4%BE%8B%EF%BC%89"><span class="nav-number">5.2.</span> <span class="nav-text">FewShot（少量示例）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MessagesPlaceholder-%E6%8F%92%E5%85%A5%E5%AF%B9%E8%AF%9D%E5%8E%86%E5%8F%B2"><span class="nav-number">6.</span> <span class="nav-text">MessagesPlaceholder(插入对话历史)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E9%80%89%E6%8B%A9%E5%99%A8"><span class="nav-number">7.</span> <span class="nav-text">示例选择器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E6%8D%AE%E9%95%BF%E5%BA%A6%E5%8A%A8%E6%80%81%E9%80%89%E6%8B%A9%E6%8F%90%E7%A4%BA%E8%AF%8D%E7%A4%BA%E4%BE%8B"><span class="nav-number">7.1.</span> <span class="nav-text">根据长度动态选择提示词示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E6%8D%AE%E8%AF%AD%E4%B9%89%E7%9B%B8%E4%BC%BC%E5%BA%A6%E9%80%89%E6%8B%A9%E6%8F%90%E7%A4%BA%E8%AF%8D%E7%A4%BA%E4%BE%8B"><span class="nav-number">7.2.</span> <span class="nav-text">根据语义相似度选择提示词示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E6%8D%AEMMR%E4%B8%8E%E6%9C%80%E5%A4%A7%E4%BD%99%E5%BC%A6%E7%9B%B8%E4%BC%BC%E5%BA%A6%E9%80%89%E6%8B%A9%E7%A4%BA%E4%BE%8B"><span class="nav-number">7.3.</span> <span class="nav-text">根据MMR与最大余弦相似度选择示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8Partial%E8%BF%9B%E8%A1%8C%E9%83%A8%E5%88%86%E6%A0%BC%E5%BC%8F%E5%8C%96%E6%95%88%E6%9E%9C"><span class="nav-number">8.</span> <span class="nav-text">使用Partial进行部分格式化效果</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%83%A8%E5%88%86%E6%A0%BC%E5%BC%8F%E5%8C%96%EF%BC%88Partial-Formatting%EF%BC%89%E5%8F%8A%E5%85%B6%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">8.1.</span> <span class="nav-text">部分格式化（Partial Formatting）及其应用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E5%86%85%E5%AE%B9%E5%A4%84%E7%90%86%E4%B8%8E%E5%87%BD%E6%95%B0%E5%BC%8F%E5%8F%82%E6%95%B0%E4%BC%A0%E9%80%92"><span class="nav-number">8.2.</span> <span class="nav-text">动态内容处理与函数式参数传递</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LangChain-hub%E5%8A%A0%E8%BD%BD%E6%8F%90%E7%A4%BA%E8%AF%8D%E7%AE%A1%E7%90%86"><span class="nav-number">9.</span> <span class="nav-text">LangChain hub加载提示词管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8Ehub%E4%B8%8A%E5%8A%A0%E8%BD%BD%E6%8F%90%E7%A4%BA%E8%AF%8D"><span class="nav-number">9.1.</span> <span class="nav-text">从hub上加载提示词</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8langsmith%E6%9D%A5%E7%AE%A1%E7%90%86%E6%8F%90%E7%A4%BA%E8%AF%8D"><span class="nav-number">9.2.</span> <span class="nav-text">使用langsmith来管理提示词</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E6%A8%A1%E6%9D%BF%E7%B1%BB%E7%89%B9%E6%80%A7%E5%92%8C%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E5%AF%B9%E6%AF%94"><span class="nav-number">10.</span> <span class="nav-text">常用模板类特性和使用场景对比</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

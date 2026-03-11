@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第十讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain RAG之介绍与数据预处理">
+<meta property="og:url" content="https://jinglv.github.io/2025/02/06/ai/langchain/13-langchain-rag-introduce/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第十讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911100833252.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911101133439.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911102135359.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911102616583.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911103024204.png">
+<meta property="article:published_time" content="2025-02-05T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-09-11T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911100833252.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/02/06/ai/langchain/13-langchain-rag-introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain RAG之介绍与数据预处理 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/02/06/ai/langchain/13-langchain-rag-introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain RAG之介绍与数据预处理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-02-06 00:00:00" itemprop="dateCreated datePublished" datetime="2025-02-06T00:00:00+08:00">2025-02-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-09-11 10:00:00" itemprop="dateModified" datetime="2025-09-11T10:00:00+08:00">2025-09-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第十讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="什么是RAG（检索增强生成）？"><a href="#什么是RAG（检索增强生成）？" class="headerlink" title="什么是RAG（检索增强生成）？"></a>什么是RAG（检索增强生成）？</h1><p>RAG（检索增强生成）是一种结合检索系统与生成模型的技术，通过向量化知识库并进行语义搜索，找到与问题最相关的文档内容，将其融入提示词后交由大模型生成更准确、实时且可溯源的回答，从而弥补大模型预训练数据陈旧和不全面的问题。</p>
+<p>大模型现有存在的问题：</p>
+<ul>
+<li>预训练数据陈旧<ul>
+<li>Claude：2023年8月</li>
+<li>Deepseek R1：2023年12月</li>
+<li>GPT-4o：2023年10月</li>
+<li>Liama 3.3: 2023年10月</li>
+</ul>
+</li>
+<li>预训练数据不全面<ul>
+<li>未公开数据</li>
+<li>企业内部数据</li>
+<li>实时动态数据</li>
+<li>专业性极强的内部知识</li>
+<li>伦理限制的内容</li>
+<li>小众文化信息</li>
+</ul>
+</li>
+</ul>
+<p>大模型训练流程：</p>
+<pre class="mermaid">flowchart LR
+    A[数据爬取] --> B[数据清洗]
+    B --> C[数据预处理]
+    C --> D[模型训练]
+    D --> E[模型推理]</pre>
+
+<p>大模型训练：单向、耗时、算力、一次成型</p>
+<p>因此，大模型并非完美，预训练数据导致了基础差异和不可进化</p>
+<h2 id="RAG流程"><a href="#RAG流程" class="headerlink" title="RAG流程"></a>RAG流程</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911100833252.png" alt="image-20250911100833252"></p>
+<ul>
+<li>Retrieval Augmented Generation（RAG）检索增强生成</li>
+<li>是一种将检索系统于生成AI结合的技术，通过从知识库中检索相关信息来增强AI模型的问答，使其能够提供更准确、最新且可溯源的信息。简化了复杂AI工作流的构建过程</li>
+<li><strong>RAG并不是智能体的必选项，但是是能力增强的必选项</strong></li>
+</ul>
+<h2 id="RAG构成"><a href="#RAG构成" class="headerlink" title="RAG构成"></a>RAG构成</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911101133439.png" alt="image-20250911101133439"></p>
+<ul>
+<li>RAG利用向量化首相将知识库向量化</li>
+<li>将用户的输入也进行向量化</li>
+<li>在提问大模型前先进行向量搜索，找到于问题语义最接近的文档块</li>
+<li>将相关文档潜入提示词</li>
+<li>提交大模型得到一个更优质答案</li>
+</ul>
+<h1 id="知识（数据）预处理"><a href="#知识（数据）预处理" class="headerlink" title="知识（数据）预处理"></a>知识（数据）预处理</h1><p>RAG系统中数据处理的流程，包括文档加载、切片、向量化和存储到向量数据库的全过程，langchain在实现这些步骤时的封装与生态支持，强调其便捷性和广泛的数据兼容性。</p>
+<p>文档向量化是向量搜索的前置条件</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911102135359.png" alt="image-20250911102135359" style="zoom:67%;" /></p>
+<pre class="mermaid">graph LR
+A[加载文档] --> B(分割文档)
+B --> C(嵌入文档)
+C --> D(存储文档)</pre>
+
+<h2 id="LangChain中的实现"><a href="#LangChain中的实现" class="headerlink" title="LangChain中的实现"></a>LangChain中的实现</h2><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911102616583.png" alt="image-20250911102616583"></p>
+<pre class="mermaid">graph LR
+A[各种文档] --> B(各种loader)
+B --> C(文本切片)
+C --> D(向量化)
+D --> E(向量存储)
+E --> F(向量检索)</pre>
+
+<h1 id="常见的Loader加载器"><a href="#常见的Loader加载器" class="headerlink" title="常见的Loader加载器"></a>常见的Loader加载器</h1><p>Launchin中的Loader加载各种数据格式，如PDF、网页、CSV、Excel等。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20250911103024204.png" alt="image-20250911103024204" style="zoom:50%;" /></p>
+<p>LangChain的Loader加载器的示例</p>
+<h2 id="加载PDF"><a href="#加载PDF" class="headerlink" title="加载PDF"></a>加载PDF</h2><p>需要安装依赖：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">pip install langchain_community</span><br><span class="line">pip install pypdf</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">多模态必须安装依赖</span></span><br><span class="line">pip install PyMuPDF</span><br><span class="line">pip install pillow</span><br><span class="line">pip install IPython</span><br></pre></td></tr></table></figure>
+<h3 id="示例一：加载纯文本PDF"><a href="#示例一：加载纯文本PDF" class="headerlink" title="示例一：加载纯文本PDF"></a>示例一：加载纯文本PDF</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> PyPDFLoader</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置文件地址</span></span><br><span class="line">file_path = <span class="string">&quot;deepseek.pdf&quot;</span></span><br><span class="line"></span><br><span class="line">loader = PyPDFLoader(file_path)</span><br><span class="line">pages = []</span><br><span class="line"><span class="keyword">async</span> <span class="keyword">for</span> page <span class="keyword">in</span> loader.alazy_load():</span><br><span class="line">    pages.append(page)</span><br><span class="line">    </span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;pages[<span class="number">0</span>].metadata&#125;</span>\n&quot;</span>) <span class="comment"># 打印第一页的元数据</span></span><br><span class="line"><span class="built_in">print</span>(pages[<span class="number">0</span>].page_content) <span class="comment"># 打印第一页的内容</span></span><br></pre></td></tr></table></figure>
+<h3 id="示例二：加载图文PDF-—-多模型模型解析"><a href="#示例二：加载图文PDF-—-多模型模型解析" class="headerlink" title="示例二：加载图文PDF — 多模型模型解析"></a>示例二：加载图文PDF — 多模型模型解析</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">import</span> io</span><br><span class="line"><span class="keyword">import</span> fitz</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置文件地址</span></span><br><span class="line">file_path = <span class="string">&quot;z2021.pdf&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 将图片转为base64编码</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">pdf_page_to_base64</span>(<span class="params">pdf_path: <span class="built_in">str</span>, page_num: <span class="built_in">int</span></span>):</span><br><span class="line">    doc = fitz.<span class="built_in">open</span>(pdf_path)</span><br><span class="line">    page = doc.load_page(page_num - <span class="number">1</span>)</span><br><span class="line">    pix = page.get_pixmap()</span><br><span class="line">    img = Image.frombytes(<span class="string">&quot;RGB&quot;</span>, [pix.width, pix.height], pix.samples)</span><br><span class="line"></span><br><span class="line">    img_byte_arr = io.BytesIO()</span><br><span class="line">    img.save(img_byte_arr, <span class="built_in">format</span>=<span class="string">&#x27;PNG&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> base64.b64encode(img_byte_arr.getvalue()).decode(<span class="string">&#x27;utf-8&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> IPython.display <span class="keyword">import</span> display, Image <span class="keyword">as</span> IPythonImage</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出图片</span></span><br><span class="line">base64_image = pdf_page_to_base64(file_path, <span class="number">11</span>)</span><br><span class="line">display(IPythonImage(data=base64.b64decode(base64_image)))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置多模态大模型</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"></span><br><span class="line">llm = ChatOpenAI(</span><br><span class="line">    model=<span class="string">&quot;Qwen/Qwen2.5-VL-32B-Instruct&quot;</span>,</span><br><span class="line">    base_url=<span class="string">&quot;https:/xxxxxxxxxxxxx/v1&quot;</span>,</span><br><span class="line">    api_key=os.environ.get(<span class="string">&quot;API_KEY&quot;</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line">query = <span class="string">&quot;一线城市消费占比有多少？&quot;</span></span><br><span class="line"></span><br><span class="line">message = HumanMessage(</span><br><span class="line">    content=[</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>, <span class="string">&quot;text&quot;</span>: query&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;image_url&quot;</span>, <span class="string">&quot;image_url&quot;</span>: &#123;<span class="string">&quot;url&quot;</span>: <span class="string">f&quot;data:image/png;base64,<span class="subst">&#123;base64_image&#125;</span>&quot;</span>&#125;&#125;</span><br><span class="line">    ]</span><br><span class="line">)</span><br><span class="line">response = llm.invoke([message])</span><br><span class="line"><span class="built_in">print</span>(response.content)</span><br></pre></td></tr></table></figure>
+<h2 id="加载网页"><a href="#加载网页" class="headerlink" title="加载网页"></a>加载网页</h2><p>需要安装依赖</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pip install -qU beautifulsoup4</span><br><span class="line">pip install -qU unstructured</span><br><span class="line">pip install -qU langchain-unstructured</span><br></pre></td></tr></table></figure>
+<h3 id="示例一：完全加载网页"><a href="#示例一：完全加载网页" class="headerlink" title="示例一：完全加载网页"></a>示例一：完全加载网页</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> bs4</span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> WebBaseLoader</span><br><span class="line"></span><br><span class="line">page_url=<span class="string">&quot;https://python.langchain.com/docs/integrations/chat/&quot;</span></span><br><span class="line"></span><br><span class="line">loader = WebBaseLoader(web_paths=[page_url])</span><br><span class="line">docs = []</span><br><span class="line"><span class="keyword">async</span> <span class="keyword">for</span> doc <span class="keyword">in</span> loader.alazy_load():</span><br><span class="line">    docs.append(doc)</span><br><span class="line"></span><br><span class="line"><span class="keyword">assert</span> <span class="built_in">len</span>(docs) == <span class="number">1</span> </span><br><span class="line">doc = docs[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打印文本</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;doc.metadata&#125;</span>\n&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(doc.page_content[:<span class="number">500</span>].strip())</span><br></pre></td></tr></table></figure>
+<h3 id="示例二：制定加载网页某一部分"><a href="#示例二：制定加载网页某一部分" class="headerlink" title="示例二：制定加载网页某一部分"></a>示例二：制定加载网页某一部分</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> bs4</span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> WebBaseLoader</span><br><span class="line"></span><br><span class="line">loader = WebBaseLoader(</span><br><span class="line">    web_paths=[page_url], </span><br><span class="line">    bs_kwargs=&#123;</span><br><span class="line">        <span class="string">&quot;parse_only&quot;</span>: bs4.SoupStrainer(class_=<span class="string">&quot;codeBlockLines_e6Vv&quot;</span>)</span><br><span class="line">    &#125;,</span><br><span class="line">    bs_get_text_kwargs=&#123;<span class="string">&quot;separator&quot;</span>: <span class="string">&quot;|&quot;</span>, <span class="string">&quot;strip&quot;</span>: <span class="literal">True</span>&#125;</span><br><span class="line">)</span><br><span class="line">docs = []</span><br><span class="line"><span class="keyword">async</span> <span class="keyword">for</span> doc <span class="keyword">in</span> loader.alazy_load():</span><br><span class="line">    docs.append(doc)</span><br><span class="line"></span><br><span class="line"><span class="keyword">assert</span> <span class="built_in">len</span>(docs) == <span class="number">1</span> </span><br><span class="line">doc = docs[<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打印文本</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;doc.metadata&#125;</span>\n&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(doc.page_content[:<span class="number">500</span>])</span><br></pre></td></tr></table></figure>
+<h3 id="示例三：高级：不熟悉网页结构的情况下解析网页"><a href="#示例三：高级：不熟悉网页结构的情况下解析网页" class="headerlink" title="示例三：高级：不熟悉网页结构的情况下解析网页"></a>示例三：高级：不熟悉网页结构的情况下解析网页</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_unstructured <span class="keyword">import</span> UnstructuredLoader</span><br><span class="line"></span><br><span class="line">page_url=<span class="string">&quot;https://python.langchain.com/docs/integrations/chat/&quot;</span></span><br><span class="line"></span><br><span class="line">loader = UnstructuredLoader(web_url=page_url)</span><br><span class="line">docs = []</span><br><span class="line"><span class="keyword">async</span> <span class="keyword">for</span> doc <span class="keyword">in</span> loader.alazy_load():</span><br><span class="line">    docs.append(doc)</span><br><span class="line">    </span><br><span class="line"><span class="keyword">for</span> doc <span class="keyword">in</span> docs[:<span class="number">5</span>]:</span><br><span class="line">    <span class="built_in">print</span>(doc.page_content)</span><br></pre></td></tr></table></figure>
+<h2 id="加载CSV"><a href="#加载CSV" class="headerlink" title="加载CSV"></a>加载CSV</h2><h3 id="示例一：加载CSV"><a href="#示例一：加载CSV" class="headerlink" title="示例一：加载CSV"></a>示例一：加载CSV</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders.csv_loader <span class="keyword">import</span> CSVLoader</span><br><span class="line"></span><br><span class="line">file_path=<span class="string">&quot;PMBOK6.csv&quot;</span></span><br><span class="line"></span><br><span class="line">loader = CSVLoader(file_path=file_path)</span><br><span class="line">data = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> record <span class="keyword">in</span> data[:<span class="number">2</span>]:</span><br><span class="line">    <span class="built_in">print</span>(record)</span><br></pre></td></tr></table></figure>
+<h3 id="示例二：指定一列来标识文档"><a href="#示例二：指定一列来标识文档" class="headerlink" title="示例二：指定一列来标识文档"></a>示例二：指定一列来标识文档</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders.csv_loader <span class="keyword">import</span> CSVLoader</span><br><span class="line"></span><br><span class="line">file_path=<span class="string">&quot;PMBOK6.csv&quot;</span></span><br><span class="line"></span><br><span class="line">loader = CSVLoader(file_path=file_path, source_column=<span class="string">&quot;名称&quot;</span>)</span><br><span class="line"></span><br><span class="line">data = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> record <span class="keyword">in</span> data[:<span class="number">2</span>]:</span><br><span class="line">    <span class="built_in">print</span>(record)</span><br></pre></td></tr></table></figure>
+<h2 id="解析Excel"><a href="#解析Excel" class="headerlink" title="解析Excel"></a>解析Excel</h2><p>使用openpyxl解析Excel</p>
+<p>需要安装依赖</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -qU openpyxl</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> UnstructuredExcelLoader</span><br><span class="line"> </span><br><span class="line">file_path = <span class="string">&quot;PMBOK62.xlsx&quot;</span></span><br><span class="line">loader = UnstructuredExcelLoader(file_path=file_path)</span><br><span class="line">docs = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> doc <span class="keyword">in</span> docs[:<span class="number">2</span>]:</span><br><span class="line">    <span class="built_in">print</span>(doc.page_content)</span><br></pre></td></tr></table></figure>
+<h2 id="自定义文档加载器"><a href="#自定义文档加载器" class="headerlink" title="自定义文档加载器"></a>自定义文档加载器</h2><p>可以使用LangChain提供的现有加载器，但也可以自定义加载器，自定义加载器编写，要遵循以下要求：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Method Name</th>
+<th>Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>lazy_load</td>
+<td>Used to load documents one by one lazily. Use for production code.</td>
+</tr>
+<tr>
+<td>alazy_load</td>
+<td>Async variant of <code>lazy_load</code></td>
+</tr>
+<tr>
+<td>load</td>
+<td>Used to load all the documents into memory eagerly. Use for prototyping or interactive work.</td>
+</tr>
+<tr>
+<td>aload</td>
+<td>Used to load all the documents into memory eagerly. Use for prototyping or interactive work. Added in 2024-04 to LangChain.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>需要安装的依赖</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -qU aiofiles</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> AsyncIterator, Iterator</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.document_loaders <span class="keyword">import</span> BaseLoader</span><br><span class="line"><span class="keyword">from</span> langchain_core.documents <span class="keyword">import</span> Document</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomDocumentLoader</span>(<span class="title class_ inherited__">BaseLoader</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;逐行读取文件的文档加载器示例&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, file_path: <span class="built_in">str</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;使用文件路径初始化加载器</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        参数:</span></span><br><span class="line"><span class="string">            file_path: 要加载的文件路径</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        <span class="variable language_">self</span>.file_path = file_path</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">lazy_load</span>(<span class="params">self</span>) -&gt; Iterator[Document]:  <span class="comment"># &lt;-- 不接受任何参数</span></span><br><span class="line">        <span class="string">&quot;&quot;&quot;逐行读取文件的惰性加载器</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        当实现惰性加载方法时,你应该使用生成器</span></span><br><span class="line"><span class="string">        一次生成一个文档</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">with</span> <span class="built_in">open</span>(<span class="variable language_">self</span>.file_path, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">            line_number = <span class="number">0</span></span><br><span class="line">            <span class="keyword">for</span> line <span class="keyword">in</span> f:</span><br><span class="line">                <span class="keyword">yield</span> Document(</span><br><span class="line">                    page_content=line,</span><br><span class="line">                    metadata=&#123;<span class="string">&quot;line_number&quot;</span>: line_number, <span class="string">&quot;source&quot;</span>: <span class="variable language_">self</span>.file_path&#125;,</span><br><span class="line">                )</span><br><span class="line">                line_number += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># alazy_load 是可选的</span></span><br><span class="line">    <span class="comment"># 如果不实现它,将使用一个默认实现,该实现会委托给 lazy_load!</span></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">alazy_load</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self,</span></span><br><span class="line"><span class="params">    </span>) -&gt; AsyncIterator[Document]:  <span class="comment"># &lt;-- 不接受任何参数</span></span><br><span class="line">        <span class="string">&quot;&quot;&quot;逐行读取文件的异步惰性加载器&quot;&quot;&quot;</span></span><br><span class="line">        <span class="comment"># 需要 aiofiles (通过 pip 安装)</span></span><br><span class="line">        <span class="comment"># https://github.com/Tinche/aiofiles</span></span><br><span class="line">        <span class="keyword">import</span> aiofiles</span><br><span class="line"></span><br><span class="line">        <span class="keyword">async</span> <span class="keyword">with</span> aiofiles.<span class="built_in">open</span>(<span class="variable language_">self</span>.file_path, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">            line_number = <span class="number">0</span></span><br><span class="line">            <span class="keyword">async</span> <span class="keyword">for</span> line <span class="keyword">in</span> f:</span><br><span class="line">                <span class="keyword">yield</span> Document(</span><br><span class="line">                    page_content=line,</span><br><span class="line">                    metadata=&#123;<span class="string">&quot;line_number&quot;</span>: line_number, <span class="string">&quot;source&quot;</span>: <span class="variable language_">self</span>.file_path&#125;,</span><br><span class="line">                )</span><br><span class="line">                line_number += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">                <span class="comment"># 测试</span></span><br><span class="line"><span class="comment"># 当前目录下写入一个文档</span></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&quot;meow.txt&quot;</span>, <span class="string">&quot;w&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    quality_content = <span class="string">&quot;meow meow🐱 \n meow meow🐱 \n meow😻😻&quot;</span></span><br><span class="line">    f.write(quality_content)</span><br><span class="line"></span><br><span class="line">loader = CustomDocumentLoader(<span class="string">&quot;meow.txt&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> doc <span class="keyword">in</span> loader.lazy_load():</span><br><span class="line">    <span class="built_in">print</span>()</span><br><span class="line">    <span class="built_in">print</span>(<span class="built_in">type</span>(doc))</span><br><span class="line">    <span class="built_in">print</span>(doc)</span><br></pre></td></tr></table></figure>
+<h1 id="文档切分"><a href="#文档切分" class="headerlink" title="文档切分"></a>文档切分</h1><p>需根据上下文窗口限制和检索效率对文档进行切分。主要策略包括按长度、文本架构（如段落、句子）、文档格式或语义智能切分，以确保切片为独立语义单元，提升后续检索效果。</p>
+<h2 id="基于文档长度切分"><a href="#基于文档长度切分" class="headerlink" title="基于文档长度切分"></a>基于文档长度切分</h2><p>需要安装依赖包</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -qU langchain-text-splitters</span><br></pre></td></tr></table></figure>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> PyPDFLoader</span><br><span class="line"></span><br><span class="line">file_path=<span class="string">&#x27;deepseek.pdf&#x27;</span></span><br><span class="line"></span><br><span class="line">loader = PyPDFLoader(file_path)</span><br><span class="line">pages = []</span><br><span class="line"><span class="keyword">async</span> <span class="keyword">for</span> page <span class="keyword">in</span> loader.alazy_load():</span><br><span class="line">    pages.append(page)</span><br><span class="line">    </span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> CharacterTextSplitter</span><br><span class="line"></span><br><span class="line"><span class="comment"># 分词器：cl100k_base chunk_size每个段落长度 chunk_overlap两个段落重叠长度</span></span><br><span class="line">text_splitter = CharacterTextSplitter.from_tiktoken_encoder(</span><br><span class="line">    encoding_name=<span class="string">&quot;cl100k_base&quot;</span>, chunk_size=<span class="number">50</span>, chunk_overlap=<span class="number">10</span></span><br><span class="line">)</span><br><span class="line">text_1 = text_splitter.split_text(pages[<span class="number">1</span>].page_content)</span><br><span class="line"><span class="built_in">print</span>(text_1)</span><br><span class="line">text_2 = text_splitter.split_text(pages[<span class="number">2</span>].page_content)</span><br><span class="line"><span class="built_in">print</span>(text_2)</span><br><span class="line">docs = text_splitter.create_documents([pages[<span class="number">2</span>].page_content,pages[<span class="number">3</span>].page_content])</span><br><span class="line"><span class="built_in">print</span>(docs)</span><br></pre></td></tr></table></figure>
+<h2 id="基于文本架构"><a href="#基于文本架构" class="headerlink" title="基于文本架构"></a>基于文本架构</h2><h3 id="示例一：普通文本"><a href="#示例一：普通文本" class="headerlink" title="示例一：普通文本"></a>示例一：普通文本</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> PyPDFLoader</span><br><span class="line"></span><br><span class="line">file_path=<span class="string">&#x27;deepseek.pdf&#x27;</span></span><br><span class="line"></span><br><span class="line">loader = PyPDFLoader(file_path)</span><br><span class="line">pages = []</span><br><span class="line"><span class="keyword">async</span> <span class="keyword">for</span> page <span class="keyword">in</span> loader.alazy_load():</span><br><span class="line">    pages.append(page)</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveCharacterTextSplitter</span><br><span class="line"></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(chunk_size=<span class="number">50</span>, chunk_overlap=<span class="number">0</span>)</span><br><span class="line">texts = text_splitter.split_text(pages[<span class="number">1</span>].page_content)</span><br><span class="line"><span class="built_in">print</span>(texts)</span><br></pre></td></tr></table></figure>
+<h3 id="示例二：基于Markdown，根据标题拆分（例如，-、-、-）"><a href="#示例二：基于Markdown，根据标题拆分（例如，-、-、-）" class="headerlink" title="示例二：基于Markdown，根据标题拆分（例如，#、##、###）"></a>示例二：基于Markdown，根据标题拆分（例如，#、##、###）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> MarkdownHeaderTextSplitter</span><br><span class="line"></span><br><span class="line">markdown_document = <span class="string">&quot;# Foo\n\n    ## Bar\n\nHi this is Jim\n\nHi this is Joe\n\n ### Boo \n\n Hi this is Lance \n\n ## Baz\n\n Hi this is Molly&quot;</span></span><br><span class="line"></span><br><span class="line">headers_to_split_on = [</span><br><span class="line">    (<span class="string">&quot;#&quot;</span>, <span class="string">&quot;Header 1&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;##&quot;</span>, <span class="string">&quot;Header 2&quot;</span>),</span><br><span class="line">    (<span class="string">&quot;###&quot;</span>, <span class="string">&quot;Header 3&quot;</span>),</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on)</span><br><span class="line">md_header_splits = markdown_splitter.split_text(markdown_document)</span><br><span class="line"><span class="built_in">print</span>(md_header_splits)</span><br></pre></td></tr></table></figure>
+<h3 id="示例三：基于json，按对象或数组元素拆分"><a href="#示例三：基于json，按对象或数组元素拆分" class="headerlink" title="示例三：基于json，按对象或数组元素拆分"></a>示例三：基于json，按对象或数组元素拆分</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line">json_data = requests.get(<span class="string">&quot;https://api.smith.langchain.com/openapi.json&quot;</span>).json()</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveJsonSplitter</span><br><span class="line"></span><br><span class="line">splitter = RecursiveJsonSplitter(max_chunk_size=<span class="number">300</span>)</span><br><span class="line">json_chunks = splitter.split_json(json_data=json_data)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> json_chunks[:<span class="number">3</span>]:</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br><span class="line">    </span><br><span class="line"><span class="comment"># 生成langchain Document</span></span><br><span class="line">docs = splitter.create_documents(texts=[json_data])</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> doc <span class="keyword">in</span> docs[:<span class="number">3</span>]:</span><br><span class="line">    <span class="built_in">print</span>(doc)</span><br></pre></td></tr></table></figure>
+<h2 id="基于语义切分"><a href="#基于语义切分" class="headerlink" title="基于语义切分"></a>基于语义切分</h2><p>需要安装的依赖</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -q langchain_experimental</span><br></pre></td></tr></table></figure>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_experimental.text_splitter <span class="keyword">import</span> SemanticChunker</span><br><span class="line"><span class="keyword">from</span> langchain_openai.embeddings <span class="keyword">import</span> OpenAIEmbeddings</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用OpenAIEmbeddings进行向量化</span></span><br><span class="line">text_splitter = SemanticChunker(OpenAIEmbeddings())</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&quot;meow.txt&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    meow = f.read()</span><br><span class="line">    </span><br><span class="line">docs = text_splitter.create_documents([meow])</span><br><span class="line"><span class="built_in">print</span>(docs[<span class="number">0</span>].page_content)</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/02/06/ai/langchain/14-langchain-rag-embed/" rel="prev" title="LangChain RAG之向量">
+      <i class="fa fa-chevron-left"></i> LangChain RAG之向量
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/02/21/ai/ai-basic/2-algorithms-services/" rel="next" title="算法说明">
+      算法说明 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFRAG%EF%BC%88%E6%A3%80%E7%B4%A2%E5%A2%9E%E5%BC%BA%E7%94%9F%E6%88%90%EF%BC%89%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">什么是RAG（检索增强生成）？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#RAG%E6%B5%81%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">RAG流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RAG%E6%9E%84%E6%88%90"><span class="nav-number">1.2.</span> <span class="nav-text">RAG构成</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9F%A5%E8%AF%86%EF%BC%88%E6%95%B0%E6%8D%AE%EF%BC%89%E9%A2%84%E5%A4%84%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">知识（数据）预处理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.1.</span> <span class="nav-text">LangChain中的实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84Loader%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">3.</span> <span class="nav-text">常见的Loader加载器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BDPDF"><span class="nav-number">3.1.</span> <span class="nav-text">加载PDF</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%B8%80%EF%BC%9A%E5%8A%A0%E8%BD%BD%E7%BA%AF%E6%96%87%E6%9C%ACPDF"><span class="nav-number">3.1.1.</span> <span class="nav-text">示例一：加载纯文本PDF</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%BA%8C%EF%BC%9A%E5%8A%A0%E8%BD%BD%E5%9B%BE%E6%96%87PDF-%E2%80%94-%E5%A4%9A%E6%A8%A1%E5%9E%8B%E6%A8%A1%E5%9E%8B%E8%A7%A3%E6%9E%90"><span class="nav-number">3.1.2.</span> <span class="nav-text">示例二：加载图文PDF — 多模型模型解析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E7%BD%91%E9%A1%B5"><span class="nav-number">3.2.</span> <span class="nav-text">加载网页</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%B8%80%EF%BC%9A%E5%AE%8C%E5%85%A8%E5%8A%A0%E8%BD%BD%E7%BD%91%E9%A1%B5"><span class="nav-number">3.2.1.</span> <span class="nav-text">示例一：完全加载网页</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%BA%8C%EF%BC%9A%E5%88%B6%E5%AE%9A%E5%8A%A0%E8%BD%BD%E7%BD%91%E9%A1%B5%E6%9F%90%E4%B8%80%E9%83%A8%E5%88%86"><span class="nav-number">3.2.2.</span> <span class="nav-text">示例二：制定加载网页某一部分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%B8%89%EF%BC%9A%E9%AB%98%E7%BA%A7%EF%BC%9A%E4%B8%8D%E7%86%9F%E6%82%89%E7%BD%91%E9%A1%B5%E7%BB%93%E6%9E%84%E7%9A%84%E6%83%85%E5%86%B5%E4%B8%8B%E8%A7%A3%E6%9E%90%E7%BD%91%E9%A1%B5"><span class="nav-number">3.2.3.</span> <span class="nav-text">示例三：高级：不熟悉网页结构的情况下解析网页</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BDCSV"><span class="nav-number">3.3.</span> <span class="nav-text">加载CSV</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%B8%80%EF%BC%9A%E5%8A%A0%E8%BD%BDCSV"><span class="nav-number">3.3.1.</span> <span class="nav-text">示例一：加载CSV</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%BA%8C%EF%BC%9A%E6%8C%87%E5%AE%9A%E4%B8%80%E5%88%97%E6%9D%A5%E6%A0%87%E8%AF%86%E6%96%87%E6%A1%A3"><span class="nav-number">3.3.2.</span> <span class="nav-text">示例二：指定一列来标识文档</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90Excel"><span class="nav-number">3.4.</span> <span class="nav-text">解析Excel</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%96%87%E6%A1%A3%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">3.5.</span> <span class="nav-text">自定义文档加载器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%87%E6%A1%A3%E5%88%87%E5%88%86"><span class="nav-number">4.</span> <span class="nav-text">文档切分</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E6%96%87%E6%A1%A3%E9%95%BF%E5%BA%A6%E5%88%87%E5%88%86"><span class="nav-number">4.1.</span> <span class="nav-text">基于文档长度切分</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E6%96%87%E6%9C%AC%E6%9E%B6%E6%9E%84"><span class="nav-number">4.2.</span> <span class="nav-text">基于文本架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%B8%80%EF%BC%9A%E6%99%AE%E9%80%9A%E6%96%87%E6%9C%AC"><span class="nav-number">4.2.1.</span> <span class="nav-text">示例一：普通文本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%BA%8C%EF%BC%9A%E5%9F%BA%E4%BA%8EMarkdown%EF%BC%8C%E6%A0%B9%E6%8D%AE%E6%A0%87%E9%A2%98%E6%8B%86%E5%88%86%EF%BC%88%E4%BE%8B%E5%A6%82%EF%BC%8C-%E3%80%81-%E3%80%81-%EF%BC%89"><span class="nav-number">4.2.2.</span> <span class="nav-text">示例二：基于Markdown，根据标题拆分（例如，#、##、###）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%B8%89%EF%BC%9A%E5%9F%BA%E4%BA%8Ejson%EF%BC%8C%E6%8C%89%E5%AF%B9%E8%B1%A1%E6%88%96%E6%95%B0%E7%BB%84%E5%85%83%E7%B4%A0%E6%8B%86%E5%88%86"><span class="nav-number">4.2.3.</span> <span class="nav-text">示例三：基于json，按对象或数组元素拆分</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%AF%AD%E4%B9%89%E5%88%87%E5%88%86"><span class="nav-number">4.3.</span> <span class="nav-text">基于语义切分</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第六讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain核心功能之结构化输出">
+<meta property="og:url" content="https://jinglv.github.io/2025/12/19/ai/langchain/6-langchain-Structured/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第六讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-18T16:00:00.000Z">
+<meta property="article:modified_time" content="2025-12-19T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/12/19/ai/langchain/6-langchain-Structured/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain核心功能之结构化输出 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/12/19/ai/langchain/6-langchain-Structured/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain核心功能之结构化输出
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-12-19 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2025-12-19T00:00:00+08:00">2025-12-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第六讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>核心是让 AI 输出从 “非结构化自然语言” 升级为 “可直接使用的标准化数据”</p>
+<h2 id="功能核心定位"><a href="#功能核心定位" class="headerlink" title="功能核心定位"></a>功能核心定位</h2><p>结构化输出是 LangChain 1.0 的核心能力，核心目标是让 AI 模型返回<strong>特定、可预测格式</strong>的数据，彻底替代难以解析、易出错的自然语言文本，解决传统 AI 应用中 “文本解析成本高、数据格式不可控” 的痛点。</p>
+<h2 id="核心价值（解决的五大关键问题）"><a href="#核心价值（解决的五大关键问题）" class="headerlink" title="核心价值（解决的五大关键问题）"></a>核心价值（解决的五大关键问题）</h2><p><strong>告别文本解析</strong>：无需再编写复杂的正则表达式、字符串处理逻辑来提取 AI 输出中的关键信息，大幅降低开发成本。</p>
+<p><strong>类型安全</strong>：返回的数据严格符合预定义的模式结构（如 JSON 规范、Pydantic 模型），避免因格式混乱导致的运行时错误。</p>
+<p><strong>直接可用</strong>：输出的 JSON 对象、Pydantic 模型或其他数据类，可直接集成到业务代码中（如存入数据库、调用其他接口），无需二次转换。</p>
+<p><strong>智能策略适配</strong>：LangChain 会自动选择最优实现方式 —— 若模型原生支持结构化输出则直接调用，若不支持则通过工具调用等方式兜底，保证功能兼容性。</p>
+<h2 id="实现方式"><a href="#实现方式" class="headerlink" title="实现方式"></a>实现方式</h2><ol>
+<li><strong>配置入口</strong>：在通过 <code>create_agent</code> 创建代理时，通过 <code>response_format</code> 参数指定结构化输出的格式要求。</li>
+<li><strong>数据流转与验证</strong>：模型生成数据后，LangChain 会自动对其进行格式验证，验证通过后，将结构化数据存入代理状态的 <code>structured_response</code> 键中，供后续业务逻辑直接调用。</li>
+</ol>
+<h1 id="四种输出格式类型"><a href="#四种输出格式类型" class="headerlink" title="四种输出格式类型"></a>四种输出格式类型</h1><h2 id="Pydantic"><a href="#Pydantic" class="headerlink" title="Pydantic"></a>Pydantic</h2><p>提供了企业级的类型安全和数据验证。</p>
+<h3 id="核心定位"><a href="#核心定位" class="headerlink" title="核心定位"></a>核心定位</h3><p>Pydantic Models 是 LangChain 结构化输出中<strong>最强大的格式</strong>，通过 <code>BaseModel</code> 和 <code>Field()</code> 定义数据结构，实现：</p>
+<ul>
+<li>完整的运行时类型验证</li>
+<li>IDE 智能提示</li>
+<li>企业级错误处理</li>
+<li>精确控制每个字段的验证规则和描述信息</li>
+</ul>
+<h3 id="核心优势"><a href="#核心优势" class="headerlink" title="核心优势"></a>核心优势</h3><ul>
+<li><strong>运行时类型验证</strong>：确保 AI 返回的数据严格符合定义的类型和约束。</li>
+<li><strong>自动数据转换</strong>：自动将 AI 输出的 JSON 转换为 Pydantic 对象，无需手动解析。</li>
+<li><strong>详细的错误信息</strong>：当数据验证失败时，提供清晰的错误提示，便于调试。</li>
+<li><strong>IDE 智能提示支持</strong>：在代码编辑器中获得字段名和类型的自动补全。</li>
+</ul>
+<h3 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h3><ul>
+<li>字段验证要求严格的场景</li>
+<li>企业级应用开发</li>
+<li>需要 IDE 智能提示的复杂项目</li>
+<li>涉及复杂数据验证和嵌套结构的任务</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 定义数据模型</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ProviderStrategy</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MeetingAction</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    topic: <span class="built_in">str</span> = Field(description=<span class="string">&quot;会议主题&quot;</span>)</span><br><span class="line">    participants: <span class="built_in">list</span> = Field(description=<span class="string">&quot;参会人员列表&quot;</span>)</span><br><span class="line">    action_items: <span class="built_in">list</span> = Field(description=<span class="string">&quot;行动项&quot;</span>)</span><br><span class="line">    deadline: <span class="built_in">str</span> = Field(description=<span class="string">&quot;截止时间&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 创建代理</span></span><br><span class="line">meeting_agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ProviderStrategy(MeetingAction)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 调用获取结果</span></span><br><span class="line">result = meeting_agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从会议纪要中提取: 项目评审会议, 张三和李四参加, 需要完成代码审查, 截止下周三&quot;</span>&#125;]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">meeting_data = result[<span class="string">&#x27;structured_response&#x27;</span>]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;会议主题: <span class="subst">&#123;meeting_data.topic&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;参会人员: <span class="subst">&#123;meeting_data.participants&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><strong>定义模型</strong>：使用 <code>BaseModel</code> 定义 <code>MeetingAction</code>，每个字段通过 <code>Field()</code> 提供清晰的描述，帮助 AI 理解输出要求。</li>
+<li><strong>创建代理</strong>：在 <code>create_agent</code> 中通过 <code>response_format=ProviderStrategy(MeetingAction)</code> 指定结构化输出格式。</li>
+<li><strong>调用与使用</strong>：AI 返回的数据会自动验证并转换为 <code>MeetingAction</code> 对象，直接通过属性访问，无需手动解析 JSON。</li>
+</ol>
+<h2 id="Dataclasses"><a href="#Dataclasses" class="headerlink" title="Dataclasses"></a>Dataclasses</h2><p>是 Pydantic Models 的轻量化替代方案。</p>
+<h3 id="核心定位-1"><a href="#核心定位-1" class="headerlink" title="核心定位"></a>核心定位</h3><p>Dataclasses 是 <strong>Python 3.7+ 原生支持的标准库</strong>，在 LangChain 中作为轻量级数据容器实现结构化输出。相比 Pydantic，它<strong>舍弃了运行时验证能力</strong>，但换来更优的性能和更少的依赖，专为简单数据结构、快速原型开发设计。</p>
+<h3 id="核心优势-1"><a href="#核心优势-1" class="headerlink" title="核心优势"></a>核心优势</h3><ol>
+<li><strong>Python 原生支持</strong>：无需额外安装第三方库，直接使用标准库 <code>dataclasses</code> 即可。</li>
+<li><strong>零额外依赖</strong>：摆脱对 Pydantic 的依赖，简化项目依赖结构。</li>
+<li><strong>轻量级性能</strong>：无复杂验证逻辑，执行效率更高，资源占用更低。</li>
+<li><strong>简单易用</strong>：语法简洁，学习成本低，快速上手定义数据结构。</li>
+</ol>
+<h3 id="适用场景-1"><a href="#适用场景-1" class="headerlink" title="适用场景"></a>适用场景</h3><ul>
+<li>仅需基础数据结构化，<strong>无需严格运行时验证</strong>的场景。</li>
+<li>追求轻量级、高性能的 Python 原生代码开发。</li>
+<li>项目初期的<strong>快速原型验证</strong>，快速搭建结构化输出能力。</li>
+<li>数据模型简单（无嵌套、无复杂约束）的业务场景。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 定义数据模型</span></span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ProviderStrategy</span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass  </span><span class="comment"># 原生装饰器定义数据类</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BookInfo</span>:</span><br><span class="line">    title: <span class="built_in">str</span>   <span class="comment"># 书籍标题</span></span><br><span class="line">    author: <span class="built_in">str</span>  <span class="comment"># 作者</span></span><br><span class="line">    isbn: <span class="built_in">str</span>    <span class="comment"># ISBN编号</span></span><br><span class="line">    year: <span class="built_in">int</span>    <span class="comment"># 出版年份</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 创建代理</span></span><br><span class="line">book_agent = create_agent(</span><br><span class="line">    model=model,  <span class="comment"># 已初始化的模型实例</span></span><br><span class="line">    <span class="comment"># 指定输出格式为自定义的 BookInfo 数据类</span></span><br><span class="line">    response_format=ProviderStrategy(BookInfo)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 调用并获取结果</span></span><br><span class="line">result = book_agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;提取这本书的信息：《百年孤独》加西亚·马尔克斯，ISBN 9787544291170，1967年出版&quot;</span></span><br><span class="line">    &#125;]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 从代理状态中获取结构化结果（自动转为 BookInfo 对象）</span></span><br><span class="line">book_data = result[<span class="string">&#x27;structured_response&#x27;</span>]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;书名：<span class="subst">&#123;book_data.title&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;作者：<span class="subst">&#123;book_data.author&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="TypedDict"><a href="#TypedDict" class="headerlink" title="TypedDict"></a>TypedDict</h2><p>是一种兼顾字典灵活性与类型安全的方案。</p>
+<h3 id="核心定位-2"><a href="#核心定位-2" class="headerlink" title="核心定位"></a>核心定位</h3><p>TypedDict 是 Python 3.8+ 的类型系统扩展，它结合了字典的灵活性和类型检查的安全性。在 LangChain 中，它允许你为字典键提供类型注解，在保持字典访问方式的同时，获得类型检查的好处，特别适合需要字典语法但又希望有类型安全的场景。</p>
+<h3 id="核心优势-2"><a href="#核心优势-2" class="headerlink" title="核心优势"></a>核心优势</h3><ul>
+<li><strong>字典语法兼容</strong>：保持了 Python 字典的直观访问方式，学习成本低。</li>
+<li><strong>类型安全检查</strong>：在开发阶段提供静态类型检查，减少因键名或类型错误导致的问题。</li>
+<li><strong>运行时类型验证</strong>：在 LangChain 中，可配合 ProviderStrategy 进行运行时数据验证，确保 AI 输出符合预期。</li>
+<li><strong>灵活的数据结构</strong>：支持嵌套结构和可选字段，适配复杂数据场景。</li>
+</ul>
+<h3 id="适用场景-2"><a href="#适用场景-2" class="headerlink" title="适用场景"></a>适用场景</h3><ul>
+<li>数据以字典结构存储和传递的场景。</li>
+<li>需要类型安全检查，避免键名或类型错误的项目。</li>
+<li>需要运行时验证 AI 输出结构的应用。</li>
+<li>希望保持字典语法，又想获得类型提示的开发者。</li>
+</ul>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 定义数据模型</span></span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ProviderStrategy</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MovieInfo</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    title: <span class="built_in">str</span></span><br><span class="line">    director: <span class="built_in">str</span></span><br><span class="line">    year: <span class="built_in">int</span></span><br><span class="line">    genre: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 创建代理</span></span><br><span class="line">movie_agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ProviderStrategy(MovieInfo)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 调用获取结果</span></span><br><span class="line">result = movie_agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;提取这部电影的信息：肖申克的救赎，导演弗兰克·德拉邦特，1994年上映，剧情片&quot;</span></span><br><span class="line">    &#125;]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line">movie_data = result[<span class="string">&#x27;structured_response&#x27;</span>]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;电影：<span class="subst">&#123;movie_data[<span class="string">&#x27;title&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;导演：<span class="subst">&#123;movie_data[<span class="string">&#x27;director&#x27;</span>]&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><strong>定义模型</strong>：继承 <code>TypedDict</code> 定义 <code>MovieInfo</code>，为每个键指定类型。</li>
+<li><strong>创建代理</strong>：在 <code>create_agent</code> 中通过 <code>response_format=ProviderStrategy(MovieInfo)</code> 指定结构化输出格式。</li>
+<li><strong>调用与使用</strong>：AI 返回的数据会自动验证并转换为符合 <code>MovieInfo</code> 结构的字典，通过键名直接访问。</li>
+</ol>
+<h2 id="JSON-Schema"><a href="#JSON-Schema" class="headerlink" title="JSON Schema"></a>JSON Schema</h2><p>以纯 JSON 数据结构定义输出规范，支持运行时动态构建，是跨语言、无代码场景的优选方案。</p>
+<h3 id="核心定位-3"><a href="#核心定位-3" class="headerlink" title="核心定位"></a>核心定位</h3><p>JSON Schema 是 LangChain 四种结构化输出格式里<strong>灵活性最高</strong>的一种，核心特点是<strong>无需编写 Python 类</strong>，直接用标准 JSON 字典定义数据结构与验证规则。它完全遵循 JSON 规范，支持运行时动态调整结构，特别适配需要根据不同条件动态变更输出格式的业务场景。</p>
+<h3 id="核心优势-3"><a href="#核心优势-3" class="headerlink" title="核心优势"></a>核心优势</h3><ol>
+<li><strong>纯 JSON 定义</strong>：基于标准 JSON Schema 规范，与编程语言解耦，具备天然的跨语言兼容性。</li>
+<li><strong>运行时动态构建</strong>：可在代码运行过程中根据业务逻辑（如用户需求、场景变化）实时修改 JSON Schema 结构，无需提前定义静态模型。</li>
+<li><strong>跨语言兼容</strong>：输出的结构化数据可直接被其他语言（如 JavaScript、Java）解析使用，适合多技术栈协作的项目。</li>
+<li><strong>最灵活配置</strong>：支持复杂的嵌套结构、可选字段、枚举值、数据格式校验（如邮箱、手机号）等，适配各类动态数据需求。</li>
+</ol>
+<h3 id="适用场景-3"><a href="#适用场景-3" class="headerlink" title="适用场景"></a>适用场景</h3><ul>
+<li><strong>动态模式定义</strong>：需要根据运行时条件（如不同用户角色、业务类型）调整输出字段的场景。</li>
+<li><strong>无代码结构</strong>：不想编写 Python 类（如 Dataclasses、Pydantic），希望用纯数据结构定义输出的场景。</li>
+<li><strong>运行时模式构建</strong>：需通过配置文件、数据库等外部来源动态加载输出规范的场景。</li>
+<li><strong>灵活配置</strong>：跨语言协作、第三方系统集成等对数据格式兼容性要求高的场景。</li>
+</ul>
+<p>代码示例</p>
+<p>以<strong>提取个人联系信息</strong>为例，分三步实现基于 JSON Schema 的结构化输出，核心是用 JSON 字典定义规范并接入 LangChain 代理：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 定义 JSON Schema</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ProviderStrategy</span><br><span class="line"></span><br><span class="line"><span class="comment"># 纯 JSON 字典定义：指定类型、描述、字段及必选约束</span></span><br><span class="line">contact_info_schema = &#123;</span><br><span class="line">    <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,  <span class="comment"># 根节点为对象类型</span></span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;Contact information for a person.&quot;</span>,  <span class="comment"># 整体描述（辅助AI理解）</span></span><br><span class="line">    <span class="string">&quot;properties&quot;</span>: &#123;  <span class="comment"># 定义具体字段及规则</span></span><br><span class="line">        <span class="string">&quot;name&quot;</span>: &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>, <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户姓名&quot;</span>&#125;,</span><br><span class="line">        <span class="string">&quot;email&quot;</span>: &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>, <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户的邮箱地址&quot;</span>&#125;,</span><br><span class="line">        <span class="string">&quot;phone&quot;</span>: &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>, <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户的手机号码&quot;</span>&#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;name&quot;</span>, <span class="string">&quot;email&quot;</span>, <span class="string">&quot;phone&quot;</span>]  <span class="comment"># 必选字段，缺失则验证失败</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 创建代理</span></span><br><span class="line">contact_agent = create_agent(</span><br><span class="line">    model=model,  <span class="comment"># 已初始化的模型实例</span></span><br><span class="line">    <span class="comment"># 将 JSON Schema 传入 ProviderStrategy，指定输出格式</span></span><br><span class="line">    response_format=ProviderStrategy(contact_info_schema)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 调用并获取结果</span></span><br><span class="line">result = contact_agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请提取以下文本中的联系信息：John Doe, john@example.com, (555) 123-4567&quot;</span></span><br><span class="line">    &#125;]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 从代理状态中获取结构化结果（已验证的 JSON 字典）</span></span><br><span class="line">contact_data = result[<span class="string">&#x27;structured_response&#x27;</span>]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;姓名：<span class="subst">&#123;contact_data[<span class="string">&#x27;name&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;邮箱：<span class="subst">&#123;contact_data[<span class="string">&#x27;email&#x27;</span>]&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h1 id="高级特性"><a href="#高级特性" class="headerlink" title="高级特性"></a>高级特性</h1><h2 id="智能错误处理"><a href="#智能错误处理" class="headerlink" title="智能错误处理"></a><strong>智能错误处理</strong></h2><p>核心是通过灵活配置 <code>ToolStrategy</code>，解决结构化输出验证失败的问题，提供多维度的错误处理策略。</p>
+<h3 id="核心功能定位"><a href="#核心功能定位" class="headerlink" title="核心功能定位"></a>核心功能定位</h3><p>智能错误处理是 LangChain 结构化输出的配套能力，专门用于<strong>灵活处理数据验证失败的场景</strong>。当 AI 生成的输出不符合预设的结构化规范（如 <code>ContactInfo</code> 模型）时，可通过配置实现自动重试、自定义提示或精准异常捕获，避免因一次验证失败导致流程中断。</p>
+<h3 id="核心配置载体：ToolStrategy"><a href="#核心配置载体：ToolStrategy" class="headerlink" title="核心配置载体：ToolStrategy"></a>核心配置载体：<code>ToolStrategy</code></h3><p>在创建代理时，通过 <code>response_format=ToolStrategy(...)</code> 替代之前的 <code>ProviderStrategy</code>，并传入错误处理相关参数，实现高级错误管控。</p>
+<h3 id="三种核心错误处理策略（代码配置详解）"><a href="#三种核心错误处理策略（代码配置详解）" class="headerlink" title="三种核心错误处理策略（代码配置详解）"></a>三种核心错误处理策略（代码配置详解）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义结构化输出模型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContactInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span></span><br><span class="line">    email: <span class="built_in">str</span></span><br><span class="line">    phone: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建代理</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(</span><br><span class="line">        schema=ContactInfo,</span><br><span class="line">        handle_errors=<span class="literal">True</span>  <span class="comment"># 自动重试</span></span><br><span class="line">        <span class="comment"># handle_errors=&quot;请提供有效的联系信息&quot;</span></span><br><span class="line">        <span class="comment"># handle_errors=ValueError</span></span><br><span class="line">    )</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>代码以 <code>ContactInfo</code> 为结构化规范，展示了 <code>handle_errors</code> 参数的三种核心用法，覆盖从全量重试到精准管控的不同需求：</p>
+<ol>
+<li><p>全局自动重试（布尔值模式）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">handle_errors=<span class="literal">True</span>  <span class="comment"># 捕获所有错误并自动让模型重试</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>作用：捕获结构化输出验证过程中的<strong>所有类型异常</strong>，无需人工干预，直接让模型重新生成符合规范的结果。</li>
+<li>适用：基础场景，希望快速容错、降低开发成本。</li>
+</ul>
+</li>
+<li><p>自定义错误提示（字符串模式）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">handle_errors=<span class="string">&quot;请确保提供有效的联系信息&quot;</span>  <span class="comment"># 自定义错误消息反馈给模型</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>作用：验证失败时，将自定义的自然语言提示传递给模型，明确告知错误原因和修正要求，让模型更精准地重试。</li>
+<li>适用：需要引导模型修正特定问题的场景，提升重试成功率。</li>
+</ul>
+</li>
+<li><p>精准异常捕获（异常类型模式）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">handle_errors=ValueError  <span class="comment"># 仅捕获指定类型的异常（如值类型错误）</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>作用：只对<strong>特定类型的异常</strong>进行处理（如值类型不匹配、必选字段缺失），其他异常则按原生逻辑抛出，便于精准排查问题。</li>
+<li>适用：复杂业务场景，需要区分异常类型、针对性处理的情况。</li>
+</ul>
+</li>
+</ol>
+<h3 id="核心价值"><a href="#核心价值" class="headerlink" title="核心价值"></a>核心价值</h3><ol>
+<li><strong>提升鲁棒性</strong>：避免因 AI 输出格式不规范导致的应用崩溃，保障结构化输出流程的稳定性。</li>
+<li><strong>降低开发成本</strong>：内置重试与提示机制，无需手动编写复杂的错误捕获和重试逻辑。</li>
+<li><strong>灵活适配场景</strong>：三种策略可按需选择，兼顾快速开发的便捷性和复杂场景的精准性。</li>
+</ol>
+<h2 id="联合类型支持"><a href="#联合类型支持" class="headerlink" title="联合类型支持"></a>联合类型支持</h2><p>核心是通过 Pydantic 的数据模型来约束输出结构。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Union</span>, <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义邮箱联系模型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EmailContact</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    email: <span class="built_in">str</span></span><br><span class="line">    <span class="built_in">type</span>: <span class="type">Literal</span>[<span class="string">&quot;email&quot;</span>] = <span class="string">&quot;email&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义电话联系模型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PhoneContact</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    phone: <span class="built_in">str</span></span><br><span class="line">    <span class="built_in">type</span>: <span class="type">Literal</span>[<span class="string">&quot;phone&quot;</span>] = <span class="string">&quot;phone&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义联合类型</span></span><br><span class="line">ContactUnion = <span class="type">Union</span>[EmailContact, PhoneContact]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 AI Agent</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ContactUnion</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>Union</code> 是 Python 类型提示（typing）模块中的一个工具，用于表示一个变量可以是多种类型中的一种。</li>
+<li><strong><code>EmailContact</code></strong>：表示一个邮箱联系方式，必须包含 <code>email</code> 字段（字符串）和 <code>type</code> 字段，且 <code>type</code> 只能是 <code>&quot;email&quot;</code>。</li>
+<li><strong><code>PhoneContact</code></strong>：表示一个电话联系方式，必须包含 <code>phone</code> 字段（字符串）和 <code>type</code> 字段，且 <code>type</code> 只能是 <code>&quot;phone&quot;</code>。</li>
+<li><code>Literal</code> 用于限定字段的取值范围，确保 <code>type</code> 字段的值是固定的，这有助于模型区分不同的输出类型。</li>
+<li>定义了一个联合类型 <code>ContactUnion</code>，它表示一个值可以是 <code>EmailContact</code> 类型，也可以是 <code>PhoneContact</code> 类型。</li>
+<li><p>在创建 AI Agent 时，将 <code>response_format</code> 设置为刚才定义的联合类型 <code>ContactUnion</code>。</p>
+</li>
+<li><p>这样，当模型生成输出时，它会根据输入的上下文，自动判断应该返回 <code>EmailContact</code> 还是 <code>PhoneContact</code>格式的数据，并严格按照对应的结构输出。</p>
+</li>
+</ul>
+<h3 id="核心作用"><a href="#核心作用" class="headerlink" title="核心作用"></a>核心作用</h3><p>这种方式的核心价值在于：</p>
+<ul>
+<li><strong>结构化输出</strong>：确保 AI 返回的数据是可预测、可解析的，而不是自由文本。</li>
+<li><strong>智能适配</strong>：模型可以根据问题的上下文，自动选择最合适的输出格式，例如当用户问 “请提供你的邮箱” 时，返回 <code>EmailContact</code>；当问 “请提供你的电话” 时，返回 <code>PhoneContact</code>。</li>
+<li><strong>类型安全</strong>：在代码层面利用类型提示，提前发现和避免数据结构不匹配的问题。</li>
+</ul>
+<h2 id="复杂嵌套结构"><a href="#复杂嵌套结构" class="headerlink" title="复杂嵌套结构"></a>复杂嵌套结构</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel</span><br><span class="line"></span><br><span class="line"><span class="comment"># 复杂嵌套结构示例</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Address</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    street: <span class="built_in">str</span></span><br><span class="line">    city: <span class="built_in">str</span></span><br><span class="line">    country: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Company</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span></span><br><span class="line">    address: Address  <span class="comment"># 嵌套结构</span></span><br><span class="line">    employees: <span class="type">List</span>[<span class="built_in">str</span>]  <span class="comment"># 列表字段</span></span><br><span class="line">    founded_year: <span class="built_in">int</span></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=Company  <span class="comment"># 处理复杂嵌套</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ol>
+<li>定义基础数据模型 <code>Address</code>，这是一个表示地址的数据模型，包含街道、城市和国家三个字符串字段。</li>
+<li>定义嵌套数据模型 <code>Company</code><ul>
+<li><code>name</code>：公司名称（字符串）。</li>
+<li><code>address</code>：嵌套的 <code>Address</code> 类型，将地址信息作为子结构嵌入到公司信息中。</li>
+<li><code>employees</code>：员工姓名列表（字符串列表）。</li>
+<li><code>founded_year</code>：公司成立年份（整数）。</li>
+</ul>
+</li>
+<li>创建 AI Agent 并指定响应格式，将 <code>response_format</code> 设置为 <code>Company</code> 模型。</li>
+</ol>
+<p>这会让 AI 模型输出严格符合 <code>Company</code> 结构的数据，包括嵌套的 <code>Address</code> 对象和列表字段，确保输出是结构化、可解析的。</p>
+<h3 id="核心作用-1"><a href="#核心作用-1" class="headerlink" title="核心作用"></a>核心作用</h3><ul>
+<li><strong>深度嵌套支持</strong>：通过 Pydantic 模型的嵌套定义，AI 可以生成包含多层子结构的复杂数据，满足企业级业务需求。</li>
+<li><strong>结构化输出</strong>：强制 AI 输出符合预定义的数据结构，避免自由文本，便于后续代码处理和数据存储。</li>
+<li><strong>类型安全</strong>：利用类型提示和 Pydantic 的验证功能，提前发现数据格式错误，提升系统稳定性。</li>
+</ul>
+<h1 id="实际运用场景"><a href="#实际运用场景" class="headerlink" title="实际运用场景"></a>实际运用场景</h1><h2 id="智能数据提取"><a href="#智能数据提取" class="headerlink" title="智能数据提取"></a>智能数据提取</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="comment"># 会议记录提取</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MeetingAction</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;从会议记录中提取的行动项&quot;&quot;&quot;</span></span><br><span class="line">    task: <span class="built_in">str</span> = Field(description=<span class="string">&quot;需要完成的具体任务&quot;</span>)</span><br><span class="line">    assignee: <span class="built_in">str</span> = Field(description=<span class="string">&quot;任务负责人&quot;</span>)</span><br><span class="line">    deadline: <span class="built_in">str</span> = Field(description=<span class="string">&quot;完成截止日期&quot;</span>)</span><br><span class="line">    priority: <span class="type">Literal</span>[<span class="string">&quot;low&quot;</span>, <span class="string">&quot;medium&quot;</span>, <span class="string">&quot;high&quot;</span>] = Field(description=<span class="string">&quot;优先级&quot;</span>)</span><br><span class="line"></span><br><span class="line">agent = create_agent(model=model, response_format=MeetingAction)</span><br></pre></td></tr></table></figure>
+<p>这会让 AI 模型在处理输入的会议记录文本时，自动识别并提取出符合 <code>MeetingAction</code> 结构的行动项，输出结构化、可解析的数据，而不是自由文本。</p>
+<h3 id="核心作用-2"><a href="#核心作用-2" class="headerlink" title="核心作用"></a>核心作用</h3><ul>
+<li><strong>智能数据提取</strong>：将非结构化的会议记录等文本，转化为结构化的行动项数据，便于后续自动化处理和任务管理。</li>
+<li><strong>结构化输出</strong>：强制 AI 输出符合预定义格式的数据，避免信息丢失或格式混乱。</li>
+<li><strong>语义引导</strong>：通过 <code>Field</code> 的 <code>description</code> 参数，清晰地告诉 AI 每个字段的含义，从而提高提取的准确性。</li>
+</ul>
+<h2 id="内容智能分类"><a href="#内容智能分类" class="headerlink" title="内容智能分类"></a>内容智能分类</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span>, <span class="type">List</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="comment"># 客户反馈分类</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">FeedbackAnalysis</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;客户反馈分析结果&quot;&quot;&quot;</span></span><br><span class="line">    sentiment: <span class="type">Literal</span>[<span class="string">&quot;positive&quot;</span>, <span class="string">&quot;negative&quot;</span>, <span class="string">&quot;neutral&quot;</span>] = Field(description=<span class="string">&quot;情感倾向&quot;</span>)</span><br><span class="line">    category: <span class="built_in">str</span> = Field(description=<span class="string">&quot;问题类别&quot;</span>)</span><br><span class="line">    urgency: <span class="type">Literal</span>[<span class="string">&quot;low&quot;</span>, <span class="string">&quot;medium&quot;</span>, <span class="string">&quot;high&quot;</span>] = Field(description=<span class="string">&quot;紧急程度&quot;</span>)</span><br><span class="line">    key_issues: <span class="type">List</span>[<span class="built_in">str</span>] = Field(description=<span class="string">&quot;关键问题点&quot;</span>)</span><br><span class="line"></span><br><span class="line">agent = create_agent(model=model, response_format=FeedbackAnalysis)</span><br></pre></td></tr></table></figure>
+<p>这会让 AI 模型在处理输入的客户反馈文本时，自动进行情感分析、主题识别和紧急度判断，并输出符合 <code>FeedbackAnalysis</code> 结构的结构化数据。</p>
+<h3 id="核心作用-3"><a href="#核心作用-3" class="headerlink" title="核心作用"></a>核心作用</h3><ul>
+<li><strong>内容智能分类</strong>：自动对客户反馈等文本进行情感分析、主题识别和优先级标记，将非结构化的反馈转化为结构化的分析结果。</li>
+<li><strong>结构化输出</strong>：强制 AI 输出符合预定义格式的数据，便于后续的数据分析、工单流转和业务决策。</li>
+<li><strong>语义引导</strong>：通过 <code>Field</code> 的 <code>description</code> 参数，清晰地告诉 AI 每个字段的含义，从而提高分类和标记的准确性。</li>
+</ul>
+<h2 id="结构化代码生成"><a href="#结构化代码生成" class="headerlink" title="结构化代码生成"></a>结构化代码生成</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span>, <span class="type">Dict</span>, <span class="type">Any</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="comment"># API端点生成</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">APIEndpoint</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;API端点定义&quot;&quot;&quot;</span></span><br><span class="line">    path: <span class="built_in">str</span> = Field(description=<span class="string">&quot;API路径&quot;</span>)</span><br><span class="line">    method: <span class="type">Literal</span>[<span class="string">&quot;GET&quot;</span>, <span class="string">&quot;POST&quot;</span>, <span class="string">&quot;PUT&quot;</span>, <span class="string">&quot;DELETE&quot;</span>] = Field(description=<span class="string">&quot;HTTP方法&quot;</span>)</span><br><span class="line">    parameters: <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>] = Field(description=<span class="string">&quot;参数定义&quot;</span>)</span><br><span class="line">    response_schema: <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] = Field(description=<span class="string">&quot;响应结构&quot;</span>)</span><br><span class="line"></span><br><span class="line">agent = create_agent(model=model, response_format=APIEndpoint)</span><br></pre></td></tr></table></figure>
+<p>这会让 AI 模型在生成 API 端点定义时，严格按照 <code>APIEndpoint</code> 的结构输出，确保生成的代码或配置文件是结构化、可解析的，便于后续的开发和集成。</p>
+<h3 id="核心作用-4"><a href="#核心作用-4" class="headerlink" title="核心作用"></a>核心作用</h3><ul>
+<li><strong>结构化代码生成</strong>：让 AI 生成符合特定格式要求的 API 定义、配置文件或数据结构，避免自由文本输出，提升代码质量和可维护性。</li>
+<li><strong>类型安全</strong>：通过 Pydantic 模型和类型提示，确保生成的 API 定义在类型上是安全的，减少运行时错误。</li>
+<li><strong>语义引导</strong>：通过 <code>Field</code> 的 <code>description</code> 参数，清晰地告诉 AI 每个字段的含义，从而提高生成代码的准确性和相关性。</li>
+</ul>
+<h1 id="输出策略选择指南"><a href="#输出策略选择指南" class="headerlink" title="输出策略选择指南"></a>输出策略选择指南</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方式</th>
+<th style="text-align:left">代码示例</th>
+<th style="text-align:left">适用场景与特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>自动选择</strong></td>
+<td style="text-align:left"><code>response_format=ContactInfo</code></td>
+<td style="text-align:left">简单场景，让系统自动选择策略；使用方便，可控性较低，适合快速开发。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>工具策略</strong></td>
+<td style="text-align:left"><code>response_format=ToolStrategy(ContactInfo)</code></td>
+<td style="text-align:left">需要工具调用，或当模型不支持原生结构化输出时使用；兼容性强，通过工具调用包装实现结构化输出。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>提供者策略</strong></td>
+<td style="text-align:left"><code>response_format=ProviderStrategy(ContactInfo, strict=True)</code></td>
+<td style="text-align:left">使用模型提供商原生结构化输出能力，需要精确控制输出行为；性能和准确性更好，<code>strict=True</code> 可强制严格格式。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>对于需要<strong>精确控制输出行为</strong>的生产环境，建议显式使用 <code>ProviderStrategy</code> 或 <code>ToolStrategy</code>，而不是依赖自动选择。</li>
+<li>优先选择 <code>ProviderStrategy</code>，当模型不支持原生结构化输出时，再降级使用 <code>ToolStrategy</code>。</li>
+</ul>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 从LangChain导入结构化输出核心类</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ProviderStrategy, ToolStrategy</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel</span><br><span class="line"><span class="comment"># 补充示例中隐含的依赖函数（实际环境需根据LangChain版本适配）</span></span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI  <span class="comment"># 示例化聊天模型用</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent  <span class="comment"># 创建Agent核心函数</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化聊天模型的工具函数（示例封装）</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">init_chat_model</span>(<span class="params">model_name</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;根据模型名称初始化聊天模型，返回带profile属性的模型实例&quot;&quot;&quot;</span></span><br><span class="line">    model = ChatOpenAI(model_name=model_name)</span><br><span class="line">    <span class="comment"># 为模型添加profile属性，模拟&quot;是否支持原生结构化输出&quot;的标识</span></span><br><span class="line">    <span class="comment"># 实际场景中该属性可能由LangChain内置模型配置提供</span></span><br><span class="line">    <span class="keyword">if</span> model_name <span class="keyword">in</span> [<span class="string">&quot;gpt-4o&quot;</span>, <span class="string">&quot;gpt-4-turbo&quot;</span>, <span class="string">&quot;claude-3-opus&quot;</span>]:</span><br><span class="line">        model.profile = &#123;<span class="string">&quot;structured_output&quot;</span>: <span class="literal">True</span>&#125;</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        model.profile = &#123;<span class="string">&quot;structured_output&quot;</span>: <span class="literal">False</span>&#125;</span><br><span class="line">    <span class="keyword">return</span> model</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用strict参数启用严格模式</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">create_strict_agent</span>(<span class="params">model_name, schema</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;确保strict的代理工厂&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ProviderStrategy</span><br><span class="line">    </span><br><span class="line">    model = init_chat_model(model_name)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> model.profile.get(<span class="string">&quot;structured_output&quot;</span>):</span><br><span class="line">        <span class="comment"># 新模型：明确启用strict严格模式</span></span><br><span class="line">        <span class="keyword">return</span> create_agent(model, response_format=ProviderStrategy(schema, strict=<span class="literal">True</span>))</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="comment"># 老模型：降级使用工具策略</span></span><br><span class="line">        <span class="keyword">return</span> create_agent(model, response_format=ToolStrategy(schema))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例：定义一个简单的ContactInfo结构（承接前文示例）</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContactInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span></span><br><span class="line">    phone: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 代码使用</span></span><br><span class="line">agent = create_strict_agent(<span class="string">&quot;gpt-4o&quot;</span>, ContactInfo)  <span class="comment"># 对gpt-4o自动启用strict=True</span></span><br></pre></td></tr></table></figure>
+<p>这是代码的核心逻辑，实现了<strong>动态策略适配</strong>：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">分支条件</th>
+<th style="text-align:left">选用策略</th>
+<th style="text-align:left">核心参数</th>
+<th style="text-align:left">适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">模型支持原生结构化输出</td>
+<td style="text-align:left"><code>ProviderStrategy</code></td>
+<td style="text-align:left"><code>strict=True</code></td>
+<td style="text-align:left">新模型（如 GPT-4o），强制模型严格遵守 Pydantic 结构，禁止输出格式外的内容</td>
+</tr>
+<tr>
+<td style="text-align:left">模型不支持原生结构化输出</td>
+<td style="text-align:left"><code>ToolStrategy</code></td>
+<td style="text-align:left">无 strict 参数</td>
+<td style="text-align:left">老模型，通过「工具调用」的方式模拟结构化输出，兼容低版本模型</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li><strong><code>strict=True</code> 关键作用</strong>：仅对支持该功能的提供商（OpenAI、xAI）生效，强制模型严格遵循 <code>schema</code> 定义的结构，若输出不符合则直接报错，避免格式混乱。</li>
+<li><strong>重复导入说明</strong>：函数内部再次导入 <code>ProviderStrategy</code> 是为了代码独立性，实际项目中可移至顶部统一导入。</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li><strong><code>ProviderStrategy</code> 的 <code>strict</code> 参数</strong>：可选布尔值，默认 <code>None</code>（禁用），仅支持原生结构化输出的模型可用，开启后强制<strong>严格格式遵循</strong>，是生产环境保证输出准确性的关键。</li>
+<li><strong>策略自动降级</strong>：通过检测模型能力，实现「新模型用原生严格模式，老模型用工具兼容模式」，提升代码的跨模型兼容性。</li>
+<li><strong>适用建议</strong>：生产环境需精确控制输出格式时，<strong>显式使用 <code>ProviderStrategy</code> + <code>strict=True</code></strong>，优先利用模型原生能力，性能和准确性远高于工具模拟。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/12/12/ai/langchain/3-langchain-Message/" rel="prev" title="LangChain核心组件Message(消息)">
+      <i class="fa fa-chevron-left"></i> LangChain核心组件Message(消息)
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/12/19/ai/langchain/5-langchain-Memory/" rel="next" title="LangChain核心组件Memory(记忆)">
+      LangChain核心组件Memory(记忆) <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD%E6%A0%B8%E5%BF%83%E5%AE%9A%E4%BD%8D"><span class="nav-number">1.1.</span> <span class="nav-text">功能核心定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BB%B7%E5%80%BC%EF%BC%88%E8%A7%A3%E5%86%B3%E7%9A%84%E4%BA%94%E5%A4%A7%E5%85%B3%E9%94%AE%E9%97%AE%E9%A2%98%EF%BC%89"><span class="nav-number">1.2.</span> <span class="nav-text">核心价值（解决的五大关键问题）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F"><span class="nav-number">1.3.</span> <span class="nav-text">实现方式</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E7%A7%8D%E8%BE%93%E5%87%BA%E6%A0%BC%E5%BC%8F%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">四种输出格式类型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Pydantic"><span class="nav-number">2.1.</span> <span class="nav-text">Pydantic</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%AE%9A%E4%BD%8D"><span class="nav-number">2.1.1.</span> <span class="nav-text">核心定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BC%98%E5%8A%BF"><span class="nav-number">2.1.2.</span> <span class="nav-text">核心优势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">2.1.3.</span> <span class="nav-text">适用场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Dataclasses"><span class="nav-number">2.2.</span> <span class="nav-text">Dataclasses</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%AE%9A%E4%BD%8D-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">核心定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BC%98%E5%8A%BF-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">核心优势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-1"><span class="nav-number">2.2.3.</span> <span class="nav-text">适用场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TypedDict"><span class="nav-number">2.3.</span> <span class="nav-text">TypedDict</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%AE%9A%E4%BD%8D-2"><span class="nav-number">2.3.1.</span> <span class="nav-text">核心定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BC%98%E5%8A%BF-2"><span class="nav-number">2.3.2.</span> <span class="nav-text">核心优势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-2"><span class="nav-number">2.3.3.</span> <span class="nav-text">适用场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JSON-Schema"><span class="nav-number">2.4.</span> <span class="nav-text">JSON Schema</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%AE%9A%E4%BD%8D-3"><span class="nav-number">2.4.1.</span> <span class="nav-text">核心定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BC%98%E5%8A%BF-3"><span class="nav-number">2.4.2.</span> <span class="nav-text">核心优势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF-3"><span class="nav-number">2.4.3.</span> <span class="nav-text">适用场景</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">高级特性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86"><span class="nav-number">3.1.</span> <span class="nav-text">智能错误处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E5%AE%9A%E4%BD%8D"><span class="nav-number">3.1.1.</span> <span class="nav-text">核心功能定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E9%85%8D%E7%BD%AE%E8%BD%BD%E4%BD%93%EF%BC%9AToolStrategy"><span class="nav-number">3.1.2.</span> <span class="nav-text">核心配置载体：ToolStrategy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89%E7%A7%8D%E6%A0%B8%E5%BF%83%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86%E7%AD%96%E7%95%A5%EF%BC%88%E4%BB%A3%E7%A0%81%E9%85%8D%E7%BD%AE%E8%AF%A6%E8%A7%A3%EF%BC%89"><span class="nav-number">3.1.3.</span> <span class="nav-text">三种核心错误处理策略（代码配置详解）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BB%B7%E5%80%BC"><span class="nav-number">3.1.4.</span> <span class="nav-text">核心价值</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%81%94%E5%90%88%E7%B1%BB%E5%9E%8B%E6%94%AF%E6%8C%81"><span class="nav-number">3.2.</span> <span class="nav-text">联合类型支持</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BD%9C%E7%94%A8"><span class="nav-number">3.2.1.</span> <span class="nav-text">核心作用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E6%9D%82%E5%B5%8C%E5%A5%97%E7%BB%93%E6%9E%84"><span class="nav-number">3.3.</span> <span class="nav-text">复杂嵌套结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BD%9C%E7%94%A8-1"><span class="nav-number">3.3.1.</span> <span class="nav-text">核心作用</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E8%BF%90%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">4.</span> <span class="nav-text">实际运用场景</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E6%95%B0%E6%8D%AE%E6%8F%90%E5%8F%96"><span class="nav-number">4.1.</span> <span class="nav-text">智能数据提取</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BD%9C%E7%94%A8-2"><span class="nav-number">4.1.1.</span> <span class="nav-text">核心作用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AE%B9%E6%99%BA%E8%83%BD%E5%88%86%E7%B1%BB"><span class="nav-number">4.2.</span> <span class="nav-text">内容智能分类</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BD%9C%E7%94%A8-3"><span class="nav-number">4.2.1.</span> <span class="nav-text">核心作用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E5%8C%96%E4%BB%A3%E7%A0%81%E7%94%9F%E6%88%90"><span class="nav-number">4.3.</span> <span class="nav-text">结构化代码生成</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BD%9C%E7%94%A8-4"><span class="nav-number">4.3.1.</span> <span class="nav-text">核心作用</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BE%93%E5%87%BA%E7%AD%96%E7%95%A5%E9%80%89%E6%8B%A9%E6%8C%87%E5%8D%97"><span class="nav-number">5.</span> <span class="nav-text">输出策略选择指南</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.1.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">170</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
