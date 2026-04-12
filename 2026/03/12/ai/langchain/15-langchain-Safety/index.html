@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第十二讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于中间件组合的安全防护">
+<meta property="og:url" content="https://jinglv.github.io/2026/03/12/ai/langchain/15-langchain-Safety/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第十二讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-03-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-12T06:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/03/12/ai/langchain/15-langchain-Safety/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>基于中间件组合的安全防护 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/03/12/ai/langchain/15-langchain-Safety/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          基于中间件组合的安全防护
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-03-12 00:00:00 / 修改时间：14:30:00" itemprop="dateCreated datePublished" datetime="2026-03-12T00:00:00+08:00">2026-03-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第十二讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="什么是基于中间件组合的安全防护"><a href="#什么是基于中间件组合的安全防护" class="headerlink" title="什么是基于中间件组合的安全防护"></a>什么是基于中间件组合的安全防护</h1><p><strong>核心定义</strong></p>
+<p>一套通过<strong>中间件组合</strong>构建的安全防护体系，嵌入 AI 应用与 Agent 执行流程，在关键节点做安全检查、内容过滤、风险拦截，提前阻止安全问题发生。</p>
+<p><strong>核心能力</strong></p>
+<ul>
+<li>检测敏感信息、违规内容、恶意请求</li>
+<li>拦截提示词注入、PII 泄露、不当输出</li>
+<li>验证输出合规性与质量</li>
+<li>提前阻断风险，避免安全事件</li>
+</ul>
+<p><strong>常见防护场景</strong></p>
+<ul>
+<li>防 PII（个人信息）泄露</li>
+<li>检测并阻止提示词注入攻击</li>
+<li>拦截有害、违规内容</li>
+<li>输出合规与质量校验</li>
+</ul>
+<p><strong>实现方式</strong></p>
+<ul>
+<li>内置中间件自动实现防护</li>
+<li>开发者可<strong>自定义中间件</strong>，灵活扩展防护规则</li>
+<li>部署在 Agent 执行前后、模型调用、工具调用等关键环节</li>
+</ul>
+<p>一句话总结：<strong>用中间件做多层安全拦截，给 AI Agent 和应用穿上 “安全防护衣”。</strong></p>
+<h1 id="安全防护的实现方式"><a href="#安全防护的实现方式" class="headerlink" title="安全防护的实现方式"></a>安全防护的实现方式</h1><p><strong>AI 安全防护的两种实现方式</strong>：<strong>确定性安全防护</strong>和<strong>基于模型的安全防护</strong>：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">对比维度</th>
+<th style="text-align:left">确定性安全防护</th>
+<th style="text-align:left">基于模型的安全防护</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>实现原理</strong></td>
+<td style="text-align:left">预设规则、正则、关键词、黑名单</td>
+<td style="text-align:left">大模型（LLM）语义理解、内容判别</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>响应速度</strong></td>
+<td style="text-align:left">快</td>
+<td style="text-align:left">慢</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>成本</strong></td>
+<td style="text-align:left">低</td>
+<td style="text-align:left">高</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>可预测性</strong></td>
+<td style="text-align:left">可预测、可追溯</td>
+<td style="text-align:left">不可控、不可预测</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>覆盖能力</strong></td>
+<td style="text-align:left">规则内有效，易遗漏复杂场景</td>
+<td style="text-align:left">泛化性强，能识别规则外风险</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>优缺点</strong></td>
+<td style="text-align:left">优点：快、稳、省；缺点：扩展性差、易绕过</td>
+<td style="text-align:left">优点：智能、灵活；缺点：延迟高、成本高</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>典型场景</strong></td>
+<td style="text-align:left">关键词过滤、PII 检测、正则拦截</td>
+<td style="text-align:left">语义风险判断、复杂内容合规校验</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>工具支持</strong></td>
+<td style="text-align:left">LangChain 内置中间件、规则引擎</td>
+<td style="text-align:left">LangChain 支持 LLM 分类、自定义判别</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="内置安全防护功能"><a href="#内置安全防护功能" class="headerlink" title="内置安全防护功能"></a>内置安全防护功能</h1><h2 id="PII检测"><a href="#PII检测" class="headerlink" title="PII检测"></a>PII检测</h2><p>LangChain 提供<strong>PII 中间件</strong>，用于识别 / 处理文本中的个人身份信息（PII），如邮箱、电话、IP、证件号等，保护用户隐私，满足合规要求。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">策略</th>
+<th style="text-align:left">作用</th>
+<th style="text-align:left">效果示例</th>
+<th style="text-align:left">适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>redact</strong></td>
+<td style="text-align:left">检测到 PII 直接删除 / 替换</td>
+<td style="text-align:left"><code>[REDACTED]</code></td>
+<td style="text-align:left">完全隐藏、不留痕迹</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>mask</strong></td>
+<td style="text-align:left">部分掩码、保留部分字符</td>
+<td style="text-align:left"><code>****1234</code></td>
+<td style="text-align:left">保留格式、不影响识别</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>hash</strong></td>
+<td style="text-align:left">不可逆哈希、值不变</td>
+<td style="text-align:left"><code>a1f5c6...</code></td>
+<td style="text-align:left">保留数据结构、不可还原</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>block</strong></td>
+<td style="text-align:left">检测到直接拦截、报错</td>
+<td style="text-align:left">抛出异常</td>
+<td style="text-align:left">禁止含 PII 内容通过</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> PIIMiddleware</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义工具列表（客服工具、邮箱工具）</span></span><br><span class="line">tools = [customer_service_tool, email_tool]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建Agent</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    tools=tools,</span><br><span class="line">    <span class="comment"># 中间件配置</span></span><br><span class="line">    middleware=[</span><br><span class="line">        <span class="comment"># PII中间件：策略=redact，应用到输入</span></span><br><span class="line">        PIIMiddleware(</span><br><span class="line">            strategy=<span class="string">&quot;redact&quot;</span>,</span><br><span class="line">            apply_to_input=<span class="literal">True</span></span><br><span class="line">        ),</span><br><span class="line">        <span class="comment"># PII中间件：策略=mask，应用到输入</span></span><br><span class="line">        PIIMiddleware(</span><br><span class="line">            strategy=<span class="string">&quot;mask&quot;</span>,</span><br><span class="line">            apply_to_input=<span class="literal">True</span></span><br><span class="line">        ),</span><br><span class="line">        <span class="comment"># PII中间件：策略=block，拦截API Key</span></span><br><span class="line">        PIIMiddleware(</span><br><span class="line">            strategy=<span class="string">&quot;block&quot;</span>,</span><br><span class="line">            detector=<span class="string">r&quot;sk-[a-zA-Z0-9]&#123;20,32&#125;&quot;</span>,</span><br><span class="line">            apply_to_input=<span class="literal">True</span></span><br><span class="line">        )</span><br><span class="line">    ]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试输入：包含邮箱、手机号</span></span><br><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;My email is john.doe@example.com and card is 4111-1111-1111-1110&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行：中间件自动处理PII</span></span><br><span class="line">response = agent.invoke(messages)</span><br><span class="line"><span class="built_in">print</span>(response)</span><br></pre></td></tr></table></figure>
+<p>输入含<strong>邮箱 / 手机号 / 证件号</strong>时，中间件按策略：</p>
+<ul>
+<li>脱敏（mask/redact）</li>
+<li>拦截（block 并报错）</li>
+</ul>
+<p>实现PII 隐私保护。</p>
+<h2 id="Human-in-the-loop（人工介入）"><a href="#Human-in-the-loop（人工介入）" class="headerlink" title="Human-in-the-loop（人工介入）"></a>Human-in-the-loop（人工介入）</h2><p>LangChain 内置中间件，在执行<strong>敏感操作前强制人工审批</strong>，是高风险场景的核心安全防护手段。</p>
+<p><strong>适用场景</strong></p>
+<ul>
+<li>输入 / 输出包含敏感数据</li>
+<li>执行可能产生破坏性操作</li>
+<li>接收外部方通信请求</li>
+<li>任何有重大业务影响的操作</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> HumanInTheLoopMiddleware</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"></span><br><span class="line"><span class="comment"># 工具列表：发邮件、删除数据库（敏感操作）</span></span><br><span class="line">tools = [send_email_tool, delete_database_tool]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建Agent</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    tools=tools,</span><br><span class="line">    middleware=[</span><br><span class="line">        <span class="comment"># 人工介入中间件</span></span><br><span class="line">        HumanInTheLoopMiddleware(</span><br><span class="line">            <span class="comment"># 对发邮件、数据库操作要求人工审批</span></span><br><span class="line">            require_approval_for_sensitive_ops=<span class="literal">True</span>,</span><br><span class="line">            send_email=<span class="literal">True</span>,</span><br><span class="line">            delete_database=<span class="literal">True</span></span><br><span class="line">        )</span><br><span class="line">    ],</span><br><span class="line">    <span class="comment"># 启用检查点持久化</span></span><br><span class="line">    checkpointer=MemorySaver()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置：必须指定 thread_id 用于持久化</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;user-123&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行：敏感工具会暂停，等待人工 approval</span></span><br><span class="line">result = agent.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;发邮件到团队邮箱&quot;</span>&#125;]&#125;,</span><br><span class="line">    config=config</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 人工决策：批准/拒绝</span></span><br><span class="line"><span class="comment"># 恢复执行：传入 &#123;&quot;approved&quot;: true&#125; 或 false</span></span><br><span class="line">result = agent.invoke(</span><br><span class="line">    Command(resume=&#123;<span class="string">&quot;approved&quot;</span>: <span class="string">&quot;true&quot;</span>&#125;),</span><br><span class="line">    config=config</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>核心流程</p>
+<ol>
+<li>执行敏感操作前<strong>自动暂停</strong></li>
+<li>人工审批（批准 / 拒绝）</li>
+<li>仅批准后才继续执行工具</li>
+<li>支持持久化会话（thread_id）</li>
+</ol>
+<h1 id="自定义安全防护措施"><a href="#自定义安全防护措施" class="headerlink" title="自定义安全防护措施"></a>自定义安全防护措施</h1><p>LangChain 支持<strong>自定义中间件</strong>，可在 Agent 运行的<strong>前、中、后</strong>任意阶段插入安全逻辑，实现定制化检测、过滤、拦截，满足个性化安全要求。</p>
+<p>核心能力：</p>
+<ul>
+<li>自定义钩子（hook）嵌入 Agent 执行流程</li>
+<li>输入前检测、执行中监控、输出后校验</li>
+<li>灵活拦截违规内容、注入风险、敏感信息</li>
+<li>不依赖内置规则，完全自主控制防护策略</li>
+</ul>
+<h2 id="Agent执行前的安全防护"><a href="#Agent执行前的安全防护" class="headerlink" title="Agent执行前的安全防护"></a>Agent执行前的安全防护</h2><p>使用 <code>before_agent</code> 钩子在每次调用开始时进行一次验证，这对于会检查验证规则特别有用，例如快速控制在任何处理开始前阻止不适当的查询。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span>, <span class="type">Dict</span></span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> import_ware</span><br><span class="line"><span class="keyword">from</span> before_agent_middleware <span class="keyword">import</span> before_AgentState_Hook_config</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义 before_agent 钩子函数</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">before_agent</span>(<span class="params">state: <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]</span>) -&gt; <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    对用户输入进行安全防护</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 过滤敏感词</span></span><br><span class="line">    sensitive_keywords = [<span class="string">&quot;赌博&quot;</span>, <span class="string">&quot;毒品&quot;</span>, <span class="string">&quot;暴力&quot;</span>]</span><br><span class="line">    <span class="keyword">for</span> keyword <span class="keyword">in</span> sensitive_keywords:</span><br><span class="line">        <span class="keyword">if</span> keyword <span class="keyword">in</span> state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content:</span><br><span class="line">            <span class="keyword">return</span> &#123;</span><br><span class="line">                <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">                    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;内容不安全，无法回复&quot;</span>&#125;</span><br><span class="line">                ]</span><br><span class="line">            &#125;</span><br><span class="line">    <span class="comment"># 未命中敏感词，返回原状态</span></span><br><span class="line">    <span class="keyword">return</span> state</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 Agent 时注册中间件</span></span><br><span class="line">model.bind(</span><br><span class="line">    search_tool=&#123;&#125;,</span><br><span class="line">    middleware_content_filter=before_agent</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>代码讲解</strong></p>
+<ol>
+<li><strong>导入模块</strong><ul>
+<li>导入类型注解工具 <code>typing</code></li>
+<li>导入 LangGraph 运行时相关模块</li>
+<li>导入自定义中间件配置</li>
+</ul>
+</li>
+<li><strong>钩子函数 <code>before_agent</code></strong><ul>
+<li>接收状态字典 <code>state</code>，处理后返回新状态</li>
+<li>核心功能：<strong>敏感词过滤</strong></li>
+<li>遍历敏感词列表，检测用户最后一条输入</li>
+<li>命中敏感词 → 返回安全提示</li>
+<li>未命中 → 原样返回状态</li>
+</ul>
+</li>
+<li><strong>注册中间件</strong><ul>
+<li>将 <code>before_agent</code> 作为内容过滤器绑定到模型</li>
+<li>实现 Agent 执行前的安全拦截</li>
+</ul>
+</li>
+</ol>
+<h2 id="Agent执行后的安全防护"><a href="#Agent执行后的安全防护" class="headerlink" title="Agent执行后的安全防护"></a>Agent执行后的安全防护</h2><p>使用 <code>after_agent</code> 钩子在 Agent 完成执行后验证结果，这对于 Agent 的输出是否符合安全、规范、质量要求非常有用。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"><span class="keyword">from</span> langchain_agents.middleware <span class="keyword">import</span> after_agent, AgentState</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义 after_agent 钩子函数</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">after_agent_verification</span>(<span class="params">state: AgentState, runtime: Runtime</span>) -&gt; AgentState:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Agent 输出内容验证&quot;&quot;&quot;</span></span><br><span class="line">    agent_output = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content</span><br><span class="line">    <span class="comment"># 检查是否为&quot;我不知道&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;我不清楚&quot;</span> <span class="keyword">in</span> agent_output:</span><br><span class="line">        <span class="comment"># 修改状态消息，增加更多内容，使其更具体</span></span><br><span class="line">        state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content = agent_output + <span class="string">&quot;\n\n请提供更多内容，以便我更准确地回答&quot;</span></span><br><span class="line">    <span class="comment"># 检查输出消息长度是否不足</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(state[<span class="string">&quot;messages&quot;</span>]) &lt; <span class="number">1</span>:</span><br><span class="line">        <span class="comment"># 追加系统消息提示输出不足</span></span><br><span class="line">        state[<span class="string">&quot;messages&quot;</span>].append(</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;输出内容不足，可能不准确，请完善输出&quot;</span>&#125;</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">return</span> state</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建带验证的 Agent</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model,</span><br><span class="line">    tools=[search_tool],</span><br><span class="line">    middleware_output_verification=after_agent_verification,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>代码解读</strong></p>
+<ol>
+<li><strong>功能定位</strong><ul>
+<li>在 <strong>Agent 执行完成后</strong> 对输出结果进行安全与质量校验。</li>
+<li>用于确保输出合规、完整、准确。</li>
+</ul>
+</li>
+<li><strong>核心函数 <code>after_agent_verification</code></strong><ul>
+<li><strong>参数</strong>：接收当前状态 <code>state</code> 和运行时 <code>runtime</code>。</li>
+<li><strong>获取输出</strong>：提取最后一条消息内容 <code>agent_output</code>。</li>
+<li><strong>检查 “我不知道” 类表述</strong>：若包含 “我不清楚”，则补充提示，让回答更具体。</li>
+<li><strong>检查消息长度</strong>：若消息数量不足，追加系统提示，说明输出可能不准确。</li>
+<li><strong>返回</strong>：处理后的新状态。</li>
+</ul>
+</li>
+<li><strong>Agent 注册</strong><ul>
+<li>创建 Agent 时，将输出验证中间件 <code>middleware_output_verification</code> 绑定到模型，实现后置安全校验。</li>
+</ul>
+</li>
+</ol>
+<h1 id="组合多个中间件实现安全防护措施"><a href="#组合多个中间件实现安全防护措施" class="headerlink" title="组合多个中间件实现安全防护措施"></a>组合多个中间件实现安全防护措施</h1><p>你可以通过多个安全防护中间件添加到 middleware 数组中堆叠它们，按顺序执行。请你构建分层防护：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> PiIMiddleware, HumanInTheLoopMiddleware</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model,</span><br><span class="line">    tools=[search_tool, send_email_tool],</span><br><span class="line">    middleware=[</span><br><span class="line">        <span class="comment"># Layer 1: Deterministic input filter before Agent</span></span><br><span class="line">        deterministic_input_filter,</span><br><span class="line">        ContentFilterMiddleware(banned_keywords=[<span class="string">&quot;hack&quot;</span>, <span class="string">&quot;exploit&quot;</span>]),</span><br><span class="line">        <span class="comment"># Layer 2: PII Protection before and after model</span></span><br><span class="line">        PiIMiddleware(email, strategy=<span class="string">&quot;redact&quot;</span>, apply_to_input=<span class="literal">True</span>),</span><br><span class="line">        PiIMiddleware(email, strategy=<span class="string">&quot;sensitive&quot;</span>, apply_to_output=<span class="literal">True</span>),</span><br><span class="line">        HumanInTheLoopMiddleware(interrupt_on=<span class="string">&quot;send_email&quot;</span>, <span class="literal">True</span>),</span><br><span class="line">        <span class="comment"># Layer 4: Model based safety check after Agent</span></span><br><span class="line">        SafetyGuardrailMiddleware(check_agent_output=<span class="literal">True</span>),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>核心原理</strong></p>
+<p>这是 <strong>LangGraph / LangChain 智能体的多层安全防护架构</strong>：</p>
+<ul>
+<li>把多个中间件放进 <code>middleware</code> 列表</li>
+<li>执行时<strong>从上到下按顺序依次运行</strong></li>
+<li>实现<strong>输入→处理→输出</strong>全流程防护</li>
+</ul>
+<p><strong>整体执行流程</strong></p>
+<ol>
+<li>用户输入 → <strong>第一层：关键词拦截</strong></li>
+<li>输入 → <strong>第二层：隐私脱敏</strong></li>
+<li>执行工具 → <strong>第三层：发邮件必须人工审核</strong></li>
+<li>输出结果 → <strong>第四层：内容安全校验</strong></li>
+<li>最终返回给用户</li>
+</ol>
+<h1 id="安全防护最佳实践"><a href="#安全防护最佳实践" class="headerlink" title="安全防护最佳实践"></a>安全防护最佳实践</h1><p><strong>AI 智能体安全防护的最佳实践</strong>，核心是<strong>分层防御、多维度防护、可观测、可更新</strong>四大原则，确保系统安全可控。</p>
+<ol>
+<li><p><strong>分层防御（Defense in Depth）</strong></p>
+<ul>
+<li>多环节、多阶段防护：输入、模型、输出、工具调用全链路拦截。</li>
+<li>层层设防，降低单一漏洞导致的风险。</li>
+</ul>
+</li>
+<li><p><strong>多维度安全防护</strong></p>
+<ul>
+<li>内容安全：过滤违规、敏感、有害内容。</li>
+<li>隐私保护：PII 脱敏、数据加密、权限管控。</li>
+<li>滥用防护：限制高频调用、防止资源耗尽。</li>
+<li>身份验证：严格鉴权，防止未授权访问。</li>
+</ul>
+</li>
+<li><p><strong>用户可控</strong></p>
+<ul>
+<li>开放配置开关，允许用户根据场景调整安全策略。</li>
+<li>关键操作（如发邮件、调用工具）需要人工确认。</li>
+</ul>
+</li>
+<li><p><strong>自动化与监控</strong></p>
+<ul>
+<li>持续监控输入输出、日志、告警。</li>
+<li>及时发现异常、攻击、数据泄露。</li>
+</ul>
+</li>
+<li><p><strong>可观测</strong></p>
+<ul>
+<li>完整记录请求、响应、拦截、错误。</li>
+<li>可追溯、可审计、可复盘安全事件。</li>
+</ul>
+</li>
+<li><p><strong>定期更新</strong></p>
+<ul>
+<li>模型、规则、防护策略持续迭代。</li>
+<li>应对新型攻击、新风险，保持防护有效性。</li>
+</ul>
+</li>
+</ol>
+<p><strong>一句话总结</strong></p>
+<p>这套实践强调<strong>全方位、多层次、自动化、可监控、可更新</strong>的安全体系，从输入到输出全链路防护，确保 AI 智能体安全、可控、合规。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>核心是：<strong>用中间件构建可定制、分层、可控的 AI 安全体系</strong>，在保障安全的同时不牺牲体验。</p>
+<p><strong>关键能力总结</strong></p>
+<ul>
+<li><p><strong>丰富安全功能</strong>：包括 PII 识别、人工审核、输入 / 输出过滤、内容安全等，快速落地安全防护。</p>
+</li>
+<li><p><strong>自定义安全策略</strong>：可根据业务需求定制规则、拦截逻辑、审核流程，适配不同场景。</p>
+</li>
+<li><p><strong>Agent 全流程防护</strong>： 在 Agent 执行的关键节点（输入、调用、输出）实现安全控制与内容过滤。</p>
+</li>
+<li><strong>平衡安全与体验</strong>：保证安全性的同时，保持良好用户体验与功能能力。</li>
+</ul>
+<p><strong>最终目标</strong></p>
+<p>通过完整的安全防护体系，<strong>降低 AI 风险</strong>，同时<strong>维持用户体验与功能可用性</strong>，强调安全是<strong>持续迭代的过程</strong>。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/12/ai/langchain/16-langchain-Context/" rel="prev" title="LangChain中的上下文工程">
+      <i class="fa fa-chevron-left"></i> LangChain中的上下文工程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/12/ai/langchain/14-langchain-Runtime/" rel="next" title="LangChain Runtime运行时环境">
+      LangChain Runtime运行时环境 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%9F%BA%E4%BA%8E%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%BB%84%E5%90%88%E7%9A%84%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4"><span class="nav-number">1.</span> <span class="nav-text">什么是基于中间件组合的安全防护</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">安全防护的实现方式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E7%BD%AE%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4%E5%8A%9F%E8%83%BD"><span class="nav-number">3.</span> <span class="nav-text">内置安全防护功能</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#PII%E6%A3%80%E6%B5%8B"><span class="nav-number">3.1.</span> <span class="nav-text">PII检测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Human-in-the-loop%EF%BC%88%E4%BA%BA%E5%B7%A5%E4%BB%8B%E5%85%A5%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">Human-in-the-loop（人工介入）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4%E6%8E%AA%E6%96%BD"><span class="nav-number">4.</span> <span class="nav-text">自定义安全防护措施</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Agent%E6%89%A7%E8%A1%8C%E5%89%8D%E7%9A%84%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4"><span class="nav-number">4.1.</span> <span class="nav-text">Agent执行前的安全防护</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Agent%E6%89%A7%E8%A1%8C%E5%90%8E%E7%9A%84%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4"><span class="nav-number">4.2.</span> <span class="nav-text">Agent执行后的安全防护</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%84%E5%90%88%E5%A4%9A%E4%B8%AA%E4%B8%AD%E9%97%B4%E4%BB%B6%E5%AE%9E%E7%8E%B0%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4%E6%8E%AA%E6%96%BD"><span class="nav-number">5.</span> <span class="nav-text">组合多个中间件实现安全防护措施</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">6.</span> <span class="nav-text">安全防护最佳实践</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">175</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

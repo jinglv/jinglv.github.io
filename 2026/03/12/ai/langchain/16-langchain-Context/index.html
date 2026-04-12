@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第十三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain中的上下文工程">
+<meta property="og:url" content="https://jinglv.github.io/2026/03/12/ai/langchain/16-langchain-Context/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第十三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-03-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-12T08:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/03/12/ai/langchain/16-langchain-Context/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain中的上下文工程 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/03/12/ai/langchain/16-langchain-Context/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain中的上下文工程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-03-12 00:00:00 / 修改时间：16:30:00" itemprop="dateCreated datePublished" datetime="2026-03-12T00:00:00+08:00">2026-03-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第十三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="上下文工程的说明"><a href="#上下文工程的说明" class="headerlink" title="上下文工程的说明"></a>上下文工程的说明</h1><p>上下文工程是AI工程师最重要的技能 — 它是连接理论与实践，将AI从“演示天才”转变为“实战高手”的关键桥梁。拆解了将 AI 从理论构想落地为实际可用成果的关键技能体系，分为<strong>三大核心能力模块</strong>，每个模块都有明确的能力定义、执行要求和价值目标，具体解读如下：</p>
+<h2 id="一、清晰的信息指令"><a href="#一、清晰的信息指令" class="headerlink" title="一、清晰的信息指令"></a>一、清晰的信息指令</h2><p>这是<strong>AI 理解任务的基础</strong>，核心目标是消除歧义、让 AI 精准捕捉需求。</p>
+<ul>
+<li><strong>核心要求</strong>：指令必须<strong>精准、简洁、无歧义</strong>，清晰描述任务目标、对应方法、相关背景、约束条件。</li>
+<li><strong>关键动作</strong>：<ol>
+<li>明确告诉 AI “要做什么”（任务）；</li>
+<li>补充 “怎么做”（方法 / 逻辑）；</li>
+<li>限定 “在什么范围 / 条件下做”（背景、限制）。</li>
+</ol>
+</li>
+<li><strong>价值</strong>：避免 AI 误解意图、偏离方向，减少后续修正成本，让 AI 输出贴合真实需求。</li>
+</ul>
+<hr>
+<h2 id="二、合格的工具技能"><a href="#二、合格的工具技能" class="headerlink" title="二、合格的工具技能"></a>二、合格的工具技能</h2><p>这是<strong>AI 执行任务的支撑</strong>，核心目标是具备完成任务的完整能力储备。</p>
+<ul>
+<li><strong>核心要求</strong>：掌握 AI 完成任务所需的<strong>全维度工具</strong>，覆盖数据、接口、应用、文档、代码等。</li>
+<li><strong>包含范畴</strong>：<ol>
+<li>数据：可用的素材、样本、参考资料；</li>
+<li>API / 应用：可调用的工具、平台、功能模块；</li>
+<li>文档 / 代码：可参考的规范、脚本、执行程序。</li>
+</ol>
+</li>
+<li><strong>价值</strong>：让 AI 拥有 “落地执行的资本”，具备完成复杂任务、解决实际问题的能力，而非仅停留在理论层面。</li>
+</ul>
+<hr>
+<h2 id="三、规范的指令格式"><a href="#三、规范的指令格式" class="headerlink" title="三、规范的指令格式"></a>三、规范的指令格式</h2><p>这是<strong>AI 高效输出的保障</strong>，核心目标是标准化输出、提升处理效率与结果质量。</p>
+<ul>
+<li><strong>核心要求</strong>：采用<strong>标准化、结构化、条理化</strong>的格式呈现指令与工具。</li>
+<li><strong>关键动作</strong>：<ol>
+<li>规范排版、分类呈现指令和工具；</li>
+<li>清晰标注重点、逻辑分层；</li>
+<li>统一格式、统一用语。</li>
+</ol>
+</li>
+<li><strong>价值</strong>：让 AI 快速识别结构、抓取重点，<strong>高效处理需求</strong>，最终输出<strong>精准、规范、可控、可复用</strong>的结果，避免混乱、遗漏、错误。</li>
+</ul>
+<hr>
+<h2 id="整体核心逻辑总结"><a href="#整体核心逻辑总结" class="headerlink" title="整体核心逻辑总结"></a>整体核心逻辑总结</h2><p>三大能力层层递进：</p>
+<p><strong>清晰指令（让 AI 懂） → 合格工具（让 AI 会） → 规范格式（让 AI 快且准）</strong></p>
+<p>最终目的：把 AI 从 “理论上的天马行空”，转化为<strong>可落地、可复用、可落地应用</strong>的实战成果，完成从理论认知到工程实践的关键转化。</p>
+<h1 id="为什么智能体会失败？"><a href="#为什么智能体会失败？" class="headerlink" title="为什么智能体会失败？"></a>为什么智能体会失败？</h1><p>原因主要有两个：</p>
+<ol>
+<li><p><strong>AI 模型本身能力不足</strong></p>
+<p>就像工人本身技术不行，记不住太多东西，自然无法处理长对话、长文本。</p>
+</li>
+<li><p><strong>没有给对 “上下文”</strong></p>
+<p>就像工人很能干，但你没给他项目资料、背景、清晰指令，他就只能按有限信息去做，导致 “失忆”。</p>
+</li>
+</ol>
+<p>绝大多数 “失忆” 问题，都是因为第二个原因：没有给对、给全上下文。不是模型笨，而是<strong>你没把必要的背景、资料、历史对话喂给它</strong>。</p>
+<p>LangChain 的设计目的，就是<strong>帮你轻松管理和传递上下文</strong>，让智能体不会丢内容、不会忘事，能持续理解完整信息。</p>
+<h1 id="智能体（Agent）的工作原理"><a href="#智能体（Agent）的工作原理" class="headerlink" title="智能体（Agent）的工作原理"></a>智能体（Agent）的工作原理</h1><p><strong>智能体（Agent）的工作原理</strong>，核心是一个<strong>循环闭环流程</strong>：智能体在 “思考 — 行动” 之间不断循环，自主完成任务。</p>
+<p>核心流程：</p>
+<ol>
+<li><strong>思考与规划</strong>：智能体先分析任务、制定行动思路与计划。</li>
+<li><strong>判断是否使用工具</strong>：根据需求判断是否需要调用工具。<ul>
+<li>若<strong>不需要</strong>：直接生成最终答案。</li>
+<li>若<strong>需要</strong>：执行 AI 工具行动。</li>
+</ul>
+</li>
+<li><strong>AI 工具执行行动</strong>：调用工具完成具体操作。</li>
+<li><strong>获取结果</strong>：拿到工具执行后的结果。</li>
+<li><strong>循环判断</strong>：回到 “是否需要工具” 继续判断，直到任务完成。</li>
+<li><strong>任务完成</strong>：最终达成目标，结束流程。</li>
+</ol>
+<p><strong>关键</strong>：你的角色是把控这个循环里的每一个环节。</p>
+<pre class="mermaid">flowchart TD
+    A[开始任务] --> B[思考/规划]
+    B --> C{是否需要使用工具?}
+
+    %% 不需要工具分支
+    C -->|否| D[生成答案]
+    D --> E[任务结束]
+
+    %% 需要工具分支（循环）
+    C -->|是| F[AI工具行动]
+    F --> G[获取结果]
+    G --> C</pre>
+
+
+
+<h1 id="智能体（Agent）的三大控制维度"><a href="#智能体（Agent）的三大控制维度" class="headerlink" title="智能体（Agent）的三大控制维度"></a>智能体（Agent）的三大控制维度</h1><p>核心是通过精细化管理上下文，让 AI 更精准、可控地完成任务，分为<strong>控制维度、内容、特点、作用</strong>四部分，同时补充了<strong>数据三大来源</strong>。</p>
+<h2 id="三大控制维度（核心）"><a href="#三大控制维度（核心）" class="headerlink" title="三大控制维度（核心）"></a>三大控制维度（核心）</h2><ol>
+<li><p>控制维度：上下文上</p>
+<ul>
+<li><strong>内容</strong>：AI 单次能看到的东西（参考范围）</li>
+<li><strong>特点</strong>：有上限、有范围</li>
+<li><strong>作用</strong>：让 AI 只看指定内容，不看无关内容</li>
+</ul>
+</li>
+<li><p>控制维度：上下文下</p>
+<ul>
+<li><strong>内容</strong>：指令、规则、格式、要求、例子</li>
+<li><strong>特点</strong>：指令越细、越具体，产出越精准</li>
+<li><strong>作用</strong>：控制 AI 的输出风格、格式、内容边界</li>
+</ul>
+</li>
+<li><p>控制维度：上下文前后</p>
+<ul>
+<li><strong>内容</strong>：在 “思考” 和 “行动” 之间发生了什么（如当天记录、安全记录）</li>
+<li><strong>特点</strong>：会改变整个执行流程</li>
+<li><strong>作用</strong>：记录过程、复盘、保证安全</li>
+</ul>
+</li>
+</ol>
+<h2 id="数据的三个来源"><a href="#数据的三个来源" class="headerlink" title="数据的三个来源"></a>数据的三个来源</h2><p>智能体执行任务时，会从三类信息中读取内容：</p>
+<ol>
+<li><strong>运行时上下文</strong>：正在执行的任务、当前指令、本次对话内容</li>
+<li><strong>状态上的记忆</strong>：历史记录、之前的对话、过往的临时信息</li>
+<li><strong>公司中的知识</strong>：公司内部文档、数据、所有可调用的信息（可用 API、工具读取）</li>
+</ol>
+<p><strong>总结</strong></p>
+<ul>
+<li>三大上下文控制 = <strong>范围限制 + 指令控制 + 过程记录</strong></li>
+<li>三大数据来源 = <strong>实时任务 + 历史记忆 + 企业知识</strong></li>
+<li>最终目标：<strong>精细化管理 AI 行为，让输出更精准、可控、安全。</strong></li>
+</ul>
+<h1 id="实现机制：中间件（Middleware）"><a href="#实现机制：中间件（Middleware）" class="headerlink" title="实现机制：中间件（Middleware）"></a>实现机制：中间件（Middleware）</h1><p>中间件允许开发者在智能体工作循环（Loop）的<strong>任何环节</strong>“插入”自定义代码。这就像是在一条自动化流水线上加装了自定义的检测仪或机械臂。</p>
+<p>它主要用于实现以下两个功能：</p>
+<ul>
+<li><strong>更新上下文：</strong> 例如在对话进行时，自动整理、压缩或提取聊天记录，确保模型始终能获取最相关的信息。</li>
+<li><strong>控制流程：</strong> 根据特定逻辑拦截或修改指令，比如在某些条件下直接“跳过某个工具的调用”，从而优化执行路径。</li>
+</ul>
+<h1 id="控制AI的思考"><a href="#控制AI的思考" class="headerlink" title="控制AI的思考"></a>控制AI的思考</h1><p>控制每次给AI“投喂”什么信息。</p>
+<h2 id="系统提示-——-动态工作指令"><a href="#系统提示-——-动态工作指令" class="headerlink" title="系统提示 —— 动态工作指令"></a>系统提示 —— 动态工作指令</h2><p>通俗解读：就像在会议中，老板根据会议进度，动态调整对秘书的要求。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> dynamic_prompt, model_request</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Dict</span>, <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@dynamic_prompt</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">custom_prompt</span>(<span class="params">request: model_request</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;根据对话长度调整模型请求&quot;&quot;&quot;</span></span><br><span class="line">    base = <span class="string">&quot;you are a helpful assistant.&quot;</span></span><br><span class="line">    <span class="comment"># 对话超过10轮，要求更简洁</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(request.message_history) &gt; <span class="number">10</span>:</span><br><span class="line">        base += <span class="string">&quot;\nThis is a long conversation, be extra concise.&quot;</span></span><br><span class="line">    <span class="keyword">return</span> base</span><br><span class="line"></span><br><span class="line"><span class="comment"># 应用创建</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    tools=[],</span><br><span class="line">    llm=llm,</span><br><span class="line">    prompt=custom_prompt,</span><br><span class="line">    middleware=[state_aware_prompt]</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>代码解读</strong></p>
+<ol>
+<li><strong>导入模块</strong>：从 LangChain 导入动态提示、模型请求相关工具与类型注解。</li>
+<li><strong>装饰器 <code>@dynamic_prompt</code></strong>：标记函数为动态提示生成器，可根据上下文动态调整提示词。</li>
+<li><strong>自定义提示函数 <code>custom_prompt</code></strong><ul>
+<li>基础指令：<code>you are a helpful assistant.</code>（你是一个有用的助手）。</li>
+<li>逻辑：若对话历史超过 10 轮，追加精简指令，让回复更简洁。</li>
+</ul>
+</li>
+<li><strong>智能体创建 <code>create_agent</code></strong>：配置空工具列表、大模型、自定义提示、中间件，完成智能体初始化。</li>
+</ol>
+<h2 id="消息管理-——-智能背景信息注入"><a href="#消息管理-——-智能背景信息注入" class="headerlink" title="消息管理 —— 智能背景信息注入"></a>消息管理 —— 智能背景信息注入</h2><p>通俗解读：就像在秘书回答前，助理悄悄塞给他一张关于当前项目背景的小纸条。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">inject_file_context</span>(<span class="params">request: model_request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;自动注入用户上传文件的上下文状态&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 提取上传文件信息</span></span><br><span class="line">    uploaded_files = request.state.get(<span class="string">&quot;uploaded_files&quot;</span>, [])</span><br><span class="line">    <span class="keyword">if</span> uploaded_files:</span><br><span class="line">        file_descriptions = []</span><br><span class="line">        <span class="keyword">for</span> file <span class="keyword">in</span> uploaded_files:</span><br><span class="line">            file_descriptions.append(<span class="string">f&quot;- <span class="subst">&#123;file[<span class="string">&#x27;name&#x27;</span>]&#125;</span>: <span class="subst">&#123;file[<span class="string">&#x27;summary&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="comment"># 构建可用文件上下文</span></span><br><span class="line">        file_context = <span class="string">&quot;\n&quot;</span>.join(file_descriptions)</span><br><span class="line">        <span class="comment"># 追加到用户消息中，不影响历史对话</span></span><br><span class="line">        messages = request.messages</span><br><span class="line">        messages.append(&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: file_context&#125;)</span><br><span class="line">        request.override_messages(messages)</span><br><span class="line">    <span class="keyword">return</span> handler(request)</span><br></pre></td></tr></table></figure>
+<p><strong>代码解读</strong></p>
+<ol>
+<li><strong>装饰器 <code>@wrap_model_call</code></strong>：用于包装模型调用，在模型回复前执行自定义逻辑。</li>
+<li><strong>上下文处理函数 <code>context</code></strong>：功能：自动从上传文件中提取信息并注入到对话上下文。</li>
+<li><strong>提取上传文件</strong>：从 <code>request.state</code> 获取已上传文件列表 <code>uploaded_files</code>。</li>
+<li><strong>生成文件描述</strong>：遍历文件，拼接文件名与摘要，形成 <code>file_descriptions</code>。</li>
+<li><strong>构建文件上下文</strong>：用换行符连接所有文件描述，得到 <code>file_context</code>。</li>
+<li><strong>追加用户消息</strong>：将文件上下文以用户角色追加到消息列表，不修改历史对话。</li>
+<li><strong>覆盖消息并执行</strong>：用新消息列表覆盖原消息，继续执行后续处理。</li>
+</ol>
+<h2 id="工具选择-——-动态权限管理"><a href="#工具选择-——-动态权限管理" class="headerlink" title="工具选择  —— 动态权限管理"></a>工具选择  —— 动态权限管理</h2><p>通俗解读：就像给秘书分配权限。新访客只能用公共电脑，认证用户才能用内部系统。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">state_based_tools</span>(<span class="params">request: model_request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;基于用户状态动态选择可用工具&quot;&quot;&quot;</span></span><br><span class="line">    is_authenticated = request.state.get(<span class="string">&quot;messages_authenticated&quot;</span>, <span class="literal">False</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> is_authenticated:</span><br><span class="line">        <span class="comment"># 未认证用户仅保留公开工具</span></span><br><span class="line">        tools = [t <span class="keyword">for</span> t <span class="keyword">in</span> request.tools <span class="keyword">if</span> t.name.startswith(<span class="string">&quot;public_&quot;</span>)]</span><br><span class="line">        request = request.override(tools=tools)</span><br><span class="line">    <span class="keyword">if</span> message_count &gt; <span class="number">5</span>:</span><br><span class="line">        <span class="comment"># 对话超过5轮，添加高级搜索工具</span></span><br><span class="line">        tools = [t <span class="keyword">for</span> t <span class="keyword">in</span> request.tools <span class="keyword">if</span> t.name == <span class="string">&quot;advanced_search&quot;</span>]</span><br><span class="line">        request = request.override(tools=tools)</span><br><span class="line">    <span class="keyword">return</span> handler(request)</span><br></pre></td></tr></table></figure>
+<p><strong>代码解读</strong></p>
+<ol>
+<li><strong>装饰器</strong>：<code>@wrap_model_call</code> 包装模型调用，在生成回答前动态调整工具权限。</li>
+<li><strong>权限判断</strong>：根据用户认证状态，只保留<strong>公开工具</strong>。</li>
+<li><strong>对话轮次控制</strong>：对话超过 5 轮，自动追加<strong>高级搜索工具</strong>。</li>
+<li><strong>动态生效</strong>：实时覆盖工具列表，实现权限与能力的动态调整。</li>
+</ol>
+<h2 id="模型选择-——-智能资源分配"><a href="#模型选择-——-智能资源分配" class="headerlink" title="模型选择  —— 智能资源分配"></a>模型选择  —— 智能资源分配</h2><p>通俗解读：就像派活。简单任务派给实习生，复杂项目派给资深专家。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 选择不同级别的AI模型</span></span><br><span class="line">large_model = init_chat_model(<span class="string">&quot;claude-3-sonnet&quot;</span>)  <span class="comment"># 豪华版</span></span><br><span class="line">standard_model = init_chat_model(<span class="string">&quot;gpt-4o-mini&quot;</span>)  <span class="comment"># 标准版</span></span><br><span class="line">efficient_model = init_chat_model(<span class="string">&quot;qwen-plus&quot;</span>)  <span class="comment"># 精简版</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">state_based_model</span>(<span class="params">request: model_request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;根据对话长度动态选择AI模型&quot;&quot;&quot;</span></span><br><span class="line">    message_count = <span class="built_in">len</span>(request.messages)</span><br><span class="line">    <span class="comment"># 对话长，使用豪华版</span></span><br><span class="line">    <span class="keyword">if</span> message_count &gt; <span class="number">20</span>:</span><br><span class="line">        model = large_model</span><br><span class="line">    <span class="comment"># 对话中等，使用标准版</span></span><br><span class="line">    <span class="keyword">elif</span> message_count &gt; <span class="number">10</span>:</span><br><span class="line">        model = standard_model</span><br><span class="line">    <span class="comment"># 对话短，使用精简版</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        model = efficient_model</span><br><span class="line">    <span class="keyword">return</span> handler(request.override(model=model))</span><br></pre></td></tr></table></figure>
+<p><strong>代码解读</strong></p>
+<ol>
+<li><strong>模型初始化</strong>：定义大、中、小三种不同能力的 AI 模型。</li>
+<li><strong>装饰器</strong>：<code>@wrap_model_call</code> 拦截模型调用，动态切换模型。</li>
+<li><strong>对话长度判断</strong>：根据消息数量自动选择模型。</li>
+<li><strong>动态调度</strong>：对话越长，使用能力越强的模型；对话短则用轻量模型，节省成本并提升效率。</li>
+</ol>
+<h1 id="控制AI的行动能力"><a href="#控制AI的行动能力" class="headerlink" title="控制AI的行动能力"></a>控制AI的行动能力</h1><p>工具很特殊，它既能“读”取环境信息，也能“写”回结果。</p>
+<h2 id="工具定义-——-清晰的使用说明书"><a href="#工具定义-——-清晰的使用说明书" class="headerlink" title="工具定义  —— 清晰的使用说明书"></a>工具定义  —— 清晰的使用说明书</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> tool.parse_docstring <span class="keyword">import</span> true</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_orders</span>(<span class="params">user_id: <span class="built_in">str</span>, status: <span class="built_in">str</span>, limit: <span class="built_in">int</span>=<span class="number">10</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    订单搜索</span></span><br><span class="line"><span class="string">    当用户询问订单历史或者订单状态时使用该工具</span></span><br><span class="line"><span class="string">    链接支持的查询状态：&#x27;pending&#x27;, &#x27;shipped&#x27;, &#x27;delivered&#x27;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        user_id: 用户唯一标识</span></span><br><span class="line"><span class="string">        status: 订单状态，可选：&#x27;pending&#x27;, &#x27;shipped&#x27;, &#x27;delivered&#x27;</span></span><br><span class="line"><span class="string">        limit: 限制返回结果数量，默认10</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 找到的limit个orders for user_id</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;found <span class="subst">&#123;limit&#125;</span> orders for <span class="subst">&#123;user_id&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>代码解读</strong></p>
+<p><strong>1. <code>@tool(parse_docstring=True)</code> 的魔力</strong></p>
+<p>这是这段代码的灵魂。在 LangChain 中，<code>parse_docstring=True</code> 告诉系统：<strong>请解析下面这段三引号里的文档字符串（Docstring）</strong>。</p>
+<ul>
+<li>系统会自动将 <code>Args</code> 部分的内容转换为 JSON Schema。</li>
+<li>AI 模型（如 GPT-4）在思考时，会看到这些描述，从而知道每个参数代表什么意思、该传什么格式。</li>
+</ul>
+<p><strong>2. 文档字符串（Docstring）的作用</strong></p>
+<p>在 Agent 开发中，文档字符串不是写给程序员看的注释，而是<strong>写给 AI 看的指令</strong>：</p>
+<ul>
+<li><strong>工具用途描述</strong>：告诉 AI 什么时候该用这个工具（例如：“当用户查询订单历史时…”）。</li>
+<li><strong>参数枚举限制</strong>：明确告知 AI <code>status</code> 只能在 <code>pending</code>, <code>shipped</code>, <code>delivered</code> 这三个词里选，防止 AI 瞎编一个状态。</li>
+</ul>
+<p><strong>3. 强类型参数定义</strong></p>
+<p>代码中使用了 Python 的类型注解（Type Hints），如 <code>user_id: str</code>, <code>limit: int</code>。</p>
+<ul>
+<li>这不仅方便代码补全，更重要的是 AI 会根据这些类型来提取参数。如果用户说“查 5 个订单”，AI 会自动将“5”识别为整数 <code>5</code> 传给 <code>limit</code>。</li>
+</ul>
+<h2 id="工具读取-——-获取环境信息"><a href="#工具读取-——-获取环境信息" class="headerlink" title="工具读取  —— 获取环境信息"></a>工具读取  —— 获取环境信息</h2><p>通俗解读：秘书去报销，不仅需要发票（AI提供的参数），还需要你的工号（从状态中读取）。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">check_authentication</span>(<span class="params">runtime: ToolRuntime</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;检查用户认证状态&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 从运行时环境读取认证状态</span></span><br><span class="line">    is_authenticated = runtime.state.get(<span class="string">&quot;authenticated&quot;</span>, <span class="literal">False</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;User is authenticated&quot;</span> <span class="keyword">if</span> is_authenticated <span class="keyword">else</span> <span class="string">&quot;User is not authenticated&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>代码解读</strong></p>
+<p>这段代码展示了 AI 工具调用的一个进阶用法：<strong>状态感知（State Awareness）</strong>。</p>
+<ol>
+<li><strong><code>@tool</code> 装饰器</strong>： 这标志着该函数是一个可以被 AI 模型调用的“工具”。AI 会根据函数名和文档字符串（docstring）来决定何时触发它。</li>
+<li><strong><code>runtime: ToolRuntime</code> 参数</strong>： 这是关键点。通常的工具只接收 AI 提取的参数（如“发票金额”），但这里引入了 <code>runtime</code> 对象。它代表了程序运行时的上下文环境，允许工具获取 AI 提示词之外的信息。</li>
+<li><strong>从状态（State）中读取</strong>： <code>runtime.state.get(&quot;authenticated&quot;, False)</code> 并不是让 AI 告诉工具用户是否登录，而是<strong>直接从系统内存或数据库中提取</strong>当前的登录状态。</li>
+</ol>
+<h2 id="工具写入-——-改变工作环境"><a href="#工具写入-——-改变工作环境" class="headerlink" title="工具写入  —— 改变工作环境"></a>工具写入  —— 改变工作环境</h2><p>通俗解读：秘书帮你办理入门手续后，不仅告诉你办好了，还给你发访客胸牌。之后所有门禁（其他工具）看到胸牌都会放行。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">authenticate_user</span>(<span class="params">password: <span class="built_in">str</span>, runtime: ToolRuntime</span>) -&gt; Command:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;用户认证工具&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> password == <span class="string">&quot;correct_password&quot;</span>:</span><br><span class="line">        <span class="comment"># 认证成功，永久更新会话状态</span></span><br><span class="line">        <span class="keyword">return</span> Command(update=&#123;<span class="string">&quot;authenticated&quot;</span>: <span class="literal">True</span>&#125;)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> Command(update=&#123;<span class="string">&quot;authenticated&quot;</span>: <span class="literal">False</span>&#125;)</span><br></pre></td></tr></table></figure>
+<p><strong>代码解读</strong></p>
+<p>这段代码的核心在于：<strong>工具不再仅仅返回“话语”（字符串），而是返回“指令”（Command）。</strong></p>
+<ol>
+<li><p><strong>引入 <code>Command</code> 对象</strong>：在普通的 AI 开发中，工具通常返回类似 <code>&quot;认证成功&quot;</code> 的文字，AI 只能靠“记忆”来记住这件事。而 <code>langgraph.types.Command</code> 允许工具直接干预系统的<strong>状态机</strong>。</p>
+</li>
+<li><p><strong>状态更新机制 (<code>update</code>)</strong></p>
+</li>
+</ol>
+<ul>
+<li><strong>代码行为</strong>：当 <code>password</code> 正确时，工具返回 <code>Command(update=&#123;&quot;authenticated&quot;: True&#125;)</code>。</li>
+<li><strong>底层影响</strong>：这会直接修改 LangGraph 维护的全局 <code>State</code> 字典。这意味着，<strong>“用户已认证”</strong>这个事实被刻在了系统的“账本”上，而不是仅仅存在于 AI 的聊天上下文里。</li>
+</ul>
+<ol>
+<li><p><strong>运行流程拆解</strong></p>
+</li>
+<li><p><strong>触发</strong>：用户输入密码，AI 识别并调用 <code>authenticate_user</code> 工具。</p>
+</li>
+<li><strong>验证</strong>：代码在后台执行硬核逻辑判断（<code>password == &quot;correct_password&quot;</code>）。</li>
+<li><strong>写回</strong>：<ul>
+<li>如果正确，全局变量 <code>authenticated</code> 变为 <code>True</code>。</li>
+<li>如果错误，变为 <code>False</code>。</li>
+</ul>
+</li>
+</ol>
+<h1 id="生命周期上下文：自动化流程管理"><a href="#生命周期上下文：自动化流程管理" class="headerlink" title="生命周期上下文：自动化流程管理"></a>生命周期上下文：自动化流程管理</h1><p>控制“思考”和“行动”之间发生的所有事。</p>
+<p><strong>自动总结 — 解决AI“记忆有限”问题。</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> SummarizationMiddleware</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    <span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[...],</span><br><span class="line">    middleware=[</span><br><span class="line">        SummarizationMiddleware(</span><br><span class="line">            model=<span class="string">&quot;gpt-4o-mini&quot;</span>,      <span class="comment"># 使用便宜模型进行总结</span></span><br><span class="line">            trigger=&#123;<span class="string">&quot;tokens&quot;</span>: <span class="number">4000</span>&#125;, <span class="comment"># 达到4000token时触发</span></span><br><span class="line">            keep=&#123;<span class="string">&quot;messages&quot;</span>: <span class="number">20</span>&#125;,    <span class="comment"># 保留最近20条原始消息</span></span><br><span class="line">        ),</span><br><span class="line">    ],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>“会议记录本”的比喻非常传神：<strong>当本子写满时，助理把前半部分精炼成摘要抄在下一页开头，然后把旧的那几页撕掉。</strong></p>
+<p><strong>关键参数解析：</strong></p>
+<ul>
+<li><strong><code>SummarizationMiddleware</code> (总结中间件)</strong>： 它像是一个监控器，安插在 AI 的“思考”和“行动”之间，时刻盯着对话的长度。</li>
+<li><strong><code>model=&quot;gpt-4o-mini&quot;</code> (降级模型)</strong>： 这是一个非常聪明的<strong>省钱策略</strong>。主任务用强大的 <code>gpt-4o</code>，但“总结对话”这种体力活交给更便宜、更快的 <code>gpt-4o-mini</code>，性价比极高。</li>
+<li><strong><code>trigger=&#123;&quot;tokens&quot;: 4000&#125;</code> (触发阈值)</strong>： 设定一条红线。当对话消耗的 Token 达到 4000 时，系统会自动执行压缩操作，防止内存溢出导致报错。</li>
+<li><strong><code>keep=&#123;&quot;messages&quot;: 20&#125;</code> (滑动窗口)</strong>： 在总结时，不会把所有信息都压缩掉。它会保留最近的 20 条对话，保证 AI 还能记得你<strong>刚刚</strong>说过什么，而更久远的内容则转化为摘要。</li>
+</ul>
+<p><strong>工作流程：</strong></p>
+<ul>
+<li><strong>监控对话长度，达到阈值时自动触发</strong> 系统会持续计算对话所占用的 Token 数量。在代码示例中，一旦达到 <strong>4000 tokens</strong>，总结机制就会像闹钟一样被激活。</li>
+<li><strong>用经济模型总结早期对话内容</strong> 为了节省成本，系统不会调用昂贵的主模型（如 GPT-4o），而是启动一个更便宜、速度更快的“助理模型”（如 <strong>GPT-4o-mini</strong>）来阅读之前的琐碎对话。</li>
+<li><strong>用摘要替换冗长历史，永久保存到状态中</strong> 助理模型将旧的对话提炼成一段精简的摘要（Summary）。这段摘要会替换掉那些已经被“删掉”的原始对话记录，并存入 Agent 的 <strong>State（状态）</strong> 中。</li>
+<li><strong>保留近期对话供参考</strong> 系统不会把所有内容都变成摘要。它会根据配置（如 <code>keep=&#123;&quot;messages&quot;: 20&#125;</code>）<strong>原封不动地保留最近的 20 条消息</strong>。这样可以确保 AI 在理解长远背景的同时，对你刚刚提到的细节依然有“秒回”的反应能力</li>
+</ul>
+<p><strong>消息管理是‘塞临时纸条’，而自动总结是‘永久修改会议记录’！</strong></p>
+<h1 id="最佳实践：构建可靠智能体的关键要点"><a href="#最佳实践：构建可靠智能体的关键要点" class="headerlink" title="最佳实践：构建可靠智能体的关键要点"></a>最佳实践：构建可靠智能体的关键要点</h1><h2 id="1-从简入手-Start-Simple"><a href="#1-从简入手-Start-Simple" class="headerlink" title="1. 从简入手 (Start Simple)"></a>1. 从简入手 (Start Simple)</h2><ul>
+<li><strong>核心逻辑</strong>：不要一上来就搞复杂的动态工作流。</li>
+<li><strong>建议</strong>：先使用<strong>固定提示词（Prompt）\</strong>和*<em>基础工具*</em>。先确保 AI 能跑通最基本的业务闭环，再逐步添加动态判断和复杂功能。</li>
+</ul>
+<h2 id="2-逐步测试-Iterative-Testing"><a href="#2-逐步测试-Iterative-Testing" class="headerlink" title="2.逐步测试 (Iterative Testing)"></a>2.逐步测试 (Iterative Testing)</h2><p>部分核心代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 第一阶段：基础版本</span></span><br><span class="line">agent = create_agent(model=<span class="string">&quot;gpt-4o&quot;</span>, tools=basic_tools)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第二阶段：添加一个功能测试</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=basic_tools,</span><br><span class="line">    middleware=[state_aware_prompt]  <span class="comment"># 先加一个中间件</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>代码解读</strong>：</p>
+<ul>
+<li><strong>第一阶段（基础版本）</strong>：只定义模型和工具，这是为了验证 Agent 的<strong>基础能力</strong>。</li>
+<li><strong>第二阶段（添加测试）</strong>：在原基础上增加了一个 <code>middleware=[state_aware_prompt]</code>。</li>
+</ul>
+<p><strong>目的</strong>：<strong>一次只增加一个变量</strong>。如果 Agent 出错，你可以立即判定是新加的这个中间件（状态感知）导致的问题，而不是工具或模型本身的问题。</p>
+<h2 id="3-关注成本-Cost-Awareness"><a href="#3-关注成本-Cost-Awareness" class="headerlink" title="3. 关注成本 (Cost Awareness)"></a>3. 关注成本 (Cost Awareness)</h2><p>针对不同的任务选择最合适的模型，以平衡性能与开支：</p>
+<ul>
+<li><strong>短对话/简单总结</strong>：使用 <strong>gpt-4o-mini</strong>（低成本、高速度）。</li>
+<li><strong>中等复杂度任务</strong>：使用 <strong>gpt-4o</strong>（标准全能模型）。</li>
+<li><strong>复杂推理/代码编写</strong>：使用 <strong>claude-3-5-sonnet</strong>（当前行业公认的逻辑最强模型之一）。</li>
+</ul>
+<h2 id="4-善用现成工具-Leverage-Existing-Tools"><a href="#4-善用现成工具-Leverage-Existing-Tools" class="headerlink" title="4. 善用现成工具 (Leverage Existing Tools)"></a>4. 善用现成工具 (Leverage Existing Tools)</h2><ul>
+<li><strong>核心逻辑</strong>：不要重复造轮子。</li>
+<li><strong>建议</strong>：优先利用 LangChain 或 LangGraph 内置的成熟组件（如 <code>SummarizationMiddleware</code>）。这些工具已经处理好了并发、重试和 Token 限制等底层脏活。</li>
+</ul>
+<h2 id="5-分清临时与永久-Transient-vs-Permanent"><a href="#5-分清临时与永久-Transient-vs-Permanent" class="headerlink" title="5. 分清临时与永久 (Transient vs. Permanent)"></a>5. 分清临时与永久 (Transient vs. Permanent)</h2><p>这是理解 Agent 架构的深度所在：</p>
+<ul>
+<li><strong>临时变化</strong>：指单次思考过程中生成的临时变量（只影响这一次回答）。</li>
+<li><strong>永久变化</strong>：指存入 <strong>State（状态机）</strong> 或数据库的信息。这种变化会随着生命周期延续，影响 Agent 以后所有的行为。</li>
+</ul>
+<h1 id="总结：从“玩具”到“专业工具”的蜕变"><a href="#总结：从“玩具”到“专业工具”的蜕变" class="headerlink" title="总结：从“玩具”到“专业工具”的蜕变"></a>总结：从“玩具”到“专业工具”的蜕变</h1><h2 id="1-模型上下文-Model-Context"><a href="#1-模型上下文-Model-Context" class="headerlink" title="1. 模型上下文 (Model Context)"></a>1<strong>. 模型上下文 (Model Context)</strong></h2><ul>
+<li><strong>定义</strong>：控制 AI 的“思考内容”。</li>
+<li><strong>解读</strong>：这通常指注入到 Prompt 中的即时信息。通过中间件，我们可以动态地根据用户意图，把最相关的背景资料、知识库内容喂给模型，确保它“想得对”、“不幻觉”。</li>
+</ul>
+<h2 id="2-工具上下文-Tool-Context"><a href="#2-工具上下文-Tool-Context" class="headerlink" title="2. 工具上下文 (Tool Context)"></a><strong>2. 工具上下文 (Tool Context)</strong></h2><ul>
+<li><strong>定义</strong>：控制 AI 的“行动能力”。</li>
+<li><strong>解读</strong>：对应你之前看过的代码（如权限校验）。它决定了 AI 在调用外部接口（发邮件、查数据库）时，是否具备必要的凭证（如工号、Token）以及操作权限。这确保了 AI “做得稳”。</li>
+</ul>
+<h2 id="3-生命周期上下文-Lifecycle-Context"><a href="#3-生命周期上下文-Lifecycle-Context" class="headerlink" title="3. 生命周期上下文 (Lifecycle Context)"></a><strong>3. 生命周期上下文 (Lifecycle Context)</strong></h2><ul>
+<li><strong>定义</strong>：控制工作“流程自动化”。</li>
+<li><strong>解读</strong>：这涉及长时记忆和状态机管理（如自动总结、会话保持）。它确保 AI 能够跨越多个对话轮次，甚至跨越不同的任务阶段，依然记得“我是谁”、“我进行到哪一步了”。这确保了 AI “跟得住”。</li>
+</ul>
+<p><strong>核心价值总结</strong></p>
+<ul>
+<li><p><strong>摆脱演示环境（Demo）</strong>：传统的 AI 往往只能在固定的、理想化的对话中表现良好。</p>
+</li>
+<li><p><strong>落地真实业务场景</strong>：通过系统性的上下文管理，让智能体能够：</p>
+<ol>
+<li><strong>真正理解业务需求</strong>：不是复读机，而是懂逻辑。</li>
+<li><strong>做出智能响应</strong>：根据当前状态和权限做出最优决策。</li>
+<li><strong>行为可靠</strong>：过程可控，结果可预测。</li>
+</ol>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/06/test-action/interface/performance/design-ideas-for-interface-performance/" rel="prev" title="接口性能测试用例设计思路">
+      <i class="fa fa-chevron-left"></i> 接口性能测试用例设计思路
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/12/ai/langchain/15-langchain-Safety/" rel="next" title="基于中间件组合的安全防护">
+      基于中间件组合的安全防护 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%B7%A5%E7%A8%8B%E7%9A%84%E8%AF%B4%E6%98%8E"><span class="nav-number">1.</span> <span class="nav-text">上下文工程的说明</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%B8%85%E6%99%B0%E7%9A%84%E4%BF%A1%E6%81%AF%E6%8C%87%E4%BB%A4"><span class="nav-number">1.1.</span> <span class="nav-text">一、清晰的信息指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%90%88%E6%A0%BC%E7%9A%84%E5%B7%A5%E5%85%B7%E6%8A%80%E8%83%BD"><span class="nav-number">1.2.</span> <span class="nav-text">二、合格的工具技能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E8%A7%84%E8%8C%83%E7%9A%84%E6%8C%87%E4%BB%A4%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.3.</span> <span class="nav-text">三、规范的指令格式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E6%A0%B8%E5%BF%83%E9%80%BB%E8%BE%91%E6%80%BB%E7%BB%93"><span class="nav-number">1.4.</span> <span class="nav-text">整体核心逻辑总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%99%BA%E8%83%BD%E4%BD%93%E4%BC%9A%E5%A4%B1%E8%B4%A5%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">为什么智能体会失败？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%88Agent%EF%BC%89%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">智能体（Agent）的工作原理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%88Agent%EF%BC%89%E7%9A%84%E4%B8%89%E5%A4%A7%E6%8E%A7%E5%88%B6%E7%BB%B4%E5%BA%A6"><span class="nav-number">4.</span> <span class="nav-text">智能体（Agent）的三大控制维度</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E5%A4%A7%E6%8E%A7%E5%88%B6%E7%BB%B4%E5%BA%A6%EF%BC%88%E6%A0%B8%E5%BF%83%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">三大控制维度（核心）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%9A%84%E4%B8%89%E4%B8%AA%E6%9D%A5%E6%BA%90"><span class="nav-number">4.2.</span> <span class="nav-text">数据的三个来源</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%9C%BA%E5%88%B6%EF%BC%9A%E4%B8%AD%E9%97%B4%E4%BB%B6%EF%BC%88Middleware%EF%BC%89"><span class="nav-number">5.</span> <span class="nav-text">实现机制：中间件（Middleware）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8E%A7%E5%88%B6AI%E7%9A%84%E6%80%9D%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">控制AI的思考</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E6%8F%90%E7%A4%BA-%E2%80%94%E2%80%94-%E5%8A%A8%E6%80%81%E5%B7%A5%E4%BD%9C%E6%8C%87%E4%BB%A4"><span class="nav-number">6.1.</span> <span class="nav-text">系统提示 —— 动态工作指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E7%AE%A1%E7%90%86-%E2%80%94%E2%80%94-%E6%99%BA%E8%83%BD%E8%83%8C%E6%99%AF%E4%BF%A1%E6%81%AF%E6%B3%A8%E5%85%A5"><span class="nav-number">6.2.</span> <span class="nav-text">消息管理 —— 智能背景信息注入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E9%80%89%E6%8B%A9-%E2%80%94%E2%80%94-%E5%8A%A8%E6%80%81%E6%9D%83%E9%99%90%E7%AE%A1%E7%90%86"><span class="nav-number">6.3.</span> <span class="nav-text">工具选择  —— 动态权限管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E9%80%89%E6%8B%A9-%E2%80%94%E2%80%94-%E6%99%BA%E8%83%BD%E8%B5%84%E6%BA%90%E5%88%86%E9%85%8D"><span class="nav-number">6.4.</span> <span class="nav-text">模型选择  —— 智能资源分配</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8E%A7%E5%88%B6AI%E7%9A%84%E8%A1%8C%E5%8A%A8%E8%83%BD%E5%8A%9B"><span class="nav-number">7.</span> <span class="nav-text">控制AI的行动能力</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E5%AE%9A%E4%B9%89-%E2%80%94%E2%80%94-%E6%B8%85%E6%99%B0%E7%9A%84%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E%E4%B9%A6"><span class="nav-number">7.1.</span> <span class="nav-text">工具定义  —— 清晰的使用说明书</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E8%AF%BB%E5%8F%96-%E2%80%94%E2%80%94-%E8%8E%B7%E5%8F%96%E7%8E%AF%E5%A2%83%E4%BF%A1%E6%81%AF"><span class="nav-number">7.2.</span> <span class="nav-text">工具读取  —— 获取环境信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E5%86%99%E5%85%A5-%E2%80%94%E2%80%94-%E6%94%B9%E5%8F%98%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83"><span class="nav-number">7.3.</span> <span class="nav-text">工具写入  —— 改变工作环境</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8A%E4%B8%8B%E6%96%87%EF%BC%9A%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%81%E7%A8%8B%E7%AE%A1%E7%90%86"><span class="nav-number">8.</span> <span class="nav-text">生命周期上下文：自动化流程管理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5%EF%BC%9A%E6%9E%84%E5%BB%BA%E5%8F%AF%E9%9D%A0%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E5%85%B3%E9%94%AE%E8%A6%81%E7%82%B9"><span class="nav-number">9.</span> <span class="nav-text">最佳实践：构建可靠智能体的关键要点</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BB%8E%E7%AE%80%E5%85%A5%E6%89%8B-Start-Simple"><span class="nav-number">9.1.</span> <span class="nav-text">1. 从简入手 (Start Simple)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E9%80%90%E6%AD%A5%E6%B5%8B%E8%AF%95-Iterative-Testing"><span class="nav-number">9.2.</span> <span class="nav-text">2.逐步测试 (Iterative Testing)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%85%B3%E6%B3%A8%E6%88%90%E6%9C%AC-Cost-Awareness"><span class="nav-number">9.3.</span> <span class="nav-text">3. 关注成本 (Cost Awareness)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%96%84%E7%94%A8%E7%8E%B0%E6%88%90%E5%B7%A5%E5%85%B7-Leverage-Existing-Tools"><span class="nav-number">9.4.</span> <span class="nav-text">4. 善用现成工具 (Leverage Existing Tools)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%88%86%E6%B8%85%E4%B8%B4%E6%97%B6%E4%B8%8E%E6%B0%B8%E4%B9%85-Transient-vs-Permanent"><span class="nav-number">9.5.</span> <span class="nav-text">5. 分清临时与永久 (Transient vs. Permanent)</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%EF%BC%9A%E4%BB%8E%E2%80%9C%E7%8E%A9%E5%85%B7%E2%80%9D%E5%88%B0%E2%80%9C%E4%B8%93%E4%B8%9A%E5%B7%A5%E5%85%B7%E2%80%9D%E7%9A%84%E8%9C%95%E5%8F%98"><span class="nav-number">10.</span> <span class="nav-text">总结：从“玩具”到“专业工具”的蜕变</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%A8%A1%E5%9E%8B%E4%B8%8A%E4%B8%8B%E6%96%87-Model-Context"><span class="nav-number">10.1.</span> <span class="nav-text">1. 模型上下文 (Model Context)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%B7%A5%E5%85%B7%E4%B8%8A%E4%B8%8B%E6%96%87-Tool-Context"><span class="nav-number">10.2.</span> <span class="nav-text">2. 工具上下文 (Tool Context)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E4%B8%8A%E4%B8%8B%E6%96%87-Lifecycle-Context"><span class="nav-number">10.3.</span> <span class="nav-text">3. 生命周期上下文 (Lifecycle Context)</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">175</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第十一讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain Runtime运行时环境">
+<meta property="og:url" content="https://jinglv.github.io/2026/03/12/ai/langchain/14-langchain-Runtime/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第十一讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-03-11T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-12T01:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/03/12/ai/langchain/14-langchain-Runtime/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain Runtime运行时环境 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/03/12/ai/langchain/14-langchain-Runtime/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain Runtime运行时环境
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-03-12 00:00:00 / 修改时间：09:30:00" itemprop="dateCreated datePublished" datetime="2026-03-12T00:00:00+08:00">2026-03-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第十一讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="什么是LangChain-Runtime"><a href="#什么是LangChain-Runtime" class="headerlink" title="什么是LangChain Runtime?"></a>什么是LangChain Runtime?</h1><p>是 <strong>LangChain 1.0 中以 Agent 为核心的运行时环境</strong>，基于 <strong>LangGraph</strong> 构建，是 Agent 执行的底层支撑，负责管理生命周期、上下文、存储与流式输出。</p>
+<h2 id="1-核心定义"><a href="#1-核心定义" class="headerlink" title="1. 核心定义"></a>1. 核心定义</h2><ul>
+<li><strong>LangChain Runtime</strong> = LangChain 1.0 中 <strong>Agent 的核心工作环境</strong></li>
+<li>你用 <code>LangChain.create_agent()</code> 创建的 Agent，<strong>都运行在这个 Runtime 之上</strong></li>
+<li>生命周期：Agent 创建时自动生成；Agent 结束时销毁</li>
+<li>作用：提供<strong>依赖注入、持久化、流式输出、状态管理</strong>等基础能力</li>
+</ul>
+<h2 id="2-Runtime-三大核心组件"><a href="#2-Runtime-三大核心组件" class="headerlink" title="2. Runtime 三大核心组件"></a>2. Runtime 三大核心组件</h2><ul>
+<li><p>Context（上下文）</p>
+<ul>
+<li><p>静态信息集合：用户 ID、数据库连接、调用配置、依赖项</p>
+</li>
+<li><p>作用：<strong>不硬编码</strong>，运行时注入，让工具 / 中间件更可复用、可测试</p>
+</li>
+</ul>
+</li>
+<li><p>Store（存储）</p>
+<ul>
+<li><p>类型：<code>BaseStore</code> 实例</p>
+</li>
+<li><p>作用：<strong>长期记忆</strong>、跨轮次持久化状态</p>
+</li>
+</ul>
+</li>
+<li><p>Stream Writer（流式写入器）</p>
+<ul>
+<li>作用：支持 <strong>custom 流式模式</strong>，实时输出执行过程与结果</li>
+</ul>
+</li>
+</ul>
+<h2 id="3-与-LangChain-LangGraph-的关系"><a href="#3-与-LangChain-LangGraph-的关系" class="headerlink" title="3. 与 LangChain / LangGraph 的关系"></a>3. 与 LangChain / LangGraph 的关系</h2><ul>
+<li><code>LangChain.create_agent()</code> 是<strong>高层快速构建接口</strong></li>
+<li>底层运行在 <strong>LangGraph 的 Runtime</strong></li>
+<li>优点：高层快速开发 + 底层可灵活定制</li>
+</ul>
+<p>LangChain Runtime 就是 Agent 的 “执行引擎 + 环境容器”，提供上下文、存储、流式输出与生命周期管理，让 Agent 稳定、可持久、可注入依赖地运行。</p>
+<h1 id="Runtime的创建（在create-agent中）"><a href="#Runtime的创建（在create-agent中）" class="headerlink" title="Runtime的创建（在create_agent中）"></a>Runtime的创建（在create_agent中）</h1><p>这是 <strong>LangChain 1.0 中为智能体（Agent）自定义 Context（上下文）</strong> 的完整流程，核心目的：<strong>让 Agent 运行时携带自定义的上下文数据</strong>，实现数据与 Agent 解耦、可注入、可复用。</p>
+<p>核心流程分 3 步：</p>
+<ol>
+<li><strong>定义上下文结构</strong>：用 <code>dataclass</code> 定义要传给 Runtime 的上下文字段。</li>
+<li><strong>创建智能体并绑定上下文</strong>：创建 Agent 时指定上下文 schema。</li>
+<li><strong>调用时传入上下文</strong>：执行时把具体上下文数据传给 Agent。</li>
+</ol>
+<h2 id="步骤-1：定义上下文格式"><a href="#步骤-1：定义上下文格式" class="headerlink" title="步骤 1：定义上下文格式"></a>步骤 1：定义上下文格式</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义上下文结构：包含 user_name 字符串</span></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Context</span>:</span><br><span class="line">    user_name: <span class="built_in">str</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>用 <code>dataclass</code> 定义<strong>上下文数据结构</strong>。</li>
+<li>这里只有一个字段：<code>user_name</code>（用户名）。</li>
+</ul>
+<h2 id="步骤-2：创建智能体并绑定上下文"><a href="#步骤-2：创建智能体并绑定上下文" class="headerlink" title="步骤 2：创建智能体并绑定上下文"></a>步骤 2：创建智能体并绑定上下文</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建智能体，绑定上下文格式</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    <span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[...],</span><br><span class="line">    context_schema=Context,  <span class="comment"># 绑定上下文结构</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>create_agent</code>：创建智能体。</li>
+<li><code>context_schema=Context</code>：告诉 Runtime 这个 Agent 要使用的上下文格式。</li>
+<li>此时 Agent 已 “注册” 上下文结构，运行时会预留该数据位置。</li>
+</ul>
+<h2 id="步骤-3：调用时传入具体上下文"><a href="#步骤-3：调用时传入具体上下文" class="headerlink" title="步骤 3：调用时传入具体上下文"></a>步骤 3：调用时传入具体上下文</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 调用智能体，传入上下文数据</span></span><br><span class="line">agent.invoke(</span><br><span class="line">    messages=[&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;what&#x27;s my name?&quot;</span>&#125;],</span><br><span class="line">    context=Context(user_name=<span class="string">&quot;John Smith&quot;</span>),  <span class="comment"># 传入具体上下文</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>执行时把 <code>user_name=&quot;John Smith&quot;</code> 注入 Runtime。</li>
+<li>Agent 可以在工具 / 推理中读取这个上下文。</li>
+</ul>
+<p><strong>作用</strong>：让 Agent 运行时<strong>携带自定义上下文</strong>，实现：</p>
+<ul>
+<li>数据与 Agent 分离</li>
+<li>可注入、可配置</li>
+<li>多用户、多场景复用</li>
+</ul>
+<h1 id="在工具中访问Runtime数据"><a href="#在工具中访问Runtime数据" class="headerlink" title="在工具中访问Runtime数据"></a>在工具中访问Runtime数据</h1><p><strong>工具可以通过 ToolRuntime 读取 / 写入 Runtime 中的上下文、存储、流式输出等信息</strong>，实现工具与 Agent 运行环境的深度联动。</p>
+<p>核心能力：</p>
+<ol>
+<li>从 Runtime 读取上下文（Context）</li>
+<li>读写持久化存储（Store）</li>
+<li>自定义流式输出（StreamWriter）</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> ToolRuntime</span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Context</span>:</span><br><span class="line">    user_id: <span class="built_in">str</span></span><br><span class="line">    </span><br><span class="line"><span class="meta">@tool(<span class="params"><span class="string">&quot;获取用户邮件偏好设置&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">tool_get_user_email_preferences</span>(<span class="params">runtime: ToolRuntime</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取用户邮件的偏好设置&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 1. 从 Runtime 读取上下文里的 user_id</span></span><br><span class="line">    user_id = runtime.context.user_id</span><br><span class="line">    <span class="comment"># 2. 从上下文获取用户偏好</span></span><br><span class="line">    preferences = runtime.context.preferences</span><br><span class="line">    <span class="keyword">return</span> preferences</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong><code>runtime: ToolRuntime</code></strong>：自动注入运行时对象</li>
+<li><strong><code>runtime.context</code></strong>：读取 Agent 传入的上下文数据</li>
+<li>示例：获取 <code>user_id</code> 和用户偏好 <code>preferences</code></li>
+</ul>
+<p><strong>Runtime 可访问能力总结</strong></p>
+<ol>
+<li><strong>读写上下文</strong>：<code>runtime.context</code> → 读取 / 写入运行时上下文</li>
+<li><strong>读写存储</strong>：<code>runtime.store</code> → 持久化记忆、长期状态</li>
+<li><strong>自定义流式输出</strong>：<code>runtime.stream_writer</code> → 实时输出、自定义更新</li>
+</ol>
+<p>工具通过 ToolRuntime 直接访问 Agent 运行时的上下文、存储、流式能力，让工具能感知环境、持久化状态、实时输出。</p>
+<h1 id="在中间件中访问Runtime数据"><a href="#在中间件中访问Runtime数据" class="headerlink" title="在中间件中访问Runtime数据"></a>在中间件中访问Runtime数据</h1><p><strong>LangChain 1.0 中间件（Middleware）访问 Runtime</strong> 的三种典型用法：</p>
+<ol>
+<li><strong>动态提示词中间件</strong>：在请求模型前修改提示词，读取 Runtime 上下文。</li>
+<li><strong>模型前后处理中间件</strong>：在模型调用前 / 后执行逻辑，读写上下文。</li>
+<li><strong>创建智能体时挂载中间件</strong>：把中间件绑定到 Agent 运行时。</li>
+</ol>
+<p>核心：<strong>中间件可以通过 ModelRequest 拿到 Runtime，从而读写上下文、状态等信息</strong>。</p>
+<h2 id="动态提示词中间件"><a href="#动态提示词中间件" class="headerlink" title="动态提示词中间件"></a>动态提示词中间件</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> dynamic_prompt, ModelRequest</span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Context</span>:</span><br><span class="line">    user_name: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@dynamic_prompt</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">dynamic_runtime_system_prompt</span>(<span class="params">request: ModelRequest</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="comment"># 从 Runtime 上下文获取用户名</span></span><br><span class="line">    user_name = request.runtime.context.user_name</span><br><span class="line">    <span class="comment"># 构造动态系统提示词</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;You are a helpful assistant. The user&#x27;s name is <span class="subst">&#123;user_name&#125;</span>.&quot;</span></span><br></pre></td></tr></table></figure>
+<p><strong>解读</strong></p>
+<ul>
+<li><code>@dynamic_prompt</code>：动态提示词装饰器。</li>
+<li><code>request.runtime.context</code>：读取运行时上下文。</li>
+<li>作用：<strong>根据上下文动态生成系统提示词</strong>。</li>
+</ul>
+<h2 id="模型前后处理中间件"><a href="#模型前后处理中间件" class="headerlink" title="模型前后处理中间件"></a>模型前后处理中间件</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model, after_model, ModelRequest</span><br><span class="line"></span><br><span class="line"><span class="comment"># 模型调用前</span></span><br><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">before_model</span>(<span class="params">state: <span class="built_in">dict</span>, runtime: RuntimeContext</span>) -&gt; <span class="built_in">dict</span> | <span class="literal">None</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;正在调用模型：&quot;</span>, runtime.context.user_name)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 模型调用后</span></span><br><span class="line"><span class="meta">@after_model</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">after_model</span>(<span class="params">state: <span class="built_in">dict</span>, runtime: RuntimeContext</span>) -&gt; <span class="built_in">dict</span> | <span class="literal">None</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;模型调用完成：&quot;</span>, runtime.context.user_name)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+<p><strong>解读</strong></p>
+<ul>
+<li><code>@before_model</code>：模型调用前执行。</li>
+<li><code>@after_model</code>：模型调用后执行。</li>
+<li>可用于日志、统计、上下文修改等</li>
+</ul>
+<h2 id="创建智能体时挂载中间件"><a href="#创建智能体时挂载中间件" class="headerlink" title="创建智能体时挂载中间件"></a>创建智能体时挂载中间件</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    <span class="string">&quot;gpt-4o&quot;</span>,</span><br><span class="line">    tools=[...],</span><br><span class="line">    middleware=[</span><br><span class="line">        dynamic_runtime_system_prompt,</span><br><span class="line">        before_model,</span><br><span class="line">        after_model,</span><br><span class="line">    ],</span><br><span class="line">    context_schema=Context,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用并传入上下文</span></span><br><span class="line">agent.invoke(</span><br><span class="line">    messages=[&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;what&#x27;s my name?&quot;</span>&#125;],</span><br><span class="line">    context=Context(user_name=<span class="string">&quot;John Smith&quot;</span>),</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>解读</strong></p>
+<ul>
+<li><code>middleware=[...]</code>：创建 Agent 时挂载中间件。</li>
+<li>执行时自动触发：动态提示词 → 模型前 → 模型后。</li>
+<li>上下文通过 <code>context=</code> 传入。</li>
+</ul>
+<p><strong>总结</strong></p>
+<ul>
+<li><strong>中间件 = Agent 执行流程的钩子</strong>。</li>
+<li>可在<strong>模型前 / 后、提示词生成阶段</strong>读写 Runtime 上下文。</li>
+<li>用于：动态提示、日志、统计、上下文注入、后处理等。</li>
+</ul>
+<h1 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h1><p><strong>LangChain Runtime 开发的最佳实践与性能优化指南</strong>，核心目标：<strong>提升 Agent 运行效率、减少资源消耗、优化执行速度</strong>。</p>
+<hr>
+<h2 id="1️⃣-上下文（Context）优化"><a href="#1️⃣-上下文（Context）优化" class="headerlink" title="1️⃣ 上下文（Context）优化"></a>1️⃣ 上下文（Context）优化</h2><ul>
+<li><strong>明确上下文结构</strong>：明确定义 Context 数据结构，提升代码可维护性与运行时性能。</li>
+<li><strong>按需加载</strong>：仅在需要时加载 Runtime 组件，避免不必要的资源开销。</li>
+<li><strong>清理无效数据</strong>：运行时主动清理无用数据（如 <code>runtime.store</code>），避免内存占用过高。</li>
+</ul>
+<hr>
+<h2 id="2️⃣-存储（Store）优化"><a href="#2️⃣-存储（Store）优化" class="headerlink" title="2️⃣ 存储（Store）优化"></a>2️⃣ 存储（Store）优化</h2><ul>
+<li><strong>设计合理存储策略</strong>：根据业务设计存储结构，<strong>避免大粒度数据</strong>，尤其在多用户场景。</li>
+<li><strong>使用缓存 / 分片</strong>：用缓存、分片等方式减少频繁读写与计算开销。</li>
+</ul>
+<hr>
+<h2 id="3️⃣-工具（Tool）优化"><a href="#3️⃣-工具（Tool）优化" class="headerlink" title="3️⃣ 工具（Tool）优化"></a>3️⃣ 工具（Tool）优化</h2><ul>
+<li><strong>工具职责单一</strong>：每个工具只负责一个具体功能，保持职责清晰、逻辑简单。</li>
+<li><strong>减少计算 / 请求</strong>：工具内部减少重复计算、外部请求，提升执行效率。</li>
+</ul>
+<hr>
+<h2 id="4️⃣-中间件（Middleware）优化"><a href="#4️⃣-中间件（Middleware）优化" class="headerlink" title="4️⃣ 中间件（Middleware）优化"></a>4️⃣ 中间件（Middleware）优化</h2><ul>
+<li><strong>合理使用中间件</strong>：避免滥用中间件，过多中间件会增加执行链路、降低性能。</li>
+<li><strong>异步化与缓存</strong>：中间件逻辑尽量异步、可缓存，缩短整体执行时间。</li>
+</ul>
+<p><strong>核心总结</strong></p>
+<p>通过<strong>精简上下文、优化存储、工具拆分、精简中间件</strong>，实现 <strong>更低资源占用 + 更快执行速度 + 更高可维护性</strong>。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/12/ai/langchain/15-langchain-Safety/" rel="prev" title="基于中间件组合的安全防护">
+      <i class="fa fa-chevron-left"></i> 基于中间件组合的安全防护
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/13/ai/langchain/18-langchain-Multi-Agent/" rel="next" title="LangChain集成MCP">
+      LangChain集成MCP <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFLangChain-Runtime"><span class="nav-number">1.</span> <span class="nav-text">什么是LangChain Runtime?</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%A0%B8%E5%BF%83%E5%AE%9A%E4%B9%89"><span class="nav-number">1.1.</span> <span class="nav-text">1. 核心定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Runtime-%E4%B8%89%E5%A4%A7%E6%A0%B8%E5%BF%83%E7%BB%84%E4%BB%B6"><span class="nav-number">1.2.</span> <span class="nav-text">2. Runtime 三大核心组件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E4%B8%8E-LangChain-LangGraph-%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">1.3.</span> <span class="nav-text">3. 与 LangChain &#x2F; LangGraph 的关系</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Runtime%E7%9A%84%E5%88%9B%E5%BB%BA%EF%BC%88%E5%9C%A8create-agent%E4%B8%AD%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">Runtime的创建（在create_agent中）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4-1%EF%BC%9A%E5%AE%9A%E4%B9%89%E4%B8%8A%E4%B8%8B%E6%96%87%E6%A0%BC%E5%BC%8F"><span class="nav-number">2.1.</span> <span class="nav-text">步骤 1：定义上下文格式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4-2%EF%BC%9A%E5%88%9B%E5%BB%BA%E6%99%BA%E8%83%BD%E4%BD%93%E5%B9%B6%E7%BB%91%E5%AE%9A%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">2.2.</span> <span class="nav-text">步骤 2：创建智能体并绑定上下文</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4-3%EF%BC%9A%E8%B0%83%E7%94%A8%E6%97%B6%E4%BC%A0%E5%85%A5%E5%85%B7%E4%BD%93%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">2.3.</span> <span class="nav-text">步骤 3：调用时传入具体上下文</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8%E5%B7%A5%E5%85%B7%E4%B8%AD%E8%AE%BF%E9%97%AERuntime%E6%95%B0%E6%8D%AE"><span class="nav-number">3.</span> <span class="nav-text">在工具中访问Runtime数据</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8%E4%B8%AD%E9%97%B4%E4%BB%B6%E4%B8%AD%E8%AE%BF%E9%97%AERuntime%E6%95%B0%E6%8D%AE"><span class="nav-number">4.</span> <span class="nav-text">在中间件中访问Runtime数据</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E6%8F%90%E7%A4%BA%E8%AF%8D%E4%B8%AD%E9%97%B4%E4%BB%B6"><span class="nav-number">4.1.</span> <span class="nav-text">动态提示词中间件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E5%89%8D%E5%90%8E%E5%A4%84%E7%90%86%E4%B8%AD%E9%97%B4%E4%BB%B6"><span class="nav-number">4.2.</span> <span class="nav-text">模型前后处理中间件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%99%BA%E8%83%BD%E4%BD%93%E6%97%B6%E6%8C%82%E8%BD%BD%E4%B8%AD%E9%97%B4%E4%BB%B6"><span class="nav-number">4.3.</span> <span class="nav-text">创建智能体时挂载中间件</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">5.</span> <span class="nav-text">最佳实践</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1%EF%B8%8F%E2%83%A3-%E4%B8%8A%E4%B8%8B%E6%96%87%EF%BC%88Context%EF%BC%89%E4%BC%98%E5%8C%96"><span class="nav-number">5.1.</span> <span class="nav-text">1️⃣ 上下文（Context）优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2%EF%B8%8F%E2%83%A3-%E5%AD%98%E5%82%A8%EF%BC%88Store%EF%BC%89%E4%BC%98%E5%8C%96"><span class="nav-number">5.2.</span> <span class="nav-text">2️⃣ 存储（Store）优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3%EF%B8%8F%E2%83%A3-%E5%B7%A5%E5%85%B7%EF%BC%88Tool%EF%BC%89%E4%BC%98%E5%8C%96"><span class="nav-number">5.3.</span> <span class="nav-text">3️⃣ 工具（Tool）优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4%EF%B8%8F%E2%83%A3-%E4%B8%AD%E9%97%B4%E4%BB%B6%EF%BC%88Middleware%EF%BC%89%E4%BC%98%E5%8C%96"><span class="nav-number">5.4.</span> <span class="nav-text">4️⃣ 中间件（Middleware）优化</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">175</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

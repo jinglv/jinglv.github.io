@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangChain学习笔记第十四讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain集成MCP">
+<meta property="og:url" content="https://jinglv.github.io/2026/03/13/ai/langchain/18-langchain-Multi-Agent/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangChain学习笔记第十四讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-03-12T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-13T02:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/03/13/ai/langchain/18-langchain-Multi-Agent/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain集成MCP | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/03/13/ai/langchain/18-langchain-Multi-Agent/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain集成MCP
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-03-13 00:00:00 / 修改时间：10:30:00" itemprop="dateCreated datePublished" datetime="2026-03-13T00:00:00+08:00">2026-03-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangChain/" itemprop="url" rel="index"><span itemprop="name">LangChain</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangChain学习笔记第十四讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="MCP介绍"><a href="#MCP介绍" class="headerlink" title="MCP介绍"></a>MCP介绍</h1><ul>
+<li><strong>MCP（Model Context Protocol）</strong>：开源标准，定义 AI 模型如何与外部工具、资源通信，实现标准化连接，类似 AI 领域的 “通用接口”（类比 USB‑C）。</li>
+<li><strong>LangChain 与 MCP</strong>：LangChain 提供 <strong>langchain‑mcp‑adapters</strong> 工具库，用于在 LangChain 生态中快速接入、使用 MCP 协议的外部工具与服务。</li>
+<li><strong>核心价值</strong>：简化 AI 应用与外部系统的集成，无需重复开发定制接口，提升开发效率与扩展性。</li>
+</ul>
+<p>MCP 是 AI 与外部工具的统一通信标准，LangChain 通过专用适配器让开发者能便捷接入 MCP 生态，快速扩展 AI 能力。</p>
+<h1 id="传输类型"><a href="#传输类型" class="headerlink" title="传输类型"></a>传输类型</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">传输类型</th>
+<th style="text-align:left">核心说明</th>
+<th style="text-align:left">适用场景</th>
+<th style="text-align:left">特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Stdio</strong></td>
+<td style="text-align:left">本地子进程通信，通过标准输入 / 输出传输</td>
+<td style="text-align:left">本地工具、本地调试、轻量场景</td>
+<td style="text-align:left">轻量、快速、无网络开销；仅本机通信</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Streamable HTTP</strong></td>
+<td style="text-align:left">基于 HTTP 的流式传输，支持边传边处理</td>
+<td style="text-align:left">远程服务、分布式部署、实时交互</td>
+<td style="text-align:left">支持流式响应、会话管理、跨网络</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Server-Sent Events (SSE)</strong></td>
+<td style="text-align:left">基于 HTTP 的单向服务器推送</td>
+<td style="text-align:left">前端、轻量远程通信</td>
+<td style="text-align:left">单向推流、简单易用；已逐步被 Streamable HTTP 替代</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="SSE-vs-Stream-HTTP的简明对比"><a href="#SSE-vs-Stream-HTTP的简明对比" class="headerlink" title="SSE vs Stream HTTP的简明对比"></a>SSE vs Stream HTTP的简明对比</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">项目</th>
+<th style="text-align:left">Streamable HTTP（流式 HTTP）</th>
+<th style="text-align:left">SSE（服务器发送事件）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>核心口诀</strong></td>
+<td style="text-align:left">我问你答</td>
+<td style="text-align:left">你主动告诉我</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>通信方向</strong></td>
+<td style="text-align:left">双向（客户端↔服务端）</td>
+<td style="text-align:left">单向（服务端→客户端）</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>连接方式</strong></td>
+<td style="text-align:left">短连接复用、多次请求</td>
+<td style="text-align:left">长连接持续推送</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>工作流程</strong></td>
+<td style="text-align:left">客户端发请求 → 服务端流式返回 → 结束断开</td>
+<td style="text-align:left">建立长连接 → 服务端持续推送</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>通俗场景</strong></td>
+<td style="text-align:left">查天气、查股票、API 交互</td>
+<td style="text-align:left">股价提醒、消息通知、实时监控</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>适用场景</strong></td>
+<td style="text-align:left">常规 API、多次交互、数据传输</td>
+<td style="text-align:left">实时推送、持续监听、主动通知</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>核心特点</strong></td>
+<td style="text-align:left">双向交互、灵活适配、无状态</td>
+<td style="text-align:left">单向推送、自动重连、长连接</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>生活化场景对比</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">Streamable HTTP</th>
+<th style="text-align:left">SSE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">查天气</td>
+<td style="text-align:left">你主动打电话问天气</td>
+<td style="text-align:left">天气 App 每天自动发天气通知</td>
+</tr>
+<tr>
+<td style="text-align:left">股票行情</td>
+<td style="text-align:left">你手动刷新看最新价格</td>
+<td style="text-align:left">股价变动时自动推送提醒</td>
+</tr>
+<tr>
+<td style="text-align:left">应用使用</td>
+<td style="text-align:left">你手动刷新获取新内容</td>
+<td style="text-align:left">新消息自动弹出来</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>优缺点总结</strong></p>
+<p><strong>Streamable HTTP</strong></p>
+<ul>
+<li>✅ 灵活、双向交互、适合大多数 API</li>
+<li>❌ 不能主动推送，需要客户端主动请求</li>
+</ul>
+<p><strong>SSE</strong></p>
+<ul>
+<li>✅ 真正的实时推送、自动重连、长连接</li>
+<li>❌ 仅单向推送、浏览器兼容性要求高</li>
+</ul>
+<p><strong>选择建议</strong></p>
+<ul>
+<li>需要<strong>实时监控、日志、弹幕、主动通知</strong> → 用 <strong>SSE</strong></li>
+<li>普通 API 调用、数据传输、不确定场景 → 用 <strong>Streamable HTTP</strong></li>
+</ul>
+<p><strong>你主动问 → 用 Streamable HTTP；服务端主动推 → 用 SSE。</strong></p>
+<h1 id="自定义MCP服务"><a href="#自定义MCP服务" class="headerlink" title="自定义MCP服务"></a>自定义MCP服务</h1><p>创建自己的 MCP 服务，可以使用mcp库，用简单方式定义工具，并让客户端作为服务运行。</p>
+<p><strong>安装</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pip install mcp</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或使用uv</span></span><br><span class="line">uv add mcp</span><br></pre></td></tr></table></figure>
+<p>参考一下实定义MCP工具服务器的交互</p>
+<ul>
+<li><p>stdio传输</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 导入 MCP 框架</span></span><br><span class="line"><span class="keyword">from</span> mcp <span class="keyword">import</span> FastMCP</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个 MCP 服务，名字叫 Math</span></span><br><span class="line">mcp = FastMCP(<span class="string">&quot;Math&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义第一个工具：两个数相加</span></span><br><span class="line"><span class="meta">@mcp.tool()</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add_two_numbers</span>(<span class="params">a: <span class="built_in">int</span>, b: <span class="built_in">int</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">return</span> a + b</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义第二个工具：两个数相乘</span></span><br><span class="line"><span class="meta">@mcp.tool()</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">multiply_two_numbers</span>(<span class="params">a: <span class="built_in">int</span>, b: <span class="built_in">int</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">return</span> a * b</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动服务，使用本地 stdio 传输（只能本机调用）</span></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    mcp.run_transport(<span class="string">&quot;stdio&quot;</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>FastMCP</strong>：创建一个 AI 能用的工具服务</li>
+<li><strong>@mcp.tool()</strong>：把函数变成<strong>AI 可调用的工具</strong></li>
+<li><strong>stdio</strong>：本地进程通信，<strong>只在本机跑，不上网</strong></li>
+<li>作用：让 AI 可以调用你的 <code>加法</code> 和 <code>乘法</code></li>
+</ul>
+</li>
+<li><p>streamable HTTP传输</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 导入 MCP</span></span><br><span class="line"><span class="keyword">from</span> mcp <span class="keyword">import</span> FastMCP</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建天气服务</span></span><br><span class="line">mcp = FastMCP(<span class="string">&quot;Weather&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义工具：获取天气</span></span><br><span class="line"><span class="meta">@mcp.tool()</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="comment"># 假装去查天气</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;Sunny in <span class="subst">&#123;city&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动流式 HTTP 服务（可远程访问）</span></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    mcp.run_transport(<span class="string">&quot;streamable-http&quot;</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>streamable-http</strong>：启动<strong>可远程访问的 HTTP 流式服务</strong></li>
+<li>别人 / AI 可以通过网络调用你的 <code>get_weather</code> 工具</li>
+<li>适合做<strong>远程服务、API、AI 插件</strong></li>
+</ul>
+</li>
+</ul>
+<p><strong>stdio</strong>：本地工具，本机用，轻量</p>
+<p><strong>streamable-http</strong>：远程服务，网络用，可公开</p>
+<h1 id="使用MCP工具"><a href="#使用MCP工具" class="headerlink" title="使用MCP工具"></a>使用MCP工具</h1><p>使用 <code>langchain-mcp-adapters</code> 库，让 LangChain 框架能够调用<strong>任意多个 MCP 服务</strong>上的工具。</p>
+<p>简单说：<strong>LangChain + MCP 适配器 = 让 AI 能用所有 MCP 工具</strong>。</p>
+<p><strong>安装</strong></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pip install langchain-mcp-adapters</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或uv安装</span></span><br><span class="line">uv add langchain-mcp-adapters</span><br></pre></td></tr></table></figure>
+<p>代码示例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_mcp_adapters.client <span class="keyword">import</span> MultiServerMCPClient</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化多服务器客户端，配置两个不同的服务：数学(math)和天气(weather)</span></span><br><span class="line">client = MultiServerMCPClient(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;math&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;transport&quot;</span>: <span class="string">&quot;stdio&quot;</span>,  <span class="comment"># 本地子进程通信</span></span><br><span class="line">            <span class="string">&quot;command&quot;</span>: <span class="string">&quot;python&quot;</span>,</span><br><span class="line">            <span class="comment"># 指向你的 math_server.py 文件的绝对路径</span></span><br><span class="line">            <span class="string">&quot;args&quot;</span>: [<span class="string">&quot;/path/to/math_server.py&quot;</span>],</span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;weather&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;transport&quot;</span>: <span class="string">&quot;streamable_http&quot;</span>,  <span class="comment"># 基于 HTTP 的远程服务器</span></span><br><span class="line">            <span class="comment"># 确保你的天气服务器运行在 8000 端口</span></span><br><span class="line">            <span class="string">&quot;url&quot;</span>: <span class="string">&quot;http://localhost:8000/mcp&quot;</span>,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取所有配置服务器中的工具列表</span></span><br><span class="line">tools = <span class="keyword">await</span> client.get_tools()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 Agent，并将获取到的工具注入</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    <span class="string">&quot;claude-3-5-sonnet-20241022&quot;</span>, <span class="comment"># 注意：原图代码中日期为20250929，此处建议使用实际可用版本</span></span><br><span class="line">    tools</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用 Agent 执行数学计算任务</span></span><br><span class="line">math_response = <span class="keyword">await</span> agent.ainvoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;what&#x27;s (3 + 5) x 12?&quot;</span>&#125;]&#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用 Agent 执行天气查询任务</span></span><br><span class="line">weather_response = <span class="keyword">await</span> agent.ainvoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;what is the weather in nyc?&quot;</span>&#125;]&#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>这段代码展示了 MCP 的核心优势：<strong>互操作性</strong>。它允许 AI Agent 像插拔 U 盘一样，同时接入多个异构的数据源或功能模块。</p>
+<p><strong>关键组件说明：</strong></p>
+<ul>
+<li><strong><code>MultiServerMCPClient</code></strong>: 这是整个架构的“集线器”。它负责管理与多个 MCP 服务器的连接。在配置中，你可以混合使用不同的传输协议（如本地的 <code>stdio</code> 或远程的 <code>http</code>）。</li>
+<li><strong>传输协议 (Transport)</strong>:<ul>
+<li><code>stdio</code>: 适用于本地脚本，通过标准输入输出与 Python 进程直接通信，安全性高且延迟低。</li>
+<li><code>streamable_http</code>: 适用于远程服务，允许 Agent 调用部署在云端或其他服务器上的工具。</li>
+</ul>
+</li>
+<li><strong>工具发现 (<code>get_tools</code>)</strong>: 这是一个异步操作，它会自动遍历所有配置的服务器，查询它们支持的功能（Tools），并将其统一封装为 LangChain 可识别的格式。</li>
+<li><strong>无状态性 (Stateless)</strong>: 图片底部的提示非常重要。<code>MultiServerMCPClient</code> 默认是<strong>无状态</strong>的。这意味着每次执行工具调用时，它都会创建一个新的 <code>ClientSession</code>，执行完后立即清理。这保证了资源的释放，但也意味着如果你需要跨调用维持某种连接状态，需要额外的处理。</li>
+</ul>
+<p>上面介绍了无状态的工具使用，下面在介绍下有状态工具使用</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_mcp_adapters.tools <span class="keyword">import</span> load_mcp_tools</span><br><span class="line"></span><br><span class="line"><span class="comment"># 假设 client 已经按照之前的方法初始化</span></span><br><span class="line">client = MultiServerMCPClient(&#123;...&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用 async with 语句为特定的服务器（如 &quot;math&quot;）创建一个持久会话</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">with</span> client.session(<span class="string">&quot;math&quot;</span>) <span class="keyword">as</span> session:</span><br><span class="line">    <span class="comment"># 在该会话上下文中加载工具</span></span><br><span class="line">    tools = <span class="keyword">await</span> load_mcp_tools(session)</span><br><span class="line">    <span class="comment"># 在此代码块内，session 会一直保持连接状态，直到退出 block</span></span><br></pre></td></tr></table></figure>
+<p>这段代码解决的核心问题是：<strong>如何在多次工具调用之间记住“我是谁”或“我之前做了什么”。</strong></p>
+<p><strong>关键概念说明：</strong></p>
+<ul>
+<li><strong><code>client.session(&quot;math&quot;)</code></strong>: 这是核心方法。它显式地为名为 <code>&quot;math&quot;</code> 的服务器开启一个连接通道。</li>
+<li><strong><code>async with</code> (上下文管理器)</strong>: 使用异步上下文管理器可以确保连接的<strong>生命周期管理</strong>。当程序进入 <code>with</code> 块时，连接建立；当程序执行完毕退出块时，连接会自动安全关闭。</li>
+<li><strong><code>load_mcp_tools(session)</code></strong>: 与之前的 <code>client.get_tools()</code> 不同，这里是将工具直接绑定到这个<strong>特定的、活动的</strong> <code>session</code> 上。</li>
+</ul>
+<p><strong>有状态的工具有什么用呢</strong></p>
+<p>在大多数简单的 API 调用中，无状态就足够了。但在以下场景中，必须使用 <code>client.session()</code>：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th><strong>场景</strong></th>
+<th><strong>描述</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>认证与登录</strong></td>
+<td>某些服务器需要先调用 <code>login</code> 工具，后续操作必须在同一个 Session 中才能识别身份。</td>
+</tr>
+<tr>
+<td><strong>长连接资源</strong></td>
+<td>比如操作一个打开的数据库游标、文件流或正在运行的仿真模拟器。</td>
+</tr>
+<tr>
+<td><strong>性能优化</strong></td>
+<td>如果工具调用极其频繁，重复创建/销毁 Session 会产生大量的握手开销。保持 Session 可以显著降低延迟。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>总结对比</strong></p>
+<ul>
+<li><strong>默认模式 (无状态)</strong>：<code>client.get_tools()</code> -&gt; 简单、自动、适合独立任务（如查天气）。</li>
+<li><strong>持久模式 (有状态)</strong>：<code>async with client.session(...)</code> -&gt; 灵活、可控、适合复杂且有上下文关联的交互任务。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/12/ai/langchain/14-langchain-Runtime/" rel="prev" title="LangChain Runtime运行时环境">
+      <i class="fa fa-chevron-left"></i> LangChain Runtime运行时环境
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/13/ai/langchain/17-langchain-MCP/" rel="next" title="LangChain集成MCP">
+      LangChain集成MCP <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#MCP%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">MCP介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%A0%E8%BE%93%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">传输类型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SSE-vs-Stream-HTTP%E7%9A%84%E7%AE%80%E6%98%8E%E5%AF%B9%E6%AF%94"><span class="nav-number">3.</span> <span class="nav-text">SSE vs Stream HTTP的简明对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89MCP%E6%9C%8D%E5%8A%A1"><span class="nav-number">4.</span> <span class="nav-text">自定义MCP服务</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8MCP%E5%B7%A5%E5%85%B7"><span class="nav-number">5.</span> <span class="nav-text">使用MCP工具</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">175</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
