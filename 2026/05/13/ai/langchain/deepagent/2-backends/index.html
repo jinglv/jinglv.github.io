@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习DeepAgents学习笔记第二讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DeepAgents的“记忆宫殿”--Backends">
+<meta property="og:url" content="https://jinglv.github.io/2026/05/13/ai/langchain/deepagent/2-backends/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习DeepAgents学习笔记第二讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-05-12T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-05-13T03:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="DeepAgents">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/05/13/ai/langchain/deepagent/2-backends/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DeepAgents的“记忆宫殿”--Backends | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/05/13/ai/langchain/deepagent/2-backends/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DeepAgents的“记忆宫殿”--Backends
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-05-13 00:00:00 / 修改时间：11:00:00" itemprop="dateCreated datePublished" datetime="2026-05-13T00:00:00+08:00">2026-05-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DeepAgents/" itemprop="url" rel="index"><span itemprop="name">DeepAgents</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习DeepAgents学习笔记第二讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="什么是文件系统后端（Backends）"><a href="#什么是文件系统后端（Backends）" class="headerlink" title="什么是文件系统后端（Backends）"></a>什么是文件系统后端（Backends）</h1><p>文件系统后端 = AI 智能体的<strong>文件存储仓库</strong>，决定 AI 的文件存在哪里、用什么方式读写，是 AI 操作文件的底层存储支撑。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">分类</th>
+<th style="text-align:left">具体内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">核心类比</td>
+<td style="text-align:left">为 AI 智能体配备<strong>文件操作工具</strong>，等同于人类使用电脑文件管理器</td>
+</tr>
+<tr>
+<td style="text-align:left">AI 文件操作功能</td>
+<td style="text-align:left">1. <code>ls</code>：查看目录内容<br />2. <code>read_file</code>：读取文件<br />3. <code>write_file</code>：写入新文件<br />4. <code>edit_file</code>：编辑现有文件<br />5. <code>glob</code>：搜索文件<br />6. <code>grep</code>：文本搜索</td>
+</tr>
+<tr>
+<td style="text-align:left">文件系统后端定义</td>
+<td style="text-align:left">决定 AI 文件<strong>存储位置</strong>和<strong>访问方式</strong>的核心组件</td>
+</tr>
+<tr>
+<td style="text-align:left">通俗类比</td>
+<td style="text-align:left">类似电脑可将文件存储在本地硬盘、U 盘、云盘，AI 可选择不同存储后端</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="四种开箱即用的后端"><a href="#四种开箱即用的后端" class="headerlink" title="四种开箱即用的后端"></a>四种开箱即用的后端</h1><h2 id="1-StateBackend临时记忆后端（默认选择）"><a href="#1-StateBackend临时记忆后端（默认选择）" class="headerlink" title="1. StateBackend临时记忆后端（默认选择）"></a>1. StateBackend临时记忆后端（默认选择）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 直接创建 AI 智能体</span></span><br><span class="line"><span class="comment"># 默认自动启用 StateBackend（临时记忆后端）</span></span><br><span class="line"><span class="comment"># 无需任何额外配置</span></span><br><span class="line">agent = create_deep_agent()</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>StateBackend</code> 是<strong>临时记忆后端</strong>，也是 AI 智能体的<strong>默认存储方式</strong>。</li>
+<li><strong>存储位置</strong>：所有文件、数据都保存在<strong>内存</strong>里。</li>
+<li><strong>生命周期</strong>：<ul>
+<li>对话运行中：文件可用</li>
+<li><strong>对话结束 / 智能体重启</strong>：数据<strong>全部自动清空</strong></li>
+</ul>
+</li>
+<li><strong>优点</strong>：开箱即用、不占硬盘、自动清理、无残留。</li>
+<li><strong>缺点</strong>：<strong>不能持久化</strong>，重启就丢数据。</li>
+<li><strong>适用场景</strong>：一次性任务、临时对话、不需要保存文件的场景。</li>
+</ul>
+<h2 id="2-FilesystemBackend本地磁盘后端-持久化存储"><a href="#2-FilesystemBackend本地磁盘后端-持久化存储" class="headerlink" title="2.FilesystemBackend本地磁盘后端-持久化存储"></a>2.FilesystemBackend本地磁盘后端-持久化存储</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 导入本地磁盘后端模块</span></span><br><span class="line"><span class="keyword">from</span> deepagents.backends <span class="keyword">import</span> FilesystemBackend</span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例1：让智能体直接访问电脑桌面文件夹（真实读写）</span></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    backend=FilesystemBackend(root_dir=<span class="string">&quot;/Users/你的用户名/Desktop/&quot;</span>)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例2：推荐：安全沙箱模式，限制在指定目录内操作</span></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    backend=FilesystemBackend(root_dir=<span class="string">&quot;D://fortest&quot;</span>, virtual_mode=<span class="literal">True</span>)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>本地磁盘后端（<code>FilesystemBackend</code>），属于<strong>持久化存储</strong>。</li>
+<li><strong>存储位置</strong>：文件直接保存在<strong>本机电脑硬盘</strong>上，真实物理存储。</li>
+<li><p><strong>两种模式</strong></p>
+<ol>
+<li>普通模式：直接读写指定路径下的真实文件；</li>
+<li>沙箱模式（<code>virtual_mode=True</code>）：智能体<strong>只能访问你指定的文件夹</strong>，无法越权操作系统其他目录，安全性更高。</li>
+</ol>
+</li>
+<li><p><strong>优点</strong></p>
+<ul>
+<li><p>文件永久保存在电脑，<strong>重启后数据不会丢失</strong>；</p>
+</li>
+<li><p>可直接和本地项目、文档联动，适合长期任务。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>适用场景</strong>：项目开发、批量文件处理、需要长期保存文件的智能体任务。</p>
+</li>
+<li><p><strong>通俗类比</strong>：就像把文件存在电脑硬盘里，关机重启文件都还在。</p>
+</li>
+</ul>
+<h2 id="3-StoreBackend长期记忆后端-跨会话持久化"><a href="#3-StoreBackend长期记忆后端-跨会话持久化" class="headerlink" title="3.StoreBackend长期记忆后端-跨会话持久化"></a>3.StoreBackend长期记忆后端-跨会话持久化</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 导入存储引擎与长期记忆后端</span></span><br><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"><span class="keyword">from</span> deepagents.backends <span class="keyword">import</span> StoreBackend</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建启用长期记忆后端的智能体</span></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    backend=<span class="keyword">lambda</span> rt: StoreBackend(rt),  <span class="comment"># 必须使用lambda函数传入</span></span><br><span class="line">    store=InMemoryStore()  <span class="comment"># 指定底层存储引擎</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>长期记忆后端（<code>StoreBackend</code>），核心能力是<strong>跨会话持久化</strong>。</li>
+<li><strong>核心特点</strong><ol>
+<li>支持<strong>跨对话保存文件、记忆、用户偏好</strong>，开启新对话也能读取历史数据；</li>
+<li>底层可对接 <code>Redis</code>、<code>PostgreSQL</code> 等专业数据库，适合生产环境；</li>
+<li>对接 LangSmith 云服务时可自动提供存储能力。</li>
+</ol>
+</li>
+<li><strong>关键语法</strong>：<code>backend</code> 参数必须用 <code>lambda rt: StoreBackend(rt)</code> 这种匿名函数形式传入。</li>
+<li><strong>适用场景</strong>：需要长期记忆的智能体、保存用户偏好、多轮长期交互、多会话数据互通。</li>
+<li><strong>通俗类比</strong>：类似云盘，数据跨会话、跨环境同步留存。</li>
+</ul>
+<h2 id="4-CompositeBackend智能路由后端-混合存储"><a href="#4-CompositeBackend智能路由后端-混合存储" class="headerlink" title="4.CompositeBackend智能路由后端-混合存储"></a>4.CompositeBackend智能路由后端-混合存储</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 导入智能路由后端及前面3种存储后端</span></span><br><span class="line"><span class="keyword">from</span> deepagents.backends <span class="keyword">import</span> CompositeBackend, StateBackend, StoreBackend, FilesystemBackend</span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置智能路由：混合多种存储策略</span></span><br><span class="line">composite_backend = <span class="keyword">lambda</span> rt: CompositeBackend(</span><br><span class="line">    default=StateBackend(rt),  <span class="comment"># 默认：使用临时内存存储</span></span><br><span class="line">    routes=&#123;</span><br><span class="line">        <span class="string">&quot;/memories/&quot;</span>: StoreBackend(rt),          <span class="comment"># 记忆目录：长期跨会话持久化</span></span><br><span class="line">        <span class="string">&quot;/projects/&quot;</span>: FilesystemBackend(<span class="string">&quot;./projects/&quot;</span>)  <span class="comment"># 项目目录：保存到本地磁盘</span></span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建使用混合存储的智能体</span></span><br><span class="line">agent = create_deep_agent(backend=composite_backend)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>智能路由后端（<code>CompositeBackend</code>），也叫<strong>混合存储后端</strong>，可以把前面 3 种存储方式组合使用。</li>
+<li><strong>路由规则（核心逻辑）</strong><ol>
+<li>默认文件（如 <code>/scratch.txt</code>）：走 <code>StateBackend</code> 临时存储，对话结束自动消失；</li>
+<li><code>/memories/</code> 下的文件：走 <code>StoreBackend</code> 长期记忆后端，永久跨会话保存；</li>
+<li><code>/projects/</code> 下的文件：走 <code>FilesystemBackend</code> 本地磁盘后端，存到电脑本地文件夹。</li>
+</ol>
+</li>
+<li><strong>适用场景</strong>：复杂 AI 应用，需要区分临时文件、用户记忆、项目代码，对不同目录使用不同存储策略。</li>
+<li><strong>通俗类比</strong>：像电脑自动分类，草稿放内存、笔记存云盘、项目文件存本地硬盘，一套系统自动路由。</li>
+</ul>
+<h1 id="详细配置指南"><a href="#详细配置指南" class="headerlink" title="详细配置指南"></a>详细配置指南</h1><h2 id="方式一：直接使用实例（简单直接）"><a href="#方式一：直接使用实例（简单直接）" class="headerlink" title="方式一：直接使用实例（简单直接）"></a>方式一：直接使用实例（简单直接）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 适用于不需要运行时信息的后端</span></span><br><span class="line">backend = FilesystemBackend(root_dir=<span class="string">&quot;.&quot;</span>)</span><br><span class="line">agent = create_deep_agent(backend=backend)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>使用场景</strong>：本地磁盘后端这类<strong>不需要获取智能体运行时状态</strong>的存储类型</li>
+<li><strong>特点</strong>：直接实例化后端对象，写法简单、直接，开箱即用</li>
+</ul>
+<h2 id="方式二：使用工厂函数（更灵活）"><a href="#方式二：使用工厂函数（更灵活）" class="headerlink" title="方式二：使用工厂函数（更灵活）"></a>方式二：使用工厂函数（更灵活）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 适用于需要访问运行时状态的后端</span></span><br><span class="line">backend_factory = <span class="keyword">lambda</span> rt: StateBackend(rt)</span><br><span class="line">agent = create_deep_agent(backend=backend_factory)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>使用场景</strong>：临时记忆后端、长期记忆后端、智能路由后端，<strong> 需要接收运行时上下文<code>rt</code></strong> 的存储类型</li>
+<li><strong>特点</strong>：通过<code>lambda</code>匿名函数（工厂函数），在智能体运行时动态传入运行时参数，适配复杂存储逻辑，灵活性更高</li>
+</ul>
+<h1 id="实际应用场景配置"><a href="#实际应用场景配置" class="headerlink" title="实际应用场景配置"></a>实际应用场景配置</h1><h2 id="场景-1：个人助手（混合存储配置）"><a href="#场景-1：个人助手（混合存储配置）" class="headerlink" title="场景 1：个人助手（混合存储配置）"></a>场景 1：个人助手（混合存储配置）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">composite_backend = <span class="keyword">lambda</span> rt: CompositeBackend(</span><br><span class="line">    default=StateBackend(rt),  <span class="comment"># 默认：内存临时存储，对话结束自动清理</span></span><br><span class="line">    routes=&#123;</span><br><span class="line">        <span class="string">&quot;/notes/&quot;</span>: FilesystemBackend(<span class="string">&quot;~/Documents/AI_Notes/&quot;</span>),  <span class="comment"># 笔记类文件存本地电脑文档文件夹，永久保存</span></span><br><span class="line">        <span class="string">&quot;/memories/&quot;</span>: StoreBackend(rt)  <span class="comment"># 用户偏好、重要记忆跨会话长期持久化</span></span><br><span class="line">    &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>设计逻辑</strong></p>
+<ul>
+<li>临时草稿：内存存储，用完即清</li>
+<li>个人笔记：本地磁盘持久保存</li>
+<li>习惯记忆：长期记忆后端跨对话留存</li>
+</ul>
+<h2 id="场景-2：团队项目管理（企业级混合存储）"><a href="#场景-2：团队项目管理（企业级混合存储）" class="headerlink" title="场景 2：团队项目管理（企业级混合存储）"></a>场景 2：团队项目管理（企业级混合存储）</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">composite_backend = <span class="keyword">lambda</span> rt: CompositeBackend(</span><br><span class="line">    default=FilesystemBackend(<span class="string">&quot;/team_projects/current/&quot;</span>),  <span class="comment"># 默认：当前项目文件存本地磁盘</span></span><br><span class="line">    routes=&#123;</span><br><span class="line">        <span class="string">&quot;/archive/&quot;</span>: FilesystemBackend(<span class="string">&quot;/team_projects/archive/&quot;</span>),  <span class="comment"># 历史项目归档到本地磁盘</span></span><br><span class="line">        <span class="string">&quot;/shared/&quot;</span>: S3Backend(bucket=<span class="string">&quot;team-shared-bucket&quot;</span>)  <span class="comment"># 共享文件存云对象存储（AWS S3），团队成员可访问</span></span><br><span class="line">    &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>设计逻辑</strong></p>
+<ul>
+<li>当前项目：本地磁盘快速读写</li>
+<li>历史归档：本地磁盘长期留存</li>
+<li>团队共享：云端对象存储，支持多人协作访问</li>
+</ul>
+<h1 id="构建自定义存储后端"><a href="#构建自定义存储后端" class="headerlink" title="构建自定义存储后端"></a>构建自定义存储后端</h1><h2 id="为什么需要自定义后端（4-大场景）"><a href="#为什么需要自定义后端（4-大场景）" class="headerlink" title="为什么需要自定义后端（4 大场景）"></a>为什么需要自定义后端（4 大场景）</h2><ol>
+<li><p><strong>对接企业内部存储</strong></p>
+<p>连接公司私有文件系统、内部数据库、内网文档库，实现 AI 智能体访问企业私有数据。</p>
+</li>
+<li><p><strong>集成第三方云存储</strong></p>
+<p>对接 AWS S3、Google Drive、阿里云 OSS、腾讯云 COS 等公有云对象存储。</p>
+</li>
+<li><p><strong>定制安全权限策略</strong></p>
+<p>自定义文件加密、权限校验、访问审计、敏感文件过滤等专属安全规则。</p>
+</li>
+<li><p><strong>场景化性能优化</strong></p>
+<p>针对特定业务（大文件、高频读写、缓存加速）做性能调优。</p>
+</li>
+</ol>
+<hr>
+<p>简单来说：<strong>内置后端不够用时，自己写代码实现一套全新的存储逻辑</strong>，适配企业、云端、安全、性能等个性化需求。</p>
+<h2 id="示例代码：自定义-S3-云存储后端"><a href="#示例代码：自定义-S3-云存储后端" class="headerlink" title="示例代码：自定义 S3 云存储后端"></a>示例代码：<strong>自定义 S3 云存储后端</strong></h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 导入依赖库</span></span><br><span class="line"><span class="keyword">import</span> boto3  <span class="comment"># AWS官方SDK，用于操作S3</span></span><br><span class="line"><span class="keyword">from</span> deepagents.backends.protocol <span class="keyword">import</span> BackendProtocol, WriteResult  <span class="comment"># 框架后端协议、写入返回类</span></span><br><span class="line"><span class="keyword">from</span> deepagents.backends.utils <span class="keyword">import</span> FileInfo  <span class="comment"># 文件信息工具类（路径、大小、修改时间）</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 自定义S3后端类：必须继承BackendProtocol（框架强制协议）</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">S3Backend</span>(<span class="title class_ inherited__">BackendProtocol</span>):</span><br><span class="line">    <span class="comment"># 初始化：连接S3，绑定存储桶bucket、路径前缀prefix</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, bucket_name, prefix=<span class="string">&quot;&quot;</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.s3 = boto3.client(<span class="string">&#x27;s3&#x27;</span>)</span><br><span class="line">        <span class="variable language_">self</span>.bucket = bucket_name</span><br><span class="line">        <span class="variable language_">self</span>.prefix = prefix</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 方法1：ls_info —— 列出S3指定目录下的文件（对应ls命令）</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">ls_info</span>(<span class="params">self, path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[FileInfo]:</span><br><span class="line">        response = <span class="variable language_">self</span>.s3.list_objects_v2(</span><br><span class="line">            Bucket=<span class="variable language_">self</span>.bucket,</span><br><span class="line">            Prefix=<span class="string">f&quot;<span class="subst">&#123;self.prefix&#125;</span><span class="subst">&#123;path.lstrip(<span class="string">&#x27;/&#x27;</span>)&#125;</span>&quot;</span></span><br><span class="line">        )</span><br><span class="line">        files = []</span><br><span class="line">        <span class="comment"># 把S3文件信息转为框架标准FileInfo格式</span></span><br><span class="line">        <span class="keyword">for</span> obj <span class="keyword">in</span> response.get(<span class="string">&#x27;Contents&#x27;</span>, []):</span><br><span class="line">            files.append(FileInfo(</span><br><span class="line">                path=<span class="string">f&quot;/<span class="subst">&#123;obj[<span class="string">&#x27;Key&#x27;</span>]&#125;</span>&quot;</span>,      <span class="comment"># 文件路径</span></span><br><span class="line">                size=obj[<span class="string">&#x27;Size&#x27;</span>],           <span class="comment"># 文件大小</span></span><br><span class="line">                modified_at=obj[<span class="string">&#x27;LastModified&#x27;</span>]  <span class="comment"># 修改时间</span></span><br><span class="line">            ))</span><br><span class="line">        <span class="keyword">return</span> files</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 方法2：read —— 读取S3文件内容，支持分页读取</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">read</span>(<span class="params">self, file_path: <span class="built_in">str</span>, offset: <span class="built_in">int</span> = <span class="number">0</span>, limit: <span class="built_in">int</span> = <span class="number">2000</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        key = <span class="string">f&quot;<span class="subst">&#123;self.prefix&#125;</span><span class="subst">&#123;file_path.lstrip(<span class="string">&#x27;/&#x27;</span>)&#125;</span>&quot;</span></span><br><span class="line">        response = <span class="variable language_">self</span>.s3.get_object(Bucket=<span class="variable language_">self</span>.bucket, Key=key)</span><br><span class="line">        content = response[<span class="string">&#x27;Body&#x27;</span>].read().decode(<span class="string">&#x27;utf-8&#x27;</span>)</span><br><span class="line">        <span class="keyword">return</span> content[offset:offset+limit]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 方法3：write —— 写入文件到S3</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">write</span>(<span class="params">self, file_path: <span class="built_in">str</span>, content: <span class="built_in">str</span></span>) -&gt; WriteResult:</span><br><span class="line">        key = <span class="string">f&quot;<span class="subst">&#123;self.prefix&#125;</span><span class="subst">&#123;file_path.lstrip(<span class="string">&#x27;/&#x27;</span>)&#125;</span>&quot;</span></span><br><span class="line">        <span class="variable language_">self</span>.s3.put_object(Bucket=<span class="variable language_">self</span>.bucket, Key=key, Body=content)</span><br><span class="line">        <span class="keyword">return</span> WriteResult(path=file_path, files_update=<span class="literal">None</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 补充：还需实现 grep_raw、glob_info、edit 等剩余文件操作方法</span></span><br></pre></td></tr></table></figure>
+<p><strong>关键规则（开发自定义后端必须遵守）</strong></p>
+<ol>
+<li><p><strong>必须继承 <code>BackendProtocol</code></strong>：这是 DeepAgents 框架的强制接口协议，不继承无法被智能体识别；</p>
+</li>
+<li><p><strong>必须实现核心文件操作方法</strong>：</p>
+<ul>
+<li><code>ls_info</code>：列出文件</li>
+<li><code>read</code>：读取文件</li>
+<li><code>write</code>：写入文件</li>
+<li>还需补充：<code>grep_raw</code>(文本搜索)、<code>glob_info</code>(文件搜索)、<code>edit</code>(编辑文件)</li>
+</ul>
+</li>
+<li><p><strong>标准化返回格式</strong>：文件信息用 <code>FileInfo</code>、写入结果用 <code>WriteResult</code>，和框架内置后端格式统一。</p>
+</li>
+<li><p><strong>作用与使用场景</strong></p>
+<ul>
+<li><p>实现 AI 智能体直接操作<strong>云端对象存储</strong>（AWS S3、阿里云 OSS、腾讯云 COS 都可照此仿写）；</p>
+</li>
+<li><p>多用于<strong>团队协作、云端项目、跨设备访问</strong>的企业级 AI 应用。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="安全与权限控制"><a href="#安全与权限控制" class="headerlink" title="安全与权限控制"></a>安全与权限控制</h1><h2 id="基础权限控制：禁止写入敏感目录"><a href="#基础权限控制：禁止写入敏感目录" class="headerlink" title="基础权限控制：禁止写入敏感目录"></a>基础权限控制：禁止写入敏感目录</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 继承本地磁盘后端，实现只读权限控制</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ReadOnlyBackend</span>(<span class="title class_ inherited__">FilesystemBackend</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, read_only_paths,** kwargs</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__(**kwargs)</span><br><span class="line">        <span class="variable language_">self</span>.read_only_paths = read_only_paths  <span class="comment"># 定义禁止修改的敏感目录列表</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 重写写入方法：禁止向只读目录写入文件</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">write</span>(<span class="params">self, file_path: <span class="built_in">str</span>, content: <span class="built_in">str</span></span>) -&gt; WriteResult:</span><br><span class="line">        <span class="keyword">for</span> path <span class="keyword">in</span> <span class="variable language_">self</span>.read_only_paths:</span><br><span class="line">            <span class="keyword">if</span> file_path.startswith(path):</span><br><span class="line">                <span class="keyword">return</span> WriteResult(error=<span class="string">f&quot;禁止写入只读目录: <span class="subst">&#123;file_path&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">super</span>().write(file_path, content)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 重写编辑方法：禁止修改只读目录内文件</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">edit</span>(<span class="params">self, file_path: <span class="built_in">str</span>, old_string: <span class="built_in">str</span>, new_string: <span class="built_in">str</span>, replace_all: <span class="built_in">bool</span> = <span class="literal">False</span></span>):</span><br><span class="line">        <span class="keyword">for</span> path <span class="keyword">in</span> <span class="variable language_">self</span>.read_only_paths:</span><br><span class="line">            <span class="keyword">if</span> file_path.startswith(path):</span><br><span class="line">                <span class="keyword">return</span> EditResult(error=<span class="string">f&quot;禁止编辑只读目录文件: <span class="subst">&#123;file_path&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">super</span>().edit(file_path, old_string, new_string, replace_all)</span><br></pre></td></tr></table></figure>
+<p><strong>功能定位</strong></p>
+<p>这是<strong>安全权限控制</strong>的示例，基于本地磁盘后端 <code>FilesystemBackend</code> 二次开发，实现<strong>敏感目录只读保护</strong>，防止 AI 智能体误删、篡改重要系统 / 业务文件。</p>
+<p><strong>实现逻辑</strong></p>
+<ol>
+<li><strong>继承原生后端</strong>：复用 <code>FilesystemBackend</code> 原有读写逻辑，仅重写危险操作；</li>
+<li><strong>指定只读路径</strong>：初始化传入禁止修改的目录列表 <code>read_only_paths</code>；</li>
+<li><strong>拦截写入操作</strong>：重写 <code>write()</code>，若文件路径在只读目录内，直接返回错误，拒绝写入；</li>
+<li><strong>拦截编辑操作</strong>：重写 <code>edit()</code>，禁止修改只读目录内文件内容；</li>
+<li><strong>放行正常操作</strong>：非只读目录，沿用父类原有逻辑正常读写。</li>
+</ol>
+<p><strong>核心作用</strong></p>
+<ul>
+<li>限制 AI 权限，<strong>禁止修改系统配置、核心业务文件、隐私数据</strong>；</li>
+<li>属于<strong>沙箱安全策略</strong>，防止 AI 越权操作、误删关键文件；</li>
+<li>可扩展：继续重写删除、重命名等方法，实现更严格的权限管控。</li>
+</ul>
+<h2 id="企业级权限包装器"><a href="#企业级权限包装器" class="headerlink" title="企业级权限包装器"></a>企业级权限包装器</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">EnterprisePolicyWrapper</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, inner_backend, user_role</span>):</span><br><span class="line">        <span class="variable language_">self</span>.inner = inner_backend          <span class="comment"># 被包装的底层存储后端</span></span><br><span class="line">        <span class="variable language_">self</span>.user_role = user_role          <span class="comment"># 当前用户角色</span></span><br><span class="line">        <span class="variable language_">self</span>.setup_policies()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">setup_policies</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="comment"># 根据用户角色，分配可访问路径</span></span><br><span class="line">        <span class="keyword">if</span> <span class="variable language_">self</span>.user_role == <span class="string">&quot;admin&quot;</span>:</span><br><span class="line">            <span class="variable language_">self</span>.allowed_paths = [<span class="string">&quot;/&quot;</span>]  <span class="comment"># 管理员：可访问全部路径</span></span><br><span class="line">        <span class="keyword">elif</span> <span class="variable language_">self</span>.user_role == <span class="string">&quot;developer&quot;</span>:</span><br><span class="line">            <span class="variable language_">self</span>.allowed_paths = [<span class="string">&quot;/projects/&quot;</span>, <span class="string">&quot;/docs/&quot;</span>]  <span class="comment"># 开发者：仅项目、文档目录</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="variable language_">self</span>.allowed_paths = [<span class="string">&quot;/public/&quot;</span>]  <span class="comment"># 普通用户：仅公开目录</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">check_permission</span>(<span class="params">self, path</span>):</span><br><span class="line">        <span class="comment"># 校验路径是否在允许范围内</span></span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">any</span>(path.startswith(allowed) <span class="keyword">for</span> allowed <span class="keyword">in</span> <span class="variable language_">self</span>.allowed_paths)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">write</span>(<span class="params">self, file_path: <span class="built_in">str</span>, content: <span class="built_in">str</span></span>) -&gt; WriteResult:</span><br><span class="line">        <span class="comment"># 写入前校验权限</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> <span class="variable language_">self</span>.check_permission(file_path):</span><br><span class="line">            <span class="keyword">return</span> WriteResult(error=<span class="string">&quot;权限不足：无法写入该路径&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.inner.write(file_path, content)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 后续需要继续封装 read、edit、ls_info 等全部文件操作方法</span></span><br></pre></td></tr></table></figure>
+<p><strong>功能定位</strong></p>
+<p><strong>企业级权限包装器</strong>，用<strong>装饰器 / 包装器模式</strong>，给任意存储后端叠加<strong>基于角色 (RBAC) 的权限控制</strong>，适配企业多用户、分级权限的场景。</p>
+<p><strong>核心逻辑</strong></p>
+<ol>
+<li><p><strong>包装模式</strong>：不修改原有存储后端代码，在外层套一层权限校验，兼容临时 / 本地 / 云存储等所有后端；</p>
+</li>
+<li><p><strong>角色分级</strong></p>
+<ul>
+<li>管理员 <code>admin</code>：可访问系统全部文件；</li>
+<li>开发者 <code>developer</code>：仅访问项目、文档目录；</li>
+<li>普通用户：只能访问公开目录；</li>
+</ul>
+</li>
+</ol>
+<ol>
+<li><p><strong>权限校验</strong>：所有文件操作（写入、读取、编辑）前，先判断路径是否在角色允许范围内；</p>
+</li>
+<li><p><strong>放行底层执行</strong>：权限通过后，交给内部真实后端执行操作。</p>
+</li>
+</ol>
+<p><strong>适用场景</strong></p>
+<p>企业多角色 AI 智能体平台、多用户文件隔离、精细化权限管控，实现不同用户只能访问自己对应目录。</p>
+<h1 id="后端协议规范详解"><a href="#后端协议规范详解" class="headerlink" title="后端协议规范详解"></a>后端协议规范详解</h1><p>所有自定义后端必须实现以下6个核心方法</p>
+<h2 id="1-ls-info-path-列出目录内容"><a href="#1-ls-info-path-列出目录内容" class="headerlink" title="1. ls_info(path)-列出目录内容"></a>1. ls_info(path)-列出目录内容</h2><p><strong>功能</strong>：对应 Linux <code>ls</code> 命令，<strong>列出指定目录下的文件和文件夹信息</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">ls_info</span>(<span class="params">self, path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[FileInfo]:</span><br><span class="line">    <span class="comment"># 返回示例</span></span><br><span class="line">    <span class="keyword">return</span> [</span><br><span class="line">        FileInfo(path=<span class="string">&quot;/file1.txt&quot;</span>, size=<span class="number">1024</span>, is_dir=<span class="literal">False</span>),</span><br><span class="line">        FileInfo(path=<span class="string">&quot;/folder/&quot;</span>, is_dir=<span class="literal">True</span>)</span><br><span class="line">    ]</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><strong>返回格式</strong>：必须返回 <strong><code>FileInfo</code> 对象列表 </strong>，<code>FileInfo</code> 是框架规定的标准文件信息结构</p>
+</li>
+<li><p><strong>字段含义</strong></p>
+<ul>
+<li><p><code>path</code>：文件 / 文件夹路径</p>
+</li>
+<li><p><code>size</code>：文件大小（文件夹可省略）</p>
+</li>
+<li><p><code>is_dir</code>：<code>True</code>= 文件夹，<code>False</code>= 普通文件</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-read-file-path-offset-limit-—-读取文件"><a href="#2-read-file-path-offset-limit-—-读取文件" class="headerlink" title="2.read (file_path, offset, limit) — 读取文件"></a>2.read (file_path, offset, limit) — 读取文件</h2><p><strong>参数说明</strong></p>
+<ul>
+<li><code>offset</code>：开始读取的位置</li>
+<li><code>limit</code>：最大读取长度</li>
+<li>文件不存在时返回错误字符串</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read</span>(<span class="params">self, file_path: <span class="built_in">str</span>, offset: <span class="built_in">int</span> = <span class="number">0</span>, limit: <span class="built_in">int</span> = <span class="literal">None</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="comment"># 模拟读取文件，支持分片读取</span></span><br><span class="line">    content = <span class="string">&quot;hello world sample content&quot;</span></span><br><span class="line">    <span class="keyword">return</span> content[offset:offset+limit] <span class="keyword">if</span> limit <span class="keyword">else</span> content[offset:]</span><br></pre></td></tr></table></figure>
+<h2 id="3-grep-raw-pattern-path-glob-—-文本搜索"><a href="#3-grep-raw-pattern-path-glob-—-文本搜索" class="headerlink" title="3.grep_raw (pattern, path, glob) — 文本搜索"></a>3.grep_raw (pattern, path, glob) — 文本搜索</h2><p><strong>功能说明</strong></p>
+<ul>
+<li>支持正则表达式搜索</li>
+<li>可指定搜索路径或通配符</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">grep_raw</span>(<span class="params">self, pattern: <span class="built_in">str</span>, paths: <span class="built_in">list</span>[<span class="built_in">str</span>]</span>) -&gt; <span class="built_in">list</span>[<span class="built_in">str</span>]:</span><br><span class="line">    <span class="comment"># 模拟正则文本搜索，返回匹配行</span></span><br><span class="line">    <span class="keyword">return</span> [<span class="string">&quot;匹配行1：hello&quot;</span>, <span class="string">&quot;匹配行2：world&quot;</span>]</span><br></pre></td></tr></table></figure>
+<h2 id="4-glob-info-pattern-path-—-文件搜索"><a href="#4-glob-info-pattern-path-—-文件搜索" class="headerlink" title="4. glob_info (pattern, path) — 文件搜索"></a>4. glob_info (pattern, path) — 文件搜索</h2><p><strong>功能说明</strong></p>
+<ul>
+<li>使用通配符查找文件（如 <code>*.py</code>）</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">glob_info</span>(<span class="params">self, pattern: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[FileInfo]:</span><br><span class="line">    <span class="comment"># 通配符搜索文件，返回FileInfo列表</span></span><br><span class="line">    <span class="keyword">return</span> [</span><br><span class="line">        FileInfo(path=<span class="string">&quot;/demo.py&quot;</span>, size=<span class="number">2048</span>, is_dir=<span class="literal">False</span>),</span><br><span class="line">        FileInfo(path=<span class="string">&quot;/test.py&quot;</span>, size=<span class="number">1024</span>, is_dir=<span class="literal">False</span>)</span><br><span class="line">    ]</span><br></pre></td></tr></table></figure>
+<h2 id="5-write-file-path-content-—-创建文件"><a href="#5-write-file-path-content-—-创建文件" class="headerlink" title="5. write (file_path, content) — 创建文件"></a>5. write (file_path, content) — 创建文件</h2><p><strong>功能说明</strong></p>
+<ul>
+<li>文件已存在则返回错误</li>
+<li>成功返回 <code>WriteResult</code></li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">write</span>(<span class="params">self, file_path: <span class="built_in">str</span>, content: <span class="built_in">str</span></span>) -&gt; WriteResult:</span><br><span class="line">    <span class="comment"># 模拟写入文件</span></span><br><span class="line">    <span class="keyword">return</span> WriteResult(path=file_path, files_update=<span class="literal">None</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="6-edit-file-path-old-string-new-string-replace-all-—-编辑文件"><a href="#6-edit-file-path-old-string-new-string-replace-all-—-编辑文件" class="headerlink" title="6.edit (file_path, old_string, new_string, replace_all) — 编辑文件"></a>6.edit (file_path, old_string, new_string, replace_all) — 编辑文件</h2><p><strong>参数说明</strong></p>
+<ul>
+<li><code>replace_all=False</code>：只替换第一个匹配</li>
+<li><code>replace_all=True</code>：替换所有匹配</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">edit</span>(<span class="params">self, file_path: <span class="built_in">str</span>, old_string: <span class="built_in">str</span>, new_string: <span class="built_in">str</span>, replace_all: <span class="built_in">bool</span> = <span class="literal">False</span></span>):</span><br><span class="line">    <span class="comment"># 模拟文本替换编辑</span></span><br><span class="line">    <span class="keyword">return</span> EditResult(path=file_path, success=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<h1 id="实践总结"><a href="#实践总结" class="headerlink" title="实践总结"></a>实践总结</h1><h2 id="后端选型策略指南（直接照抄配置即可"><a href="#后端选型策略指南（直接照抄配置即可" class="headerlink" title="后端选型策略指南（直接照抄配置即可"></a>后端选型策略指南（直接照抄配置即可</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">使用场景</th>
+<th style="text-align:left">推荐后端</th>
+<th style="text-align:left">配置示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">简单测试 / 演示</td>
+<td style="text-align:left"><code>StateBackend</code>（默认）</td>
+<td style="text-align:left"><code>create_deep_agent()</code>，零配置开箱即用</td>
+</tr>
+<tr>
+<td style="text-align:left">个人项目开发</td>
+<td style="text-align:left"><code>FilesystemBackend</code></td>
+<td style="text-align:left"><code>FilesystemBackend(&quot;./workspace/&quot;)</code>，本地磁盘持久存储</td>
+</tr>
+<tr>
+<td style="text-align:left">生产环境长期记忆</td>
+<td style="text-align:left"><code>StoreBackend</code></td>
+<td style="text-align:left">搭配 Redis / PostgreSQL 数据库，实现跨会话持久化</td>
+</tr>
+<tr>
+<td style="text-align:left">复杂企业应用</td>
+<td style="text-align:left"><code>CompositeBackend</code></td>
+<td style="text-align:left">混合多种存储策略，按路径自动路由</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="安全建议（生产环境必遵守）"><a href="#安全建议（生产环境必遵守）" class="headerlink" title="安全建议（生产环境必遵守）"></a>安全建议（生产环境必遵守）</h2><ol>
+<li><strong>强制开启沙箱模式</strong>：使用本地磁盘后端时，必须设置 <code>virtual_mode=True</code>，限制智能体只能访问指定目录，防止越权</li>
+<li><strong>禁止访问系统根目录</strong>：隔离系统敏感文件，避免 AI 篡改系统配置</li>
+<li><strong>分级权限管控</strong>：基于用户角色（管理员 / 开发者 / 普通用户）限制文件读写、编辑权限</li>
+<li><strong>定期备份重要数据</strong>：内存型后端数据重启丢失，重要文件务必做备份</li>
+</ol>
+<h2 id="性能优化技巧"><a href="#性能优化技巧" class="headerlink" title="性能优化技巧"></a>性能优化技巧</h2><ol>
+<li><strong>大文件分页读取</strong>：使用 <code>offset</code>（偏移量）+ <code>limit</code>（读取长度）参数，分片读取超大文件，避免一次性加载占用内存</li>
+<li><strong>云存储服务端筛选</strong>：对接 S3、阿里云 OSS 等云存储时，在云服务端提前过滤搜索结果，减少网络传输</li>
+<li><strong>常用数据缓存</strong>：对高频访问的文件、配置添加缓存层，提升读写速度</li>
+</ol>
+<h1 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">问题</th>
+<th style="text-align:left">答案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">可以同时使用多个后端吗？</td>
+<td style="text-align:left">可以，使用 <strong>CompositeBackend</strong> 实现多后端混合，按路径自动路由</td>
+</tr>
+<tr>
+<td style="text-align:left">文件路径有什么限制？</td>
+<td style="text-align:left">1. 必须是<strong>绝对路径</strong>，以 <code>/</code> 开头<br />2. 不同后端存储空间相互隔离</td>
+</tr>
+<tr>
+<td style="text-align:left">如何处理文件冲突？</td>
+<td style="text-align:left">1. <code>write</code> 仅用于新建，文件已存在会报错<br />2. 修改文件必须用 <code>edit</code> 方法</td>
+</tr>
+<tr>
+<td style="text-align:left">自定义后端复杂吗？</td>
+<td style="text-align:left">不复杂，只需实现<strong>6 个核心方法</strong>，对接云存储可直接用官方 SDK</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DeepAgents/" rel="tag"># DeepAgents</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/05/12/ai/langchain/18-langchain-Multi-Agent-tool/" rel="prev" title="多智能体协作：工具模式">
+      <i class="fa fa-chevron-left"></i> 多智能体协作：工具模式
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/05/13/ai/langchain/deepagent/3-subagent/" rel="next" title="DeepAgents的子智能体">
+      DeepAgents的子智能体 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%90%8E%E7%AB%AF%EF%BC%88Backends%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">什么是文件系统后端（Backends）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E7%A7%8D%E5%BC%80%E7%AE%B1%E5%8D%B3%E7%94%A8%E7%9A%84%E5%90%8E%E7%AB%AF"><span class="nav-number">2.</span> <span class="nav-text">四种开箱即用的后端</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-StateBackend%E4%B8%B4%E6%97%B6%E8%AE%B0%E5%BF%86%E5%90%8E%E7%AB%AF%EF%BC%88%E9%BB%98%E8%AE%A4%E9%80%89%E6%8B%A9%EF%BC%89"><span class="nav-number">2.1.</span> <span class="nav-text">1. StateBackend临时记忆后端（默认选择）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-FilesystemBackend%E6%9C%AC%E5%9C%B0%E7%A3%81%E7%9B%98%E5%90%8E%E7%AB%AF-%E6%8C%81%E4%B9%85%E5%8C%96%E5%AD%98%E5%82%A8"><span class="nav-number">2.2.</span> <span class="nav-text">2.FilesystemBackend本地磁盘后端-持久化存储</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-StoreBackend%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86%E5%90%8E%E7%AB%AF-%E8%B7%A8%E4%BC%9A%E8%AF%9D%E6%8C%81%E4%B9%85%E5%8C%96"><span class="nav-number">2.3.</span> <span class="nav-text">3.StoreBackend长期记忆后端-跨会话持久化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-CompositeBackend%E6%99%BA%E8%83%BD%E8%B7%AF%E7%94%B1%E5%90%8E%E7%AB%AF-%E6%B7%B7%E5%90%88%E5%AD%98%E5%82%A8"><span class="nav-number">2.4.</span> <span class="nav-text">4.CompositeBackend智能路由后端-混合存储</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%A6%E7%BB%86%E9%85%8D%E7%BD%AE%E6%8C%87%E5%8D%97"><span class="nav-number">3.</span> <span class="nav-text">详细配置指南</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%B8%80%EF%BC%9A%E7%9B%B4%E6%8E%A5%E4%BD%BF%E7%94%A8%E5%AE%9E%E4%BE%8B%EF%BC%88%E7%AE%80%E5%8D%95%E7%9B%B4%E6%8E%A5%EF%BC%89"><span class="nav-number">3.1.</span> <span class="nav-text">方式一：直接使用实例（简单直接）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%BA%8C%EF%BC%9A%E4%BD%BF%E7%94%A8%E5%B7%A5%E5%8E%82%E5%87%BD%E6%95%B0%EF%BC%88%E6%9B%B4%E7%81%B5%E6%B4%BB%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">方式二：使用工厂函数（更灵活）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF%E9%85%8D%E7%BD%AE"><span class="nav-number">4.</span> <span class="nav-text">实际应用场景配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF-1%EF%BC%9A%E4%B8%AA%E4%BA%BA%E5%8A%A9%E6%89%8B%EF%BC%88%E6%B7%B7%E5%90%88%E5%AD%98%E5%82%A8%E9%85%8D%E7%BD%AE%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">场景 1：个人助手（混合存储配置）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF-2%EF%BC%9A%E5%9B%A2%E9%98%9F%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86%EF%BC%88%E4%BC%81%E4%B8%9A%E7%BA%A7%E6%B7%B7%E5%90%88%E5%AD%98%E5%82%A8%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">场景 2：团队项目管理（企业级混合存储）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AD%98%E5%82%A8%E5%90%8E%E7%AB%AF"><span class="nav-number">5.</span> <span class="nav-text">构建自定义存储后端</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E8%87%AA%E5%AE%9A%E4%B9%89%E5%90%8E%E7%AB%AF%EF%BC%884-%E5%A4%A7%E5%9C%BA%E6%99%AF%EF%BC%89"><span class="nav-number">5.1.</span> <span class="nav-text">为什么需要自定义后端（4 大场景）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81%EF%BC%9A%E8%87%AA%E5%AE%9A%E4%B9%89-S3-%E4%BA%91%E5%AD%98%E5%82%A8%E5%90%8E%E7%AB%AF"><span class="nav-number">5.2.</span> <span class="nav-text">示例代码：自定义 S3 云存储后端</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E4%B8%8E%E6%9D%83%E9%99%90%E6%8E%A7%E5%88%B6"><span class="nav-number">6.</span> <span class="nav-text">安全与权限控制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E6%9D%83%E9%99%90%E6%8E%A7%E5%88%B6%EF%BC%9A%E7%A6%81%E6%AD%A2%E5%86%99%E5%85%A5%E6%95%8F%E6%84%9F%E7%9B%AE%E5%BD%95"><span class="nav-number">6.1.</span> <span class="nav-text">基础权限控制：禁止写入敏感目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%81%E4%B8%9A%E7%BA%A7%E6%9D%83%E9%99%90%E5%8C%85%E8%A3%85%E5%99%A8"><span class="nav-number">6.2.</span> <span class="nav-text">企业级权限包装器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8E%E7%AB%AF%E5%8D%8F%E8%AE%AE%E8%A7%84%E8%8C%83%E8%AF%A6%E8%A7%A3"><span class="nav-number">7.</span> <span class="nav-text">后端协议规范详解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-ls-info-path-%E5%88%97%E5%87%BA%E7%9B%AE%E5%BD%95%E5%86%85%E5%AE%B9"><span class="nav-number">7.1.</span> <span class="nav-text">1. ls_info(path)-列出目录内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-read-file-path-offset-limit-%E2%80%94-%E8%AF%BB%E5%8F%96%E6%96%87%E4%BB%B6"><span class="nav-number">7.2.</span> <span class="nav-text">2.read (file_path, offset, limit) — 读取文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-grep-raw-pattern-path-glob-%E2%80%94-%E6%96%87%E6%9C%AC%E6%90%9C%E7%B4%A2"><span class="nav-number">7.3.</span> <span class="nav-text">3.grep_raw (pattern, path, glob) — 文本搜索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-glob-info-pattern-path-%E2%80%94-%E6%96%87%E4%BB%B6%E6%90%9C%E7%B4%A2"><span class="nav-number">7.4.</span> <span class="nav-text">4. glob_info (pattern, path) — 文件搜索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-write-file-path-content-%E2%80%94-%E5%88%9B%E5%BB%BA%E6%96%87%E4%BB%B6"><span class="nav-number">7.5.</span> <span class="nav-text">5. write (file_path, content) — 创建文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-edit-file-path-old-string-new-string-replace-all-%E2%80%94-%E7%BC%96%E8%BE%91%E6%96%87%E4%BB%B6"><span class="nav-number">7.6.</span> <span class="nav-text">6.edit (file_path, old_string, new_string, replace_all) — 编辑文件</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E8%B7%B5%E6%80%BB%E7%BB%93"><span class="nav-number">8.</span> <span class="nav-text">实践总结</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E7%AB%AF%E9%80%89%E5%9E%8B%E7%AD%96%E7%95%A5%E6%8C%87%E5%8D%97%EF%BC%88%E7%9B%B4%E6%8E%A5%E7%85%A7%E6%8A%84%E9%85%8D%E7%BD%AE%E5%8D%B3%E5%8F%AF"><span class="nav-number">8.1.</span> <span class="nav-text">后端选型策略指南（直接照抄配置即可</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E5%BB%BA%E8%AE%AE%EF%BC%88%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E5%BF%85%E9%81%B5%E5%AE%88%EF%BC%89"><span class="nav-number">8.2.</span> <span class="nav-text">安全建议（生产环境必遵守）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E6%8A%80%E5%B7%A7"><span class="nav-number">8.3.</span> <span class="nav-text">性能优化技巧</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="nav-number">9.</span> <span class="nav-text">常见问题</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">177</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

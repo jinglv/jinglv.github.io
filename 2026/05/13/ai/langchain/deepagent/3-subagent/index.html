@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习DeepAgents学习笔记第三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DeepAgents的子智能体">
+<meta property="og:url" content="https://jinglv.github.io/2026/05/13/ai/langchain/deepagent/3-subagent/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习DeepAgents学习笔记第三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-05-13T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-05-13T07:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="DeepAgents">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/05/13/ai/langchain/deepagent/3-subagent/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DeepAgents的子智能体 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/05/13/ai/langchain/deepagent/3-subagent/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DeepAgents的子智能体
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-05-13 15:00:00" itemprop="dateCreated datePublished" datetime="2026-05-13T15:00:00+08:00">2026-05-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DeepAgents/" itemprop="url" rel="index"><span itemprop="name">DeepAgents</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习DeepAgents学习笔记第三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="为什么使用子智能体？"><a href="#为什么使用子智能体？" class="headerlink" title="为什么使用子智能体？"></a>为什么使用子智能体？</h1><h2 id="核心目的：为什么用子智能体？"><a href="#核心目的：为什么用子智能体？" class="headerlink" title="核心目的：为什么用子智能体？"></a>核心目的：为什么用子智能体？</h2><p>简单说，<strong>解决「上下文膨胀」问题</strong></p>
+<ol>
+<li>当主 AI（主智能体）调用工具（比如联网搜索、读取大文件、查数据库）时，工具会返回海量中间结果，大量日志、步骤、数据会直接占满主智能体的上下文窗口；</li>
+<li>子智能体相当于<strong>独立干活的 “打工人”</strong>：复杂的工具调用、中间步骤全部交给它处理，主智能体只接收<strong>最终精简结果</strong>，不用管繁琐的几十步工具调用，避免主 AI 被冗余信息干扰、内存过载。</li>
+</ol>
+<h2 id="适合用子智能体的-4-种场景"><a href="#适合用子智能体的-4-种场景" class="headerlink" title="适合用子智能体的 4 种场景"></a>适合用子智能体的 4 种场景</h2><ul>
+<li><strong>多步骤复杂任务</strong>：步骤太多，会让主智能体的上下文混乱、逻辑出错，拆分给子智能体分步执行；</li>
+<li><strong>垂直专业领域</strong>：比如代码、医疗、金融，需要专属指令 / 专用工具，单独给子智能体定制；</li>
+<li><strong>需要不同模型能力</strong>：比如一个任务既要写文案、又要分析数据、还要画图，不同子智能体用不同能力的模型；</li>
+<li><strong>主智能体只做统筹</strong>：主智能体负责整体规划、调度，子智能体负责落地干活，主 AI 专注高级决策。</li>
+</ul>
+<h2 id="不适合用子智能体的-3-种场景"><a href="#不适合用子智能体的-3-种场景" class="headerlink" title="不适合用子智能体的 3 种场景"></a>不适合用子智能体的 3 种场景</h2><ul>
+<li><strong>简单单步任务</strong>：一句话就能完成，拆分出子智能体纯属多此一举；</li>
+<li><strong>需要保留中间上下文</strong>：必须看到完整执行过程、中间步骤不能省略（比如调试、复盘），子智能体屏蔽了中间过程，就不适用；</li>
+<li><strong>成本大于收益</strong>：搭建、调用子智能体本身有算力、时间成本，简单任务用它得不偿失。</li>
+</ul>
+<hr>
+<p>简单总结：<strong>子智能体就是给主 AI 减负，专门处理脏活累活，适合复杂、多步骤、专业化的任务，简单任务千万别用</strong>。</p>
+<h1 id="使用SubAgent"><a href="#使用SubAgent" class="headerlink" title="使用SubAgent"></a>使用SubAgent</h1><p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"><span class="comment"># 导入DeepAgents框架创建智能体核心函数</span></span><br><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 1. 定义工具：联网搜索函数 ----------------------</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">internet_search</span>(<span class="params"></span></span><br><span class="line"><span class="params">    query: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    max_results: <span class="built_in">int</span> = <span class="number">5</span>,</span></span><br><span class="line"><span class="params">    topic: <span class="type">Literal</span>[<span class="string">&quot;general&quot;</span>, <span class="string">&quot;news&quot;</span>, <span class="string">&quot;finance&quot;</span>] = <span class="string">&quot;general&quot;</span>,</span></span><br><span class="line"><span class="params">    include_raw_content: <span class="built_in">bool</span> = <span class="literal">False</span>,</span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    模拟联网搜索工具</span></span><br><span class="line"><span class="string">    :param query: 搜索关键词</span></span><br><span class="line"><span class="string">    :param max_results: 返回结果条数</span></span><br><span class="line"><span class="string">    :param topic: 搜索领域：通用/新闻/金融</span></span><br><span class="line"><span class="string">    :param include_raw_content: 是否返回原始网页内容</span></span><br><span class="line"><span class="string">    :return: 整理后的搜索结果</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 模拟真实搜索返回结构化内容（实际项目替换为真实联网接口）</span></span><br><span class="line">    mock_result = <span class="string">f&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    【<span class="subst">&#123;topic&#125;</span>领域搜索结果】</span></span><br><span class="line"><span class="string">    关键词：<span class="subst">&#123;query&#125;</span></span></span><br><span class="line"><span class="string">    结果条数：<span class="subst">&#123;max_results&#125;</span></span></span><br><span class="line"><span class="string">    核心摘要：模拟深度调研后的精简结论，过滤冗余原始网页信息</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> mock_result</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 2. 配置子智能体(SubAgent) ----------------------</span></span><br><span class="line">research_subagent = &#123;</span><br><span class="line">    <span class="string">&quot;name&quot;</span>: <span class="string">&quot;research-agent&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;专门负责深度网络调研、信息搜集、内容整理的子智能体&quot;</span>,</span><br><span class="line">    <span class="string">&quot;system_prompt&quot;</span>: <span class="string">&quot;你是一个专业的研究人员，擅长深度信息搜集、联网调研，整理精简有效信息，只输出最终调研结论，不输出中间工具调用过程。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tools&quot;</span>: [internet_search],  <span class="comment"># 子智能体独享搜索工具，主智能体不直接调用</span></span><br><span class="line">    <span class="string">&quot;model&quot;</span>: <span class="string">&quot;openai:gpt-4o&quot;</span>,    <span class="comment"># 子智能体独立使用GPT-4o，主智能体用Claude，实现多模型能力拆分</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment"># 子智能体列表，可扩展多个子智能体（如代码子智能体、数据分析子智能体）</span></span><br><span class="line">subagents = [research_subagent]</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 3. 创建主智能体，挂载子智能体 ----------------------</span></span><br><span class="line">main_agent = create_deep_agent(</span><br><span class="line">    model=<span class="string">&quot;claude-sonnet-4-5-20250929&quot;</span>,  <span class="comment"># 主智能体使用Claude，负责顶层决策、任务统筹</span></span><br><span class="line">    subagents=subagents,                 <span class="comment"># 绑定子智能体，自动调度</span></span><br><span class="line">    system_prompt=<span class="string">&quot;你是任务总负责人，负责拆解任务，将调研类工作交给research-agent子智能体，仅接收子智能体的最终结果，整合输出最终答案&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 4. 测试调用：主智能体发起任务 ----------------------</span></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    <span class="comment"># 主智能体接收用户问题，自动调用子智能体完成调研</span></span><br><span class="line">    user_question = <span class="string">&quot;请调研2025年AI智能体技术的最新发展趋势&quot;</span></span><br><span class="line">    result = main_agent.run(user_question)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;===== 最终输出 =====&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+<p><strong>调用逻辑：完整任务链路</strong></p>
+<ol>
+<li>用户提问 → 主智能体接收；</li>
+<li>主智能体识别是<strong>深度调研任务</strong>，自动下发给 <code>research-agent</code>；</li>
+<li>子智能体调用 <code>internet_search</code> 工具，完成多轮搜索、信息整理；</li>
+<li>子智能体返回<strong>精简最终结论</strong>给主智能体；</li>
+<li>主智能体整合结果，输出最终答案。</li>
+</ol>
+<h1 id="使用CompiledSubAgent"><a href="#使用CompiledSubAgent" class="headerlink" title="使用CompiledSubAgent"></a>使用CompiledSubAgent</h1><p>前面讲的普通 <code>SubAgent</code> 是<strong>简单配置式子智能体</strong>，而 <code>CompiledSubAgent</code> 是<strong>编译型 / 自定义可运行子智能体</strong>：</p>
+<blockquote>
+<p>你可以用其他框架（比如 LangChain）<strong>提前完整开发一个独立智能体</strong>（带复杂工作流、工具链、决策逻辑），再把它包装成子智能体，接入主智能体的调度体系。</p>
+<p>简单说：<strong>独立智能体既能单独运行，也能作为子智能体帮主智能体干活，实现跨框架、复杂能力复用</strong>。</p>
+</blockquote>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent, CompiledSubAgent</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 模拟数据分析工具</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">data_analysis_tool</span>(<span class="params">data: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;模拟数据分析工具，处理复杂数据&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;【数据分析结果】已完成数据<span class="subst">&#123;data&#125;</span>的清洗、统计、可视化分析&quot;</span></span><br><span class="line"></span><br><span class="line">specialized_tools = [data_analysis_tool]</span><br><span class="line">your_model = ChatOpenAI(model=<span class="string">&quot;gpt-4o&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 创建LangChain自定义独立数据分析智能体</span></span><br><span class="line">custom_graph = create_agent(</span><br><span class="line">    model=your_model,</span><br><span class="line">    tools=specialized_tools,</span><br><span class="line">    prompt=<span class="string">&quot;你是一个专业的数据分析师，擅长处理复杂的数据分析任务。&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 包装为CompiledSubAgent</span></span><br><span class="line">custom_subagent = CompiledSubAgent(</span><br><span class="line">    name=<span class="string">&quot;data-analyzer&quot;</span>,</span><br><span class="line">    description=<span class="string">&quot;用于进行复杂数据分析任务的子智能体&quot;</span>,</span><br><span class="line">    runnable=custom_graph</span><br><span class="line">)</span><br><span class="line">subagents = [custom_subagent]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 定义主智能体的搜索工具</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">internet_search</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;搜索结果：<span class="subst">&#123;query&#125;</span>相关行业数据&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 创建主智能体，绑定子智能体</span></span><br><span class="line">main_agent = create_deep_agent(</span><br><span class="line">    model=<span class="string">&quot;claude-sonnet-4-5-20250929&quot;</span>,</span><br><span class="line">    tools=[internet_search],</span><br><span class="line">    system_prompt=<span class="string">&quot;你是一个专业的研究人员，擅长深度研究，可调用data-analyzer进行数据分析&quot;</span>,</span><br><span class="line">    subagents=subagents</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 6. 测试调用</span></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    res = main_agent.run(<span class="string">&quot;调研2025年AI行业数据，并做数据分析&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(res)</span><br></pre></td></tr></table></figure>
+<p>主智能体：用 Claude，负责整体统筹、联网搜索、任务规划</p>
+<p>子智能体：独立的数据分析智能体，专门处理复杂数据计算、分析、建模</p>
+<p>主智能体遇到<strong>数据分析任务</strong>，自动调度 <code>data-analyzer</code> 子智能体处理，隔离复杂内部逻辑，避免主智能体上下文膨胀</p>
+<p><strong>普通 SubAgent VS CompiledSubAgent（关键区别）</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">类型</th>
+<th style="text-align:left">实现方式</th>
+<th style="text-align:left">能力</th>
+<th style="text-align:left">适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">普通 SubAgent</td>
+<td style="text-align:left">字典配置（name/prompt/tools）</td>
+<td style="text-align:left">简单、轻量化，适合单工具、简单任务</td>
+<td style="text-align:left">搜索、文件读取等简单工具调用</td>
+</tr>
+<tr>
+<td style="text-align:left">CompiledSubAgent</td>
+<td style="text-align:left">外部完整智能体包装（LangChain 等）</td>
+<td style="text-align:left">可包含复杂流程图、多轮决策、复杂工具链</td>
+<td style="text-align:left">数据分析、代码执行、复杂业务流程等重度任务</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>核心设计思想总结</strong></p>
+<ol>
+<li><strong>解决复杂子智能体开发问题</strong>：简单子智能体用配置，<strong>复杂智能体用外部框架完整开发，再接入</strong>；</li>
+<li><strong>跨框架兼容</strong>：LangChain、LlamaIndex 等写的 Agent 都能包装成子智能体，接入 DeepAgents；</li>
+<li><strong>隔离上下文</strong>：复杂数据分析的内部多轮调用全部隔离在子智能体内部，主智能体只接收最终结果；</li>
+<li><strong>复用性强</strong>：独立智能体可<strong>单兵作战</strong>单独运行，也可<strong>团队协作</strong>作为子智能体。</li>
+</ol>
+<h1 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h1><h2 id="核心原则"><a href="#核心原则" class="headerlink" title="核心原则"></a>核心原则</h2><p>主智能体依靠子智能体的 <code>description</code> 决定调用对象，<strong>描述越具体，调度越精准；越笼统，越容易调度出错</strong>。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">类别</th>
+<th style="text-align:left">示例文本</th>
+<th style="text-align:left">优点 / 问题分析</th>
+<th style="text-align:left">通用优化公式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">✅ 好的描述（推荐）</td>
+<td style="text-align:left">分析金融数据并生成带有置信评分的投资洞察</td>
+<td style="text-align:left">信息完整：<br />1. 明确领域：金融数据<br />2. 明确动作：分析<br />3. 明确输出格式：带置信评分<br />4. 明确最终产出：投资洞察主智能体可精准匹配任务场景</td>
+<td style="text-align:left"><strong>领域 + 核心动作 + 输出格式 + 最终用途</strong></td>
+</tr>
+<tr>
+<td style="text-align:left">❌ 差的描述（不推荐）</td>
+<td style="text-align:left">进行金融数据分析</td>
+<td style="text-align:left">过于笼统：<br />1. 无边界，未说明输出形式<br />2. 主智能体无法区分简单统计 / 深度投资分析<br />3. 多子智能体场景易职责冲突</td>
+<td style="text-align:left">缺少输出、用途约束，调度稳定性差</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="保持系统提示详细"><a href="#保持系统提示详细" class="headerlink" title="保持系统提示详细"></a>保持系统提示详细</h2><p>这是<strong>子智能体系统提示词（system_prompt）的最佳实践</strong>：</p>
+<p><strong>必须写得详细、可执行</strong>，明确告诉子智能体：<strong>怎么用工具、怎么处理信息、输出格式、字数约束</strong>，以此保证输出规范、精简，避免上下文膨胀。</p>
+<p>示例代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">research_subagent = &#123;</span><br><span class="line">    <span class="string">&quot;name&quot;</span>: <span class="string">&quot;research-agent&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;使用网络搜索进行深入研究并综合研究结果&quot;</span>,</span><br><span class="line">    <span class="string">&quot;system_prompt&quot;</span>: <span class="string">&quot;&quot;&quot;你是一位严谨的研究员，职责如下：</span></span><br><span class="line"><span class="string">1. 将研究问题拆分为可搜索的关键词</span></span><br><span class="line"><span class="string">2. 使用 internet_search 检索相关信息</span></span><br><span class="line"><span class="string">3. 将发现综合成简洁而全面的摘要</span></span><br><span class="line"><span class="string">4. 引用来源时需给出链接</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">输出格式：</span></span><br><span class="line"><span class="string">- 摘要（2-3 段）</span></span><br><span class="line"><span class="string">- 关键发现（bullet 列表）</span></span><br><span class="line"><span class="string">- 来源（含 URL）</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">回答请控制在 500 字以内，以保持上下文清爽。&quot;&quot;&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tools&quot;</span>: [internet_search],</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>整体结构</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">配置项</th>
+<th style="text-align:left">内容 &amp; 作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>name</code></td>
+<td style="text-align:left"><code>research-agent</code>：子智能体名称</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>description</code></td>
+<td style="text-align:left"><code>使用网络搜索进行深入研究并综合研究结果</code>：给主智能体看的<strong>调用说明</strong>（遵循上一张图 “清晰描述” 的最佳实践）</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>system_prompt</code></td>
+<td style="text-align:left">核心！给子智能体自己看的<strong>执行手册</strong>，包含：职责步骤、工具用法、输出格式、字数限制</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>tools</code></td>
+<td style="text-align:left"><code>[internet_search]</code>：绑定搜索工具</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>system_prompt 详细设计拆解（表格）</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">模块</th>
+<th style="text-align:left">内容</th>
+<th style="text-align:left">设计目的（对应前面理论）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">角色定位</td>
+<td style="text-align:left">你是一位严谨的研究员</td>
+<td style="text-align:left">明确子智能体身份，统一行为风格</td>
+</tr>
+<tr>
+<td style="text-align:left">执行步骤（工具使用规范）</td>
+<td style="text-align:left">1. 拆分搜索关键词2. 调用<code>internet_search</code>检索3. 综合信息生成摘要4. 引用来源 + 链接</td>
+<td style="text-align:left">强制子智能体<strong>规范调用工具</strong>，避免无效搜索、冗余调用，减少上下文垃圾信息</td>
+</tr>
+<tr>
+<td style="text-align:left">输出格式约束</td>
+<td style="text-align:left">- 2–3 段摘要- 要点列表- 来源 URL</td>
+<td style="text-align:left">统一输出结构，<strong>只返回最终整理结果</strong>，屏蔽中间搜索过程，防止主智能体上下文膨胀</td>
+</tr>
+<tr>
+<td style="text-align:left">字数约束</td>
+<td style="text-align:left">控制在 500 字以内</td>
+<td style="text-align:left">严格精简输出，进一步降低 token 消耗，保持上下文清爽</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>好坏对比（结合前面所有最佳实践</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">写法</th>
+<th style="text-align:left">示例</th>
+<th style="text-align:left">问题 / 优势</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">❌ 差写法（简略）</td>
+<td style="text-align:left"><code>system_prompt: &quot;你是研究员，帮我搜索信息&quot;</code></td>
+<td style="text-align:left">无步骤、无格式、无字数限制输出杂乱、冗长，撑爆上下文</td>
+</tr>
+<tr>
+<td style="text-align:left">✅ 优写法（本图规范）</td>
+<td style="text-align:left">明确步骤、工具用法、输出格式、字数约束</td>
+<td style="text-align:left">输出<strong>结构化、精简、规范</strong>，完美解决上下文膨胀问题</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>核心总结（串联所有最佳实践）</strong></p>
+<ol>
+<li><strong>description</strong>：写给<strong>主智能体</strong>，清晰具体，让主智能体知道什么时候调用；</li>
+<li><strong>system_prompt</strong>：写给<strong>子智能体</strong>，详细规范，约束工具调用、输出格式、字数；</li>
+<li>最终目的：<strong>子智能体只输出精简最终结果，隔离所有中间冗余信息，彻底解决上下文膨胀</strong>。</li>
+</ol>
+<h2 id="最小工具集"><a href="#最小工具集" class="headerlink" title="最小工具集"></a>最小工具集</h2><p>核心规则：<strong>只给子智能体提供必需工具，提升专注度与安全性</strong></p>
+<p><strong>正确写法</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ✅ 好：专注的工具集</span></span><br><span class="line">email_agent = &#123;</span><br><span class="line">  <span class="string">&quot;name&quot;</span>: <span class="string">&quot;email-sender&quot;</span>,</span><br><span class="line">  <span class="string">&quot;tools&quot;</span>: [send_email, validate_email],  <span class="comment"># 仅与电子邮件相关</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>错误写法</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ❌ 不好：工具过多</span></span><br><span class="line">email_agent = &#123;</span><br><span class="line">  <span class="string">&quot;name&quot;</span>: <span class="string">&quot;email-sender&quot;</span>,</span><br><span class="line">  <span class="string">&quot;tools&quot;</span>: [send_email, web_search, database_query, file_upload],  <span class="comment"># 不够专注</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>对比说明</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">类型</th>
+<th style="text-align:left">核心说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">正确</td>
+<td style="text-align:left">工具仅保留邮件发送、邮箱校验，职责专一，无越权风险</td>
+</tr>
+<tr>
+<td style="text-align:left">错误</td>
+<td style="text-align:left">混入搜索、数据库、文件上传工具，冗余且存在安全隐患</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="根据任务选择模型"><a href="#根据任务选择模型" class="headerlink" title="根据任务选择模型"></a>根据任务选择模型</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">subagents = [</span><br><span class="line">&#123;<span class="string">&quot;name&quot;</span>: <span class="string">&quot;contract-reviewer&quot;</span>,</span><br><span class="line">  <span class="string">&quot;description&quot;</span>: <span class="string">&quot;审查法律文件和合同&quot;</span>,</span><br><span class="line">  <span class="string">&quot;system_prompt&quot;</span>: <span class="string">&quot;你是一位专业的法律审查员...&quot;</span>,</span><br><span class="line">  <span class="string">&quot;tools&quot;</span>: [read_document, analyze_contract],</span><br><span class="line">  <span class="string">&quot;model&quot;</span>: <span class="string">&quot;claude-sonnet-4-5-20250929&quot;</span>,  <span class="comment"># 大上下文窗口适合处理长文档</span></span><br><span class="line">&#125;,</span><br><span class="line">&#123;<span class="string">&quot;name&quot;</span>: <span class="string">&quot;financial-analyst&quot;</span>,</span><br><span class="line">  <span class="string">&quot;description&quot;</span>: <span class="string">&quot;分析金融数据和市场趋势&quot;</span>,</span><br><span class="line">  <span class="string">&quot;system_prompt&quot;</span>: <span class="string">&quot;你是一位专业的金融分析师...&quot;</span>,</span><br><span class="line">  <span class="string">&quot;tools&quot;</span>: [get_stock_price, analyze_fundamentals],</span><br><span class="line">  <span class="string">&quot;model&quot;</span>: <span class="string">&quot;openai:gpt-5&quot;</span>,  <span class="comment"># 更适合数值分析</span></span><br><span class="line">&#125;,</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>核心原则</p>
+<p><strong>为不同子智能体匹配擅长对应任务的大模型</strong>，发挥各模型专属优势，这是子智能体的最佳实践之一。</p>
+</li>
+<li><p>两个子智能体拆解</p>
+<ol>
+<li><p>合同审查子智能体（contract‑reviewer）</p>
+<ul>
+<li><p>任务：审查长文本法律合同、文档</p>
+</li>
+<li><p>选用模型：<code>claude‑sonnet‑4‑5‑20250929</code></p>
+</li>
+<li><p>原因：Claude 拥有<strong>超大上下文窗口</strong>，擅长读取、理解超长文档、法律条文</p>
+</li>
+</ul>
+</li>
+<li><p>金融分析子智能体（financial‑analyst）</p>
+<ul>
+<li>任务：股票价格、基本面、数值类金融数据分析</li>
+<li>选用模型：<code>openai:gpt‑5</code></li>
+<li>原因：GPT 系列<strong>数值计算、逻辑分析能力更强</strong>，适合金融量化、数据研判</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><p>结合前面所有最佳实践验证</p>
+<ol>
+<li><strong>description</strong>：描述精准，主智能体可精准调度</li>
+<li><strong>最小工具集</strong>：每个子智能体仅挂载对应领域工具，无冗余</li>
+<li><strong>模型按需分配</strong>：不强制统一模型，专业任务匹配专业模型</li>
+<li><strong>system_prompt</strong>：配置专属角色提示词，规范行为</li>
+</ol>
+</li>
+<li><p>核心收益</p>
+<ul>
+<li><p>性能更强：每个垂直任务使用最优模型，结果更精准</p>
+</li>
+<li><p>成本可控：不用统一使用最强最贵的模型，按需分配节省算力</p>
+</li>
+<li><p>分工清晰：子智能体能力边界明确，避免任务混乱</p>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="返回简洁的结果"><a href="#返回简洁的结果" class="headerlink" title="返回简洁的结果"></a>返回简洁的结果</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">data_analyst = &#123;</span><br><span class="line">  <span class="string">&quot;system_prompt&quot;</span>: <span class="string">&quot;&quot;&quot;分析数据并返回：</span></span><br><span class="line"><span class="string">1. 关键洞察（3-5个要点）</span></span><br><span class="line"><span class="string">2. 整体置信度评分</span></span><br><span class="line"><span class="string">3. 建议的后续行动</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">不要包含：</span></span><br><span class="line"><span class="string">- 原始数据</span></span><br><span class="line"><span class="string">- 中间计算过程</span></span><br><span class="line"><span class="string">- 详细的工具输出</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">保持回复在300字以内。&quot;&quot;&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p>最佳实践核心</p>
+<p><strong>强制子智能体只返回精简摘要 / 结论，屏蔽原始数据、中间过程</strong>，从根源解决<strong>主智能体上下文膨胀</strong>问题。</p>
+</li>
+<li><p>system_prompt 设计拆解</p>
+<p>要求返回内容（正向约束）</p>
+<ol>
+<li>关键洞察：提炼 3-5 个核心结论</li>
+<li>置信度评分：给出结果可靠性</li>
+<li>后续行动：给出可执行建议 → 只输出<strong>最终可用成果</strong></li>
+</ol>
+<p>禁止返回内容（反向约束）</p>
+<ul>
+<li><p>原始数据</p>
+</li>
+<li><p>中间计算过程</p>
+</li>
+<li><p>工具调用详细输出 → 完全隔离冗余中间信息，不让主智能体接收无效内容</p>
+</li>
+</ul>
+<p>字数约束</p>
+<ul>
+<li><code>300字以内</code>，严格控制输出长度，进一步降低 Token 消耗。</li>
+</ul>
+</li>
+<li><p>与整套体系的关联，和前面所有实践形成闭环：</p>
+<ol>
+<li>清晰描述：主智能体精准调度</li>
+<li>最小工具集：子智能体专注本职</li>
+<li>匹配专属模型：垂直任务最优性能</li>
+</ol>
+</li>
+<li><p><strong>精简结果输出</strong>：隔离冗余，保护主智能体上下文</p>
+</li>
+</ol>
+<h2 id="常见模式"><a href="#常见模式" class="headerlink" title="常见模式"></a>常见模式</h2><h2 id="多个专门子能体"><a href="#多个专门子能体" class="headerlink" title="多个专门子能体"></a>多个专门子能体</h2><p>为不同领域创建专门的子能体</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"></span><br><span class="line">subagents = [</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;name&quot;</span>: <span class="string">&quot;data-collector&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;从各种来源收集原始数据&quot;</span>,</span><br><span class="line">    <span class="string">&quot;system_prompt&quot;</span>: <span class="string">&quot;收集关于该主题的全面数据&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tools&quot;</span>: [web_search, api_call, database_query],</span><br><span class="line">&#125;,</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;name&quot;</span>: <span class="string">&quot;data-analyzer&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;分析收集的数据以获取洞察&quot;</span>,</span><br><span class="line">    <span class="string">&quot;system_prompt&quot;</span>: <span class="string">&quot;分析数据并提取关键洞察&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tools&quot;</span>: [statistical_analysis],</span><br><span class="line">&#125;,</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;name&quot;</span>: <span class="string">&quot;report-writer&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;根据分析撰写精美的报告&quot;</span>,</span><br><span class="line">    <span class="string">&quot;system_prompt&quot;</span>: <span class="string">&quot;根据洞察创建专业报告&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tools&quot;</span>: [format_document],</span><br><span class="line">&#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">tagent = create_deep_agent(</span><br><span class="line">    model=<span class="string">&quot;claude-sonnet-4-5-20250929&quot;</span>,</span><br><span class="line">    system_prompt=<span class="string">&quot;你协调数据分析和报告。使用子智能体执行专业任务。&quot;</span>,</span><br><span class="line">    subagents=subagents</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><strong>模式名称：多个专门子智能体（流水线分工模式）</strong></p>
+<p>将一个完整任务<strong>拆分为串行的专业步骤</strong>，每个步骤由<strong>独立垂直子智能体</strong>负责，类似流水线作业。</p>
+<p><strong>3 个子智能体分工（严格遵循前面所有最佳实践）</strong></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">子智能体</th>
+<th style="text-align:left">职责</th>
+<th style="text-align:left">工具特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">data‑collector 数据收集器</td>
+<td style="text-align:left">全网搜索、接口、数据库拉取原始数据</td>
+<td style="text-align:left">工具多，负责信息采集</td>
+</tr>
+<tr>
+<td style="text-align:left">data‑analyzer 数据分析器</td>
+<td style="text-align:left">对数据做统计、提取核心洞察</td>
+<td style="text-align:left">仅统计分析工具，专注计算</td>
+</tr>
+<tr>
+<td style="text-align:left">report‑writer 报告撰写器</td>
+<td style="text-align:left">基于洞察生成格式化专业报告</td>
+<td style="text-align:left">仅文档格式化工具，专注输出</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li>每个子智能体都使用了<strong>最小化工具集</strong>，职责完全隔离</li>
+<li>每个<code>description</code>描述清晰，主智能体可精准调度</li>
+</ul>
+<p><strong>标准工作流程</strong></p>
+<ol>
+<li>主智能体创建整体计划</li>
+<li>委托<strong>数据收集器</strong>采集原始数据</li>
+<li>交给<strong>数据分析器</strong>提炼洞察</li>
+<li>交给<strong>报告撰写器</strong>生成最终报告</li>
+<li>主智能体整合输出最终结果</li>
+</ol>
+<p><strong>核心优势</strong></p>
+<ol>
+<li><strong>上下文隔离</strong>：每个子智能体只处理自己环节的信息，互不干扰，主智能体只接收最终报告，彻底避免上下文膨胀</li>
+<li><strong>高度专业化</strong>：每个智能体只干一件事，精准度更高</li>
+<li><strong>可复用</strong>：数据收集、分析、撰写模块可在其他项目直接复用</li>
+<li><strong>易维护</strong>：某一环节出错，只需要修改对应子智能体，不影响整体流程</li>
+</ol>
+<h2 id="故障排除"><a href="#故障排除" class="headerlink" title="故障排除"></a>故障排除</h2><p><strong>子智能体未被调用</strong></p>
+<p>现象：主智能体不调用子智能体，自己硬扛复杂任务，会造成上下文膨胀、结果质量差。</p>
+<ol>
+<li><p><strong>两套解决方案</strong></p>
+<ul>
+<li><p>方案 1：把子智能体的 <code>description</code> 写得更具体</p>
+<ul>
+<li><p>好示例：明确<strong>能力范围、使用时机</strong>，主智能体一看就知道什么时候该交给它</p>
+</li>
+<li><p>差示例：描述太笼统模糊，主智能体识别不出什么时候调用</p>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ✅ 好的描述</span></span><br><span class="line">&#123;<span class="string">&quot;name&quot;</span>: <span class="string">&quot;research-specialist&quot;</span>, <span class="string">&quot;description&quot;</span>: <span class="string">&quot;使用网络搜索对特定主题进行深入研究。当您需要需要多次搜索的详细信息时使用。&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># ❌ 不好的描述</span></span><br><span class="line">&#123;<span class="string">&quot;name&quot;</span>: <span class="string">&quot;helper&quot;</span>, <span class="string">&quot;description&quot;</span>: <span class="string">&quot;帮助处理事务&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ol>
+<ul>
+<li><p>方案 2：在主智能体的 <code>system_prompt</code> 强制要求委托</p>
+<ul>
+<li>直接命令主智能体：复杂任务必须用工具把任务交给子智能体，以此<strong>强制分工</strong>，避免主智能体大包大揽。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 主智能体强制委托配置</span></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    system_prompt=<span class="string">&quot;&quot;&quot;...你的指令...</span></span><br><span class="line"><span class="string">重要提示：对于复杂任务，请使用task()工具将任务委托给你的子智能体。</span></span><br><span class="line"><span class="string">这可以保持你的上下文清晰并提高结果质量。&quot;&quot;&quot;</span>,</span><br><span class="line">    subagents=[...]</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ol>
+<li><strong>核心原理</strong></li>
+</ol>
+<p>​    主智能体是靠<strong>子智能体的描述</strong>判断要不要调用；描述越精准、约束越强，调用越稳定。</p>
+<p>​    同时可以在顶层直接下达强制指令，兜底避免不调用的问题。</p>
+<h2 id="上下文仍然膨胀"><a href="#上下文仍然膨胀" class="headerlink" title="上下文仍然膨胀"></a>上下文仍然膨胀</h2><p>即使已经使用了子智能体，但返回的内容还是太长、冗余信息过多，依旧撑爆主智能体上下文窗口。</p>
+<ol>
+<li><p><strong>两套解决方案</strong></p>
+<ul>
+<li><p>方案 1：强制子智能体精简输出</p>
+<ul>
+<li><p>约束：<strong>只给摘要，禁止原始数据、中间搜索过程、工具详情</strong></p>
+</li>
+<li><p>硬性字数限制：500 字以内</p>
+</li>
+<li><p>目的：直接压缩子智能体返回给主智能体的内容体量</p>
+</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 方案1：指示子智能体返回简洁结果</span></span><br><span class="line">system_prompt=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">重要提示：只返回必要的摘要。</span></span><br><span class="line"><span class="string">不要包含原始数据、中间搜索结果或详细的工具输出。</span></span><br><span class="line"><span class="string">你的回复应控制在500字以内。&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ol>
+<ul>
+<li><p>方案 2：海量数据落地到文件</p>
+<p>针对超大批量数据：</p>
+<ol>
+<li>子智能体把<strong>原始海量数据直接写入本地文件</strong>，不往对话上下文里塞</li>
+<li>只把<strong>精简后的分析摘要</strong>返回给主智能体</li>
+<li>原始数据通过文件持久化存储，完全不占用上下文 token</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 方案2：使用文件系统存储大数据</span></span><br><span class="line">system_prompt=<span class="string">&quot;&quot;&quot;当你收集大量数据时：</span></span><br><span class="line"><span class="string">1. 将原始数据保存到/data/raw_results.txt</span></span><br><span class="line"><span class="string">2. 处理和分析数据</span></span><br><span class="line"><span class="string">3. 只返回分析摘要</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">这可以保持上下文清晰。&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ol>
+<li><p>核心逻辑</p>
+<ul>
+<li>子智能体解决的是<strong>工具调用步骤隔离</strong></li>
+<li>这一步解决的是<strong>子智能体输出内容本身的冗余</strong></li>
+<li>超大数据直接落文件，是终极兜底方案，彻底避免上下文被海量原始数据填</li>
+</ul>
+</li>
+</ol>
+<h2 id="选择了错误的子智能体"><a href="#选择了错误的子智能体" class="headerlink" title="选择了错误的子智能体"></a>选择了错误的子智能体</h2><p>主智能体在处理任务时，调用了<strong>不匹配、不合适</strong>的子智能体，比如简单事实查询调用深度调研子智能体，或复杂报告调用快速搜索子智能体，导致效率低、结果错误。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">subagents = [</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;name&quot;</span>: <span class="string">&quot;quick-researcher&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用于需要1-2次搜索的简单、快速研究问题。当你需要基本事实或定义时使用。&quot;</span>,</span><br><span class="line">&#125;,</span><br><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;name&quot;</span>: <span class="string">&quot;deep-researcher&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用于需要多次搜索、综合和分析的复杂、深入研究。用于编写综合报告。&quot;</span>,</span><br><span class="line">&#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p><strong>核心解决方案</strong></p>
+<p><strong>在子智能体的 <code>description</code> 描述里，明确区分各自适用场景、使用边界</strong>，让主智能体能精准判断该调用哪一个。</p>
+</li>
+<li><p>两个子智能体边界清晰划分</p>
+<p>| 子智能体名称                | 适用场景       | 调用时机                              |<br>| :————————————— | :——————- | :—————————————————— |<br>| quick‑researcher 快速研究员 | 简单、单次查询 | 查基础事实、名词定义，仅需 1-2 次搜索 |<br>| deep‑researcher 深度研究员  | 复杂、深度任务 | 多次搜索、综合分析、撰写完整报告      |</p>
+</li>
+<li><p>设计核心逻辑</p>
+<ul>
+<li><p>给每个子智能体写<strong>排他性、差异化描述</strong>，明确什么场景用谁、什么场景不用谁</p>
+</li>
+<li><p>主智能体通过描述的差异，自动区分调用对象，避免匹配错误</p>
+</li>
+<li><p>本质还是贯彻前面的最佳实践：<strong>描述越具体，调度越精准</strong></p>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><h2 id="子智能体核心优势"><a href="#子智能体核心优势" class="headerlink" title="子智能体核心优势"></a>子智能体核心优势</h2><ol>
+<li><p><strong>保持主智能体上下文清晰</strong></p>
+<p>隔离工具调用、中间过程、原始数据，解决上下文膨胀、Token 过载问题。</p>
+</li>
+<li><p><strong>实现任务专业化</strong></p>
+<p>按领域拆分垂直子智能体（调研、分析、报告、法律、金融等），分工明确、执行精准。</p>
+</li>
+<li><p><strong>优化模型使用</strong></p>
+<p>不同子智能体匹配适配任务的专属模型，长文档用 Claude、数值分析用 GPT，算力成本最优。</p>
+</li>
+<li><p><strong>提高系统可维护性</strong></p>
+<p>模块独立，修改、调试、复用更简单，适合流水线式复杂任务。</p>
+</li>
+</ol>
+<h2 id="核心开发关键建议"><a href="#核心开发关键建议" class="headerlink" title="核心开发关键建议"></a>核心开发关键建议</h2><ol>
+<li><p><strong>为复杂任务使用子智能体</strong></p>
+<p>简单单步任务不用；多步骤、多工具、长流程任务，必须拆分。</p>
+</li>
+<li><p><strong>保持子智能体专注</strong></p>
+<p>遵循<strong>最小工具集</strong>原则，只给完成本职必需的工具，避免越权、混乱。</p>
+</li>
+<li><p><strong>编写清晰的描述和提示</strong></p>
+<ul>
+<li><p><code>description</code>：精准、具体，明确适用场景，让主智能体正确调度；</p>
+</li>
+<li><p><code>system_prompt</code>：详细约束步骤、工具用法、输出格式。</p>
+</li>
+</ul>
+</li>
+<li><p><strong>优化返回结果简洁性</strong></p>
+<p>强制子智能体只输出摘要 / 结论，屏蔽原始数据、中间计算；超大原始数据落地到文件存储。</p>
+</li>
+</ol>
+<h2 id="最终价值"><a href="#最终价值" class="headerlink" title="最终价值"></a>最终价值</h2><p>合理使用子智能体，可搭建<strong>高效、可扩展、易维护</strong>的多智能体系统，全程保障上下文干净、逻辑可控。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DeepAgents/" rel="tag"># DeepAgents</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/05/13/ai/langchain/deepagent/2-backends/" rel="prev" title="DeepAgents的“记忆宫殿”--Backends">
+      <i class="fa fa-chevron-left"></i> DeepAgents的“记忆宫殿”--Backends
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E5%AD%90%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">为什么使用子智能体？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%9B%AE%E7%9A%84%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8%E5%AD%90%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%9F"><span class="nav-number">1.1.</span> <span class="nav-text">核心目的：为什么用子智能体？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%82%E5%90%88%E7%94%A8%E5%AD%90%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84-4-%E7%A7%8D%E5%9C%BA%E6%99%AF"><span class="nav-number">1.2.</span> <span class="nav-text">适合用子智能体的 4 种场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8D%E9%80%82%E5%90%88%E7%94%A8%E5%AD%90%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84-3-%E7%A7%8D%E5%9C%BA%E6%99%AF"><span class="nav-number">1.3.</span> <span class="nav-text">不适合用子智能体的 3 种场景</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8SubAgent"><span class="nav-number">2.</span> <span class="nav-text">使用SubAgent</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8CompiledSubAgent"><span class="nav-number">3.</span> <span class="nav-text">使用CompiledSubAgent</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">4.</span> <span class="nav-text">最佳实践</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%8E%9F%E5%88%99"><span class="nav-number">4.1.</span> <span class="nav-text">核心原则</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%9D%E6%8C%81%E7%B3%BB%E7%BB%9F%E6%8F%90%E7%A4%BA%E8%AF%A6%E7%BB%86"><span class="nav-number">4.2.</span> <span class="nav-text">保持系统提示详细</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%B0%8F%E5%B7%A5%E5%85%B7%E9%9B%86"><span class="nav-number">4.3.</span> <span class="nav-text">最小工具集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E6%8D%AE%E4%BB%BB%E5%8A%A1%E9%80%89%E6%8B%A9%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.4.</span> <span class="nav-text">根据任务选择模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%94%E5%9B%9E%E7%AE%80%E6%B4%81%E7%9A%84%E7%BB%93%E6%9E%9C"><span class="nav-number">4.5.</span> <span class="nav-text">返回简洁的结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.6.</span> <span class="nav-text">常见模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E4%B8%93%E9%97%A8%E5%AD%90%E8%83%BD%E4%BD%93"><span class="nav-number">4.7.</span> <span class="nav-text">多个专门子能体</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%85%E9%9A%9C%E6%8E%92%E9%99%A4"><span class="nav-number">4.8.</span> <span class="nav-text">故障排除</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E4%BB%8D%E7%84%B6%E8%86%A8%E8%83%80"><span class="nav-number">4.9.</span> <span class="nav-text">上下文仍然膨胀</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E4%BA%86%E9%94%99%E8%AF%AF%E7%9A%84%E5%AD%90%E6%99%BA%E8%83%BD%E4%BD%93"><span class="nav-number">4.10.</span> <span class="nav-text">选择了错误的子智能体</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%90%E6%99%BA%E8%83%BD%E4%BD%93%E6%A0%B8%E5%BF%83%E4%BC%98%E5%8A%BF"><span class="nav-number">5.1.</span> <span class="nav-text">子智能体核心优势</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%BC%80%E5%8F%91%E5%85%B3%E9%94%AE%E5%BB%BA%E8%AE%AE"><span class="nav-number">5.2.</span> <span class="nav-text">核心开发关键建议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E7%BB%88%E4%BB%B7%E5%80%BC"><span class="nav-number">5.3.</span> <span class="nav-text">最终价值</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">177</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
