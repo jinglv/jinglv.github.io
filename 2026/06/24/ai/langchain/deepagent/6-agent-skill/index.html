@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习DeepAgents学习笔记第六讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Agent Skill">
+<meta property="og:url" content="https://jinglv.github.io/2026/06/24/ai/langchain/deepagent/6-agent-skill/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习DeepAgents学习笔记第六讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-06-24T08:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-24T08:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="DeepAgents">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/06/24/ai/langchain/deepagent/6-agent-skill/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Agent Skill | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/06/24/ai/langchain/deepagent/6-agent-skill/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Agent Skill
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-06-24 16:00:00" itemprop="dateCreated datePublished" datetime="2026-06-24T16:00:00+08:00">2026-06-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DeepAgents/" itemprop="url" rel="index"><span itemprop="name">DeepAgents</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习DeepAgents学习笔记第六讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="智能技能库的诞生"><a href="#智能技能库的诞生" class="headerlink" title="智能技能库的诞生"></a>智能技能库的诞生</h1><h2 id="核心比喻：给-AI-助理配个「按需调用的技能库」"><a href="#核心比喻：给-AI-助理配个「按需调用的技能库」" class="headerlink" title="核心比喻：给 AI 助理配个「按需调用的技能库」"></a>核心比喻：给 AI 助理配个「按需调用的技能库」</h2><p>图里用了一个非常形象的比喻：</p>
+<blockquote>
+<p>你雇了一个聪明但不熟悉你业务的助理，有两种方式让他上手工作：</p>
+<ol>
+<li><strong>错误方式</strong>：第一天就把公司所有规章制度、流程手册全塞给他 → 信息过载，直接懵掉，效率极低。</li>
+<li><strong>正确方式</strong>：给他一个「智能技能库」，只有当他要处理具体任务（比如 “分析财报”“安排跨国会议”）时，才调出对应的「技能手册」给他看 → 高效、不浪费精力。</li>
+</ol>
+</blockquote>
+<p>这个比喻，就是为了引出后面的核心概念：<strong>LangChain 的 Skills（技能）功能</strong>。</p>
+<h2 id="核心概念：LangChain-Skills-是什么？"><a href="#核心概念：LangChain-Skills-是什么？" class="headerlink" title="核心概念：LangChain Skills 是什么？"></a>核心概念：LangChain Skills 是什么？</h2><p>图里给出了明确的定义：</p>
+<blockquote>
+<p>LangChain 的 Skills（技能）功能，就是为 AI 智能体（Deep Agent）准备的「智能技能库」。</p>
+</blockquote>
+<p>它的核心作用是：</p>
+<ul>
+<li>让 AI 智能体 <strong>按需调用</strong> 复杂、专业化的知识和工作流程</li>
+<li>避免了 “把所有知识一次性喂给 AI” 的低效方式</li>
+<li>最终实现「既高效、又节省资源」的效果</li>
+</ul>
+<h2 id="背后的深层意义：解决了-AI-智能体的关键痛点"><a href="#背后的深层意义：解决了-AI-智能体的关键痛点" class="headerlink" title="背后的深层意义：解决了 AI 智能体的关键痛点"></a>背后的深层意义：解决了 AI 智能体的关键痛点</h2><p>这个设计，其实解决了 AI 智能体开发中一个很核心的矛盾：</p>
+<ol>
+<li><strong>矛盾点</strong>：AI 智能体需要处理复杂的专业任务（比如代码开发、财务分析），但大模型的上下文窗口、知识容量都是有限的，一次性加载所有知识不仅成本高，还容易让模型 “信息过载”。</li>
+<li><strong>解决方案</strong>：Skills 就像给 AI 装了一套「插件式工具箱」，平时不用的时候，这些 “技能”（专业知识、流程、工具调用方法）都存在库里；当 AI 判断自己需要处理某个特定任务时，再动态加载对应的技能，调用完成后就释放掉资源。</li>
+</ol>
+<p>举个例子：</p>
+<ul>
+<li>当 AI 智能体要帮你写 Python 代码时，它才会调用「代码开发技能」，里面包含语法规则、调试流程、工具调用方法；</li>
+<li>当它要帮你写周报时，就切换调用「办公文档技能」，加载周报模板、公司汇报规范等内容。</li>
+</ul>
+<h2 id="一句话总结"><a href="#一句话总结" class="headerlink" title="一句话总结"></a>一句话总结</h2><p>这张图讲的就是：<strong>LangChain 的 Skills 功能，是让 AI 智能体像人类助理一样，按需调用专业技能的机制，既避免了信息过载，又大幅提升了复杂任务的处理效率。</strong></p>
+<h1 id="什么是Agent-Skills"><a href="#什么是Agent-Skills" class="headerlink" title="什么是Agent Skills"></a>什么是Agent Skills</h1><h2 id="基本定义"><a href="#基本定义" class="headerlink" title="基本定义"></a>基本定义</h2><blockquote>
+<p>Agent Skills 是一种<strong>标准化的格式</strong>，用来给 AI Agent 添加新能力。</p>
+<p>简单来说，一个技能就是一个文件夹，里面有一个 <code>SKILL.md</code> 文件，这个文件会告诉 Agent：</p>
+<ol>
+<li>这个技能叫什么名字</li>
+<li>它能做什么事</li>
+<li>具体要怎么完成某项任务</li>
+</ol>
+</blockquote>
+<p>你可以把它理解成：</p>
+<ul>
+<li>给 AI 智能体写的「标准化说明书」</li>
+<li>只要你按这个格式写好一个技能，任何支持这个标准的 Agent 都能直接看懂并使用它</li>
+<li>核心载体就是 <code>SKILL.md</code> 文件，它是 Agent 和技能之间的 “通用语言”</li>
+</ul>
+<h2 id="核心价值"><a href="#核心价值" class="headerlink" title="核心价值"></a>核心价值</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">角色</th>
+<th style="text-align:left">核心价值</th>
+<th style="text-align:left">通俗理解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>技能作者</strong></td>
+<td style="text-align:left">写一次技能，就能在很多不同的 Agent 产品里使用</td>
+<td style="text-align:left">就像写了一个通用插件，一次开发，到处复用，不用为每个平台单独适配</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Agent 使用者</strong></td>
+<td style="text-align:left">可以轻松给 Agent 添加新功能，开箱即用</td>
+<td style="text-align:left">就像给手机装 APP，想让 Agent 会做什么，直接导入对应的技能包，不用自己从零开发</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>团队和企业</strong></td>
+<td style="text-align:left">可以把团队的知识整理成技能包，方便管理和分享</td>
+<td style="text-align:left">把公司的业务流程、专业知识打包成标准化技能，新人 / 新 Agent 直接就能上手，知识不会流失</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="Agent-Skills的组成结构"><a href="#Agent-Skills的组成结构" class="headerlink" title="Agent Skills的组成结构"></a>Agent Skills的组成结构</h1><h2 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">my-skill/</span><br><span class="line">├── SKILL.md       # 必需：技能说明文件</span><br><span class="line">├── scripts/       # 可选：可执行的代码</span><br><span class="line">├── references/    # 可选：参考资料</span><br><span class="line">└── assets/        # 可选：模板和资源文件</span><br></pre></td></tr></table></figure>
+<p><strong>通俗解读：</strong></p>
+<ul>
+<li><strong><code>SKILL.md</code>（必需）</strong>：整个技能的 “大脑” 和 “说明书”，是 AI Agent 能看懂这个技能的核心文件，没有它就不是一个合法的技能包。</li>
+<li><strong><code>scripts/</code>（可选）</strong>：放和技能相关的代码脚本，比如实现 PDF 处理的 Python 代码，方便 Agent 直接调用执行。</li>
+<li><strong><code>references/</code>（可选）</strong>：放参考资料，比如 API 文档、业务规则说明，Agent 处理任务时可以查阅这些信息。</li>
+<li><strong><code>assets/</code>（可选）</strong>：放模板文件、资源文件，比如 PDF 表单模板、Excel 表头模板，Agent 可以直接复用。</li>
+</ul>
+<p>你可以把它理解成一个标准化的「工具包」：</p>
+<ul>
+<li><code>SKILL.md</code> 是工具的<strong>使用说明书</strong></li>
+<li><code>scripts/</code> 是工具的<strong>核心零件</strong></li>
+<li><code>references/</code> 是工具的<strong>补充手册</strong></li>
+<li><code>assets/</code> 是工具的<strong>配套耗材 / 模板</strong></li>
+</ul>
+<h2 id="SKILL-md文件规范"><a href="#SKILL-md文件规范" class="headerlink" title="SKILL.md文件规范"></a>SKILL.md文件规范</h2><p><code>SKILL.md</code> 的标准格式示例，分为两部分：<strong>开头元信息</strong> + <strong>正文使用说明</strong>。</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="attr">name:</span> <span class="string">pdf-processing</span></span><br><span class="line"><span class="attr">description:</span> <span class="string">Extract</span> <span class="string">text</span> <span class="string">and</span> <span class="string">tables</span> <span class="string">from</span> <span class="string">PDF</span> <span class="string">files,</span> <span class="string">fill</span> <span class="string">forms,</span> <span class="string">merge</span> <span class="string">documents.</span></span><br><span class="line"><span class="meta">---</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="comment"># PDF处理技能</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 何时使用此技能</span></span><br><span class="line"><span class="string">当用户需要处理PDF文件时使用此技能...</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 如何提取文本</span></span><br><span class="line"><span class="number">1</span><span class="string">.</span> <span class="string">使用pdfplumber进行文本提取...</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>name</code>：技能的唯一名称，比如 <code>pdf-processing</code>，是 Agent 识别技能的 ID。</li>
+<li><code>description</code>：技能的一句话描述，告诉 Agent “这个技能能做什么”，比如提取 PDF 文本、填充表单、合并文档。</li>
+</ul>
+<p>这部分是给 Agent 的「快速索引」，Agent 在判断要不要调用这个技能时，会先看这两行信息。</p>
+<p>正文需要包含这些关键信息：</p>
+<ul>
+<li><strong>何时使用</strong>：明确说明在什么场景下应该调用这个技能（比如用户说 “帮我提取 PDF 里的文字” 时）。</li>
+<li><strong>操作步骤</strong>：告诉 Agent 具体要怎么一步步完成任务，比如用什么工具、按什么顺序执行。</li>
+<li>还可以补充：注意事项、参数说明、错误处理方式等。</li>
+</ul>
+<h1 id="技术规范"><a href="#技术规范" class="headerlink" title="技术规范"></a>技术规范</h1><h2 id="1-必需字段：技能的-“身份证”"><a href="#1-必需字段：技能的-“身份证”" class="headerlink" title="1.必需字段：技能的 “身份证”"></a>1.必需字段：技能的 “身份证”</h2><p>这两个字段是每个 <code>SKILL.md</code> 文件必须有的，相当于技能的唯一标识和简介：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">字段</th>
+<th style="text-align:left">要求</th>
+<th style="text-align:left">通俗解读</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>name</code>（技能名称）</td>
+<td style="text-align:left">1-64 个字符，只能用<strong>小写字母、数字和连字符</strong>，不能以连字符开头 / 结尾</td>
+<td style="text-align:left">技能的唯一 ID，比如 <code>pdf-processing</code>，必须干净规范，避免系统识别出错</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>description</code>（技能描述）</td>
+<td style="text-align:left">1-1024 个字符，要说明 “技能能做什么、什么时候用”</td>
+<td style="text-align:left">给 AI 和用户看的一句话简介，比如 “提取 PDF 文本、填充表单、合并文档”，是 AI 判断要不要调用它的关键</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="2-可选字段：技能的-“补充信息”"><a href="#2-可选字段：技能的-“补充信息”" class="headerlink" title="2.可选字段：技能的 “补充信息”"></a>2.可选字段：技能的 “补充信息”</h2><p>这些字段不是必须的，但加上能让技能更完善、兼容性更好：</p>
+<ul>
+<li><code>license</code>：许可证信息（比如 MIT 协议），说明技能的使用权限</li>
+<li><code>compatibility</code>：运行环境要求（500 字以内），比如 “需要 Python 3.9 + 和 pdfplumber 库”，避免 Agent 在不兼容的环境里调用失败</li>
+<li><code>metadata</code>：其他附加信息，比如作者、版本号、更新时间等</li>
+<li><code>allowed-tools</code>：允许使用的工具列表（实验功能），限制技能能调用哪些工具，保证安全性</li>
+</ul>
+<h2 id="3-文件引用规范：技能的-“文件管理规则”"><a href="#3-文件引用规范：技能的-“文件管理规则”" class="headerlink" title="3.文件引用规范：技能的 “文件管理规则”"></a>3.文件引用规范：技能的 “文件管理规则”</h2><p>这部分是为了让技能包的文件结构清晰、Agent 能顺利找到资源：</p>
+<ol>
+<li><strong>必须使用相对路径</strong>：所有文件引用（比如脚本、模板）都要相对于技能文件夹的路径，比如 <code>./scripts/extract_pdf.py</code>，这样技能包复制到任何地方都能正常工作</li>
+<li><strong>引用不要嵌套太深</strong>：比如不要写成 <code>./a/b/c/d/file.txt</code>，尽量保持扁平结构</li>
+<li><strong>避免层层引用</strong>：不要在文件里引用文件再引用文件，直接让结构一目了然，减少 Agent 读取时的出错概率</li>
+</ol>
+<h1 id="Agent-Skills的工作原理"><a href="#Agent-Skills的工作原理" class="headerlink" title="Agent Skills的工作原理"></a>Agent Skills的工作原理</h1><h2 id="1-按需加载机制：像查字典一样调用技能"><a href="#1-按需加载机制：像查字典一样调用技能" class="headerlink" title="1. 按需加载机制：像查字典一样调用技能"></a>1. 按需加载机制：像查字典一样调用技能</h2><p>技能的加载过程，就像我们查字典一样，分三步完成：</p>
+<ol>
+<li><p><strong>第一步：Agent 启动时，只 “扫一眼目录”</strong></p>
+<p>Agent 启动时，会先快速扫描所有技能包，只记住每个技能的<strong>名字和用途</strong>（比如 “pdf-processing：处理 PDF 文件”），但不会把所有技能的详细内容、代码都加载进内存。</p>
+<p>就像你只记住了字典的目录和词条标题，不会把整本字典背下来。</p>
+</li>
+<li><p><strong>第二步：用户提任务时，再 “翻到对应的词条”</strong></p>
+<p>当用户提出具体任务（比如 “帮我提取 PDF 里的文字”），Agent 会根据任务描述，判断需要调用哪个技能，然后才去读取这个技能的<code>SKILL.md</code>详细说明。</p>
+<p>就像你要查某个词时，才会翻到字典对应的页码，看完整解释。</p>
+</li>
+<li><p><strong>第三步：执行任务时，按需 “调用补充材料”</strong></p>
+<p>Agent 按照技能说明执行任务，必要时还会加载技能包里的代码、模板、参考资料（比如<code>scripts/</code>里的 PDF 处理脚本）。</p>
+<p>就像你查词时，还会顺带看一下词条里的例句、用法说明。</p>
+</li>
+</ol>
+<p>这个机制的核心好处是：<strong>平时不占资源，用的时候再加载，既高效又省内存</strong>。</p>
+<h2 id="2-核心优势：为什么这种设计很优秀？"><a href="#2-核心优势：为什么这种设计很优秀？" class="headerlink" title="2.核心优势：为什么这种设计很优秀？"></a>2.核心优势：为什么这种设计很优秀？</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">优势</th>
+<th style="text-align:left">通俗解读</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>简单易懂</strong></td>
+<td style="text-align:left">技能文件就是普通的文本（Markdown 格式），不用复杂的开发工具，任何人都能看懂、修改</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>灵活扩展</strong></td>
+<td style="text-align:left">既能写简单的文字说明，也能扩展成包含代码、模板、参考资料的完整功能包，从小任务到复杂业务都能覆盖</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>方便分享</strong></td>
+<td style="text-align:left">技能就是一个文件夹，可以直接复制、用 Git 做版本控制、打包发给别人，分享和复用成本极低</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="集成Agent-Skills到Agent中"><a href="#集成Agent-Skills到Agent中" class="headerlink" title="集成Agent Skills到Agent中"></a>集成Agent Skills到Agent中</h1><h2 id="1-集成方法：两种主流方式"><a href="#1-集成方法：两种主流方式" class="headerlink" title="1.集成方法：两种主流方式"></a>1.集成方法：两种主流方式</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">类型</th>
+<th style="text-align:left">说明</th>
+<th style="text-align:left">通俗理解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>文件系统 Agent</strong></td>
+<td style="text-align:left">在电脑上运行，通过命令行来使用技能</td>
+<td style="text-align:left">本地运行的 Agent，直接读取本地技能文件夹，用命令行就能调用技能</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>工具型 Agent</strong></td>
+<td style="text-align:left">通过工具接口来激活技能和访问资源</td>
+<td style="text-align:left">服务端 / 平台型 Agent，通过标准化的工具接口来加载和使用技能包</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>简单说，就是 “本地直读” 和 “接口调用” 两种模式，覆盖了从个人开发到企业服务的不同场景。</p>
+<h2 id="2-集成步骤：Agent-是怎么和技能建立联系的？"><a href="#2-集成步骤：Agent-是怎么和技能建立联系的？" class="headerlink" title="2.集成步骤：Agent 是怎么和技能建立联系的？"></a>2.集成步骤：Agent 是怎么和技能建立联系的？</h2><p>这三步对应了前面讲的「按需加载」机制：</p>
+<ol>
+<li><p><strong>发现技能</strong>：扫描指定目录，找到所有有效的技能文件夹</p>
+<p>就像系统先扫一遍你电脑里的 “技能仓库”，识别出所有合法的技能包。</p>
+</li>
+<li><p><strong>加载基本信息</strong>：启动时只读取每个<code>SKILL.md</code>文件的开头部分（name 和 description）</p>
+<p>只把技能的 “目录” 加载到内存，不读完整说明书，保证启动速度。</p>
+</li>
+<li><p><strong>注入上下文</strong>：把技能的基本信息告诉 Agent，让它知道有哪些技能可用</p>
+<p>让 AI 智能体知道 “我有这些工具可以用”，为后续按需调用做好准备。</p>
+</li>
+</ol>
+<h2 id="3-DeepAgents-集成示例"><a href="#3-DeepAgents-集成示例" class="headerlink" title="3.DeepAgents 集成示例"></a>3.DeepAgents 集成示例</h2><ul>
+<li>LangChain 的 <strong>Deep Agents 框架原生支持 Agent Skills</strong></li>
+<li>必须确保 <code>DeepAgents</code> 及其依赖组件更新到 <strong>v0.4 及以上版本</strong>，才能正常使用这个功能</li>
+</ul>
+<p>这意味着你可以直接用 DeepAgents 框架，按前面的规范写好技能包，就能快速实现一个带技能扩展能力的 AI 智能体了。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"><span class="keyword">from</span> deepagents.backends.filesystem <span class="keyword">import</span> FilesystemBackend</span><br><span class="line"></span><br><span class="line"><span class="comment"># 人机协作模式需要检查点功能</span></span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line"></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    backend=FilesystemBackend(root_dir=<span class="string">&quot;/Users/user/&#123;project&#125;&quot;</span>, virtual_mode=<span class="literal">True</span>),</span><br><span class="line">    skills=[<span class="string">&quot;/Users/user/&#123;project&#125;/skills/&quot;</span>],</span><br><span class="line">    interrupt_on=&#123;</span><br><span class="line">        <span class="string">&quot;write_file&quot;</span>: <span class="literal">True</span>,  <span class="comment"># 需要用户确认：批准、编辑或拒绝</span></span><br><span class="line">        <span class="string">&quot;read_file&quot;</span>: <span class="literal">False</span>,  <span class="comment"># 不需要中断</span></span><br><span class="line">        <span class="string">&quot;edit_file&quot;</span>: <span class="literal">True</span>  <span class="comment"># 需要用户确认：批准、编辑或拒绝</span></span><br><span class="line">    &#125;,</span><br><span class="line">    checkpointer=checkpointer, <span class="comment"># 必须配置！</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = agent.invoke(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">                <span class="string">&quot;content&quot;</span>: <span class="string">&quot;What is langgraph?&quot;</span>,</span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;,</span><br><span class="line">    config=&#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;12345&quot;</span>&#125;&#125;,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>代码解读：</p>
+<ol>
+<li><p>导入依赖</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"><span class="keyword">from</span> deepagents.backends.filesystem <span class="keyword">import</span> FilesystemBackend</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>create_deep_agent</code>：DeepAgents 框架的核心函数，用来创建 AI 智能体</li>
+<li><code>MemorySaver</code>：LangGraph 的内存检查点工具，用来保存对话状态（支持多轮对话）</li>
+<li><code>FilesystemBackend</code>：文件系统后端，让 Agent 可以从本地文件夹加载技能包</li>
+</ul>
+</li>
+<li><p>初始化检查点</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">checkpointer = MemorySaver()</span><br></pre></td></tr></table></figure>
+<p>开启对话状态保存功能，是人机协作模式的必需配置。</p>
+</li>
+<li><p>创建 Deep Agent 实例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">agent = create_deep_agent(</span><br><span class="line">    backend=FilesystemBackend(root_dir=<span class="string">&quot;/Users/user/&#123;project&#125;&quot;</span>, virtual_mode=<span class="literal">True</span>),</span><br><span class="line">    skills=[<span class="string">&quot;/Users/user/&#123;project&#125;/skills/&quot;</span>],</span><br><span class="line">    interrupt_on=&#123;</span><br><span class="line">        <span class="string">&quot;write_file&quot;</span>: <span class="literal">True</span>,  <span class="comment"># 需要用户确认：批准、编辑或拒绝</span></span><br><span class="line">        <span class="string">&quot;read_file&quot;</span>: <span class="literal">False</span>,  <span class="comment"># 不需要中断</span></span><br><span class="line">        <span class="string">&quot;edit_file&quot;</span>: <span class="literal">True</span>  <span class="comment"># 需要用户确认：批准、编辑或拒绝</span></span><br><span class="line">    &#125;,</span><br><span class="line">    checkpointer=checkpointer, <span class="comment"># 必须配置！</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>backend</code>：配置文件系统后端，指定项目根目录，<code>virtual_mode=True</code> 表示启用虚拟文件系统模式</li>
+<li><code>skills</code>：指定技能包所在的文件夹路径，Agent 会从这里扫描并按需加载技能</li>
+<li><code>interrupt_on</code>：设置需要用户确认的操作，比如写文件、编辑文件时需要人工批准，读文件则不需要</li>
+<li><code>checkpointer</code>：绑定前面初始化的检查点工具</li>
+</ul>
+</li>
+<li><p>调用 Agent 执行任务</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">result = agent.invoke(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">                <span class="string">&quot;content&quot;</span>: <span class="string">&quot;What is langgraph?&quot;</span>,</span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;,</span><br><span class="line">    config=&#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;12345&quot;</span>&#125;&#125;,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>invoke</code>：调用 Agent 执行任务</li>
+<li><code>messages</code>：用户的提问内容</li>
+<li><code>config</code>：配置对话线程 ID，用来标识当前会话，支持多轮对话状态的保存</li>
+</ul>
+</li>
+</ol>
+<h1 id="应用场景与价值"><a href="#应用场景与价值" class="headerlink" title="应用场景与价值"></a>应用场景与价值</h1><h2 id="1-核心应用领域"><a href="#1-核心应用领域" class="headerlink" title="1. 核心应用领域"></a>1. 核心应用领域</h2><p>Agent Skills 最典型的 4 种用法：</p>
+<ul>
+<li><strong>专业知识沉淀</strong>：把专家的经验、业务规则整理成技能包，让 AI 也能像资深员工一样处理专业任务（比如财务审核、法律咨询）。</li>
+<li><strong>能力扩展</strong>：给 Agent 增加具体功能，比如制作 PPT、搭建服务器、处理 PDF 等，相当于给 AI 装了 “专属插件”。</li>
+<li><strong>工作流自动化</strong>：把复杂的多步骤任务（比如周报生成、客户跟进流程）变成标准化的技能流程，AI 可以按步骤自动执行。</li>
+<li><strong>跨平台复用</strong>：同一个技能包，在不同的 Agent 产品 / 框架里都能直接使用，不用重复开发。</li>
+</ul>
+<h2 id="2-实际价值体现"><a href="#2-实际价值体现" class="headerlink" title="2.实际价值体现"></a>2.实际价值体现</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">价值点</th>
+<th style="text-align:left">通俗解读</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>统一标准</strong></td>
+<td style="text-align:left">把团队的最佳实践固化成技能，所有人 / 所有 Agent 都按同一套标准执行，避免 “各搞一套”</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>降低成本</strong></td>
+<td style="text-align:left">不用为每个 Agent 单独开发功能，一次开发、多处复用，减少重复投入</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>提高质量</strong></td>
+<td style="text-align:left">技能里的流程和规则是固定的，AI 执行时更稳定可靠，减少出错概率</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>促进协作</strong></td>
+<td style="text-align:left">技能包可以像文件一样分享、管理，团队知识不再只存在于个人手里，更容易传承和迭代</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Agent Skills 不仅能让 AI 变得更能干，还能帮团队沉淀知识、统一流程、降低成本，让 AI 能力的扩展和管理变得更高效。</p>
+<h1 id="开发与实施指南"><a href="#开发与实施指南" class="headerlink" title="开发与实施指南"></a>开发与实施指南</h1><p>写出更易用、更稳定的 Agent Skills 的关键原则：</p>
+<p>✅ <strong>保持简洁</strong></p>
+<ul>
+<li><strong>要求</strong>：<code>SKILL.md</code> 文件不要太长，建议控制在 <strong>500 行以内</strong></li>
+<li><strong>目的</strong>：让内容清晰易读，AI 和人都能快速理解技能的核心用途和步骤</li>
+<li><strong>理解</strong>：就像给别人写操作说明，重点突出、步骤清晰比长篇大论更有用</li>
+</ul>
+<p>📂 <strong>分离内容</strong></p>
+<ul>
+<li><strong>要求</strong>：把详细的参考资料放到单独的文件里，不要都塞在<code>SKILL.md</code>里</li>
+<li><strong>目的</strong>：保持主文件的简洁，避免信息过载</li>
+<li><strong>理解</strong>：可以把复杂的 API 文档、规则说明放到<code>references/</code>文件夹里，只在<code>SKILL.md</code>里写关键步骤和使用场景</li>
+</ul>
+<p><code>&lt;/&gt;</code> <strong>提供示例</strong></p>
+<ul>
+<li><strong>要求</strong>：在技能说明里给出<strong>具体的输入输出例子</strong></li>
+<li><strong>目的</strong>：让用户 / AI 一眼就明白 “这个技能怎么用、能得到什么结果”</li>
+<li><strong>理解</strong>：比如 “输入：帮我提取 PDF 里的文字 → 输出：PDF 的文本内容，去除格式和图片”，这样 AI 就知道什么时候该调用这个技能了</li>
+</ul>
+<p>🛡️ <strong>考虑边界</strong></p>
+<ul>
+<li><strong>要求</strong>：提前处理常见问题和特殊情况，比如文件不存在、格式错误、权限不足等</li>
+<li><strong>目的</strong>：提高技能的可靠性，避免 AI 调用时出错</li>
+<li><strong>理解</strong>：在说明里加上 “如果文件不存在，需要提示用户上传文件”“如果是加密 PDF，需要用户提供密码” 这类处理逻辑，让技能更健壮</li>
+</ul>
+<p>这 4 条实践的核心目标，就是让你的<code>SKILL.md</code>文件<strong>简洁、清晰、易用、稳定</strong>，既能让 AI 准确理解和调用，也方便其他人维护和复用。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DeepAgents/" rel="tag"># DeepAgents</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/06/24/ai/langchain/deepagent/5-memory/" rel="prev" title="DeepAgents为智能体打造长期记忆">
+      <i class="fa fa-chevron-left"></i> DeepAgents为智能体打造长期记忆
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/06/24/ai/langchain/deepagent/7-profiles/" rel="next" title="DeepAgents的Profiles">
+      DeepAgents的Profiles <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E6%8A%80%E8%83%BD%E5%BA%93%E7%9A%84%E8%AF%9E%E7%94%9F"><span class="nav-number">1.</span> <span class="nav-text">智能技能库的诞生</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%AF%94%E5%96%BB%EF%BC%9A%E7%BB%99-AI-%E5%8A%A9%E7%90%86%E9%85%8D%E4%B8%AA%E3%80%8C%E6%8C%89%E9%9C%80%E8%B0%83%E7%94%A8%E7%9A%84%E6%8A%80%E8%83%BD%E5%BA%93%E3%80%8D"><span class="nav-number">1.1.</span> <span class="nav-text">核心比喻：给 AI 助理配个「按需调用的技能库」</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5%EF%BC%9ALangChain-Skills-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.2.</span> <span class="nav-text">核心概念：LangChain Skills 是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E5%90%8E%E7%9A%84%E6%B7%B1%E5%B1%82%E6%84%8F%E4%B9%89%EF%BC%9A%E8%A7%A3%E5%86%B3%E4%BA%86-AI-%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E5%85%B3%E9%94%AE%E7%97%9B%E7%82%B9"><span class="nav-number">1.3.</span> <span class="nav-text">背后的深层意义：解决了 AI 智能体的关键痛点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E5%8F%A5%E8%AF%9D%E6%80%BB%E7%BB%93"><span class="nav-number">1.4.</span> <span class="nav-text">一句话总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFAgent-Skills"><span class="nav-number">2.</span> <span class="nav-text">什么是Agent Skills</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">基本定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BB%B7%E5%80%BC"><span class="nav-number">2.2.</span> <span class="nav-text">核心价值</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Agent-Skills%E7%9A%84%E7%BB%84%E6%88%90%E7%BB%93%E6%9E%84"><span class="nav-number">3.</span> <span class="nav-text">Agent Skills的组成结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="nav-number">3.1.</span> <span class="nav-text">目录结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SKILL-md%E6%96%87%E4%BB%B6%E8%A7%84%E8%8C%83"><span class="nav-number">3.2.</span> <span class="nav-text">SKILL.md文件规范</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E8%A7%84%E8%8C%83"><span class="nav-number">4.</span> <span class="nav-text">技术规范</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%BF%85%E9%9C%80%E5%AD%97%E6%AE%B5%EF%BC%9A%E6%8A%80%E8%83%BD%E7%9A%84-%E2%80%9C%E8%BA%AB%E4%BB%BD%E8%AF%81%E2%80%9D"><span class="nav-number">4.1.</span> <span class="nav-text">1.必需字段：技能的 “身份证”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%8F%AF%E9%80%89%E5%AD%97%E6%AE%B5%EF%BC%9A%E6%8A%80%E8%83%BD%E7%9A%84-%E2%80%9C%E8%A1%A5%E5%85%85%E4%BF%A1%E6%81%AF%E2%80%9D"><span class="nav-number">4.2.</span> <span class="nav-text">2.可选字段：技能的 “补充信息”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%96%87%E4%BB%B6%E5%BC%95%E7%94%A8%E8%A7%84%E8%8C%83%EF%BC%9A%E6%8A%80%E8%83%BD%E7%9A%84-%E2%80%9C%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86%E8%A7%84%E5%88%99%E2%80%9D"><span class="nav-number">4.3.</span> <span class="nav-text">3.文件引用规范：技能的 “文件管理规则”</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Agent-Skills%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">Agent Skills的工作原理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%8C%89%E9%9C%80%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6%EF%BC%9A%E5%83%8F%E6%9F%A5%E5%AD%97%E5%85%B8%E4%B8%80%E6%A0%B7%E8%B0%83%E7%94%A8%E6%8A%80%E8%83%BD"><span class="nav-number">5.1.</span> <span class="nav-text">1. 按需加载机制：像查字典一样调用技能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%A0%B8%E5%BF%83%E4%BC%98%E5%8A%BF%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E7%A7%8D%E8%AE%BE%E8%AE%A1%E5%BE%88%E4%BC%98%E7%A7%80%EF%BC%9F"><span class="nav-number">5.2.</span> <span class="nav-text">2.核心优势：为什么这种设计很优秀？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%9B%86%E6%88%90Agent-Skills%E5%88%B0Agent%E4%B8%AD"><span class="nav-number">6.</span> <span class="nav-text">集成Agent Skills到Agent中</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%9B%86%E6%88%90%E6%96%B9%E6%B3%95%EF%BC%9A%E4%B8%A4%E7%A7%8D%E4%B8%BB%E6%B5%81%E6%96%B9%E5%BC%8F"><span class="nav-number">6.1.</span> <span class="nav-text">1.集成方法：两种主流方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E9%9B%86%E6%88%90%E6%AD%A5%E9%AA%A4%EF%BC%9AAgent-%E6%98%AF%E6%80%8E%E4%B9%88%E5%92%8C%E6%8A%80%E8%83%BD%E5%BB%BA%E7%AB%8B%E8%81%94%E7%B3%BB%E7%9A%84%EF%BC%9F"><span class="nav-number">6.2.</span> <span class="nav-text">2.集成步骤：Agent 是怎么和技能建立联系的？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-DeepAgents-%E9%9B%86%E6%88%90%E7%A4%BA%E4%BE%8B"><span class="nav-number">6.3.</span> <span class="nav-text">3.DeepAgents 集成示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF%E4%B8%8E%E4%BB%B7%E5%80%BC"><span class="nav-number">7.</span> <span class="nav-text">应用场景与价值</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%A0%B8%E5%BF%83%E5%BA%94%E7%94%A8%E9%A2%86%E5%9F%9F"><span class="nav-number">7.1.</span> <span class="nav-text">1. 核心应用领域</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%AE%9E%E9%99%85%E4%BB%B7%E5%80%BC%E4%BD%93%E7%8E%B0"><span class="nav-number">7.2.</span> <span class="nav-text">2.实际价值体现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%80%E5%8F%91%E4%B8%8E%E5%AE%9E%E6%96%BD%E6%8C%87%E5%8D%97"><span class="nav-number">8.</span> <span class="nav-text">开发与实施指南</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">182</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

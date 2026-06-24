@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习DeepAgents学习笔记第四讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DeepAgents的人工介入">
+<meta property="og:url" content="https://jinglv.github.io/2026/06/23/ai/langchain/deepagent/4-hitl/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习DeepAgents学习笔记第四讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-06-23T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-23T07:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="DeepAgents">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/06/23/ai/langchain/deepagent/4-hitl/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DeepAgents的人工介入 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/06/23/ai/langchain/deepagent/4-hitl/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DeepAgents的人工介入
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-06-23 15:00:00" itemprop="dateCreated datePublished" datetime="2026-06-23T15:00:00+08:00">2026-06-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/DeepAgents/" itemprop="url" rel="index"><span itemprop="name">DeepAgents</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习DeepAgents学习笔记第四讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p><strong>Deep Agents 中基于 LangGraph 的「人工介入（Human-in-the-loop, HITL）」工作流</strong>，核心是为高风险 AI 操作（如删文件、发邮件）提供人工审核机制，确保操作安全。</p>
+<ul>
+<li><p><strong>背景问题</strong>：AI 直接执行某些工具操作（如删除文件、发送邮件）有较高风险，需要人工审核。</p>
+</li>
+<li><p><strong>解决方案</strong>：Deep Agents 利用 LangGraph 的「中断机制」，实现完整的 HITL 人工介入流程。</p>
+</li>
+<li><p><strong>控制方式</strong>：通过配置 <code>interrupt_on</code> 参数，你可以精确指定：</p>
+<ul>
+<li><p>哪些工具操作需要人工审批</p>
+</li>
+<li><p>哪些可以直接自动执行，从而在灵活性和安全性之间做平衡。</p>
+</li>
+</ul>
+</li>
+</ul>
+<pre class="mermaid">flowchart LR
+    A[Agent] --> B{Interrupt?}
+    B -- no --> E[Execute]
+    B -- yes --> C{Human}
+    C -- approve --> E
+    C -- edit --> E
+    C -- reject --> D[Cancel]
+    E --> A
+    D --> A</pre>
+
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">节点 / 分支</th>
+<th style="text-align:left">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Agent</strong></td>
+<td style="text-align:left">AI 智能体，负责生成工具调用请求（比如 “删除文件”“发送邮件”）。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Interrupt?</strong></td>
+<td style="text-align:left">LangGraph 的「中断判断节点」，根据你配置的 <code>interrupt_on</code> 规则，判断当前操作是否需要人工介入。</td>
+</tr>
+<tr>
+<td style="text-align:left">→ <strong>no（不需要中断）</strong></td>
+<td style="text-align:left">直接进入 <code>Execute</code> 节点，自动执行操作。</td>
+</tr>
+<tr>
+<td style="text-align:left">→ <strong>yes（需要中断）</strong></td>
+<td style="text-align:left">进入 <code>Human</code> 人工审核节点。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Human（人工审核）</strong></td>
+<td style="text-align:left">人工对 AI 的操作请求进行处理，有三种选择：</td>
+</tr>
+<tr>
+<td style="text-align:left">→ <strong>approve（批准）</strong></td>
+<td style="text-align:left">同意执行，直接进入 <code>Execute</code>。</td>
+</tr>
+<tr>
+<td style="text-align:left">→ <strong>edit（修改后执行）</strong></td>
+<td style="text-align:left">修改 AI 的请求（比如调整邮件内容、修改删除的文件列表），再进入 <code>Execute</code>。</td>
+</tr>
+<tr>
+<td style="text-align:left">→ <strong>reject（拒绝）</strong></td>
+<td style="text-align:left">取消本次操作，进入 <code>Cancel</code> 节点。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Execute</strong></td>
+<td style="text-align:left">执行工具操作，完成后流程回到 <code>Agent</code>，继续后续任务。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Cancel</strong></td>
+<td style="text-align:left">取消本次高风险操作，流程回到 <code>Agent</code>，AI 可以继续处理其他任务或调整方案。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="基本配置"><a href="#基本配置" class="headerlink" title="基本配置"></a>基本配置</h1><p><code>interrupt_on</code> 是一个字典，用来给每个工具配置 “是否需要人工审核” 以及 “审核时允许哪些操作”。它有三种配置方式：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">配置值</th>
+<th style="text-align:left">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>True</code></td>
+<td style="text-align:left">启用默认中断行为：人工审核时可以 <code>approve</code>（批准）、<code>edit</code>（修改）、<code>reject</code>（拒绝）</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>False</code></td>
+<td style="text-align:left">禁用此工具的中断：工具操作不需要人工审核，直接自动执行</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>&#123;&quot;allowed_decisions&quot;: [...]&#125;</code></td>
+<td style="text-align:left">自定义配置：人工审核时<strong>只允许列表里的决策类型</strong>（比如只允许批准 / 拒绝，不允许修改）</td>
+</tr>
+</tbody>
+</table>
+</div>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 导入依赖</span></span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义三个示例工具（此处省略具体实现）</span></span><br><span class="line"><span class="comment"># delete_file：删除文件（高风险）</span></span><br><span class="line"><span class="comment"># read_file：读取文件（低风险）</span></span><br><span class="line"><span class="comment"># send_email：发送邮件（中高风险）</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 配置状态持久化：必须项</span></span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 创建配置了人工介入的智能代理</span></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    model=<span class="string">&quot;claude-sonnet-4-5-20250929&quot;</span>,  <span class="comment"># 使用的大语言模型</span></span><br><span class="line">    tools=[delete_file, read_file, send_email],  <span class="comment"># 智能代理可用的工具列表</span></span><br><span class="line">    interrupt_on=&#123;</span><br><span class="line">        <span class="string">&quot;delete_file&quot;</span>: <span class="literal">True</span>,  </span><br><span class="line">        <span class="comment"># 删除文件需要审核，使用默认决策类型（approve/edit/reject 都允许）</span></span><br><span class="line">        <span class="string">&quot;read_file&quot;</span>: <span class="literal">False</span>,  </span><br><span class="line">        <span class="comment"># 读取文件不需要审核，可直接执行</span></span><br><span class="line">        <span class="string">&quot;send_email&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;reject&quot;</span>]&#125;,  </span><br><span class="line">        <span class="comment"># 发送邮件需要审核，但不允许编辑内容，只能批准或拒绝</span></span><br><span class="line">    &#125;,</span><br><span class="line">    checkpointer=checkpointer  <span class="comment"># 必需参数，用于状态持久化</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><strong>关键作用</strong>：人工介入功能必须搭配 <code>Checkpointer</code>（这里用的是 <code>MemorySaver</code>），用来保存会话状态。</p>
+</li>
+<li><p><strong>为什么需要它？</strong> 当流程被中断（等待人工审核）时，系统需要记住当前的执行状态，人工处理完后才能恢复到正确的位置继续执行。</p>
+</li>
+</ul>
+<p>这里的 <code>interrupt_on</code> 配置，就是核心规则：</p>
+<ol>
+<li><strong><code>delete_file: True</code></strong><ul>
+<li>场景：删除文件属于高风险操作，需要人工审核。</li>
+<li>权限：人工审核时，既可以直接批准、拒绝，也可以修改删除的文件列表后再执行。</li>
+</ul>
+</li>
+<li><strong><code>read_file: False</code></strong><ul>
+<li>场景：读取文件是低风险操作，不需要人工审核。</li>
+<li>权限：AI 生成读取请求后，会直接执行，不会触发中断。</li>
+</ul>
+</li>
+<li><strong><code>send_email: &#123;&quot;allowed_decisions&quot;: [&quot;approve&quot;, &quot;reject&quot;]&#125;</code></strong><ul>
+<li>场景：发送邮件属于中高风险操作，需要人工审核。</li>
+<li>权限：人工只能选择「批准发送」或「拒绝发送」，<strong>不能修改邮件内容</strong>（避免篡改信息）。</li>
+</ul>
+</li>
+</ol>
+<h1 id="决策类型"><a href="#决策类型" class="headerlink" title="决策类型"></a>决策类型</h1><p>当工具操作被中断等待人工审核时，审核人员可以采取以下三种决策：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">决策类型</th>
+<th style="text-align:left">含义</th>
+<th style="text-align:left">适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>approve</code></td>
+<td style="text-align:left">批准并执行操作</td>
+<td style="text-align:left">确认 AI 的请求安全、无误，同意直接执行</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>reject</code></td>
+<td style="text-align:left">拒绝操作并终止执行</td>
+<td style="text-align:left">认为 AI 的请求有风险或错误，直接取消本次操作</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>edit</code></td>
+<td style="text-align:left">修改操作参数后执行（需显式允许）</td>
+<td style="text-align:left">保留执行，但修改 AI 的请求参数（比如调整删除的文件、修改邮件内容），再继续执行</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>注意：<code>edit</code> 必须在 <code>allowed_decisions</code> 里显式声明，否则审核界面不会出现 “编辑” 选项。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">interrupt_on = &#123;</span><br><span class="line">    <span class="comment"># 高风险操作：允许所有决策类型</span></span><br><span class="line">    <span class="string">&quot;delete_file&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;edit&quot;</span>, <span class="string">&quot;reject&quot;</span>]&#125;,</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 中等风险操作：只允许批准或拒绝，不允许修改参数</span></span><br><span class="line">    <span class="string">&quot;write_file&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;reject&quot;</span>]&#125;,</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 关键操作：必须执行，只允许批准</span></span><br><span class="line">    <span class="string">&quot;critical_operation&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>]&#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p><strong><code>delete_file</code>（删除文件，高风险）</strong></p>
+<ul>
+<li><p>配置：<code>[&quot;approve&quot;, &quot;edit&quot;, &quot;reject&quot;]</code></p>
+</li>
+<li><p>说明：允许审核人员做任何操作：可以直接批准删除、拒绝删除，也可以修改要删除的文件列表后再执行。</p>
+</li>
+<li><p>场景：删除文件影响大，需要最大的人工灵活性，既可以纠错，也可以直接阻止。</p>
+</li>
+</ul>
+</li>
+<li><p><strong><code>write_file</code>（写入文件，中等风险）</strong></p>
+<ul>
+<li><p>配置：<code>[&quot;approve&quot;, &quot;reject&quot;]</code></p>
+</li>
+<li><p>说明：只能批准或拒绝，不允许修改参数。</p>
+</li>
+<li><p>场景：写入文件的内容是固定的（比如生成报告），不希望人工篡改内容，只需要确认是否执行。</p>
+</li>
+</ul>
+</li>
+<li><p><strong><code>critical_operation</code>（关键操作，如系统初始化）</strong></p>
+<ul>
+<li><p>配置：<code>[&quot;approve&quot;]</code></p>
+</li>
+<li><p>说明：只允许批准，不能拒绝，也不能修改。</p>
+</li>
+<li><p>场景：这个操作是任务流程的必要环节，必须执行，人工只能确认，不能干预执行本身。</p>
+</li>
+</ul>
+</li>
+</ol>
+<p><code>allowed_decisions</code> 的作用，是让你为不同工具设置不同的「人工干预权限」：</p>
+<ul>
+<li>高风险操作：给足人工控制权，支持修改、批准、拒绝。</li>
+<li>中等风险操作：限制人工权限，只能批准 / 拒绝，不能篡改内容。</li>
+<li>关键操作：只允许人工确认，确保流程必须推进。</li>
+</ul>
+<p>这种配置方式，让你可以在<strong>安全性、灵活性和流程刚性</strong>之间做精准平衡，既不会因为过度审核影响效率，也不会因为权限过大带来新的风险。</p>
+<h1 id="处理中断"><a href="#处理中断" class="headerlink" title="处理中断"></a>处理中断</h1><p>当智能代理执行到需要人工审核的工具操作时，会自动暂停执行，并返回包含中断信息的结果。你需要完成这几个关键步骤：</p>
+<ol>
+<li>检查结果中是否包含 <code>__interrupt__</code> 字段（判断是否触发了人工审核）</li>
+<li>提取待审核的操作信息</li>
+<li>获取用户的决策（批准、拒绝或修改）</li>
+<li>使用相同的会话配置恢复执行</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 示例工具定义（省略具体实现） ----------------------</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete_file</span>(<span class="params">file_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;删除指定路径的文件&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;文件 <span class="subst">&#123;file_path&#125;</span> 已删除&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">read_file</span>(<span class="params">file_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;读取指定路径的文件内容&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;文件内容&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">send_email</span>(<span class="params">to: <span class="built_in">str</span>, subject: <span class="built_in">str</span>, body: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;发送邮件&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;邮件已发送至 <span class="subst">&#123;to&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 1. 配置状态持久化 ----------------------</span></span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 2. 创建带人工介入的智能代理 ----------------------</span></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    model=<span class="string">&quot;claude-sonnet-4-5-20250929&quot;</span>,</span><br><span class="line">    tools=[delete_file, read_file, send_email],</span><br><span class="line">    interrupt_on=&#123;</span><br><span class="line">        <span class="string">&quot;delete_file&quot;</span>: <span class="literal">True</span>,</span><br><span class="line">        <span class="string">&quot;read_file&quot;</span>: <span class="literal">False</span>,</span><br><span class="line">        <span class="string">&quot;send_email&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;reject&quot;</span>]&#125;,</span><br><span class="line">    &#125;,</span><br><span class="line">    checkpointer=checkpointer</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 3. 创建会话配置（必须使用唯一的thread_id） ----------------------</span></span><br><span class="line"><span class="comment"># 创建带有唯一thread_id的配置，用于持久化会话状态</span></span><br><span class="line"><span class="comment"># 这个ID将在中断和恢复之间保持一致</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="built_in">str</span>(uuid.uuid4())&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 4. 向智能代理发送用户请求（触发中断） ----------------------</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;删除文件temp.txt&quot;</span>&#125;]</span><br><span class="line">&#125;, config=config)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 5. 处理中断与人工审核 ----------------------</span></span><br><span class="line"><span class="comment"># 检查智能代理是否因为需要人工审核而中断了执行</span></span><br><span class="line"><span class="keyword">if</span> result.get(<span class="string">&quot;__interrupt__&quot;</span>):</span><br><span class="line">    <span class="comment"># 提取中断信息，包括待审核的操作和允许的决策类型</span></span><br><span class="line">    interrupts = result[<span class="string">&quot;__interrupt__&quot;</span>][<span class="number">0</span>].value</span><br><span class="line">    action_requests = interrupts[<span class="string">&quot;action_requests&quot;</span>]  <span class="comment"># 待审核的操作列表</span></span><br><span class="line">    review_configs = interrupts[<span class="string">&quot;review_configs&quot;</span>]    <span class="comment"># 各工具的审核配置</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 创建工具名称到审核配置的映射，方便快速查找</span></span><br><span class="line">    config_map = &#123;cfg[<span class="string">&quot;action_name&quot;</span>]: cfg <span class="keyword">for</span> cfg <span class="keyword">in</span> review_configs&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 向用户展示所有待审核的操作</span></span><br><span class="line">    <span class="keyword">for</span> action <span class="keyword">in</span> action_requests:</span><br><span class="line">        review_config = config_map[action[<span class="string">&quot;name&quot;</span>]]</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;待审核工具: <span class="subst">&#123;action[<span class="string">&#x27;name&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;操作参数: <span class="subst">&#123;action[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;允许决策: <span class="subst">&#123;review_config[<span class="string">&#x27;allowed_decisions&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 获取用户的决策（此处为示例，实际应用中应通过界面或终端获取）</span></span><br><span class="line">    decisions = [</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;approve&quot;</span>&#125;  <span class="comment"># 用户选择批准删除操作</span></span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 使用用户决策恢复智能代理的执行</span></span><br><span class="line">    <span class="comment"># 注意：必须使用与之前相同的config配置（包含相同的thread_id）</span></span><br><span class="line">    result = agent.invoke(</span><br><span class="line">        Command(resume=&#123;<span class="string">&quot;decisions&quot;</span>: decisions&#125;),</span><br><span class="line">        config=config</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 6. 处理最终执行结果 ----------------------</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;代理最终响应:&quot;</span>, result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+<p>完整展示了人工介入流程的 “闭环”：</p>
+<ol>
+<li><strong>触发中断</strong>：AI 执行到高风险操作时自动暂停。</li>
+<li><strong>展示信息</strong>：把待审核的操作、参数和规则展示给用户。</li>
+<li><strong>用户决策</strong>：用户选择批准、拒绝或修改参数。</li>
+<li><strong>恢复执行</strong>：用同一个 <code>thread_id</code> 和用户决策，让 AI 继续执行。</li>
+<li><strong>得到结果</strong>：AI 执行完所有操作后，返回最终响应。</li>
+</ol>
+<p>这个流程的关键是：<strong><code>thread_id</code> 必须全程一致</strong>，否则 LangGraph 无法恢复会话状态，中断机制就会失效。</p>
+<p>代码分步骤详解</p>
+<ol>
+<li><p>初始化依赖与会话配置</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 创建带有唯一thread_id的配置，用于持久化会话状态</span></span><br><span class="line"><span class="comment"># 这个ID将在中断和恢复之间保持一致</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="built_in">str</span>(uuid.uuid4())&#125;&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>关键作用</strong>：创建一个唯一的 <code>thread_id</code>，绑定到会话配置中。</li>
+<li><strong>为什么必须这么做？</strong> LangGraph 的 <code>Checkpointer</code> 会用 <code>thread_id</code> 来保存和恢复会话状态，中断和恢复时必须使用同一个 <code>thread_id</code>，否则无法找到之前的执行上下文。</li>
+</ul>
+</li>
+<li><p>触发 AI 任务，等待中断</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 向智能代理发送用户请求（删除文件temp.txt）</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;删除文件temp.txt&quot;</span>&#125;]</span><br><span class="line">&#125;, config=config)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>这里向代理发送了一个 “删除文件” 的请求。</p>
+</li>
+<li><p>因为 <code>delete_file</code> 工具配置了 <code>interrupt_on=True</code>，代理执行到这一步时，会自动暂停，返回包含中断信息的 <code>result</code>。</p>
+</li>
+</ul>
+</li>
+<li><p>检查是否触发了中断</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 检查智能代理是否因为需要人工审核而中断了执行</span></span><br><span class="line"><span class="keyword">if</span> result.get(<span class="string">&quot;__interrupt__&quot;</span>):</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>result.get(&quot;__interrupt__&quot;)</code> 是判断中断的关键标志：</p>
+<ul>
+<li><p>如果为 <code>True</code>，说明 AI 触发了需要人工审核的操作，流程暂停。</p>
+</li>
+<li><p>如果为 <code>False</code>，说明所有操作都自动执行完成，没有需要审核的步骤。</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>提取中断信息</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 提取中断信息，包括待审核的操作和允许的决策类型</span></span><br><span class="line">interrupts = result[<span class="string">&quot;__interrupt__&quot;</span>][<span class="number">0</span>].value</span><br><span class="line">action_requests = interrupts[<span class="string">&quot;action_requests&quot;</span>]  <span class="comment"># 待审核的操作列表</span></span><br><span class="line">review_configs = interrupts[<span class="string">&quot;review_configs&quot;</span>]    <span class="comment"># 各工具的审核配置</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>interrupts</code> 里包含了本次中断的所有关键信息：</p>
+<ul>
+<li><p><code>action_requests</code>：AI 发起的所有待审核操作（比如这里的 <code>delete_file(temp.txt)</code>）。</p>
+</li>
+<li><p><code>review_configs</code>：每个工具对应的审核规则（比如允许 <code>approve/edit/reject</code>）。</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>构建审核配置映射</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建工具名称到审核配置的映射，方便快速查找</span></span><br><span class="line">config_map = &#123;cfg[<span class="string">&quot;action_name&quot;</span>]: cfg <span class="keyword">for</span> cfg <span class="keyword">in</span> review_configs&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>把 <code>review_configs</code> 转换成一个字典，key 是工具名称，方便后续快速查找每个工具允许的决策类型。</li>
+</ul>
+</li>
+<li><p>向用户展示待审核操作</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 向用户展示所有待审核的操作</span></span><br><span class="line"><span class="keyword">for</span> action <span class="keyword">in</span> action_requests:</span><br><span class="line">    review_config = config_map[action[<span class="string">&quot;name&quot;</span>]]</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;待审核工具: <span class="subst">&#123;action[<span class="string">&#x27;name&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;操作参数: <span class="subst">&#123;action[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;允许决策: <span class="subst">&#123;review_config[<span class="string">&#x27;allowed_decisions&#x27;</span>]&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>把待审核的工具、参数、允许的操作（批准 / 拒绝 / 编辑）展示给用户，让用户了解 AI 要做什么、能做什么。</li>
+</ul>
+</li>
+<li><p>获取用户的审核决策</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 获取用户的决策（此处为示例，实际应用中应通过界面或终端获取）</span></span><br><span class="line">decisions = [</span><br><span class="line">    &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;approve&quot;</span>&#125;  <span class="comment"># 用户选择批准删除操作</span></span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>这里模拟了用户的决策：<code>approve</code>（批准执行）。</p>
+</li>
+<li><p>实际场景中，你可以通过前端界面、终端输入等方式让用户选择：</p>
+<ul>
+<li><p><code>&#123;&quot;type&quot;: &quot;approve&quot;&#125;</code>：批准执行</p>
+</li>
+<li><p><code>&#123;&quot;type&quot;: &quot;reject&quot;&#125;</code>：拒绝执行</p>
+</li>
+<li><p><code>&#123;&quot;type&quot;: &quot;edit&quot;, &quot;args&quot;: &#123;&quot;file_path&quot;: &quot;new_temp.txt&quot;&#125;&#125;</code>：修改参数后执行</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>恢复代理执行</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用用户决策恢复智能代理的执行</span></span><br><span class="line"><span class="comment"># 注意：必须使用与之前相同的config配置（包含相同的thread_id）</span></span><br><span class="line">result = agent.invoke(</span><br><span class="line">    Command(resume=&#123;<span class="string">&quot;decisions&quot;</span>: decisions&#125;),</span><br><span class="line">    config=config</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>核心是 <code>Command(resume=&#123;&quot;decisions&quot;: decisions&#125;)</code>：告诉 LangGraph “我已经完成了人工审核，请根据用户的决策恢复执行”。</p>
+</li>
+<li><p>必须传入和第一步相同的 <code>config</code>（包含同一个 <code>thread_id</code>），LangGraph 才能从之前中断的位置继续执行。</p>
+</li>
+</ul>
+</li>
+<li><p>处理最终结果</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 处理智能代理的最终执行结果</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;代理最终响应:&quot;</span>, result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+<ul>
+<li>代理根据用户的决策执行完操作后，会返回最终的响应结果，这里打印了最后一条消息的内容。</li>
+</ul>
+</li>
+</ol>
+<h1 id="多个工具调用"><a href="#多个工具调用" class="headerlink" title="多个工具调用"></a>多个工具调用</h1><p>当 AI 代理需要<strong>连续执行多个需要人工审核的工具操作</strong>（比如同时执行「删除文件」和「发送邮件」）时，LangGraph 会把这些操作<strong>批量收集到同一个中断中</strong>，而不是每个操作都触发一次中断。</p>
+<p>这种设计的关键规则：</p>
+<ul>
+<li>所有待审核操作会一次性返回在 <code>action_requests</code> 列表里</li>
+<li>你提供的 <code>decisions</code> 列表，<strong>必须和 <code>action_requests</code> 的顺序一一对应</strong>，不能乱序</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 1. 定义示例工具 ----------------------</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete_file</span>(<span class="params">file_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;删除指定路径的文件&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;文件 <span class="subst">&#123;file_path&#125;</span> 已删除&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">send_email</span>(<span class="params">to: <span class="built_in">str</span>, subject: <span class="built_in">str</span>, body: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;发送邮件&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;邮件已发送至 <span class="subst">&#123;to&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 2. 配置人工介入与状态持久化 ----------------------</span></span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line"></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    model=<span class="string">&quot;claude-sonnet-4-5-20250929&quot;</span>,</span><br><span class="line">    tools=[delete_file, send_email],</span><br><span class="line">    interrupt_on=&#123;</span><br><span class="line">        <span class="string">&quot;delete_file&quot;</span>: <span class="literal">True</span>,          <span class="comment"># 删除文件需要审核（允许approve/edit/reject）</span></span><br><span class="line">        <span class="string">&quot;send_email&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;reject&quot;</span>]&#125;  <span class="comment"># 发送邮件只允许批准/拒绝</span></span><br><span class="line">    &#125;,</span><br><span class="line">    checkpointer=checkpointer</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 3. 创建会话配置 ----------------------</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="built_in">str</span>(uuid.uuid4())&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 4. 触发包含多个工具调用的请求 ----------------------</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;删除temp.txt文件并向admin@example.com发送确认邮件&quot;</span></span><br><span class="line">    &#125;]</span><br><span class="line">&#125;, config=config)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 5. 处理批量中断 ----------------------</span></span><br><span class="line"><span class="keyword">if</span> result.get(<span class="string">&quot;__interrupt__&quot;</span>):</span><br><span class="line">    interrupts = result[<span class="string">&quot;__interrupt__&quot;</span>][<span class="number">0</span>].value</span><br><span class="line">    action_requests = interrupts[<span class="string">&quot;action_requests&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 验证待审核操作数量</span></span><br><span class="line">    <span class="keyword">assert</span> <span class="built_in">len</span>(action_requests) == <span class="number">2</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;共有 <span class="subst">&#123;<span class="built_in">len</span>(action_requests)&#125;</span> 个操作需要审核&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 展示每个待审核操作</span></span><br><span class="line">    <span class="keyword">for</span> i, action <span class="keyword">in</span> <span class="built_in">enumerate</span>(action_requests, <span class="number">1</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;i&#125;</span>] 工具: <span class="subst">&#123;action[<span class="string">&#x27;name&#x27;</span>]&#125;</span>，参数: <span class="subst">&#123;action[<span class="string">&#x27;args&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 按顺序提供决策（必须和action_requests顺序一致）</span></span><br><span class="line">    decisions = [</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;approve&quot;</span>&#125;,  <span class="comment"># 批准第一个操作：删除文件</span></span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;reject&quot;</span>&#125;    <span class="comment"># 拒绝第二个操作：发送邮件</span></span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 恢复执行</span></span><br><span class="line">    result = agent.invoke(</span><br><span class="line">        Command(resume=&#123;<span class="string">&quot;decisions&quot;</span>: decisions&#125;),</span><br><span class="line">        config=config</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 6. 输出最终结果 ----------------------</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;代理最终响应:&quot;</span>, result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+<p><strong>关键注意事项</strong></p>
+<ol>
+<li><strong>顺序必须严格匹配</strong>：<code>decisions</code> 列表的顺序，必须和 <code>action_requests</code> 里工具调用的顺序完全一致，否则会出现决策和操作不匹配的错误。</li>
+<li><strong>每个操作都要有决策</strong>：即使你只想处理其中一个操作，也必须为所有 <code>action_requests</code> 提供决策，不能只给部分。</li>
+<li><strong><code>thread_id</code> 必须一致</strong>：中断和恢复时，必须使用同一个 <code>config</code>，否则 LangGraph 无法找到会话状态。</li>
+</ol>
+<h1 id="编辑工具参数"><a href="#编辑工具参数" class="headerlink" title="编辑工具参数"></a>编辑工具参数</h1><p>当工具的 <code>allowed_decisions</code> 配置中包含 <code>&quot;edit&quot;</code> 时，审核人员可以：</p>
+<ul>
+<li>不直接批准 / 拒绝操作，而是<strong>修改操作的参数</strong></li>
+<li>用修改后的参数恢复执行，相当于 “纠正” AI 的请求</li>
+</ul>
+<p><code>edit</code> 决策的关键是 <code>edited_action</code> 字段，它需要包含：</p>
+<ul>
+<li><code>name</code>：要修改的工具名称（确保和原操作一致）</li>
+<li><code>args</code>：修改后的参数（可以只改部分，保留其他参数不变）</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义发送邮件工具</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">send_email</span>(<span class="params">to: <span class="built_in">str</span>, subject: <span class="built_in">str</span>, body: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;发送邮件&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;邮件已发送至 <span class="subst">&#123;to&#125;</span>，主题：<span class="subst">&#123;subject&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 配置状态持久化</span></span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建代理，配置send_email工具允许edit决策</span></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    model=<span class="string">&quot;claude-sonnet-4-5-20250929&quot;</span>,</span><br><span class="line">    tools=[send_email],</span><br><span class="line">    interrupt_on=&#123;</span><br><span class="line">        <span class="string">&quot;send_email&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;reject&quot;</span>, <span class="string">&quot;edit&quot;</span>]&#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    checkpointer=checkpointer</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建会话配置</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="built_in">str</span>(uuid.uuid4())&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 触发AI请求（AI可能生成了发给所有人的邮件）</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;发送一封通知邮件&quot;</span></span><br><span class="line">    &#125;]</span><br><span class="line">&#125;, config=config)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 处理中断与参数编辑</span></span><br><span class="line"><span class="keyword">if</span> result.get(<span class="string">&quot;__interrupt__&quot;</span>):</span><br><span class="line">    interrupts = result[<span class="string">&quot;__interrupt__&quot;</span>][<span class="number">0</span>].value</span><br><span class="line">    action_request = interrupts[<span class="string">&quot;action_requests&quot;</span>][<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;原始参数:&quot;</span>, action_request[<span class="string">&quot;args&quot;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 构建edit决策</span></span><br><span class="line">    decisions = [&#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;edit&quot;</span>,</span><br><span class="line">        <span class="string">&quot;edited_action&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: action_request[<span class="string">&quot;name&quot;</span>],</span><br><span class="line">            <span class="string">&quot;args&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;to&quot;</span>: <span class="string">&quot;team@company.com&quot;</span>,</span><br><span class="line">                <span class="string">&quot;subject&quot;</span>: <span class="string">&quot;团队通知&quot;</span>,</span><br><span class="line">                <span class="string">&quot;body&quot;</span>: action_request[<span class="string">&quot;args&quot;</span>][<span class="string">&quot;body&quot;</span>]</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 恢复执行</span></span><br><span class="line">    result = agent.invoke(</span><br><span class="line">        Command(resume=&#123;<span class="string">&quot;decisions&quot;</span>: decisions&#125;),</span><br><span class="line">        config=config</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输出最终结果</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;代理最终响应:&quot;</span>, result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+<p><strong>关键注意事项</strong></p>
+<ol>
+<li><strong><code>edit</code> 必须显式允许</strong>：工具的 <code>allowed_decisions</code> 里必须包含 <code>&quot;edit&quot;</code>，否则审核时无法使用该决策类型。</li>
+<li><strong><code>edited_action</code> 格式必须正确</strong>：<ul>
+<li>必须包含 <code>name</code> 和 <code>args</code> 字段。</li>
+<li><code>args</code> 必须是工具接受的合法参数，不能出现额外字段。</li>
+</ul>
+</li>
+<li><strong>可以修改任意参数</strong>：不仅可以修改收件人，还可以修改文件路径、查询条件等所有工具参数，只要符合工具定义即可。</li>
+</ol>
+<h1 id="子代理中断"><a href="#子代理中断" class="headerlink" title="子代理中断"></a>子代理中断</h1><p>在复杂的多代理系统里，主代理可以创建多个子代理，分别处理不同任务。</p>
+<ul>
+<li>每个子代理都可以定义自己的 <code>interrupt_on</code> 配置。</li>
+<li>子代理的配置优先级更高，会<strong>覆盖主代理的全局设置</strong>。</li>
+<li>子代理触发中断后的处理方式，和主代理完全一样：检查 <code>__interrupt__</code> → 获取决策 → 用 <code>Command</code> 恢复执行。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> Command</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 定义工具 ----------------------</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete_file</span>(<span class="params">file_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;删除指定路径的文件&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;文件 <span class="subst">&#123;file_path&#125;</span> 已删除&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">read_file</span>(<span class="params">file_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;读取指定路径的文件内容&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;文件内容示例&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 状态持久化 ----------------------</span></span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 创建带子代理的智能代理系统 ----------------------</span></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    tools=[delete_file, read_file],  <span class="comment"># 主代理可用工具</span></span><br><span class="line">    interrupt_on=&#123;</span><br><span class="line">        <span class="string">&quot;delete_file&quot;</span>: <span class="literal">True</span>,   <span class="comment"># 主代理：删除文件需要审核</span></span><br><span class="line">        <span class="string">&quot;read_file&quot;</span>: <span class="literal">False</span>,    <span class="comment"># 主代理：读取文件不需要审核</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="comment"># 子代理配置</span></span><br><span class="line">    subagents=[&#123;</span><br><span class="line">        <span class="string">&quot;name&quot;</span>: <span class="string">&quot;file-manager&quot;</span>,</span><br><span class="line">        <span class="string">&quot;description&quot;</span>: <span class="string">&quot;专业的文件管理助手&quot;</span>,</span><br><span class="line">        <span class="string">&quot;system_prompt&quot;</span>: <span class="string">&quot;您是一个谨慎的文件管理助手，负责处理所有文件操作请求。&quot;</span>,</span><br><span class="line">        <span class="string">&quot;tools&quot;</span>: [delete_file, read_file],  <span class="comment"># 子代理可用工具</span></span><br><span class="line">        <span class="string">&quot;interrupt_on&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;delete_file&quot;</span>: <span class="literal">True</span>,   <span class="comment"># 继承/显式声明需要审核</span></span><br><span class="line">            <span class="string">&quot;read_file&quot;</span>: <span class="literal">True</span>,     <span class="comment"># 覆盖主代理：子代理读取文件也需要审核</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;],</span><br><span class="line">    checkpointer=checkpointer  <span class="comment"># 必须配置 checkpointer</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 会话配置 ----------------------</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="built_in">str</span>(uuid.uuid4())&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 触发任务（会交给子代理处理） ----------------------</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;读取并检查文件report.txt，然后删除临时文件temp.txt&quot;</span></span><br><span class="line">    &#125;]</span><br><span class="line">&#125;, config=config)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 处理中断（主/子代理的中断处理逻辑完全相同） ----------------------</span></span><br><span class="line"><span class="keyword">if</span> result.get(<span class="string">&quot;__interrupt__&quot;</span>):</span><br><span class="line">    interrupts = result[<span class="string">&quot;__interrupt__&quot;</span>][<span class="number">0</span>].value</span><br><span class="line">    action_requests = interrupts[<span class="string">&quot;action_requests&quot;</span>]</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;共有 <span class="subst">&#123;<span class="built_in">len</span>(action_requests)&#125;</span> 个操作需要审核（来自子代理）&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 这里模拟用户决策：批准读取文件，批准删除文件</span></span><br><span class="line">    decisions = [</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;approve&quot;</span>&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;approve&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 恢复执行</span></span><br><span class="line">    result = agent.invoke(</span><br><span class="line">        Command(resume=&#123;<span class="string">&quot;decisions&quot;</span>: decisions&#125;),</span><br><span class="line">        config=config</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---------------------- 输出结果 ----------------------</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;代理最终响应:&quot;</span>, result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+<p><strong>中断处理规则</strong></p>
+<blockquote>
+<p>当子代理触发中断时，处理方式与主代理相同 —— 检查 <code>__interrupt__</code> 并使用 <code>Command</code> 恢复执行。</p>
+</blockquote>
+<p>不管是主代理还是子代理触发的中断，你在外部调用时的处理逻辑是完全一样的：</p>
+<ol>
+<li>检查 <code>result.get(&quot;__interrupt__&quot;)</code> 是否存在。</li>
+<li>提取 <code>action_requests</code> 等信息。</li>
+<li>收集用户决策（approve/reject/edit）。</li>
+<li>用同一个 <code>config</code> + <code>Command(resume=...)</code> 恢复执行。</li>
+</ol>
+<ul>
+<li>你不需要区分中断来自主代理还是子代理，外部接口是统一的。</li>
+</ul>
+<h1 id="遵守人工介入规则"><a href="#遵守人工介入规则" class="headerlink" title="遵守人工介入规则"></a>遵守人工介入规则</h1><h2 id="1-始终使用checkpointer"><a href="#1-始终使用checkpointer" class="headerlink" title="1.始终使用checkpointer"></a>1.始终使用checkpointer</h2><p>人工介入流程中，当 AI 触发需要审核的操作时，会暂停执行，等待人工决策。</p>
+<ul>
+<li>暂停时，AI 的会话状态（包括对话历史、工具调用上下文、中间结果等）必须被保存下来。</li>
+<li>人工审核完成后，系统需要从暂停的位置恢复执行，而不是从头再来。</li>
+<li><code>checkpointer</code>（状态检查点）就是用来<strong>持久化保存会话状态</strong>的组件，是 HITL 功能的基础。</li>
+</ul>
+<p>如果不配置 <code>checkpointer</code>，中断时状态会丢失，人工审核后无法恢复执行，整个流程就会失效</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> deepagents <span class="keyword">import</span> create_deep_agent</span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例工具</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete_file</span>(<span class="params">file_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;文件 <span class="subst">&#123;file_path&#125;</span> 已删除&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">read_file</span>(<span class="params">file_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;文件内容&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 初始化checkpointer（HITL必需）</span></span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 创建带人工介入配置的智能代理</span></span><br><span class="line">agent = create_deep_agent(</span><br><span class="line">    tools=[delete_file, read_file],</span><br><span class="line">    interrupt_on=&#123;</span><br><span class="line">        <span class="string">&quot;delete_file&quot;</span>: <span class="literal">True</span>,  <span class="comment"># 删除文件需要审核</span></span><br><span class="line">        <span class="string">&quot;read_file&quot;</span>: <span class="literal">False</span>    <span class="comment"># 读取文件无需审核</span></span><br><span class="line">    &#125;,</span><br><span class="line">    checkpointer=checkpointer  <span class="comment"># 关键：绑定状态检查点</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<h2 id="2-保持thread-ID的一致性"><a href="#2-保持thread-ID的一致性" class="headerlink" title="2.保持thread ID的一致性"></a>2.保持thread ID的一致性</h2><p><code>thread_id</code> 是 LangGraph 中会话状态的唯一标识，中断和恢复时必须使用<strong>完全相同的 <code>thread_id</code></strong>，否则系统无法找到之前保存的会话状态，流程会直接出错。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 第一次调用</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;my-thread&quot;</span>&#125;&#125;</span><br><span class="line">result = agent.invoke(<span class="built_in">input</span>, config=config)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 恢复（使用相同的配置）</span></span><br><span class="line">result = agent.invoke(Command(resume=&#123;...&#125;), config=config)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>第一次调用时，创建一个带有固定 <code>thread_id</code>（这里是 <code>my-thread</code>）的配置对象。</p>
+</li>
+<li><p>代理执行时，会把会话状态保存到 <code>checkpointer</code> 中，并和这个 <code>thread_id</code> 绑定。</p>
+</li>
+<li>人工审核完成后恢复执行时，必须传入<strong>和第一次调用完全相同的 <code>config</code> 对象</strong>（包含同一个 <code>thread_id</code>）。</li>
+<li>系统会根据这个 <code>thread_id</code> 从 <code>checkpointer</code> 中加载之前的状态，从暂停的位置继续执行。</li>
+</ul>
+<h2 id="3-确保决策顺序雨操作请求一致"><a href="#3-确保决策顺序雨操作请求一致" class="headerlink" title="3.确保决策顺序雨操作请求一致"></a>3.确保决策顺序雨操作请求一致</h2><p>当一次中断里有多个待审核操作时，你提供的 <code>decisions</code> 列表，必须和 <code>action_requests</code> 列表里的操作顺序<strong>完全一一对应</strong>，不能乱序，也不能少给 / 多给决策。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> result.get(<span class="string">&quot;__interrupt__&quot;</span>):</span><br><span class="line">    interrupts = result[<span class="string">&quot;__interrupt__&quot;</span>][<span class="number">0</span>].value</span><br><span class="line">    action_requests = interrupts[<span class="string">&quot;action_requests&quot;</span>]</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 为每个操作创建一个决策，按顺序</span></span><br><span class="line">    decisions = []</span><br><span class="line">    <span class="keyword">for</span> action <span class="keyword">in</span> action_requests:</span><br><span class="line">        decision = get_user_decision(action)  <span class="comment"># 你的逻辑：让用户为每个操作选择approve/reject/edit</span></span><br><span class="line">        decisions.append(decision)</span><br><span class="line">    </span><br><span class="line">    result = agent.invoke(</span><br><span class="line">        Command(resume=&#123;<span class="string">&quot;decisions&quot;</span>: decisions&#125;),</span><br><span class="line">        config=config</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+<ul>
+<li>从中断信息中提取出所有待审核的操作列表 <code>action_requests</code>，它的顺序是 AI 生成工具调用的顺序。</li>
+<li>遍历 <code>action_requests</code>，<strong>按原顺序</strong>为每个操作收集用户的决策，存入 <code>decisions</code> 列表。</li>
+<li>这样可以确保 <code>decisions[i]</code> 对应 <code>action_requests[i]</code>，顺序不会出错。</li>
+<li>把按顺序收集好的 <code>decisions</code> 传给 <code>Command</code>，恢复执行。</li>
+<li>系统会根据每个决策，对对应的操作执行批准 / 拒绝 / 修改。</li>
+</ul>
+<p><strong>关键注意点</strong></p>
+<ul>
+<li><strong>顺序必须严格匹配</strong>：如果 <code>decisions</code> 的顺序和 <code>action_requests</code> 不一致，会导致决策被错误地应用到其他操作上，引发逻辑错误。</li>
+<li><strong>每个操作都要有决策</strong>：即使你只想处理其中一个操作，也必须为 <code>action_requests</code> 里的所有操作提供决策，不能只给部分。</li>
+</ul>
+<h2 id="4-根据风险级别定制审核策略"><a href="#4-根据风险级别定制审核策略" class="headerlink" title="4.根据风险级别定制审核策略"></a>4.根据风险级别定制审核策略</h2><p>人工介入不是 “一刀切” 的，不同工具操作的风险等级不同，需要配置不同的审核策略：</p>
+<ul>
+<li><strong>高风险操作</strong>：影响大、不可逆，需要人工完全控制，允许批准、修改、拒绝。</li>
+<li><strong>中等风险操作</strong>：有影响但可追溯，不允许修改，只能批准或拒绝。</li>
+<li><strong>低风险操作</strong>：无实质性影响，不需要审核，直接自动执行。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">interrupt_on = &#123;</span><br><span class="line">    <span class="comment"># 高风险：完全控制（approve, edit, reject）</span></span><br><span class="line">    <span class="string">&quot;delete_file&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;edit&quot;</span>, <span class="string">&quot;reject&quot;</span>]&#125;,</span><br><span class="line">    <span class="string">&quot;send_email&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;edit&quot;</span>, <span class="string">&quot;reject&quot;</span>]&#125;,</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 中等风险：不允许编辑</span></span><br><span class="line">    <span class="string">&quot;write_file&quot;</span>: &#123;<span class="string">&quot;allowed_decisions&quot;</span>: [<span class="string">&quot;approve&quot;</span>, <span class="string">&quot;reject&quot;</span>]&#125;,</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 低风险：无中断</span></span><br><span class="line">    <span class="string">&quot;read_file&quot;</span>: <span class="literal">False</span>,</span><br><span class="line">    <span class="string">&quot;list_files&quot;</span>: <span class="literal">False</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ol>
+<li><strong>高风险操作（<code>delete_file</code> / <code>send_email</code>）</strong></li>
+</ol>
+<ul>
+<li><strong>配置</strong>：<code>allowed_decisions: [&quot;approve&quot;, &quot;edit&quot;, &quot;reject&quot;]</code></li>
+<li><strong>含义</strong>：人工审核时，拥有完全控制权：<ul>
+<li><code>approve</code>：直接批准执行</li>
+<li><code>edit</code>：修改参数后再执行（比如修改删除的文件、邮件的收件人 / 内容）</li>
+<li><code>reject</code>：直接拒绝执行</li>
+</ul>
+</li>
+<li><strong>适用场景</strong>：<ul>
+<li><code>delete_file</code>：文件删除是不可逆操作，一旦出错无法恢复，需要人工把关并允许修改错误的删除请求。</li>
+<li><code>send_email</code>：邮件发送后无法撤回，可能涉及敏感信息，允许人工修改收件人、内容后再发送。</li>
+</ul>
+</li>
+</ul>
+<ol>
+<li><strong>中等风险操作（<code>write_file</code>）</strong></li>
+</ol>
+<ul>
+<li><strong>配置</strong>：<code>allowed_decisions: [&quot;approve&quot;, &quot;reject&quot;]</code></li>
+<li><strong>含义</strong>：只允许人工批准或拒绝，不允许修改参数。</li>
+<li><strong>适用场景</strong>：<ul>
+<li><code>write_file</code>：写入文件的内容通常是 AI 生成的报告、日志，人工不应该随意篡改内容，只需要确认是否允许写入即可。</li>
+<li>这种配置既保证了安全，又避免了人工修改带来的内容混乱。</li>
+</ul>
+</li>
+</ul>
+<ol>
+<li><strong>低风险操作（<code>read_file</code> / <code>list_files</code>）</strong></li>
+</ol>
+<ul>
+<li><strong>配置</strong>：<code>False</code></li>
+<li><strong>含义</strong>：禁用中断，不需要人工审核，直接自动执行。</li>
+<li><strong>适用场景</strong>：<ul>
+<li><code>read_file</code>：读取文件只是查看内容，不会修改数据，没有风险。</li>
+<li><code>list_files</code>：列出文件目录，也不会产生任何影响。</li>
+<li>直接放行可以大幅提升执行效率，避免无意义的人工审核。</li>
+</ul>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DeepAgents/" rel="tag"># DeepAgents</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/06/16/ai/ai-coding/vibe-coding/1-introduce/" rel="prev" title="Vibe Coding介绍">
+      <i class="fa fa-chevron-left"></i> Vibe Coding介绍
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/06/24/ai/langchain/deepagent/5-memory/" rel="next" title="DeepAgents为智能体打造长期记忆">
+      DeepAgents为智能体打造长期记忆 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E9%85%8D%E7%BD%AE"><span class="nav-number">2.</span> <span class="nav-text">基本配置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%B3%E7%AD%96%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">决策类型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E4%B8%AD%E6%96%AD"><span class="nav-number">4.</span> <span class="nav-text">处理中断</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8"><span class="nav-number">5.</span> <span class="nav-text">多个工具调用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E8%BE%91%E5%B7%A5%E5%85%B7%E5%8F%82%E6%95%B0"><span class="nav-number">6.</span> <span class="nav-text">编辑工具参数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AD%90%E4%BB%A3%E7%90%86%E4%B8%AD%E6%96%AD"><span class="nav-number">7.</span> <span class="nav-text">子代理中断</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%81%B5%E5%AE%88%E4%BA%BA%E5%B7%A5%E4%BB%8B%E5%85%A5%E8%A7%84%E5%88%99"><span class="nav-number">8.</span> <span class="nav-text">遵守人工介入规则</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%A7%8B%E7%BB%88%E4%BD%BF%E7%94%A8checkpointer"><span class="nav-number">8.1.</span> <span class="nav-text">1.始终使用checkpointer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%BF%9D%E6%8C%81thread-ID%E7%9A%84%E4%B8%80%E8%87%B4%E6%80%A7"><span class="nav-number">8.2.</span> <span class="nav-text">2.保持thread ID的一致性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E7%A1%AE%E4%BF%9D%E5%86%B3%E7%AD%96%E9%A1%BA%E5%BA%8F%E9%9B%A8%E6%93%8D%E4%BD%9C%E8%AF%B7%E6%B1%82%E4%B8%80%E8%87%B4"><span class="nav-number">8.3.</span> <span class="nav-text">3.确保决策顺序雨操作请求一致</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%A0%B9%E6%8D%AE%E9%A3%8E%E9%99%A9%E7%BA%A7%E5%88%AB%E5%AE%9A%E5%88%B6%E5%AE%A1%E6%A0%B8%E7%AD%96%E7%95%A5"><span class="nav-number">8.4.</span> <span class="nav-text">4.根据风险级别定制审核策略</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">182</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
