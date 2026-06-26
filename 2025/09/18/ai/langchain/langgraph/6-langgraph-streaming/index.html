@@ -22,7 +22,7 @@
 
   <meta name="description" content="学习LangGraph学习笔记第六讲">
 <meta property="og:type" content="article">
-<meta property="og:title" content="LangGraph之流式输出">
+<meta property="og:title" content="LangGraph之流式机制">
 <meta property="og:url" content="https://jinglv.github.io/2025/09/18/ai/langchain/langgraph/6-langgraph-streaming/index.html">
 <meta property="og:site_name" content="Jean&#39;s Blog">
 <meta property="og:description" content="学习LangGraph学习笔记第六讲">
@@ -46,7 +46,7 @@
   };
 </script>
 
-  <title>LangGraph之流式输出 | Jean's Blog</title>
+  <title>LangGraph之流式机制 | Jean's Blog</title>
   
 
 
@@ -205,7 +205,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          LangGraph之流式输出
+          LangGraph之流式机制
         </h1>
 
         <div class="post-meta">
@@ -240,7 +240,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>LangGraph 实现了一个流式传输系统，用于实时更新信息。对于基于大型语言模型（LLMs）构建的应用程序来说，流式传输对于增强其响应性至关重要。这是因为大型语言模型在处理复杂的自然语言任务时，可能会存在一定的延迟。而通过流式传输，可以在模型还在处理数据的过程中，就将部分结果逐步展示给用户，而不是让用户等待一个完整的响应，从而让用户能够更快地获得反馈，提高了应用程序的交互性。</p>
+        <h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>LangGraph 实现了一个流式传输系统，用于实时更新信息。对于基于大型语言模型（LLMs）构建的应用程序来说，流式传输对于增强其响应性至关重要。这是因为大型语言模型在处理复杂的自然语言任务时，可能会存在一定的延迟。而通过流式传输，可以在模型还在处理数据的过程中，就将部分结果逐步展示给用户，而不是让用户等待一个完整的响应，从而让用户能够更快地获得反馈，提高了应用程序的交互性。</p>
 <p>官方文档：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/streaming">https://docs.langchain.com/oss/python/langgraph/streaming</a></p>
 <ul>
 <li><strong>Stream graph state（流式传输图状态）</strong>：可以通过“updates”和“values”模式获取状态更新/值。其中，“updates”模式会流式传输图在每一步之后的状态更新，如果在同一个步骤中进行了多次更新（例如，运行了多个节点），这些更新将分别流式传输；而“values”模式则会流式传输图在每一步之后的完整状态值。</li>
@@ -256,35 +256,204 @@
 </ul>
 </li>
 </ul>
+<h1 id="流式处理如何重新定义-AI-交互体验"><a href="#流式处理如何重新定义-AI-交互体验" class="headerlink" title="流式处理如何重新定义 AI 交互体验"></a>流式处理如何重新定义 AI 交互体验</h1><p>核心是围绕「流式处理（Streaming）」，讲它对 AI 用户体验的革命性影响，以及 LangGraph 在这方面的创新方案。</p>
+<h2 id="流式处理的革命性意义"><a href="#流式处理的革命性意义" class="headerlink" title="流式处理的革命性意义"></a>流式处理的革命性意义</h2><p><strong>核心观点</strong></p>
+<ul>
+<li>流式处理，已经成为 AI 应用开发中<strong>提升用户体验的关键技术</strong>。</li>
+<li>传统的「全量输出」模式，是让用户<strong>等待整个响应完全生成后，再一次性展示结果</strong>。</li>
+<li>这种模式在处理复杂任务（比如长文本生成、多步骤推理）时，会产生明显的延迟，用户体验非常差。</li>
+</ul>
+<p><strong>通俗理解</strong></p>
+<p>你可以把它想象成：</p>
+<ul>
+<li>传统模式：点一份外卖，必须等所有菜做好、打包、骑手送到，你才能一口吃到饭。</li>
+<li>流式处理：厨师做好一道菜就先给你上一道，边做边吃，不用干等着。</li>
+</ul>
+<h2 id="LangGraph-的创新解决方案"><a href="#LangGraph-的创新解决方案" class="headerlink" title="LangGraph 的创新解决方案"></a>LangGraph 的创新解决方案</h2><ol>
+<li><strong>它解决了什么？</strong></li>
+</ol>
+<p>LangGraph 通过<strong>创新的多模式流式处理机制</strong>，解决了传统 AI 应用的延迟痛点，让开发者能构建「真正实时、响应迅速」的 AI 系统。</p>
+<ol>
+<li><strong>核心价值是什么？</strong></li>
+</ol>
+<p>LangGraph 的流式处理，核心在于<strong>把应用的运行状态，抽象成了一个「可观测的图结构」</strong>：</p>
+<ul>
+<li>图里的每一个节点（比如一个工具调用、一次 LLM 生成、一次分支判断），执行结果都能<strong>实时反馈给客户端</strong>。</li>
+<li>开发者可以根据场景，自由选择 3 种流式传输方案：<ol>
+<li><strong>完整状态快照</strong>：每次节点执行完，把整个应用的最新状态一次性推给前端。</li>
+<li><strong>增量更新</strong>：只把节点执行后变化的那部分状态，推送给前端。</li>
+<li><strong>Token 级输出</strong>：直接捕获 LLM 生成文本时的每一个 token，实现打字机效果。</li>
+</ol>
+</li>
+</ul>
+<p><strong>通俗理解</strong></p>
+<p>LangGraph 就像一个「智能厨房管理系统」：</p>
+<ul>
+<li>它把做菜的每个步骤（节点）都可视化了，厨师做完一步，系统就立刻通知你。</li>
+<li>你可以自己选怎么接收信息：<ul>
+<li>要么每次都看完整的进度报告（完整快照）；</li>
+<li>要么只看这次又做了哪道菜（增量更新）；</li>
+<li>甚至直接看厨师切菜、炒菜的每一个动作细节（Token 级输出）。</li>
+</ul>
+</li>
+</ul>
+<p>LangGraph 把流式处理玩出了新高度，它让 AI 应用不再是 “等半天再出结果”，而是可以边算边反馈，用户体验和交互方式都被彻底改变了</p>
+<h1 id="messages模式：实现打字机效果的核心"><a href="#messages模式：实现打字机效果的核心" class="headerlink" title="messages模式：实现打字机效果的核心"></a>messages模式：实现打字机效果的核心</h1><p>LangGraph 里最常用的流式处理模式 ——<code>messages</code> 模式，它是实现 AI 对话里 “打字机逐字输出” 效果的关键。</p>
+<h2 id="模式定义"><a href="#模式定义" class="headerlink" title="模式定义"></a>模式定义</h2><ul>
+<li><p><strong>核心定位</strong>：<code>messages</code> 模式是 LangGraph 流式处理中最直观、最常用的模式。</p>
+</li>
+<li><p><strong>核心用途</strong>：专门用于流式传输大语言模型（LLM）生成的令牌（Token），也就是让文本一个字一个字地 “打出来”。</p>
+</li>
+<li><p><strong>和其他模式的区别</strong>：它关注的是<strong>最终内容的逐字输出</strong>，而不是像 <code>values</code>/<code>updates</code> 模式那样，关注中间状态的变更。</p>
+</li>
+</ul>
+<h2 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ✅ 正确写法：正确解包元组</span></span><br><span class="line"><span class="keyword">for</span> message_chunk, metadata <span class="keyword">in</span> agent.stream(initial_state, stream_mode=<span class="string">&quot;messages&quot;</span>):</span><br><span class="line">    <span class="comment"># 检查对象是否是预期的消息类型并有内容属性</span></span><br><span class="line">    <span class="keyword">if</span> message_chunk.content:</span><br><span class="line">        <span class="built_in">print</span>(message_chunk.content, end=<span class="string">&#x27;&#x27;</span>, flush=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>agent.stream(initial_state, stream_mode=&quot;messages&quot;)</code><ul>
+<li>这是开启流式处理的核心方法，指定 <code>stream_mode=&quot;messages&quot;</code> 就进入了 <code>messages</code> 模式。</li>
+<li>它会返回一个可迭代的流，每次迭代会给你一对数据。</li>
+</ul>
+</li>
+<li><code>for message_chunk, metadata in ...</code><ul>
+<li>这是<strong>解包元组</strong>的关键操作。每次迭代返回的是一个包含两个元素的元组：<ul>
+<li><code>message_chunk</code>：LLM 生成的单块消息内容（也就是单个 / 多个 Token 组成的片段）。</li>
+<li><code>metadata</code>：和这条消息相关的元数据（比如是哪个节点生成的、时间戳等）。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><code>if message_chunk.content:</code><ul>
+<li>这是一个安全判断，避免处理没有文本内容的空消息块（比如纯工具调用的消息）。</li>
+</ul>
+</li>
+<li><code>print(message_chunk.content, end=&#39;&#39;, flush=True)</code><ul>
+<li><code>end=&#39;&#39;</code>：让打印不换行，实现连续输出。</li>
+<li><code>flush=True</code>：强制把内容立刻输出到控制台，而不是等缓冲区满了再一次性输出，这样才能看到实时的打字机效果。</li>
+</ul>
+</li>
+</ol>
+<h2 id="关键点"><a href="#关键点" class="headerlink" title="关键点"></a>关键点</h2><ul>
+<li><p>在 <code>stream_mode=&quot;messages&quot;</code> 模式下，每次迭代返回的是一个<strong>包含两个元素的元组 <code>(message_chunk, metadata)</code></strong>。</p>
+</li>
+<li><p>必须正确解包这两个元素，才能访问到 <code>message_chunk</code> 里的 <code>.content</code> 属性，否则会直接报错。</p>
+</li>
+<li><p>很多新手的坑就是忘了解包，直接用 <code>for chunk in agent.stream(...)</code>，结果拿到的是整个元组，访问 <code>.content</code> 就会失败。</p>
+</li>
+</ul>
+<p><strong>用 <code>stream_mode=&quot;messages&quot;</code> 开启逐字流，然后通过解包 <code>(message_chunk, metadata)</code> 拿到每个 Token 片段，再配合 <code>print(..., flush=True)</code> 实现打字机效果。</strong></p>
+<h2 id="异步流式处理优化"><a href="#异步流式处理优化" class="headerlink" title="异步流式处理优化"></a>异步流式处理优化</h2><ul>
+<li><p><strong>适用场景</strong>：Web 应用等高并发场景（比如同时给多个用户提供对话服务）。</p>
+</li>
+<li><p><strong>推荐方案</strong>：使用<strong>异步流式处理方法</strong>，也就是用 Python 的 <code>async/await</code> 语法来实现。</p>
+</li>
+<li><p><strong>为什么要用异步？</strong></p>
+</li>
+</ul>
+<p>​    同步的 <code>agent.stream()</code> 在处理请求时会阻塞线程，高并发下很容易卡死；而异步的 <code>agent.astream()</code> 可以让单个线程同时处理多个请求，大幅提升服务的并发能力和响应速度。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">stream_agent_response</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;异步流式处理AI代理的响应&quot;&quot;&quot;</span></span><br><span class="line">    initial_state = &#123;<span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请帮我写一首诗&quot;</span>&#125;]&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">for</span> message_chunk, metadata <span class="keyword">in</span> agent.astream(initial_state, stream_mode=<span class="string">&quot;messages&quot;</span>):</span><br><span class="line">        <span class="keyword">if</span> message_chunk.content:</span><br><span class="line">            <span class="comment"># 在实际应用中，这里会将内容实时推送到前端</span></span><br><span class="line">            <span class="keyword">yield</span> message_chunk.content</span><br></pre></td></tr></table></figure>
+<ol>
+<li><p><code>async def stream_agent_response()</code></p>
+<ul>
+<li><p>定义了一个<strong>异步生成器函数</strong>，函数里可以使用 <code>await</code> 和 <code>async for</code>。</p>
+</li>
+<li><p>这种函数通常会被 FastAPI、Starlette 等 Web 框架用来实现 SSE（Server-Sent Events）流式接口。</p>
+</li>
+</ul>
+</li>
+<li><p><code>initial_state = &#123;&quot;messages&quot;: [...]&#125;</code></p>
+<ul>
+<li>初始化对话状态，这里模拟用户发送了一句 “请帮我写一首诗” 的请求。</li>
+</ul>
+</li>
+<li><p><code>async for message_chunk, metadata in agent.astream(...)</code></p>
+<ul>
+<li><p><code>agent.astream()</code> 是 LangGraph 提供的<strong>异步流式方法</strong>，对应同步的 <code>agent.stream()</code>。</p>
+</li>
+<li><p><code>async for</code> 用来异步迭代流数据，在等待 LLM 生成 Token 的间隙，线程可以去处理其他请求，不会被阻塞。</p>
+</li>
+<li><p>和同步模式一样，每次迭代返回的是 <code>(message_chunk, metadata)</code> 元组，需要解包才能拿到消息内容。</p>
+</li>
+</ul>
+</li>
+<li><p><code>if message_chunk.content:</code></p>
+<ul>
+<li>安全判断，过滤掉没有文本内容的消息块（比如纯工具调用的消息）。</li>
+</ul>
+</li>
+<li><p><code>yield message_chunk.content</code></p>
+<ul>
+<li><p>用 <code>yield</code> 把生成的文本片段一个个 “吐出来”，形成一个异步生成器。</p>
+</li>
+<li><p>在实际 Web 应用中，框架会把这些片段实时推送给前端，实现打字机效果。</p>
+</li>
+</ul>
+</li>
+</ol>
+<p><strong>在 Web 高并发场景下，用 <code>agent.astream()</code> + <code>async for</code> 实现异步流式处理，既能让用户看到打字机效果，又能保证服务同时处理大量请求不卡顿。</strong></p>
+<h1 id="同步-vs-异步流"><a href="#同步-vs-异步流" class="headerlink" title="同步 vs 异步流"></a>同步 vs 异步流</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">同步流</th>
+<th style="text-align:left">异步流</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>agent.stream()</code></td>
+<td style="text-align:left"><code>agent.astream()</code></td>
+</tr>
+<tr>
+<td style="text-align:left">用 <code>for ... in ...</code> 迭代</td>
+<td style="text-align:left">用 <code>async for ... in ...</code> 迭代</td>
+</tr>
+<tr>
+<td style="text-align:left">阻塞线程，不适合高并发</td>
+<td style="text-align:left">非阻塞，高并发性能好</td>
+</tr>
+<tr>
+<td style="text-align:left">适合脚本、命令行工具</td>
+<td style="text-align:left">适合 Web 服务、API 接口</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>在 FastAPI 里，你可以直接把这个异步生成器返回成一个 <code>StreamingResponse</code>，前端就能收到实时的文本流了。</p>
 <h1 id="支持的流模式（stream-mode）"><a href="#支持的流模式（stream-mode）" class="headerlink" title="支持的流模式（stream_mode）"></a>支持的流模式（stream_mode）</h1><p>将以下一种或多种流模式作为列表传递给 <a target="_blank" rel="noopener" href="https://langchain-ai.github.io/langgraph/reference/graphs/#langgraph.graph.state.CompiledStateGraph.stream"><code>stream（）</code></a> 或 <a target="_blank" rel="noopener" href="https://langchain-ai.github.io/langgraph/reference/graphs/#langgraph.graph.state.CompiledStateGraph.astream"><code>astream（）</code></a> 方法：</p>
 <div class="table-container">
 <table>
 <thead>
 <tr>
-<th>模式</th>
-<th>描述</th>
+<th style="text-align:left">模式</th>
+<th style="text-align:left">核心概念</th>
+<th style="text-align:left">适用场景</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>values</code></td>
-<td>每个图步骤后流式传输完整状态值。</td>
+<td style="text-align:left"><strong>values 模式</strong>完整状态快照</td>
+<td style="text-align:left">在每个节点执行后返回<strong>完整的图状态</strong>，提供全局视角的状态监控。</td>
+<td style="text-align:left">调试和开发阶段查看完整状态；需要全局上下文进行审计追踪；状态规模较小或网络带宽充足的情况。</td>
 </tr>
 <tr>
-<td><code>updates</code></td>
-<td>每个步骤后流式传输状态的增量更新。</td>
+<td style="text-align:left"><strong>updates 模式</strong>增量状态更新</td>
+<td style="text-align:left">只传输状态<strong>发生变化的部分</strong>，大幅减少数据传输量。</td>
+<td style="text-align:left">生产环境下的状态同步；需要高效网络传输的场景；实时监控特定字段的变化。</td>
 </tr>
 <tr>
-<td><code>custom</code></td>
-<td>从图中节点流式传输自定义数据。</td>
+<td style="text-align:left"><strong>messages 模式</strong>LLM 令牌流</td>
+<td style="text-align:left">实时流式传输大语言模型的生成过程，实现<strong>打字机效果</strong>。</td>
+<td style="text-align:left">聊天机器人界面；需要实时显示 AI 思考过程；提升用户交互体验。</td>
 </tr>
 <tr>
-<td><code>messages</code></td>
-<td>从调用 LLM 的节点流式传输生成的 token 及元数据（元组）。</td>
+<td style="text-align:left"><strong>custom 模式</strong>自定义数据流</td>
+<td style="text-align:left">允许开发者发送自定义的业务数据，与核心状态分离。</td>
+<td style="text-align:left">进度条和状态更新；业务特定的通知消息；调试和监控信息。</td>
 </tr>
 <tr>
-<td><code>debug</code></td>
-<td>尽可能多地流式传输调试信息。</td>
+<td style="text-align:left"><strong>debug 模式</strong>详细调试信息</td>
+<td style="text-align:left">提供最详细的执行信息，包括节点生命周期、执行时间等。</td>
+<td style="text-align:left">深度调试和性能分析；排查复杂的执行问题；学习和理解 LangGraph 内部机制。</td>
 </tr>
 </tbody>
 </table>
@@ -293,29 +462,137 @@
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stream_mode=[<span class="string">&quot;updates&quot;</span>, <span class="string">&quot;messages&quot;</span>, <span class="string">&quot;custom&quot;</span>]</span><br></pre></td></tr></table></figure>
 <p>定义一个常见的图</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    topic: <span class="built_in">str</span></span><br><span class="line">    joke: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">refine_topic</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;topic&quot;</span>: state[<span class="string">&quot;topic&quot;</span>] + <span class="string">&quot;和小狗&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_joke</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;joke&quot;</span>: <span class="string">f&quot;这是一个关于<span class="subst">&#123;state[<span class="string">&#x27;topic&#x27;</span>]&#125;</span>的笑话&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">graph = (</span><br><span class="line">    StateGraph(State)</span><br><span class="line">    .add_node(refine_topic)</span><br><span class="line">    .add_node(generate_joke)</span><br><span class="line">    .add_edge(START, <span class="string">&quot;refine_topic&quot;</span>)</span><br><span class="line">    .add_edge(<span class="string">&quot;refine_topic&quot;</span>, <span class="string">&quot;generate_joke&quot;</span>)</span><br><span class="line">    .<span class="built_in">compile</span>()</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<h1 id="流式传输stream-mode-”values”"><a href="#流式传输stream-mode-”values”" class="headerlink" title="流式传输stream_mode=”values”"></a>流式传输stream_mode=”values”</h1><p>在图表的每个步骤之后传输状态的完整值</p>
+<h2 id="流式传输stream-mode-”values”"><a href="#流式传输stream-mode-”values”" class="headerlink" title="流式传输stream_mode=”values”"></a>流式传输stream_mode=”values”</h2><p>在图表的每个步骤之后传输状态的完整值</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">    &#123;<span class="string">&quot;topic&quot;</span>: <span class="string">&quot;冰激凌&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;values&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br></pre></td></tr></table></figure>
 <p>执行结果</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌&#x27;</span>&#125;</span><br><span class="line">&#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌和小狗&#x27;</span>&#125;</span><br><span class="line">&#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌和小狗&#x27;</span>, <span class="string">&#x27;joke&#x27;</span>: <span class="string">&#x27;这是一个关于冰激凌和小狗的笑话&#x27;</span>&#125;</span><br></pre></td></tr></table></figure>
 <p>说明：<code>values</code> 则输出完整状态值。</p>
-<h1 id="流式传输stream-mode-”updates”"><a href="#流式传输stream-mode-”updates”" class="headerlink" title="流式传输stream_mode=”updates”"></a>流式传输stream_mode=”updates”</h1><p>将图表每一步之后的更新流式传输到状态</p>
+<h2 id="流式传输stream-mode-”updates”"><a href="#流式传输stream-mode-”updates”" class="headerlink" title="流式传输stream_mode=”updates”"></a>流式传输stream_mode=”updates”</h2><p>将图表每一步之后的更新流式传输到状态</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">    &#123;<span class="string">&quot;topic&quot;</span>: <span class="string">&quot;冰激凌&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;updates&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br></pre></td></tr></table></figure>
 <p>执行结果</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&#x27;refine_topic&#x27;</span>: &#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌和小狗&#x27;</span>&#125;&#125;</span><br><span class="line">&#123;<span class="string">&#x27;generate_joke&#x27;</span>: &#123;<span class="string">&#x27;joke&#x27;</span>: <span class="string">&#x27;这是一个关于冰激凌和小狗的笑话&#x27;</span>&#125;&#125;</span><br></pre></td></tr></table></figure>
 <p>说明：updates 模式输出节点的状态更新</p>
-<h1 id="流式传输stream-mode-”debug”"><a href="#流式传输stream-mode-”debug”" class="headerlink" title="流式传输stream_mode=”debug”"></a>流式传输stream_mode=”debug”</h1><p>在图表的整个执行过程中传输尽可能多的信息</p>
+<h2 id="流式传输stream-mode-”debug”"><a href="#流式传输stream-mode-”debug”" class="headerlink" title="流式传输stream_mode=”debug”"></a>流式传输stream_mode=”debug”</h2><p>在图表的整个执行过程中传输尽可能多的信息</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> graph.stream(</span><br><span class="line">    &#123;<span class="string">&quot;topic&quot;</span>: <span class="string">&quot;冰激凌&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;debug&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br></pre></td></tr></table></figure>
 <p>执行结果</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="string">&#x27;step&#x27;</span>: 1, <span class="string">&#x27;timestamp&#x27;</span>: <span class="string">&#x27;2025-09-18T08:51:31.478123+00:00&#x27;</span>, <span class="string">&#x27;type&#x27;</span>: <span class="string">&#x27;task&#x27;</span>, <span class="string">&#x27;payload&#x27;</span>: &#123;<span class="string">&#x27;id&#x27;</span>: <span class="string">&#x27;671c3949-69b8-8e90-b997-e76a1f711f5f&#x27;</span>, <span class="string">&#x27;name&#x27;</span>: <span class="string">&#x27;refine_topic&#x27;</span>, <span class="string">&#x27;input&#x27;</span>: &#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌&#x27;</span>&#125;, <span class="string">&#x27;triggers&#x27;</span>: (<span class="string">&#x27;branch:to:refine_topic&#x27;</span>,)&#125;&#125;</span><br><span class="line">&#123;<span class="string">&#x27;step&#x27;</span>: 1, <span class="string">&#x27;timestamp&#x27;</span>: <span class="string">&#x27;2025-09-18T08:51:31.478680+00:00&#x27;</span>, <span class="string">&#x27;type&#x27;</span>: <span class="string">&#x27;task_result&#x27;</span>, <span class="string">&#x27;payload&#x27;</span>: &#123;<span class="string">&#x27;id&#x27;</span>: <span class="string">&#x27;671c3949-69b8-8e90-b997-e76a1f711f5f&#x27;</span>, <span class="string">&#x27;name&#x27;</span>: <span class="string">&#x27;refine_topic&#x27;</span>, <span class="string">&#x27;error&#x27;</span>: None, <span class="string">&#x27;result&#x27;</span>: [(<span class="string">&#x27;topic&#x27;</span>, <span class="string">&#x27;冰激凌和小狗&#x27;</span>)], <span class="string">&#x27;interrupts&#x27;</span>: []&#125;&#125;</span><br><span class="line">&#123;<span class="string">&#x27;step&#x27;</span>: 2, <span class="string">&#x27;timestamp&#x27;</span>: <span class="string">&#x27;2025-09-18T08:51:31.478828+00:00&#x27;</span>, <span class="string">&#x27;type&#x27;</span>: <span class="string">&#x27;task&#x27;</span>, <span class="string">&#x27;payload&#x27;</span>: &#123;<span class="string">&#x27;id&#x27;</span>: <span class="string">&#x27;b7f1816a-7dab-4847-e8e6-78ae4d691a8e&#x27;</span>, <span class="string">&#x27;name&#x27;</span>: <span class="string">&#x27;generate_joke&#x27;</span>, <span class="string">&#x27;input&#x27;</span>: &#123;<span class="string">&#x27;topic&#x27;</span>: <span class="string">&#x27;冰激凌和小狗&#x27;</span>&#125;, <span class="string">&#x27;triggers&#x27;</span>: (<span class="string">&#x27;branch:to:generate_joke&#x27;</span>,)&#125;&#125;</span><br><span class="line">&#123;<span class="string">&#x27;step&#x27;</span>: 2, <span class="string">&#x27;timestamp&#x27;</span>: <span class="string">&#x27;2025-09-18T08:51:31.479006+00:00&#x27;</span>, <span class="string">&#x27;type&#x27;</span>: <span class="string">&#x27;task_result&#x27;</span>, <span class="string">&#x27;payload&#x27;</span>: &#123;<span class="string">&#x27;id&#x27;</span>: <span class="string">&#x27;b7f1816a-7dab-4847-e8e6-78ae4d691a8e&#x27;</span>, <span class="string">&#x27;name&#x27;</span>: <span class="string">&#x27;generate_joke&#x27;</span>, <span class="string">&#x27;error&#x27;</span>: None, <span class="string">&#x27;result&#x27;</span>: [(<span class="string">&#x27;joke&#x27;</span>, <span class="string">&#x27;这是一个关于冰激凌和小狗的笑话&#x27;</span>)], <span class="string">&#x27;interrupts&#x27;</span>: []&#125;&#125;</span><br></pre></td></tr></table></figure>
 <p>从以上结果来看，可以看打执行的详细信息，每一个步骤执行</p>
-<h1 id="LLM-token-流式传输stream-mode-”messages”"><a href="#LLM-token-流式传输stream-mode-”messages”" class="headerlink" title="LLM token 流式传输stream_mode=”messages”"></a>LLM token 流式传输stream_mode=”messages”</h1><p>为调用LLM的图形节点传输LLM令牌和元数据</p>
+<h2 id="LLM-token-流式传输stream-mode-”messages”"><a href="#LLM-token-流式传输stream-mode-”messages”" class="headerlink" title="LLM token 流式传输stream_mode=”messages”"></a>LLM token 流式传输stream_mode=”messages”</h2><p>为调用LLM的图形节点传输LLM令牌和元数据</p>
 <p>需要接入大模型</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_deepseek <span class="keyword">import</span> ChatDeepSeek</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line">llm = ChatDeepSeek(</span><br><span class="line">    model=<span class="string">&quot;deepseek-chat&quot;</span>,</span><br><span class="line">    temperature=<span class="number">0</span>,</span><br><span class="line">    api_key=os.environ.get(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),</span><br><span class="line">    base_url=os.environ.get(<span class="string">&quot;DEEPSEEK_API_BASE&quot;</span>),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_joke</span>(<span class="params">state: State</span>):</span><br><span class="line">    llm_response = llm.invoke(</span><br><span class="line">        [</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">f&quot;生成一个关于 <span class="subst">&#123;state[<span class="string">&#x27;topic&#x27;</span>]&#125;</span>的笑话&quot;</span>&#125;</span><br><span class="line">        ]</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;joke&quot;</span>: llm_response.content&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">graph = (</span><br><span class="line">    StateGraph(State)</span><br><span class="line">    .add_node(refine_topic)</span><br><span class="line">    .add_node(generate_joke)</span><br><span class="line">    .add_edge(START, <span class="string">&quot;refine_topic&quot;</span>)</span><br><span class="line">    .add_edge(<span class="string">&quot;refine_topic&quot;</span>, <span class="string">&quot;generate_joke&quot;</span>)</span><br><span class="line">    .<span class="built_in">compile</span>()</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> message_chunk, metadata <span class="keyword">in</span> graph.stream(</span><br><span class="line">    &#123;<span class="string">&quot;topic&quot;</span>: <span class="string">&quot;冰激凌&quot;</span>&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;messages&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="keyword">if</span> message_chunk.content:</span><br><span class="line">        <span class="built_in">print</span>(message_chunk.content, end=<span class="string">&quot;|&quot;</span>, flush=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
 <p>执行结果(流式输出的)</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">小狗|走进|一家|冰|激|凌|店|，|店员|问|：“|想要|什么|口|味的|？”</span><br><span class="line">|小狗|说|：“|汪|草|味的|！”</span><br><span class="line">|店员|愣|住|：“|抱歉|…|我们没有|汪|草|口味|。”</span><br><span class="line">|小狗|叹气|：“|那|好吧|，|给我|一个|‘|爪子|’|饼干|筒|装|香|草|味|——|但|记住|，|这次|别|再把|我的|球|藏|进|冰|激|凌|里|了|，|上次|我|挖|了|半小时|！”|🍦|🐶|</span><br><span class="line"></span><br><span class="line">|（|注|：|谐|音|梗|：|汪|草|=|香|草|，|爪子|=|甜|筒|品牌|“|可爱|多|”|的|经典|筒|身|设计|）|</span><br></pre></td></tr></table></figure>
 <p>说明：每生成一个 token 就会立即输出，并附带上下文信息。</p>
-<h1 id="工具中自定义数据流式输出stream-mode-”custom”"><a href="#工具中自定义数据流式输出stream-mode-”custom”" class="headerlink" title="工具中自定义数据流式输出stream_mode=”custom”"></a>工具中自定义数据流式输出stream_mode=”custom”</h1><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/9/30 14:48</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> langgraph.config <span class="keyword">import</span> get_stream_writer</span><br><span class="line"><span class="keyword">from</span> langgraph.constants <span class="keyword">import</span> START, END</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> app.agent.model.llms <span class="keyword">import</span> qv_llm</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义状态</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;状态&quot;&quot;&quot;</span></span><br><span class="line">    user_input: <span class="built_in">str</span></span><br><span class="line">    test_cases: <span class="built_in">str</span></span><br><span class="line">    result: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义运行时的上下文参数</span></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RuntimeContext</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;运行时上下文参数&quot;&quot;&quot;</span></span><br><span class="line">    test_env: <span class="built_in">str</span>  <span class="comment"># 测试环境</span></span><br><span class="line">    tester_name: <span class="built_in">str</span>  <span class="comment"># 测试人员名称</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generator_test_case</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;生成测试用例&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行生成测试用例的节点&quot;</span>)</span><br><span class="line">    prompt = <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请帮我生成用户5条登录的测试用例，登录账号密码的长度限制为8到16位     </span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    cases = qv_llm.invoke(prompt)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;test_cases&quot;</span>: cases&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">run_test_cases</span>(<span class="params">state: State, runtime: Runtime[RuntimeContext]</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;执行测试用例&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行【分析测试用例】的节点&quot;</span>)</span><br><span class="line">    cases = state[<span class="string">&#x27;test_cases&#x27;</span>]</span><br><span class="line">    prompt = <span class="string">f&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请分析当前的五条测试用例，是否有缺陷,</span></span><br><span class="line"><span class="string">    用例数据如下：<span class="subst">&#123;cases&#125;</span></span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    result = qv_llm.invoke(prompt)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;result&quot;</span>: result&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generator_test_report</span>(<span class="params">state: State, config: RunnableConfig</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;生成测试报告&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始【生成测试报告】的节点运行&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;report&quot;</span>: <span class="string">&quot;这个是一个测试报告&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># =================工作流的创建个编排===================</span></span><br><span class="line">graph = StateGraph(State, context_schema=RuntimeContext)</span><br><span class="line">graph.add_node(<span class="string">&quot;生成测试用例&quot;</span>, generator_test_case)</span><br><span class="line">graph.add_node(<span class="string">&quot;执行测试用例&quot;</span>, run_test_cases)</span><br><span class="line">graph.add_node(<span class="string">&quot;生成测试报告&quot;</span>, generator_test_report)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置起点</span></span><br><span class="line"><span class="comment"># graph.set_entry_point(&quot;生成测试用例&quot;)</span></span><br><span class="line">graph.add_edge(START, <span class="string">&quot;生成测试用例&quot;</span>)</span><br><span class="line">graph.add_edge(<span class="string">&quot;生成测试用例&quot;</span>, <span class="string">&quot;执行测试用例&quot;</span>)</span><br><span class="line">graph.add_edge(<span class="string">&quot;执行测试用例&quot;</span>, <span class="string">&quot;生成测试报告&quot;</span>)</span><br><span class="line"><span class="comment"># graph.set_finish_point(&quot;生成测试报告&quot;)</span></span><br><span class="line">graph.add_edge(<span class="string">&quot;生成测试报告&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">app = graph.<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line">response = app.stream(&#123;<span class="string">&quot;user_input&quot;</span>: <span class="string">&quot;测试项目A&quot;</span>&#125;,</span><br><span class="line">                      config=&#123;<span class="string">&quot;recursion_limit&quot;</span>: <span class="number">5</span>&#125;,</span><br><span class="line">                      context=RuntimeContext(test_env=<span class="string">&quot;测试环境A&quot;</span>, tester_name=<span class="string">&quot;张三&quot;</span>),</span><br><span class="line">                      stream_mode=[<span class="string">&#x27;messages&#x27;</span>, <span class="string">&#x27;custom&#x27;</span>]</span><br><span class="line">                      )</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> input_type, chunk <span class="keyword">in</span> response:</span><br><span class="line">    <span class="keyword">if</span> input_type == <span class="string">&quot;messages&quot;</span>:</span><br><span class="line">        <span class="comment"># ai的输出内容</span></span><br><span class="line">        <span class="built_in">print</span>(chunk[<span class="number">0</span>].content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">elif</span> input_type == <span class="string">&quot;custom&quot;</span>:</span><br><span class="line">        <span class="comment"># 工具执行的输出内容</span></span><br><span class="line">        <span class="built_in">print</span>(chunk)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="工具中自定义数据流式输出stream-mode-”custom”"><a href="#工具中自定义数据流式输出stream-mode-”custom”" class="headerlink" title="工具中自定义数据流式输出stream_mode=”custom”"></a>工具中自定义数据流式输出stream_mode=”custom”</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @Time：2025/9/30 14:48</span></span><br><span class="line"><span class="comment"># @Author：jinglv</span></span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> langgraph.config <span class="keyword">import</span> get_stream_writer</span><br><span class="line"><span class="keyword">from</span> langgraph.constants <span class="keyword">import</span> START, END</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.runtime <span class="keyword">import</span> Runtime</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> app.agent.model.llms <span class="keyword">import</span> qv_llm</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义状态</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;状态&quot;&quot;&quot;</span></span><br><span class="line">    user_input: <span class="built_in">str</span></span><br><span class="line">    test_cases: <span class="built_in">str</span></span><br><span class="line">    result: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义运行时的上下文参数</span></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RuntimeContext</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;运行时上下文参数&quot;&quot;&quot;</span></span><br><span class="line">    test_env: <span class="built_in">str</span>  <span class="comment"># 测试环境</span></span><br><span class="line">    tester_name: <span class="built_in">str</span>  <span class="comment"># 测试人员名称</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generator_test_case</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;生成测试用例&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行生成测试用例的节点&quot;</span>)</span><br><span class="line">    prompt = <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请帮我生成用户5条登录的测试用例，登录账号密码的长度限制为8到16位     </span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    cases = qv_llm.invoke(prompt)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;test_cases&quot;</span>: cases&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">run_test_cases</span>(<span class="params">state: State, runtime: Runtime[RuntimeContext]</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;执行测试用例&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始执行【分析测试用例】的节点&quot;</span>)</span><br><span class="line">    cases = state[<span class="string">&#x27;test_cases&#x27;</span>]</span><br><span class="line">    prompt = <span class="string">f&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    请分析当前的五条测试用例，是否有缺陷,</span></span><br><span class="line"><span class="string">    用例数据如下：<span class="subst">&#123;cases&#125;</span></span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    result = qv_llm.invoke(prompt)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;result&quot;</span>: result&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generator_test_report</span>(<span class="params">state: State, config: RunnableConfig</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;生成测试报告&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line">    writer(<span class="string">f&quot;开始【生成测试报告】的节点运行&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;report&quot;</span>: <span class="string">&quot;这个是一个测试报告&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># =================工作流的创建个编排===================</span></span><br><span class="line">graph = StateGraph(State, context_schema=RuntimeContext)</span><br><span class="line">graph.add_node(<span class="string">&quot;生成测试用例&quot;</span>, generator_test_case)</span><br><span class="line">graph.add_node(<span class="string">&quot;执行测试用例&quot;</span>, run_test_cases)</span><br><span class="line">graph.add_node(<span class="string">&quot;生成测试报告&quot;</span>, generator_test_report)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置起点</span></span><br><span class="line"><span class="comment"># graph.set_entry_point(&quot;生成测试用例&quot;)</span></span><br><span class="line">graph.add_edge(START, <span class="string">&quot;生成测试用例&quot;</span>)</span><br><span class="line">graph.add_edge(<span class="string">&quot;生成测试用例&quot;</span>, <span class="string">&quot;执行测试用例&quot;</span>)</span><br><span class="line">graph.add_edge(<span class="string">&quot;执行测试用例&quot;</span>, <span class="string">&quot;生成测试报告&quot;</span>)</span><br><span class="line"><span class="comment"># graph.set_finish_point(&quot;生成测试报告&quot;)</span></span><br><span class="line">graph.add_edge(<span class="string">&quot;生成测试报告&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">app = graph.<span class="built_in">compile</span>()</span><br><span class="line"></span><br><span class="line">response = app.stream(&#123;<span class="string">&quot;user_input&quot;</span>: <span class="string">&quot;测试项目A&quot;</span>&#125;,</span><br><span class="line">                      config=&#123;<span class="string">&quot;recursion_limit&quot;</span>: <span class="number">5</span>&#125;,</span><br><span class="line">                      context=RuntimeContext(test_env=<span class="string">&quot;测试环境A&quot;</span>, tester_name=<span class="string">&quot;张三&quot;</span>),</span><br><span class="line">                      stream_mode=[<span class="string">&#x27;messages&#x27;</span>, <span class="string">&#x27;custom&#x27;</span>]</span><br><span class="line">                      )</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> input_type, chunk <span class="keyword">in</span> response:</span><br><span class="line">    <span class="keyword">if</span> input_type == <span class="string">&quot;messages&quot;</span>:</span><br><span class="line">        <span class="comment"># ai的输出内容</span></span><br><span class="line">        <span class="built_in">print</span>(chunk[<span class="number">0</span>].content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">elif</span> input_type == <span class="string">&quot;custom&quot;</span>:</span><br><span class="line">        <span class="comment"># 工具执行的输出内容</span></span><br><span class="line">        <span class="built_in">print</span>(chunk)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 <p>注意：必须在 LangGraph 执行上下文中调用 get_stream_writer()，否则无效。</p>
+<h1 id="messages模式与其他模式的对比"><a href="#messages模式与其他模式的对比" class="headerlink" title="messages模式与其他模式的对比"></a>messages模式与其他模式的对比</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">特性维度</th>
+<th style="text-align:left"><code>messages</code> 模式</th>
+<th style="text-align:left"><code>updates</code> 模式</th>
+<th style="text-align:left"><code>values</code> 模式</th>
+<th style="text-align:left"><code>custom</code> 模式</th>
+<th style="text-align:left"><code>debug</code> 模式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>流式单位</strong></td>
+<td style="text-align:left">LLM 令牌 / 消息块</td>
+<td style="text-align:left">状态增量更新</td>
+<td style="text-align:left">完整状态快照</td>
+<td style="text-align:left">自定义业务数据</td>
+<td style="text-align:left">详细调试信息</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>数据粒度</strong></td>
+<td style="text-align:left">最细（字符级）</td>
+<td style="text-align:left">中等（字段级）</td>
+<td style="text-align:left">最粗（状态级）</td>
+<td style="text-align:left">灵活可定义</td>
+<td style="text-align:left">最详细（节点级）</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>主要用途</strong></td>
+<td style="text-align:left">聊天界面、逐字输出</td>
+<td style="text-align:left">状态监控、进度跟踪</td>
+<td style="text-align:left">调试、审计</td>
+<td style="text-align:left">业务事件通知</td>
+<td style="text-align:left">深度调试和性能分析</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>性能开销</strong></td>
+<td style="text-align:left">中等</td>
+<td style="text-align:left">最低</td>
+<td style="text-align:left">最高</td>
+<td style="text-align:left">低</td>
+<td style="text-align:left">非常高</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>网络传输</strong></td>
+<td style="text-align:left">适合实时传输</td>
+<td style="text-align:left">高效，适合频繁更新</td>
+<td style="text-align:left">数据量大，适合内网</td>
+<td style="text-align:left">按需定义</td>
+<td style="text-align:left">不适合生产环境</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ol>
+<li><p><strong>用户交互首选：<code>messages</code> 模式</strong></p>
+<p>它是实现打字机效果的核心，数据粒度最细，专门为聊天界面的实时逐字输出设计，是面向用户的 AI 对话应用的标配。</p>
+</li>
+<li><p><strong>生产环境高效之选：<code>updates</code> 模式</strong></p>
+<p>只传输状态变化的部分，性能开销最低、传输效率最高，适合生产环境的状态同步和频繁更新场景。</p>
+</li>
+<li><p><strong>开发调试专用：<code>values</code> 和 <code>debug</code> 模式</strong></p>
+<ul>
+<li><code>values</code> 模式返回完整状态快照，适合开发调试和审计追踪，但数据量大、开销高，不适合高并发生产环境。</li>
+<li><code>debug</code> 模式提供最详细的节点级执行信息，适合排查复杂问题和性能分析，但开销非常高，绝对不建议在生产环境使用。</li>
+</ul>
+</li>
+<li><p><strong>灵活扩展方案：<code>custom</code> 模式</strong></p>
+<p>可以自定义业务数据，与核心状态分离，适合发送进度条更新、业务通知等场景，兼顾灵活性和低开销。</p>
+</li>
+</ol>
+<h1 id="多模式组合应用"><a href="#多模式组合应用" class="headerlink" title="多模式组合应用"></a>多模式组合应用</h1><p><strong>LangGraph 中多种流式处理模式的组合使用</strong>，解决了实际项目中 “单一模式无法同时满足多种需求” 的问题。</p>
+<h2 id="核心概念：多模式组合"><a href="#核心概念：多模式组合" class="headerlink" title="核心概念：多模式组合"></a>核心概念：多模式组合</h2><ul>
+<li>在实际项目中，单一的流式模式往往无法同时满足用户交互、状态监控、业务事件、调试等多种需求。</li>
+<li>LangGraph 支持通过 <code>stream_mode</code> 参数传入一个模式列表（比如 <code>[&quot;messages&quot;, &quot;updates&quot;]</code>），让你同时接收多种类型的流数据。</li>
+<li>流数据会以 <code>(mode, chunk)</code> 的形式返回，你可以根据 <code>mode</code> 字段来区分处理不同类型的数据。</li>
+</ul>
+<h2 id="代码示例-1"><a href="#代码示例-1" class="headerlink" title="代码示例"></a>代码示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 同时接收LLM令牌和状态更新</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">for</span> mode, chunk <span class="keyword">in</span> agent.astream(</span><br><span class="line">    initial_state,</span><br><span class="line">    stream_mode=[<span class="string">&quot;messages&quot;</span>, <span class="string">&quot;updates&quot;</span>]  <span class="comment"># 多模式组合</span></span><br><span class="line">):</span><br><span class="line">    <span class="keyword">if</span> mode == <span class="string">&quot;messages&quot;</span>:</span><br><span class="line">        msg_chunk, meta = chunk</span><br><span class="line">        <span class="keyword">if</span> msg_chunk.content:</span><br><span class="line">            <span class="comment"># 实时显示到前端界面</span></span><br><span class="line">            update_ui_with_text(msg_chunk.content)</span><br><span class="line">    <span class="keyword">elif</span> mode == <span class="string">&quot;updates&quot;</span>:</span><br><span class="line">        <span class="comment"># 更新后台状态监控面板</span></span><br><span class="line">        update_status_panel(chunk)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><code>stream_mode=[&quot;messages&quot;, &quot;updates&quot;]</code><ul>
+<li>这是多模式组合的核心写法，同时开启了两种流模式。</li>
+<li>之后每次迭代返回的 <code>(mode, chunk)</code> 元组中，<code>mode</code> 会告诉你当前 <code>chunk</code> 属于哪种模式。</li>
+</ul>
+</li>
+<li><code>if mode == &quot;messages&quot;:</code><ul>
+<li>当 <code>mode</code> 为 <code>messages</code> 时，<code>chunk</code> 是 <code>(message_chunk, metadata)</code> 元组，和你之前学的 <code>messages</code> 模式用法完全一样。</li>
+<li>这里的逻辑是：提取文本内容，调用 <code>update_ui_with_text</code> 推送到前端，实现打字机效果。</li>
+</ul>
+</li>
+<li><code>elif mode == &quot;updates&quot;:</code><ul>
+<li>当 <code>mode</code> 为 <code>updates</code> 时，<code>chunk</code> 是状态的增量更新数据。</li>
+<li>这里的逻辑是：调用 <code>update_status_panel</code> 更新后台的状态监控面板，让开发者看到节点执行过程中的状态变化。</li>
+</ul>
+</li>
+</ol>
+<h2 id="组合优势"><a href="#组合优势" class="headerlink" title="组合优势"></a>组合优势</h2><ul>
+<li><p><strong>实时用户体验</strong>：<code>messages</code> 模式提供打字机效果，满足前端用户交互需求。</p>
+</li>
+<li><p><strong>后台状态监控</strong>：<code>updates</code> 模式高效跟踪状态变化，适合后台监控和调试。</p>
+</li>
+<li><p><strong>灵活的业务集成</strong>：如果加入 <code>custom</code> 模式，还可以支持自定义业务事件（比如进度条、通知消息）。</p>
+</li>
+<li><p><strong>完整的调试能力</strong>：如果加入 <code>debug</code> 模式，可以同时获得深度调试信息，排查问题更方便。</p>
+</li>
+</ul>
+<p><strong>LangGraph 支持同时开启多种流式模式，通过 <code>(mode, chunk)</code> 的形式返回不同类型的数据，让你可以同时满足前端用户体验、后台状态监控、业务事件通知和调试分析等多种需求。</strong></p>
 
     </div>
 
@@ -334,12 +611,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2025/09/17/ai/langchain/langgraph/2-langgraph-graph-control/" rel="prev" title="LangGraph之图构建和核心概念详解">
-      <i class="fa fa-chevron-left"></i> LangGraph之图构建和核心概念详解
+    <a href="/2025/09/18/ai/langchain/langgraph/5-langgraph-time-travel/" rel="prev" title="LangGraph之时光旅行">
+      <i class="fa fa-chevron-left"></i> LangGraph之时光旅行
     </a></div>
       <div class="post-nav-item">
-    <a href="/2025/09/18/ai/langchain/langgraph/4-langgraph-human-ai/" rel="next" title="LangGraph之中断恢复和人工审核机制">
-      LangGraph之中断恢复和人工审核机制 <i class="fa fa-chevron-right"></i>
+    <a href="/2025/09/23/ai/llm/2-prompts/" rel="next" title="AI大模型提示词工程">
+      AI大模型提示词工程 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -399,7 +676,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E6%B5%81%E6%A8%A1%E5%BC%8F%EF%BC%88stream-mode%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">支持的流模式（stream_mode）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Dvalues%E2%80%9D"><span class="nav-number">2.</span> <span class="nav-text">流式传输stream_mode&#x3D;”values”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Dupdates%E2%80%9D"><span class="nav-number">3.</span> <span class="nav-text">流式传输stream_mode&#x3D;”updates”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Ddebug%E2%80%9D"><span class="nav-number">4.</span> <span class="nav-text">流式传输stream_mode&#x3D;”debug”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LLM-token-%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Dmessages%E2%80%9D"><span class="nav-number">5.</span> <span class="nav-text">LLM token 流式传输stream_mode&#x3D;”messages”</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E4%B8%AD%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BAstream-mode-%E2%80%9Dcustom%E2%80%9D"><span class="nav-number">6.</span> <span class="nav-text">工具中自定义数据流式输出stream_mode&#x3D;”custom”</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E5%A4%84%E7%90%86%E5%A6%82%E4%BD%95%E9%87%8D%E6%96%B0%E5%AE%9A%E4%B9%89-AI-%E4%BA%A4%E4%BA%92%E4%BD%93%E9%AA%8C"><span class="nav-number">2.</span> <span class="nav-text">流式处理如何重新定义 AI 交互体验</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E5%A4%84%E7%90%86%E7%9A%84%E9%9D%A9%E5%91%BD%E6%80%A7%E6%84%8F%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">流式处理的革命性意义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangGraph-%E7%9A%84%E5%88%9B%E6%96%B0%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.2.</span> <span class="nav-text">LangGraph 的创新解决方案</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#messages%E6%A8%A1%E5%BC%8F%EF%BC%9A%E5%AE%9E%E7%8E%B0%E6%89%93%E5%AD%97%E6%9C%BA%E6%95%88%E6%9E%9C%E7%9A%84%E6%A0%B8%E5%BF%83"><span class="nav-number">3.</span> <span class="nav-text">messages模式：实现打字机效果的核心</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%BC%8F%E5%AE%9A%E4%B9%89"><span class="nav-number">3.1.</span> <span class="nav-text">模式定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B"><span class="nav-number">3.2.</span> <span class="nav-text">代码示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E7%82%B9"><span class="nav-number">3.3.</span> <span class="nav-text">关键点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E6%B5%81%E5%BC%8F%E5%A4%84%E7%90%86%E4%BC%98%E5%8C%96"><span class="nav-number">3.4.</span> <span class="nav-text">异步流式处理优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5-vs-%E5%BC%82%E6%AD%A5%E6%B5%81"><span class="nav-number">4.</span> <span class="nav-text">同步 vs 异步流</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E6%B5%81%E6%A8%A1%E5%BC%8F%EF%BC%88stream-mode%EF%BC%89"><span class="nav-number">5.</span> <span class="nav-text">支持的流模式（stream_mode）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Dvalues%E2%80%9D"><span class="nav-number">5.1.</span> <span class="nav-text">流式传输stream_mode&#x3D;”values”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Dupdates%E2%80%9D"><span class="nav-number">5.2.</span> <span class="nav-text">流式传输stream_mode&#x3D;”updates”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Ddebug%E2%80%9D"><span class="nav-number">5.3.</span> <span class="nav-text">流式传输stream_mode&#x3D;”debug”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LLM-token-%E6%B5%81%E5%BC%8F%E4%BC%A0%E8%BE%93stream-mode-%E2%80%9Dmessages%E2%80%9D"><span class="nav-number">5.4.</span> <span class="nav-text">LLM token 流式传输stream_mode&#x3D;”messages”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E4%B8%AD%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BAstream-mode-%E2%80%9Dcustom%E2%80%9D"><span class="nav-number">5.5.</span> <span class="nav-text">工具中自定义数据流式输出stream_mode&#x3D;”custom”</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#messages%E6%A8%A1%E5%BC%8F%E4%B8%8E%E5%85%B6%E4%BB%96%E6%A8%A1%E5%BC%8F%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">6.</span> <span class="nav-text">messages模式与其他模式的对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E6%A8%A1%E5%BC%8F%E7%BB%84%E5%90%88%E5%BA%94%E7%94%A8"><span class="nav-number">7.</span> <span class="nav-text">多模式组合应用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5%EF%BC%9A%E5%A4%9A%E6%A8%A1%E5%BC%8F%E7%BB%84%E5%90%88"><span class="nav-number">7.1.</span> <span class="nav-text">核心概念：多模式组合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">7.2.</span> <span class="nav-text">代码示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E5%90%88%E4%BC%98%E5%8A%BF"><span class="nav-number">7.3.</span> <span class="nav-text">组合优势</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -415,7 +692,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">182</span>
+          <span class="site-state-item-count">183</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

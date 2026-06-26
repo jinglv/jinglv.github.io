@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="学习LangGraph学习笔记第三讲">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangGraph之状态持久化">
+<meta property="og:url" content="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/3-langgraph-persistence/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="学习LangGraph学习笔记第三讲">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-09-16T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-25T03:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LangGraph">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/3-langgraph-persistence/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangGraph之状态持久化 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2025/09/17/ai/langchain/langgraph/3-langgraph-persistence/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangGraph之状态持久化
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-09-17 00:00:00" itemprop="dateCreated datePublished" datetime="2025-09-17T00:00:00+08:00">2025-09-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-06-25 11:00:00" itemprop="dateModified" datetime="2026-06-25T11:00:00+08:00">2026-06-25</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LangGraph/" itemprop="url" rel="index"><span itemprop="name">LangGraph</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">学习LangGraph学习笔记第三讲</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Langgraph持久化基础概念"><a href="#Langgraph持久化基础概念" class="headerlink" title="Langgraph持久化基础概念"></a>Langgraph持久化基础概念</h1><p>LangGraph 是构建多智能体 / 大语言模型工作流的核心框架，而<strong>持久化</strong>是它的关键能力之一。</p>
+<h2 id="什么是持久化"><a href="#什么是持久化" class="headerlink" title="什么是持久化"></a>什么是持久化</h2><blockquote>
+<p>LangGraph 的持久化机制通过检查点器（checkpointer）实现。当您使用检查点器编译图时，它会在每个超步（super-step）保存图状态的检查点。这些检查点保存到线程中，可以在图执行后访问。</p>
+</blockquote>
+<p>我们拆成几个关键术语来讲：</p>
+<ol>
+<li><p><strong>检查点器（Checkpointer）</strong></p>
+<p>这是实现持久化的核心组件，你可以把它理解成游戏里的 “存档系统”。</p>
+</li>
+<li><p><strong>超步（Super-step）</strong></p>
+<p>LangGraph 图执行的一个基本单元，指的是图从开始执行到下一次遇到用户输入或分支决策的一段完整流程。每走完一个超步，检查点器就会自动保存当前的所有状态。</p>
+</li>
+<li><p><strong>图状态（State）</strong></p>
+<p>包括对话历史、工具调用结果、中间变量、分支判断的上下文等所有信息。</p>
+</li>
+<li><p><strong>线程（Thread）</strong></p>
+<p>相当于一个独立的会话 / 对话 ID，所有的检查点都会和这个线程绑定，方便后续随时调用。</p>
+</li>
+</ol>
+<p><strong>一句话总结：</strong></p>
+<p>持久化就是让 LangGraph 工作流可以像游戏一样 “随时存档、随时读档”，每一步的状态都被完整保存下来。</p>
+<h2 id="核心价值"><a href="#核心价值" class="headerlink" title="核心价值"></a>核心价值</h2><p>持久化不是一个 “锦上添花” 的功能，而是 LangGraph 很多高级特性的基础。它支持以下四大核心能力：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">功能</th>
+<th style="text-align:left">通俗解释</th>
+<th style="text-align:left">实际应用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>人机交互</strong></td>
+<td style="text-align:left">人工检查、中断和批准图步骤</td>
+<td style="text-align:left">比如 AI 要调用一个高风险工具（如转账、发送邮件），工作流会自动暂停，等待人工确认后再继续执行。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>记忆</strong></td>
+<td style="text-align:left">在交互之间保留状态</td>
+<td style="text-align:left">用户中途退出对话，下次再进来时，工作流能直接从上次的状态继续，不用重新输入上下文。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>时间旅行</strong></td>
+<td style="text-align:left">重放之前的图执行</td>
+<td style="text-align:left">可以回到之前任意一个检查点，修改参数后重新执行，用来调试、复现问题或尝试不同分支。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>容错</strong></td>
+<td style="text-align:left">错误恢复和故障转移</td>
+<td style="text-align:left">如果工作流中途因为网络、服务崩溃而中断，可以从最近的检查点恢复执行，而不是从头再来。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>LangGraph 构建的是<strong>有状态的、多步骤的、可中断的复杂工作流</strong>，而不是一次性的 API 调用。</p>
+<ul>
+<li>没有持久化，一旦流程中断，所有的上下文都会丢失，用户体验极差。</li>
+<li>没有持久化，就无法实现人工介入、会话记忆、问题调试这些企业级应用必备的功能。</li>
+</ul>
+<p>检查点器就是 LangGraph 实现这些能力的基石，它让 “一次性的对话” 变成了 “可持续的会话”，让 “黑盒的执行” 变成了 “可观测、可干预、可恢复的流程”。</p>
+<h1 id="线程（Threads）"><a href="#线程（Threads）" class="headerlink" title="线程（Threads）"></a>线程（Threads）</h1><p>在 LangGraph 里，<strong>线程（Thread）</strong> 是持久化机制的核心载体。</p>
+<h2 id="核心定义"><a href="#核心定义" class="headerlink" title="核心定义"></a>核心定义</h2><blockquote>
+<p><code>Thread_id</code> 是 <code>checkpointer</code> 的唯一标识符，包含一系列运行的累积状态。</p>
+</blockquote>
+<ul>
+<li>你可以把 <strong><code>thread_id</code></strong> 理解成「会话 ID」或「存档槽位」。</li>
+<li>同一个图（Workflow），可以用不同的 <code>thread_id</code> 跑多个独立的对话 / 流程，互不干扰。</li>
+<li>每个 <code>thread_id</code> 里，会保存这个流程从开始到现在的<strong>所有检查点（Checkpoint）和状态历史</strong>。</li>
+</ul>
+<h2 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h2><p>thread_example.py</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START, END</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> operator <span class="keyword">import</span> add</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 1. 定义状态模式</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    foo: <span class="built_in">str</span></span><br><span class="line">    bar: Annotated[<span class="built_in">list</span>[<span class="built_in">str</span>], add]  <span class="comment"># 使用 add 操作符实现列表追加更新</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 2. 定义节点函数</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">node_a</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;--- 执行 node_a ---&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;a&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;a&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">node_b</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;--- 执行 node_b ---&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;b&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;b&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 3. 构建工作流图</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line">workflow = StateGraph(State)</span><br><span class="line">workflow.add_node(<span class="string">&quot;node_a&quot;</span>, node_a)</span><br><span class="line">workflow.add_node(<span class="string">&quot;node_b&quot;</span>, node_b)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置边：START → node_a → node_b → END</span></span><br><span class="line">workflow.add_edge(START, <span class="string">&quot;node_a&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;node_a&quot;</span>, <span class="string">&quot;node_b&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;node_b&quot;</span>, END)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 4. 配置检查点器并编译图</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">graph = workflow.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 5. 运行示例</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    <span class="comment"># 必须指定 thread_id，LangGraph 才会启用持久化</span></span><br><span class="line">    config: RunnableConfig = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 第一次调用：传入初始状态</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;===== 第一次调用 =====&quot;</span>)</span><br><span class="line">    result = graph.invoke(&#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;&quot;</span>, <span class="string">&quot;bar&quot;</span>: []&#125;, config)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;最终状态: <span class="subst">&#123;result&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="comment"># 输出: &#123;&#x27;foo&#x27;: &#x27;b&#x27;, &#x27;bar&#x27;: [&#x27;a&#x27;, &#x27;b&#x27;]&#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 第二次调用：使用同一个 thread_id，状态会被保留</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n===== 第二次调用（同一个 thread_id） =====&quot;</span>)</span><br><span class="line">    result2 = graph.invoke(&#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;override_test&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;c&quot;</span>]&#125;, config)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;最终状态: <span class="subst">&#123;result2&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="comment"># 输出: &#123;&#x27;foo&#x27;: &#x27;b&#x27;, &#x27;bar&#x27;: [&#x27;a&#x27;, &#x27;b&#x27;, &#x27;c&#x27;, &#x27;a&#x27;, &#x27;b&#x27;]&#125;</span></span><br><span class="line">    <span class="comment"># 解释：bar 会追加，foo 会被 node_b 覆盖</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 第三次调用：使用不同的 thread_id，状态相互隔离</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n===== 第三次调用（不同 thread_id） =====&quot;</span>)</span><br><span class="line">    config_new: RunnableConfig = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;2&quot;</span>&#125;&#125;</span><br><span class="line">    result3 = graph.invoke(&#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;new_thread&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;x&quot;</span>]&#125;, config_new)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;最终状态: <span class="subst">&#123;result3&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="comment"># 输出: &#123;&#x27;foo&#x27;: &#x27;b&#x27;, &#x27;bar&#x27;: [&#x27;x&#x27;, &#x27;a&#x27;, &#x27;b&#x27;]&#125;</span></span><br></pre></td></tr></table></figure>
+<p>代码逐行解读：</p>
+<ol>
+<li><p>导入依赖</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START, END</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> operator <span class="keyword">import</span> add</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>StateGraph</code>：LangGraph 的核心，用来构建状态机工作流。</li>
+<li><code>InMemorySaver</code>：内存型检查点器，用来把状态保存在内存里（生产环境会用数据库 / Redis 等）。</li>
+<li><code>RunnableConfig</code>：LangChain/LangGraph 的配置对象，用来传递 <code>thread_id</code> 等参数。</li>
+<li><code>TypedDict</code>：用来定义状态（State）的结构。</li>
+<li><code>add</code>：列表合并操作符，配合 <code>Annotated</code> 实现状态的追加更新。</li>
+</ul>
+</li>
+<li><p>定义状态模式（State Schema）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    foo: <span class="built_in">str</span></span><br><span class="line">    bar: Annotated[<span class="built_in">list</span>[<span class="built_in">str</span>], add]</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>State</code> 是图的状态结构，每次节点执行都会读取 / 更新这个状态。</p>
+</li>
+<li><p><code>foo: str</code>：普通字符串字段，节点更新时会直接覆盖旧值。</p>
+</li>
+<li><p><code>bar: Annotated[list[str], add]</code>：特殊标记，表示这个列表会用 <code>add</code> 操作追加内容，而不是覆盖。</p>
+<ul>
+<li>比如节点 A 返回 <code>[&quot;a&quot;]</code>，节点 B 返回 <code>[&quot;b&quot;]</code>，最终 <code>bar</code> 会变成 <code>[&quot;a&quot;, &quot;b&quot;]</code>。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>定义节点函数</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">node_a</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;a&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;a&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">node_b</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;b&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;b&quot;</span>]&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>两个节点，分别叫 <code>node_a</code> 和 <code>node_b</code>。</p>
+</li>
+<li><p><code>node_a</code> 执行后：</p>
+<ul>
+<li><p><code>foo</code> 会被设为 <code>&quot;a&quot;</code></p>
+</li>
+<li><p><code>bar</code> 会追加 <code>&quot;a&quot;</code></p>
+</li>
+</ul>
+</li>
+<li><p><code>node_b</code> 执行后：</p>
+<ul>
+<li><p><code>foo</code> 会被设为 <code>&quot;b&quot;</code></p>
+</li>
+<li><p><code>bar</code> 会追加 <code>&quot;b&quot;</code></p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>构建工作流图</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">workflow = StateGraph(State)</span><br><span class="line">workflow.add_node(<span class="string">&quot;node_a&quot;</span>, node_a)</span><br><span class="line">workflow.add_node(<span class="string">&quot;node_b&quot;</span>, node_b)</span><br><span class="line">workflow.add_edge(START, <span class="string">&quot;node_a&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;node_a&quot;</span>, <span class="string">&quot;node_b&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;node_b&quot;</span>, END)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>构建了一个线性流程：<code>START</code> → <code>node_a</code> → <code>node_b</code> → <code>END</code>。</p>
+</li>
+<li><p>执行顺序是固定的：先跑 <code>node_a</code>，再跑 <code>node_b</code>。</p>
+</li>
+</ul>
+</li>
+<li><p>配置检查点器并编译图</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">graph = workflow.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>checkpointer = InMemorySaver()</code>：创建一个内存型检查点器。</p>
+</li>
+<li><p><code>graph = workflow.compile(checkpointer=checkpointer)</code>：编译图时绑定检查点器，开启持久化能力。</p>
+</li>
+<li><p>关键：没有绑定 <code>checkpointer</code>，就无法使用 <code>thread_id</code> 和状态持久化。</p>
+</li>
+</ul>
+</li>
+<li><p>运行图（核心：指定 <code>thread_id</code>）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">config: RunnableConfig = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">result = graph.invoke(&#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;&quot;</span>, <span class="string">&quot;bar&quot;</span>: []&#125;, config)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>config</code> 里的 <code>thread_id: &quot;1&quot;</code> 是关键：</p>
+<ul>
+<li><p>它告诉 LangGraph：这次执行属于 <code>thread_id=1</code> 这个会话 / 存档。</p>
+</li>
+<li><p>执行过程中，每个超步（super-step）的状态都会被保存到这个 <code>thread_id</code> 下。</p>
+</li>
+</ul>
+</li>
+<li><p>初始状态：<code>&#123;&quot;foo&quot;: &quot;&quot;, &quot;bar&quot;: []&#125;</code></p>
+</li>
+<li><p>执行结果会是：</p>
+<ul>
+<li><p><code>foo: &quot;b&quot;</code>（被 <code>node_b</code> 覆盖）</p>
+</li>
+<li><p><code>bar: [&quot;a&quot;, &quot;b&quot;]</code>（两次追加的结果）</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p>线程是 LangGraph 持久化机制的核心概念。每个线程代表一个独立的工作流执行实例，通过唯一的 thread_id 进行标识。线程内部保存了完整的执行历史，包括所有检查点，这使得我们可以实现时间旅行、状态恢复等高级功能。</p>
+</blockquote>
+<p>这段话可以拆解为：</p>
+<ol>
+<li><p><strong>线程 = 独立执行实例</strong></p>
+<p>不同的thread_id就是不同的会话，它们的状态互不干扰。比如用户 A 和用户 B 同时使用你的对话机器人，就可以用不同的thread_id区分。</p>
+</li>
+<li><p><strong>线程 = 完整执行历史</strong></p>
+<p>线程里保存了从开始到现在的所有检查点，相当于一份 “完整的操作日志 + 存档”。</p>
+</li>
+<li><p><strong>支撑高级功能</strong></p>
+<p>正是因为线程里保存了所有历史，LangGraph 才能实现：</p>
+<ul>
+<li>状态恢复（从上次中断的地方继续）</li>
+<li>时间旅行（回到之前的检查点重跑）</li>
+<li>多会话并行（同一个图服务多个用户）</li>
+</ul>
+</li>
+</ol>
+<h1 id="检查点（Checkpoints）"><a href="#检查点（Checkpoints）" class="headerlink" title="检查点（Checkpoints）"></a>检查点（Checkpoints）</h1><h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><blockquote>
+<p>检查点是线程在特定时间点的状态快照。</p>
+</blockquote>
+<p>可以把它理解成：</p>
+<ul>
+<li>线程（Thread）是一个完整的 “游戏存档”</li>
+<li>检查点就是存档里的每一个关键时间点快照</li>
+<li>每个检查点都完整保存了<strong>当时的状态、下一步要做什么、任务信息</strong>，让你可以随时回到这里</li>
+</ul>
+<h2 id="检查点的关键属性解读"><a href="#检查点的关键属性解读" class="headerlink" title="检查点的关键属性解读"></a>检查点的关键属性解读</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">checkpoint_properties = &#123;</span><br><span class="line">    <span class="string">&quot;config&quot;</span>: <span class="string">&quot;与此检查点关联的配置&quot;</span>,</span><br><span class="line">    <span class="string">&quot;metadata&quot;</span>: <span class="string">&quot;元数据&quot;</span>,</span><br><span class="line">    <span class="string">&quot;values&quot;</span>: <span class="string">&quot;此时的状态通道值&quot;</span>,</span><br><span class="line">    <span class="string">&quot;next&quot;</span>: <span class="string">&quot;图中要执行的下一个节点元组&quot;</span>,</span><br><span class="line">    <span class="string">&quot;tasks&quot;</span>: <span class="string">&quot;包含下一个任务信息的PregelTask对象元组&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">属性</th>
+<th style="text-align:left">通俗解释</th>
+<th style="text-align:left">实际作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>config</code></td>
+<td style="text-align:left">关联的配置</td>
+<td style="text-align:left">包含 <code>thread_id</code> 等信息，用来标识这个检查点属于哪个会话</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>metadata</code></td>
+<td style="text-align:left">元数据</td>
+<td style="text-align:left">额外的描述信息，比如执行时间、触发节点、耗时等，用于调试和日志</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>values</code></td>
+<td style="text-align:left">状态通道值</td>
+<td style="text-align:left">最重要的字段，保存了当前所有状态变量的值（比如之前例子里的 <code>foo</code> 和 <code>bar</code>）</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>next</code></td>
+<td style="text-align:left">下一个节点元组</td>
+<td style="text-align:left">告诉 LangGraph 执行完这个检查点后，下一个要跑的节点是谁</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>tasks</code></td>
+<td style="text-align:left">下一个任务信息</td>
+<td style="text-align:left">包含了 <code>next</code> 节点对应的执行任务对象，用于调度和恢复执行</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>一句话总结</strong>：检查点 = 「当前状态 + 下一步计划 + 配置信息」，LangGraph 靠这几样东西实现中断、恢复和时间旅行。</p>
+<h2 id="检查点示例执行"><a href="#检查点示例执行" class="headerlink" title="检查点示例执行"></a>检查点示例执行</h2><p>这里用的就是我们上一个例子里的线性图：<code>START → node_a → node_b → END</code></p>
+<p>执行后会生成 <strong>4 个检查点</strong>，我们按顺序看：</p>
+<ol>
+<li><strong>空检查点（初始状态）</strong><ul>
+<li>状态：空（还没输入任何数据）</li>
+<li><code>next</code>：<code>START</code> 节点</li>
+<li>这是线程刚创建时的初始检查点，相当于游戏的 “空存档”。</li>
+</ul>
+</li>
+<li><strong>用户输入后的检查点</strong><ul>
+<li>状态：<code>&#123;&quot;foo&quot;: &quot;&quot;, &quot;bar&quot;: []&#125;</code></li>
+<li><code>next</code>：<code>node_a</code></li>
+<li>这是你调用 <code>graph.invoke()</code> 传入初始状态后生成的检查点，流程准备开始执行 <code>node_a</code>。</li>
+</ul>
+</li>
+<li><strong><code>node_a</code> 执行后的检查点</strong><ul>
+<li>状态：<code>&#123;&quot;foo&quot;: &quot;a&quot;, &quot;bar&quot;: [&quot;a&quot;]&#125;</code></li>
+<li><code>next</code>：<code>node_b</code></li>
+<li><code>node_a</code> 执行完成，状态被更新，流程准备进入 <code>node_b</code>。</li>
+</ul>
+</li>
+<li><strong><code>node_b</code> 执行后的检查点</strong><ul>
+<li>状态：<code>&#123;&quot;foo&quot;: &quot;b&quot;, &quot;bar&quot;: [&quot;a&quot;, &quot;b&quot;]&#125;</code></li>
+<li><code>next</code>：无（已经到 <code>END</code>）</li>
+<li>整个流程执行完成，生成最终的检查点，流程结束。</li>
+</ul>
+</li>
+</ol>
+<p>为什么一个简单的线性流程，会生成 4 个检查点？</p>
+<ul>
+<li>每一次状态变更、每一次节点执行前后，LangGraph 都会生成一个检查点。</li>
+<li>这些检查点就是 LangGraph 实现以下功能的基础：<ul>
+<li><strong>中断与恢复</strong>：可以在任意一个检查点暂停，之后从这里继续执行。</li>
+<li><strong>时间旅行</strong>：可以回到任意一个检查点，修改状态后重新执行。</li>
+<li><strong>调试与复现</strong>：可以查看每一步的状态变化，定位问题出在哪个节点。</li>
+</ul>
+</li>
+</ul>
+<h2 id="代码示例-1"><a href="#代码示例-1" class="headerlink" title="代码示例"></a>代码示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START, END</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> operator <span class="keyword">import</span> add</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义状态</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    foo: <span class="built_in">str</span></span><br><span class="line">    bar: Annotated[<span class="built_in">list</span>[<span class="built_in">str</span>], add]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义节点</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">node_a</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;--- 执行 node_a ---&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;a&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;a&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">node_b</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;--- 执行 node_b ---&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;b&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;b&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建图</span></span><br><span class="line">workflow = StateGraph(State)</span><br><span class="line">workflow.add_node(<span class="string">&quot;node_a&quot;</span>, node_a)</span><br><span class="line">workflow.add_node(<span class="string">&quot;node_b&quot;</span>, node_b)</span><br><span class="line">workflow.add_edge(START, <span class="string">&quot;node_a&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;node_a&quot;</span>, <span class="string">&quot;node_b&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;node_b&quot;</span>, END)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译图并开启持久化</span></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">graph = workflow.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    <span class="comment"># 配置 thread_id</span></span><br><span class="line">    config: RunnableConfig = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 执行图</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;===== 执行图 =====&quot;</span>)</span><br><span class="line">    result = graph.invoke(&#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;&quot;</span>, <span class="string">&quot;bar&quot;</span>: []&#125;, config)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;最终状态: <span class="subst">&#123;result&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 查看该线程下的所有检查点</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n===== 查看所有检查点 =====&quot;</span>)</span><br><span class="line">    all_checkpoints = <span class="built_in">list</span>(checkpointer.<span class="built_in">list</span>(config))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;共生成 <span class="subst">&#123;<span class="built_in">len</span>(all_checkpoints)&#125;</span> 个检查点\n&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i, checkpoint <span class="keyword">in</span> <span class="built_in">enumerate</span>(all_checkpoints):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;检查点 <span class="subst">&#123;i+<span class="number">1</span>&#125;</span>:&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  config: <span class="subst">&#123;checkpoint.config&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  next: <span class="subst">&#123;checkpoint.<span class="built_in">next</span>&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  values: <span class="subst">&#123;checkpoint.values&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+<p>运行上面的代码，你会看到和图里完全对应的 4 个检查点：</p>
+<ol>
+<li>初始空检查点</li>
+<li>用户输入后的检查点（<code>next</code> 是 <code>node_a</code>）</li>
+<li><code>node_a</code> 执行后的检查点（<code>next</code> 是 <code>node_b</code>）</li>
+<li><code>node_b</code> 执行后的检查点（<code>next</code> 为空）</li>
+</ol>
+<p>你可以通过 <code>checkpointer.list(config)</code> 查看这些快照，也可以通过 <code>checkpointer.get(config)</code>回到任意一个检查点，实现 “时间旅行”。</p>
+<h1 id="状态管理"><a href="#状态管理" class="headerlink" title="状态管理"></a>状态管理</h1><h2 id="获取当前状态"><a href="#获取当前状态" class="headerlink" title="获取当前状态"></a>获取当前状态</h2><p>这部分展示了 LangGraph 如何获取状态快照，分为两种场景：<strong>获取最新状态</strong>和<strong>获取特定历史检查点状态</strong>。</p>
+<ol>
+<li><p>获取最新状态快照</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">current_state = graph.get_state(config)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>作用：获取 <code>thread_id=&quot;1&quot;</code> 这个线程当前的最新状态快照。</p>
+</li>
+<li><p>关键：只需要 <code>thread_id</code>，LangGraph 会自动帮你找到该线程的最新检查点。</p>
+</li>
+<li><p>返回的 <code>current_state</code> 包含：当前的 <code>values</code>（状态值）、<code>next</code>（下一个节点）、<code>metadata</code> 等信息。</p>
+</li>
+</ul>
+</li>
+<li><p>获取特定检查点的状态</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">specific_config = &#123;</span><br><span class="line">    <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">        <span class="string">&quot;checkpoint_id&quot;</span>: <span class="string">&quot;1ef663ba-28fe-6528-8002-5a559208592&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">historical_state = graph.get_state(specific_config)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>作用：获取 <code>thread_id=&quot;1&quot;</code> 线程中，指定 <code>checkpoint_id</code> 对应的历史状态快照。</p>
+</li>
+<li><p>关键：除了 <code>thread_id</code>，还需要 <code>checkpoint_id</code>（每个检查点的唯一 ID）。</p>
+</li>
+<li><p>这就是 LangGraph 「时间旅行」能力的基础：你可以随时回到任意一个历史检查点查看当时的状态。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="获取状态历史"><a href="#获取状态历史" class="headerlink" title="获取状态历史"></a>获取状态历史</h2><p>如何查看一个线程的<strong>所有历史检查点</strong>，完整回溯执行过程。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">history = <span class="built_in">list</span>(graph.get_state_history(config))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 历史记录按时间倒序排列（最新在前）</span></span><br><span class="line"><span class="keyword">for</span> i, snapshot <span class="keyword">in</span> <span class="built_in">enumerate</span>(history):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;检查点 <span class="subst">&#123;i&#125;</span>:&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;值: <span class="subst">&#123;snapshot.values&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;下一个节点: <span class="subst">&#123;snapshot.<span class="built_in">next</span>&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;步骤: <span class="subst">&#123;snapshot.metadata.get(<span class="string">&#x27;step&#x27;</span>, <span class="string">&#x27;N/A&#x27;</span>)&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;---&quot;</span>)</span><br></pre></td></tr></table></figure>
+<ol>
+<li><strong><code>graph.get_state_history(config)</code></strong><ul>
+<li>传入 <code>thread_id</code>，就能拿到该线程的所有检查点历史。</li>
+<li>返回的结果是一个迭代器，用 <code>list()</code> 可以转为列表。</li>
+</ul>
+</li>
+<li><strong>排序方式</strong>：历史记录按<strong>时间倒序</strong>排列，最新的检查点在列表最前面。</li>
+<li><strong>每个 <code>snapshot</code> 的信息</strong>：<ul>
+<li><code>snapshot.values</code>：该检查点对应的状态值（比如 <code>foo</code> 和 <code>bar</code> 的值）。</li>
+<li><code>snapshot.next</code>：该检查点执行完成后，下一个要执行的节点。</li>
+<li><code>snapshot.metadata.get(&#39;step&#39;, &#39;N/A&#39;)</code>：检查点的步骤信息，用于调试。</li>
+</ul>
+</li>
+</ol>
+<p><strong>一句话总结</strong>：这段代码可以帮你完整复盘整个流程的每一步状态变化，相当于查看一份「执行日志 + 状态快照」。</p>
+<h2 id="重放执行与状态更新"><a href="#重放执行与状态更新" class="headerlink" title="重放执行与状态更新"></a>重放执行与状态更新</h2><blockquote>
+<p>LangGraph 支持从特定检查点重放执行，以及直接更新状态值。状态更新采用部分更新机制，节点只更新它返回的字段，未返回的字段保持原值不变。</p>
+</blockquote>
+<p>这部分是状态管理的核心价值，分为两个关键能力：</p>
+<h3 id="1-从特定检查点重放执行（时间旅行）"><a href="#1-从特定检查点重放执行（时间旅行）" class="headerlink" title="1. 从特定检查点重放执行（时间旅行）"></a>1. 从特定检查点重放执行（时间旅行）</h3><ul>
+<li>你可以用 <code>checkpoint_id</code> 回到任意一个历史检查点，然后重新执行后续流程。</li>
+<li>比如：你可以回到 <code>node_a</code> 执行前的状态，修改 <code>foo</code> 的值，然后重新执行 <code>node_a</code> 和 <code>node_b</code>，看看不同输入会产生什么结果。</li>
+<li>应用场景：调试流程、复现问题、A/B 测试不同分支逻辑。</li>
+</ul>
+<h3 id="2-直接更新状态值（部分更新机制）"><a href="#2-直接更新状态值（部分更新机制）" class="headerlink" title="2. 直接更新状态值（部分更新机制）"></a>2. 直接更新状态值（部分更新机制）</h3><ul>
+<li>LangGraph 的状态更新是<strong>部分更新</strong>：节点只需要返回它要修改的字段，未返回的字段会保持原值不变。</li>
+<li>比如你的状态有 <code>foo</code> 和 <code>bar</code>，节点只返回 <code>&#123;&quot;bar&quot;: [&quot;new_value&quot;]&#125;</code>，那么 <code>foo</code> 的值不会被改变，只有 <code>bar</code> 会被追加更新。</li>
+<li>你也可以通过代码直接修改状态，比如在任意检查点手动修改 <code>values</code>，然后继续执行流程。</li>
+</ul>
+<h2 id="代码示例-2"><a href="#代码示例-2" class="headerlink" title="代码示例"></a>代码示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START, END</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> operator <span class="keyword">import</span> add</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 1. 定义状态和节点</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    foo: <span class="built_in">str</span></span><br><span class="line">    bar: Annotated[<span class="built_in">list</span>[<span class="built_in">str</span>], add]</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">node_a</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;--- 执行 node_a ---&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;a&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;a&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">node_b</span>(<span class="params">state: State</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;--- 执行 node_b ---&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;b&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;b&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 2. 构建并编译图</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line">workflow = StateGraph(State)</span><br><span class="line">workflow.add_node(<span class="string">&quot;node_a&quot;</span>, node_a)</span><br><span class="line">workflow.add_node(<span class="string">&quot;node_b&quot;</span>, node_b)</span><br><span class="line">workflow.add_edge(START, <span class="string">&quot;node_a&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;node_a&quot;</span>, <span class="string">&quot;node_b&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;node_b&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">graph = workflow.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    config: RunnableConfig = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 执行一次流程，生成检查点</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;===== 执行流程 =====&quot;</span>)</span><br><span class="line">    graph.invoke(&#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;&quot;</span>, <span class="string">&quot;bar&quot;</span>: []&#125;, config)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># ------------------------------</span></span><br><span class="line">    <span class="comment"># 3. 获取当前最新状态</span></span><br><span class="line">    <span class="comment"># ------------------------------</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n===== 获取当前最新状态 =====&quot;</span>)</span><br><span class="line">    current_state = graph.get_state(config)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;当前状态值: <span class="subst">&#123;current_state.values&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;下一个节点: <span class="subst">&#123;current_state.<span class="built_in">next</span>&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;检查点ID: <span class="subst">&#123;current_state.config[<span class="string">&#x27;configurable&#x27;</span>][<span class="string">&#x27;checkpoint_id&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># ------------------------------</span></span><br><span class="line">    <span class="comment"># 4. 获取状态历史</span></span><br><span class="line">    <span class="comment"># ------------------------------</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n===== 获取状态历史 =====&quot;</span>)</span><br><span class="line">    history = <span class="built_in">list</span>(graph.get_state_history(config))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;共 <span class="subst">&#123;<span class="built_in">len</span>(history)&#125;</span> 个检查点\n&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i, snapshot <span class="keyword">in</span> <span class="built_in">enumerate</span>(history):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;检查点 <span class="subst">&#123;i&#125;</span>:&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  值: <span class="subst">&#123;snapshot.values&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  下一个节点: <span class="subst">&#123;snapshot.<span class="built_in">next</span>&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;  检查点ID: <span class="subst">&#123;snapshot.config[<span class="string">&#x27;configurable&#x27;</span>][<span class="string">&#x27;checkpoint_id&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;  ---&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># ------------------------------</span></span><br><span class="line">    <span class="comment"># 5. 时间旅行：回到指定检查点重放</span></span><br><span class="line">    <span class="comment"># ------------------------------</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n===== 时间旅行：回到node_a执行前的检查点 =====&quot;</span>)</span><br><span class="line">    <span class="comment"># 取倒数第2个检查点（node_a执行前）</span></span><br><span class="line">    replay_config = history[-<span class="number">2</span>].config</span><br><span class="line">    <span class="comment"># 修改状态值</span></span><br><span class="line">    replay_config[<span class="string">&quot;values&quot;</span>] = &#123;<span class="string">&quot;foo&quot;</span>: <span class="string">&quot;modified&quot;</span>, <span class="string">&quot;bar&quot;</span>: [<span class="string">&quot;custom&quot;</span>]&#125;</span><br><span class="line">    <span class="comment"># 从该检查点继续执行</span></span><br><span class="line">    replay_result = graph.invoke(<span class="literal">None</span>, replay_config)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;重放执行结果: <span class="subst">&#123;replay_result&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="核心知识点总结"><a href="#核心知识点总结" class="headerlink" title="核心知识点总结"></a>核心知识点总结</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">功能</th>
+<th style="text-align:left">代码</th>
+<th style="text-align:left">作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">获取最新状态</td>
+<td style="text-align:left"><code>graph.get_state(config)</code></td>
+<td style="text-align:left">查看当前线程的最新状态</td>
+</tr>
+<tr>
+<td style="text-align:left">获取特定检查点状态</td>
+<td style="text-align:left"><code>graph.get_state(specific_config)</code></td>
+<td style="text-align:left">查看指定 <code>checkpoint_id</code> 的历史状态</td>
+</tr>
+<tr>
+<td style="text-align:left">获取所有状态历史</td>
+<td style="text-align:left"><code>graph.get_state_history(config)</code></td>
+<td style="text-align:left">回溯线程的所有执行快照</td>
+</tr>
+<tr>
+<td style="text-align:left">时间旅行重放</td>
+<td style="text-align:left"><code>graph.invoke(None, replay_config)</code></td>
+<td style="text-align:left">从历史检查点重新执行流程</td>
+</tr>
+<tr>
+<td style="text-align:left">部分状态更新</td>
+<td style="text-align:left">节点只返回修改的字段</td>
+<td style="text-align:left">未修改的字段保持原值不变</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="Langgraph状态管理机制"><a href="#Langgraph状态管理机制" class="headerlink" title="Langgraph状态管理机制"></a>Langgraph状态管理机制</h1><h2 id="核心概念：什么是-LangGraph-的部分更新机制？"><a href="#核心概念：什么是-LangGraph-的部分更新机制？" class="headerlink" title="核心概念：什么是 LangGraph 的部分更新机制？"></a>核心概念：什么是 LangGraph 的部分更新机制？</h2><p>LangGraph 的状态更新采用<strong>部分更新机制</strong>，这是它状态管理的关键特性：</p>
+<ul>
+<li>节点执行时，<strong>不需要返回完整的状态对象</strong>，只需要返回它想修改的字段即可。</li>
+<li>节点未返回的字段，会<strong>保持原值不变</strong>，不会被覆盖或清空。</li>
+<li>搭配「状态还原器（Reducer）」，还能实现追加、合并等高级更新逻辑。</li>
+</ul>
+<p>这就像你修改文档，只需要提交修改的部分，而不是每次都上传整个文档，既高效又安全。</p>
+<h2 id="状态更新规则"><a href="#状态更新规则" class="headerlink" title="状态更新规则"></a>状态更新规则</h2><ol>
+<li><strong>节点只更新它返回的字段</strong></li>
+</ol>
+<p>​    节点的返回值，只会修改状态中对应的字段，不会影响其他字段。</p>
+<ol>
+<li><strong>未返回的字段保持原值不变</strong></li>
+</ol>
+<p>​    节点没有返回的字段，会保留执行前的值，不会被清空或修改。</p>
+<p>​    这就是为什么上面的例子中，<code>messages</code> 字段不会被覆盖。</p>
+<ol>
+<li><strong>还原器只对明确更新的字段生效</strong></li>
+</ol>
+<p>​    只有节点返回的字段，才会触发该字段对应的还原器（比如 <code>add</code>）。</p>
+<p>​    节点未返回的字段，还原器不会被调用，自然也不会改变原值。</p>
+<h2 id="代码示例-3"><a href="#代码示例-3" class="headerlink" title="代码示例"></a>代码示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated, TypedDict</span><br><span class="line"><span class="keyword">from</span> operator <span class="keyword">import</span> add</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START, END</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 1. 定义状态结构</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ConversationState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    messages: Annotated[<span class="built_in">list</span>, add]  <span class="comment"># 有还原器的字段：追加更新</span></span><br><span class="line">    user_profile: <span class="built_in">dict</span>              <span class="comment"># 无还原器的字段：直接覆盖</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 2. 定义节点函数</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add_message</span>(<span class="params">state: ConversationState</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;添加一条消息，只更新 messages 字段&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [<span class="string">&quot;你好，我是LangGraph助手&quot;</span>]&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">update_user_profile</span>(<span class="params">state: ConversationState</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;更新用户配置，只更新 user_profile 字段&quot;&quot;&quot;</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;当前消息历史:&quot;</span>, state[<span class="string">&quot;messages&quot;</span>])</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_profile&quot;</span>: &#123;<span class="string">&quot;preferences_saved&quot;</span>: <span class="literal">True</span>, <span class="string">&quot;theme&quot;</span>: <span class="string">&quot;dark&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 3. 构建并编译图</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line">workflow = StateGraph(ConversationState)</span><br><span class="line">workflow.add_node(<span class="string">&quot;add_message&quot;</span>, add_message)</span><br><span class="line">workflow.add_node(<span class="string">&quot;update_user_profile&quot;</span>, update_user_profile)</span><br><span class="line"></span><br><span class="line">workflow.add_edge(START, <span class="string">&quot;add_message&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;add_message&quot;</span>, <span class="string">&quot;update_user_profile&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;update_user_profile&quot;</span>, END)</span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">graph = workflow.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 4. 运行示例</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    config: RunnableConfig = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment"># 初始状态：有消息和用户配置</span></span><br><span class="line">    initial_state = &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [<span class="string">&quot;用户：你好&quot;</span>],</span><br><span class="line">        <span class="string">&quot;user_profile&quot;</span>: &#123;<span class="string">&quot;preferences_saved&quot;</span>: <span class="literal">False</span>&#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;===== 初始状态 =====&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(initial_state)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 执行流程</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n===== 执行流程 =====&quot;</span>)</span><br><span class="line">    final_state = graph.invoke(initial_state, config)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n===== 最终状态 =====&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(final_state)</span><br></pre></td></tr></table></figure>
+<p>关键代码解读</p>
+<ol>
+<li><p>关键依赖倒入</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated, TypedDict</span><br><span class="line"><span class="keyword">from</span> operator <span class="keyword">import</span> add</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>Annotated</code>：用来给状态字段附加「还原器（Reducer）」信息。</li>
+<li><code>add</code>：列表追加操作符，作为 <code>messages</code> 字段的还原器，实现消息的追加更新。</li>
+</ul>
+</li>
+<li><p>定义状态结构 <code>ConversationState</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ConversationState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    messages: Annotated[<span class="built_in">list</span>, add]   <span class="comment"># 有还原器的字段</span></span><br><span class="line">    user_profile: <span class="built_in">dict</span>               <span class="comment"># 无还原器的字段</span></span><br></pre></td></tr></table></figure>
+<p>这里定义了两个字段，它们的更新规则不同：</p>
+<p>| 字段           | 类型   | 还原器 | 作用         | 更新规则                         |<br>| :——————- | :——- | :——- | :—————- | :———————————————- |<br>| <code>messages</code>     | <code>list</code> | <code>add</code>  | 保存对话历史 | 节点返回的列表会追加到原列表后面 |<br>| <code>user_profile</code> | <code>dict</code> | 无     | 保存用户信息 | 节点返回的字典会直接覆盖原字典   |</p>
+</li>
+<li><p>定义节点函数 <code>update_user_profile</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">update_user_profile</span>(<span class="params">state: ConversationState, config: RunnableConfig</span>):</span><br><span class="line">    <span class="comment"># 只更新 user_profile，不返回 messages</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;user_profile&quot;</span>: &#123;<span class="string">&quot;preferences_saved&quot;</span>: <span class="literal">True</span>&#125;&#125;</span><br><span class="line">    <span class="comment"># messages 字段保持不变，仍然可以访问完整历史</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>关键：这个节点<strong>只返回了 <code>user_profile</code> 字段</strong>，没有返回 <code>messages</code> 字段。</p>
+</li>
+<li><p>执行效果：</p>
+<ul>
+<li><p><code>user_profile</code>：会被节点返回的 <code>&#123;&quot;preferences_saved&quot;: True&#125;</code> 直接覆盖更新。</p>
+</li>
+<li><p><code>messages</code>：因为节点没有返回，所以<strong>保持执行前的原值不变</strong>，对话历史不会丢失。</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h1 id="存储（Store）-—-跨县城共享"><a href="#存储（Store）-—-跨县城共享" class="headerlink" title="存储（Store） — 跨县城共享"></a>存储（Store） — 跨县城共享</h1><h2 id="核心概念：什么是-Store？"><a href="#核心概念：什么是-Store？" class="headerlink" title="核心概念：什么是 Store？"></a>核心概念：什么是 Store？</h2><blockquote>
+<p>存储（Store）用于跨线程共享数据，支持命名空间和语义搜索功能。</p>
+</blockquote>
+<p>简单来说，Store 是 LangGraph 提供的<strong>长期、跨会话的数据存储层</strong>：</p>
+<ul>
+<li>之前讲的「检查点 / 线程状态」是临时的、单会话的；Store 则是持久的、跨会话的。</li>
+<li>它的核心作用是：<strong>让同一个用户的不同对话（不同 thread_id），都能访问到共享的记忆 / 数据</strong>。</li>
+<li>支持两大关键特性：<strong>命名空间隔离</strong> 和 <strong>语义搜索</strong>。</li>
+</ul>
+<h2 id="代码示例-4"><a href="#代码示例-4" class="headerlink" title="代码示例"></a>代码示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 1. 创建 Store 实例</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line">store = InMemoryStore()</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 2. 定义命名空间（按用户+数据类型隔离）</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line">user_id = <span class="string">&quot;user_123&quot;</span></span><br><span class="line">namespace_memories = (user_id, <span class="string">&quot;memories&quot;</span>)</span><br><span class="line">namespace_preferences = (user_id, <span class="string">&quot;preferences&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 3. 存储多条数据</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 存储用户记忆</span></span><br><span class="line">memory_id_1 = <span class="built_in">str</span>(uuid.uuid4())</span><br><span class="line">memory_1 = &#123;<span class="string">&quot;content&quot;</span>: <span class="string">&quot;I like pizza&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;food_preference&quot;</span>&#125;</span><br><span class="line">store.put(namespace_memories, memory_id_1, memory_1)</span><br><span class="line"></span><br><span class="line">memory_id_2 = <span class="built_in">str</span>(uuid.uuid4())</span><br><span class="line">memory_2 = &#123;<span class="string">&quot;content&quot;</span>: <span class="string">&quot;I hate spicy food&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;food_preference&quot;</span>&#125;</span><br><span class="line">store.put(namespace_memories, memory_id_2, memory_2)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 存储用户偏好</span></span><br><span class="line">pref_id_1 = <span class="built_in">str</span>(uuid.uuid4())</span><br><span class="line">pref_1 = &#123;<span class="string">&quot;theme&quot;</span>: <span class="string">&quot;dark&quot;</span>, <span class="string">&quot;notifications&quot;</span>: <span class="literal">True</span>&#125;</span><br><span class="line">store.put(namespace_preferences, pref_id_1, pref_1)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 4. 搜索数据</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;===== 搜索用户的所有记忆 =====&quot;</span>)</span><br><span class="line">memories = store.search(namespace_memories)</span><br><span class="line"><span class="keyword">for</span> i, item <span class="keyword">in</span> <span class="built_in">enumerate</span>(memories):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;记忆 <span class="subst">&#123;i+<span class="number">1</span>&#125;</span>: <span class="subst">&#123;item.<span class="built_in">dict</span>()&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n===== 搜索用户的偏好设置 =====&quot;</span>)</span><br><span class="line">preferences = store.search(namespace_preferences)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;偏好设置: <span class="subst">&#123;preferences[<span class="number">0</span>].<span class="built_in">dict</span>()&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="comment"># 5. 获取单条数据（通过ID）</span></span><br><span class="line"><span class="comment"># ------------------------------</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n===== 获取指定ID的记忆 =====&quot;</span>)</span><br><span class="line">specific_memory = store.get(namespace_memories, memory_id_1)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;指定记忆: <span class="subst">&#123;specific_memory.<span class="built_in">dict</span>()&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>关键代码详解：</p>
+<ol>
+<li><p>关键导入依赖</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"><span class="keyword">import</span> uuid</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>InMemoryStore</code>：内存型 Store 实现，适合开发 / 测试使用（生产环境可以用 Redis、PostgreSQL 等持久化实现）。</p>
+</li>
+<li><p><code>uuid</code>：用来生成唯一的 <code>memory_id</code>，方便后续检索。</p>
+</li>
+</ul>
+</li>
+<li><p>创建存储实例</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">in_memory_store = InMemoryStore()</span><br></pre></td></tr></table></figure>
+<p>创建一个内存存储实例，所有数据都会存在这里（程序重启后会丢失）。</p>
+</li>
+<li><p>定义命名空间（Namespace）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">user_id = <span class="string">&quot;1&quot;</span></span><br><span class="line">namespace_for_memory = (user_id, <span class="string">&quot;memories&quot;</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><strong>命名空间（Namespace）</strong>：Store 用来隔离数据的关键机制，格式是一个元组。</p>
+</li>
+<li><p>这里 <code>(user_id, &quot;memories&quot;)</code> 的含义：</p>
+<ul>
+<li><p>第一层 <code>user_id</code>：按用户隔离，不同用户的数据互不干扰。</p>
+</li>
+<li><p>第二层 <code>&quot;memories&quot;</code>：按数据类型隔离，比如你还可以定义 <code>(user_id, &quot;preferences&quot;)</code>、<code>(user_id, &quot;orders&quot;)</code> 等。</p>
+</li>
+</ul>
+</li>
+<li><p>有了命名空间，你可以轻松实现：「用户 1 的记忆」和「用户 2 的记忆」完全隔离，互不干扰。</p>
+</li>
+</ul>
+</li>
+<li><p>存储数据（put）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">memory_id = <span class="built_in">str</span>(uuid.uuid4())</span><br><span class="line">memory = &#123;<span class="string">&quot;food_preference&quot;</span>: <span class="string">&quot;I like pizza&quot;</span>&#125;</span><br><span class="line">in_memory_store.put(namespace_for_memory, memory_id, memory)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>memory_id</code>：这条数据的唯一 ID，用 UUID 生成保证不重复。</p>
+</li>
+<li><p><code>memory</code>：要存储的数据，支持字典、JSON 等结构化数据。</p>
+</li>
+<li><p><code>store.put(namespace, id, data)</code>：把数据存入指定的命名空间下。</p>
+</li>
+<li><p>执行后，这条用户 1 的食物偏好数据，就被永久保存在 Store 里了。</p>
+</li>
+</ul>
+</li>
+<li><p>搜索数据（search）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">memories = in_memory_store.search(namespace_for_memory)</span><br><span class="line">latest_memory = memories[-<span class="number">1</span>].<span class="built_in">dict</span>()</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>store.search(namespace)</code>：从指定命名空间中搜索所有数据，默认按时间倒序返回。</p>
+</li>
+<li><p><code>memories[-1]</code>：取最新的一条数据。</p>
+</li>
+<li><p><code>.dict()</code>：把返回的结果对象转为字典，方便读取。</p>
+</li>
+<li><p>执行后，你就能拿到用户 1 之前存储的食物偏好数据，即使是在不同的 thread_id 里。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="语义搜索配置"><a href="#语义搜索配置" class="headerlink" title="语义搜索配置"></a>语义搜索配置</h2><blockquote>
+<p>存储支持基于向量嵌入的语义搜索，可以基于含义而非精确匹配来查找数据。</p>
+</blockquote>
+<p>这是 Store 的高级能力，也是 LangGraph 实现「长期记忆」的核心：</p>
+<ul>
+<li>你可以为存储的数据配置向量嵌入（Embedding），让 Store 支持语义搜索。</li>
+<li>比如用户之前存了「我喜欢吃披萨」，当你搜索「用户喜欢什么食物」时，Store 可以通过向量相似度找到这条记忆，而不需要精确匹配关键词。</li>
+<li>这对于构建带长期记忆的对话机器人、个人助手非常有用。</li>
+</ul>
+<h2 id="核心价值-1"><a href="#核心价值-1" class="headerlink" title="核心价值"></a>核心价值</h2><ol>
+<li><strong>跨会话记忆</strong>：同一个用户，多次对话都能访问到自己的历史偏好和记忆。</li>
+<li><strong>数据隔离</strong>：通过命名空间，轻松实现用户、数据类型的隔离，避免混乱。</li>
+<li><strong>语义搜索</strong>：结合向量嵌入，实现自然语言的记忆检索，是智能助手的核心能力。</li>
+<li><strong>灵活扩展</strong>：从内存到 Redis、PostgreSQL 都支持，适配开发到生产的全流程。</li>
+</ol>
+<h1 id="Checkpointer-和-Store对比"><a href="#Checkpointer-和-Store对比" class="headerlink" title="Checkpointer 和 Store对比"></a><code>Checkpointer</code> 和 <code>Store</code>对比</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">特性</th>
+<th style="text-align:left">Checkpointer（检查点器）</th>
+<th style="text-align:left">Store（存储）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>数据范围</strong></td>
+<td style="text-align:left">线程内状态持久化</td>
+<td style="text-align:left">跨线程数据共享</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>通俗理解</strong></td>
+<td style="text-align:left">只管「单会话内部」的状态，比如某一次对话的流程快照</td>
+<td style="text-align:left">负责「跨会话 / 跨线程」的全局数据，比如用户所有对话都能访问的记忆</td>
+</tr>
+<tr>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>数据组织</strong></td>
+<td style="text-align:left">按执行步骤组织的检查点序列</td>
+<td style="text-align:left">按命名空间组织的键值对</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>通俗理解</strong></td>
+<td style="text-align:left">像电影的分镜存档，按执行顺序排成一条时间线</td>
+<td style="text-align:left">像数据库表，按用户 / 类型分命名空间，存独立的键值对</td>
+</tr>
+<tr>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>使用场景</strong></td>
+<td style="text-align:left">会话记忆、执行历史、状态恢复</td>
+<td style="text-align:left">用户偏好、知识库、共享数据</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>通俗理解</strong></td>
+<td style="text-align:left">解决「这次对话中断了怎么办」「回到上一步重新来」的问题</td>
+<td style="text-align:left">解决「用户上次对话说过的信息，这次对话怎么记住」的问题</td>
+</tr>
+<tr>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>数据模型</strong></td>
+<td style="text-align:left">完整的状态快照</td>
+<td style="text-align:left">独立的键值对条目</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>通俗理解</strong></td>
+<td style="text-align:left">每次都存整个状态对象，包含所有字段</td>
+<td style="text-align:left">存的是独立的、结构化的数据条目，和会话状态无关</td>
+</tr>
+<tr>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>访问方式</strong></td>
+<td style="text-align:left">按线程 ID 和时间顺序访问</td>
+<td style="text-align:left">按命名空间和键访问</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>通俗理解</strong></td>
+<td style="text-align:left">必须指定 <code>thread_id</code>，再按时间顺序取检查点</td>
+<td style="text-align:left">按 <code>(user_id, &quot;memories&quot;)</code> 这种命名空间 + key 直接存取</td>
+</tr>
+<tr>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+<td style="text-align:left">—-</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>典型用例</strong></td>
+<td style="text-align:left">对话历史、工作流状态</td>
+<td style="text-align:left">用户配置、产品目录</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>通俗理解</strong></td>
+<td style="text-align:left">比如：对话过程中人工审批、错误后恢复流程、回溯对话步骤</td>
+<td style="text-align:left">比如：记住用户的食物偏好、保存知识库文档、存储系统配置</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>核心区别一句话总结</strong></p>
+<ul>
+<li><strong>Checkpointer</strong>：是「单会话的时间线存档系统」，只服务于当前 <code>thread_id</code>，记录流程每一步的状态快照，用来做中断恢复、时间旅行。</li>
+<li><strong>Store</strong>：是「跨会话的全局数据仓库」，和 <code>thread_id</code> 无关，用来存用户长期记忆、共享配置等，让不同对话都能访问。</li>
+</ul>
+<h2 id="实际应用场景举例"><a href="#实际应用场景举例" class="headerlink" title="实际应用场景举例"></a>实际应用场景举例</h2><h3 id="1-Checkpointer-典型场景"><a href="#1-Checkpointer-典型场景" class="headerlink" title="1. Checkpointer 典型场景"></a>1. Checkpointer 典型场景</h3><ul>
+<li><strong>对话中断恢复</strong>：用户聊到一半退出，下次进来可以从上次的状态继续。</li>
+<li><strong>人工审批流程</strong>：AI 生成内容后暂停，等人工确认后再继续执行。</li>
+<li><strong>流程调试</strong>：回到任意一个检查点，修改状态后重新执行，排查问题。</li>
+</ul>
+<h3 id="2-Store-典型场景"><a href="#2-Store-典型场景" class="headerlink" title="2. Store 典型场景"></a>2. Store 典型场景</h3><ul>
+<li><strong>长期用户记忆</strong>：用户第一次对话说「我喜欢吃披萨」，第二次对话时机器人能记住这个偏好。</li>
+<li><strong>共享知识库</strong>：把产品信息、文档存到 Store 里，所有对话都能调用。</li>
+<li><strong>用户配置管理</strong>：保存用户的主题设置、通知偏好，跨设备 / 跨会话都生效。</li>
+</ul>
+<h2 id="两者配合使用的最佳实践"><a href="#两者配合使用的最佳实践" class="headerlink" title="两者配合使用的最佳实践"></a>两者配合使用的最佳实践</h2><p>在实际项目中，Checkpointer 和 Store 通常是搭配使用的：</p>
+<ol>
+<li>用 <strong>Checkpointer</strong> 保存当前对话的流程状态，实现中断恢复、人工介入。</li>
+<li>用 <strong>Store</strong> 保存用户的长期记忆和配置，实现跨会话的个性化体验。</li>
+<li>对话节点执行时，从 Store 读取用户偏好，结合当前 Checkpointer 里的会话状态，生成个性化回复。</li>
+</ol>
+<h2 id="代码示例-5"><a href="#代码示例-5" class="headerlink" title="代码示例"></a>代码示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START, END</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnableConfig</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> operator <span class="keyword">import</span> add</span><br><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义状态</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    messages: Annotated[<span class="built_in">list</span>, add]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 初始化 Checkpointer 和 Store</span></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">store = InMemoryStore()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 定义节点：从 Store 读取用户记忆并生成回复</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">chat_node</span>(<span class="params">state: State, config: RunnableConfig</span>):</span><br><span class="line">    <span class="comment"># 获取用户ID和线程ID</span></span><br><span class="line">    user_id = config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;user_id&quot;</span>]</span><br><span class="line">    thread_id = config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;thread_id&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 从 Store 读取用户记忆</span></span><br><span class="line">    namespace = (user_id, <span class="string">&quot;memories&quot;</span>)</span><br><span class="line">    memories = store.search(namespace)</span><br><span class="line">    user_preference = memories[-<span class="number">1</span>].<span class="built_in">dict</span>()[<span class="string">&quot;content&quot;</span>] <span class="keyword">if</span> memories <span class="keyword">else</span> <span class="string">&quot;无&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 生成回复</span></span><br><span class="line">    reply = <span class="string">f&quot;你之前说过：<span class="subst">&#123;user_preference&#125;</span>。有什么可以帮你的吗？&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [reply]&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 构建图</span></span><br><span class="line">workflow = StateGraph(State)</span><br><span class="line">workflow.add_node(<span class="string">&quot;chat&quot;</span>, chat_node)</span><br><span class="line">workflow.add_edge(START, <span class="string">&quot;chat&quot;</span>)</span><br><span class="line">workflow.add_edge(<span class="string">&quot;chat&quot;</span>, END)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译图，绑定 Checkpointer</span></span><br><span class="line">graph = workflow.<span class="built_in">compile</span>(checkpointer=checkpointer, store=store)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    user_id = <span class="string">&quot;user_123&quot;</span></span><br><span class="line">    <span class="comment"># 先把用户偏好存入 Store（可以在之前的对话中完成）</span></span><br><span class="line">    store.put((user_id, <span class="string">&quot;memories&quot;</span>), <span class="built_in">str</span>(uuid.uuid4()), &#123;<span class="string">&quot;content&quot;</span>: <span class="string">&quot;我喜欢吃披萨&quot;</span>&#125;)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 对话1：thread_id=1</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;===== 对话1 =====&quot;</span>)</span><br><span class="line">    config1 = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>, <span class="string">&quot;user_id&quot;</span>: user_id&#125;&#125;</span><br><span class="line">    result1 = graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [<span class="string">&quot;你好&quot;</span>]&#125;, config1)</span><br><span class="line">    <span class="built_in">print</span>(result1[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 对话2：thread_id=2（同一个用户，不同会话）</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n===== 对话2 =====&quot;</span>)</span><br><span class="line">    config2 = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;2&quot;</span>, <span class="string">&quot;user_id&quot;</span>: user_id&#125;&#125;</span><br><span class="line">    result2 = graph.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="string">&quot;今天吃什么好？&quot;</span>&#125;, config2)</span><br><span class="line">    <span class="built_in">print</span>(result2[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>])</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><strong>Checkpointer 解决的是「会话内的流程问题」</strong>：状态恢复、中断、回溯。</p>
+</li>
+<li><p><strong>Store 解决的是「跨会话的共享数据问题」</strong>：用户记忆、全局配置。</p>
+</li>
+<li><p>两者结合，才能构建出既稳定可靠、又具备长期记忆能力的企业级 LangGraph 应用。</p>
+</li>
+</ul>
+<h1 id="Checkpointer的存储选择"><a href="#Checkpointer的存储选择" class="headerlink" title="Checkpointer的存储选择"></a>Checkpointer的存储选择</h1><h2 id="三种存储对比"><a href="#三种存储对比" class="headerlink" title="三种存储对比"></a>三种存储对比</h2><h3 id="1-内存检查点器-InMemorySaver"><a href="#1-内存检查点器-InMemorySaver" class="headerlink" title="1. 内存检查点器 InMemorySaver"></a>1. 内存检查点器 <code>InMemorySaver</code></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"></span><br><span class="line"><span class="comment"># 适用于开发和测试环境</span></span><br><span class="line">checkpointer = InMemorySaver()</span><br></pre></td></tr></table></figure>
+<p><strong>核心特点</strong>：数据存在应用进程的内存中。</p>
+<p>✅ <strong>优点</strong>：</p>
+<ul>
+<li>配置零依赖，直接就能用</li>
+<li>读写速度极快，没有额外的 IO 开销</li>
+</ul>
+<p>❌ <strong>缺点</strong>：</p>
+<ul>
+<li>进程重启、服务崩溃后，所有检查点数据都会丢失</li>
+<li>不支持多实例部署，只能单进程使用</li>
+</ul>
+<p><strong>适用场景</strong>：仅用于<strong>开发、单元测试、本地调试</strong>，不适合生产环境。</p>
+<h3 id="2-SQLite-检查点器-SqliteSaver"><a href="#2-SQLite-检查点器-SqliteSaver" class="headerlink" title="2.SQLite 检查点器 SqliteSaver"></a>2.SQLite 检查点器 <code>SqliteSaver</code></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.sqlite <span class="keyword">import</span> SqliteSaver</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用SQLite数据库</span></span><br><span class="line">checkpointer = SqliteSaver(<span class="string">&quot;checkpoints.db&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p><strong>核心特点</strong>：数据持久化到本地 SQLite 文件中。</p>
+<p>✅ <strong>优点</strong>：</p>
+<ul>
+<li>数据会写入磁盘，进程重启后不会丢失</li>
+<li>无需额外安装数据库服务，一个文件搞定</li>
+<li>轻量级，部署成本极低</li>
+</ul>
+<p>❌ <strong>缺点</strong>：</p>
+<ul>
+<li>只能单机部署，无法多实例共享数据</li>
+<li>并发写入性能有限，高并发场景下容易成为瓶颈</li>
+</ul>
+<p><strong>适用场景</strong>：<strong>中小型单机应用、个人项目、轻量服务</strong>，比如本地运行的对话机器人、单实例部署的服务。</p>
+<h3 id="3-Redis-检查点器-RedisSaver"><a href="#3-Redis-检查点器-RedisSaver" class="headerlink" title="3.Redis 检查点器 RedisSaver"></a>3.Redis 检查点器 <code>RedisSaver</code></h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.redis <span class="keyword">import</span> RedisSaver</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用Redis数据库</span></span><br><span class="line">checkpointer = RedisSaver(<span class="string">&quot;redis://localhost:6379&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p><strong>核心特点</strong>：数据存储在 Redis 中，支持网络访问。</p>
+<p>✅ <strong>优点</strong>：</p>
+<ul>
+<li>高性能读写，支持高并发场景</li>
+<li>支持分布式部署，多个服务实例可以共享同一个检查点数据</li>
+<li>数据持久化（Redis 开启持久化后），服务重启不丢失</li>
+</ul>
+<p>❌ <strong>缺点</strong>：</p>
+<ul>
+<li>需要额外部署和维护 Redis 服务</li>
+<li>有一定的运维成本和资源开销</li>
+</ul>
+<p><strong>适用场景</strong>：<strong>高并发生产环境、分布式服务、多实例部署</strong>，比如企业级对话平台、SaaS 服务。</p>
+<h2 id="官方建议"><a href="#官方建议" class="headerlink" title="官方建议"></a>官方建议</h2><ul>
+<li><p><strong>开发测试</strong>：用 <code>InMemorySaver</code>，简单快速，不依赖外部服务。</p>
+</li>
+<li><p><strong>小型应用</strong>：用 <code>SqliteSaver</code>，兼顾持久化和低部署成本。</p>
+</li>
+<li><p><strong>生产环境</strong>：推荐 <code>RedisSaver</code> 或 PostgreSQL 等成熟数据库，保证性能和稳定性。</p>
+</li>
+<li><p><strong>云部署</strong>：优先考虑云数据库服务（如云 Redis、云 PostgreSQL），减少运维成本。</p>
+</li>
+</ul>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">推荐实现</th>
+<th style="text-align:left">关键考量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">本地调试 / 单元测试</td>
+<td style="text-align:left"><code>InMemorySaver</code></td>
+<td style="text-align:left">开发效率优先，不需要持久化</td>
+</tr>
+<tr>
+<td style="text-align:left">单机轻量服务 / 个人项目</td>
+<td style="text-align:left"><code>SqliteSaver</code></td>
+<td style="text-align:left">持久化 + 零额外依赖</td>
+</tr>
+<tr>
+<td style="text-align:left">生产级 SaaS / 多实例服务</td>
+<td style="text-align:left"><code>RedisSaver</code> / <code>PostgreSQLSaver</code></td>
+<td style="text-align:left">高并发、分布式、数据可靠性</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangGraph/" rel="tag"># LangGraph</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/09/17/ai/langchain/langgraph/4-langgraph-memory/" rel="prev" title="LangGraph之记忆">
+      <i class="fa fa-chevron-left"></i> LangGraph之记忆
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/09/17/ai/langchain/langgraph/2-langgraph-graph-control/" rel="next" title="LangGraph之图构建和核心概念详解">
+      LangGraph之图构建和核心概念详解 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Langgraph%E6%8C%81%E4%B9%85%E5%8C%96%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">Langgraph持久化基础概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%8C%81%E4%B9%85%E5%8C%96"><span class="nav-number">1.1.</span> <span class="nav-text">什么是持久化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BB%B7%E5%80%BC"><span class="nav-number">1.2.</span> <span class="nav-text">核心价值</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%EF%BC%88Threads%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">线程（Threads）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">核心定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B"><span class="nav-number">2.2.</span> <span class="nav-text">代码示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9%EF%BC%88Checkpoints%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">检查点（Checkpoints）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">3.1.</span> <span class="nav-text">核心概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9%E7%9A%84%E5%85%B3%E9%94%AE%E5%B1%9E%E6%80%A7%E8%A7%A3%E8%AF%BB"><span class="nav-number">3.2.</span> <span class="nav-text">检查点的关键属性解读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9%E7%A4%BA%E4%BE%8B%E6%89%A7%E8%A1%8C"><span class="nav-number">3.3.</span> <span class="nav-text">检查点示例执行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B-1"><span class="nav-number">3.4.</span> <span class="nav-text">代码示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">状态管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E5%BD%93%E5%89%8D%E7%8A%B6%E6%80%81"><span class="nav-number">4.1.</span> <span class="nav-text">获取当前状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E7%8A%B6%E6%80%81%E5%8E%86%E5%8F%B2"><span class="nav-number">4.2.</span> <span class="nav-text">获取状态历史</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E6%94%BE%E6%89%A7%E8%A1%8C%E4%B8%8E%E7%8A%B6%E6%80%81%E6%9B%B4%E6%96%B0"><span class="nav-number">4.3.</span> <span class="nav-text">重放执行与状态更新</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E4%BB%8E%E7%89%B9%E5%AE%9A%E6%A3%80%E6%9F%A5%E7%82%B9%E9%87%8D%E6%94%BE%E6%89%A7%E8%A1%8C%EF%BC%88%E6%97%B6%E9%97%B4%E6%97%85%E8%A1%8C%EF%BC%89"><span class="nav-number">4.3.1.</span> <span class="nav-text">1. 从特定检查点重放执行（时间旅行）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E7%9B%B4%E6%8E%A5%E6%9B%B4%E6%96%B0%E7%8A%B6%E6%80%81%E5%80%BC%EF%BC%88%E9%83%A8%E5%88%86%E6%9B%B4%E6%96%B0%E6%9C%BA%E5%88%B6%EF%BC%89"><span class="nav-number">4.3.2.</span> <span class="nav-text">2. 直接更新状态值（部分更新机制）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B-2"><span class="nav-number">4.4.</span> <span class="nav-text">代码示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93"><span class="nav-number">4.5.</span> <span class="nav-text">核心知识点总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Langgraph%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E6%9C%BA%E5%88%B6"><span class="nav-number">5.</span> <span class="nav-text">Langgraph状态管理机制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5%EF%BC%9A%E4%BB%80%E4%B9%88%E6%98%AF-LangGraph-%E7%9A%84%E9%83%A8%E5%88%86%E6%9B%B4%E6%96%B0%E6%9C%BA%E5%88%B6%EF%BC%9F"><span class="nav-number">5.1.</span> <span class="nav-text">核心概念：什么是 LangGraph 的部分更新机制？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E6%9B%B4%E6%96%B0%E8%A7%84%E5%88%99"><span class="nav-number">5.2.</span> <span class="nav-text">状态更新规则</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B-3"><span class="nav-number">5.3.</span> <span class="nav-text">代码示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%EF%BC%88Store%EF%BC%89-%E2%80%94-%E8%B7%A8%E5%8E%BF%E5%9F%8E%E5%85%B1%E4%BA%AB"><span class="nav-number">6.</span> <span class="nav-text">存储（Store） — 跨县城共享</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5%EF%BC%9A%E4%BB%80%E4%B9%88%E6%98%AF-Store%EF%BC%9F"><span class="nav-number">6.1.</span> <span class="nav-text">核心概念：什么是 Store？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B-4"><span class="nav-number">6.2.</span> <span class="nav-text">代码示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E6%90%9C%E7%B4%A2%E9%85%8D%E7%BD%AE"><span class="nav-number">6.3.</span> <span class="nav-text">语义搜索配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E4%BB%B7%E5%80%BC-1"><span class="nav-number">6.4.</span> <span class="nav-text">核心价值</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Checkpointer-%E5%92%8C-Store%E5%AF%B9%E6%AF%94"><span class="nav-number">7.</span> <span class="nav-text">Checkpointer 和 Store对比</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF%E4%B8%BE%E4%BE%8B"><span class="nav-number">7.1.</span> <span class="nav-text">实际应用场景举例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Checkpointer-%E5%85%B8%E5%9E%8B%E5%9C%BA%E6%99%AF"><span class="nav-number">7.1.1.</span> <span class="nav-text">1. Checkpointer 典型场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-Store-%E5%85%B8%E5%9E%8B%E5%9C%BA%E6%99%AF"><span class="nav-number">7.1.2.</span> <span class="nav-text">2. Store 典型场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%A4%E8%80%85%E9%85%8D%E5%90%88%E4%BD%BF%E7%94%A8%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">7.2.</span> <span class="nav-text">两者配合使用的最佳实践</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B-5"><span class="nav-number">7.3.</span> <span class="nav-text">代码示例</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Checkpointer%E7%9A%84%E5%AD%98%E5%82%A8%E9%80%89%E6%8B%A9"><span class="nav-number">8.</span> <span class="nav-text">Checkpointer的存储选择</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E7%A7%8D%E5%AD%98%E5%82%A8%E5%AF%B9%E6%AF%94"><span class="nav-number">8.1.</span> <span class="nav-text">三种存储对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E5%86%85%E5%AD%98%E6%A3%80%E6%9F%A5%E7%82%B9%E5%99%A8-InMemorySaver"><span class="nav-number">8.1.1.</span> <span class="nav-text">1. 内存检查点器 InMemorySaver</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-SQLite-%E6%A3%80%E6%9F%A5%E7%82%B9%E5%99%A8-SqliteSaver"><span class="nav-number">8.1.2.</span> <span class="nav-text">2.SQLite 检查点器 SqliteSaver</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-Redis-%E6%A3%80%E6%9F%A5%E7%82%B9%E5%99%A8-RedisSaver"><span class="nav-number">8.1.3.</span> <span class="nav-text">3.Redis 检查点器 RedisSaver</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%98%E6%96%B9%E5%BB%BA%E8%AE%AE"><span class="nav-number">8.2.</span> <span class="nav-text">官方建议</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">183</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

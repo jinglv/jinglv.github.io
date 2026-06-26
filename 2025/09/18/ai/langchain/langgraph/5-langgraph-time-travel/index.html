@@ -28,7 +28,7 @@
 <meta property="og:description" content="学习LangGraph学习笔记第五讲">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-09-17T16:00:00.000Z">
-<meta property="article:modified_time" content="2025-09-18T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-06-26T03:00:00.000Z">
 <meta property="article:author" content="Jean Lv">
 <meta property="article:tag" content="LangGraph">
 <meta name="twitter:card" content="summary">
@@ -214,10 +214,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2025-09-18 00:00:00 / 修改时间：15:00:00" itemprop="dateCreated datePublished" datetime="2025-09-18T00:00:00+08:00">2025-09-18</time>
+              <time title="创建时间：2025-09-18 00:00:00" itemprop="dateCreated datePublished" datetime="2025-09-18T00:00:00+08:00">2025-09-18</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-06-26 11:00:00" itemprop="dateModified" datetime="2026-06-26T11:00:00+08:00">2026-06-26</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -242,32 +248,352 @@
       
         <p>LangGraph 提供了时间旅行功能，以支持这些使用场景。具体来说，你可以从之前的检查点恢复执行——要么重放相同的状态，要么修改它来探索替代方案。在所有情况下，恢复过去的执行都会在历史中产生一个新的分支。</p>
 <p>官方文档：<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langgraph/use-time-travel">https://docs.langchain.com/oss/python/langgraph/use-time-travel</a></p>
-<p>在LangGraph中使用时间旅行（time-travel）功能，具体步骤如下：</p>
+<h1 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h1><h2 id="什么是-Checkpoint-重放？"><a href="#什么是-Checkpoint-重放？" class="headerlink" title="什么是 Checkpoint 重放？"></a>什么是 Checkpoint 重放？</h2><p>LangGraph 的 Checkpoint 重放，就像给你的工作流装了一台<strong>时间机器</strong>：</p>
 <ul>
-<li>运行图<ul>
-<li><strong>使用invoke或stream方法运行图</strong>：首先，需要使用invoke或stream方法，以初始输入运行LangGraph图。这一步是为了启动图的执行流程，让系统根据输入和图的定义开始处理数据，生成执行历史记录等。</li>
+<li>可以回到历史执行中的任意节点（super-step）</li>
+<li>从该节点继续往下执行，或者修改当时的状态、走不同的分支</li>
+<li>相当于在同一个对话 / 流程里，随时可以 “读档重来”，探索不同路径</li>
+</ul>
+<h2 id="Checkpoint-的结构"><a href="#Checkpoint-的结构" class="headerlink" title="Checkpoint 的结构"></a>Checkpoint 的结构</h2><p>Checkpoint 本质上是每个 <strong>super-step（节点执行周期）</strong> 的完整状态快照，它包含三个核心部分：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>values</code></td>
+<td>当前状态的值（比如对话上下文、中间结果、用户输入等）</td>
+</tr>
+<tr>
+<td><code>next</code></td>
+<td>下一个要执行的节点（决定了流程的下一步走向）</td>
+</tr>
+<tr>
+<td><code>tasks</code></td>
+<td>任务执行状态（记录当前步骤里的任务执行情况）</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="重放机制的优势"><a href="#重放机制的优势" class="headerlink" title="重放机制的优势"></a>重放机制的优势</h2><p>LangGraph 的重放机制有两个关键特点：</p>
+<ol>
+<li><strong>智能恢复，不重复执行</strong>：已执行过的步骤结果会被直接恢复，不会重新运行，节省计算资源和时间</li>
+<li><strong>确定性与零成本</strong>：恢复过程是可预测的，且不会产生额外的模型调用或计算成本</li>
+</ol>
+<p>Checkpoint 重放的本质，是给 LangGraph 工作流加上了<strong>状态持久化 + 分支探索能力</strong>：</p>
+<ul>
+<li>它让复杂的多轮对话、多节点流程可以 “断点续传”</li>
+<li>也支持用户随时回溯、修改中间步骤，探索不同分支，而不用从头跑一遍整个流程</li>
+</ul>
+<h1 id="重放模式"><a href="#重放模式" class="headerlink" title="重放模式"></a>重放模式</h1><h2 id="简单重放"><a href="#简单重放" class="headerlink" title="简单重放"></a>简单重放</h2><p>这段代码演示了 LangGraph 中最基础的 <strong>Checkpoint 重放</strong> 能力，主要解决这些场景：</p>
+<ul>
+<li>故障恢复：流程执行一半中断后，可以从断点继续</li>
+<li>人为中断后继续：用户 / 系统主动暂停，之后从断点恢复</li>
+<li>跳过已完成步骤：重放时不会重复执行已完成的步骤，节省成本</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START</span><br><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">dict</span>):  <span class="comment"># 简化状态定义</span></span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建带checkpoint的graph</span></span><br><span class="line">graph = StateGraph(State)</span><br><span class="line">graph.add_node(<span class="string">&quot;slow_llm&quot;</span>, <span class="keyword">lambda</span> state: &#123;<span class="string">&quot;result&quot;</span>: <span class="string">f&quot;LLM-<span class="subst">&#123;uuid.uuid4().<span class="built_in">hex</span>[:<span class="number">4</span>]&#125;</span>&quot;</span>&#125;)</span><br><span class="line">graph.add_edge(START, <span class="string">&quot;slow_llm&quot;</span>)</span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line">graph = graph.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 🚀 首次运行（生成历史）</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="built_in">str</span>(uuid.uuid4())&#125;&#125;</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 首次运行（3秒） ===&quot;</span>)</span><br><span class="line">graph.invoke(&#123;&#125;, config)  <span class="comment"># 模拟LLM调用，耗时3秒</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 📜 查看历史checkpoint（逆时序）</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 历史Checkpoint ===&quot;</span>)</span><br><span class="line">states = <span class="built_in">list</span>(graph.get_state_history(config))</span><br><span class="line"><span class="keyword">for</span> i, state <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="built_in">reversed</span>(states)):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;  #<span class="subst">&#123;i&#125;</span>: next=<span class="subst">&#123;state.<span class="built_in">next</span>&#125;</span>, id=<span class="subst">&#123;state.config[<span class="string">&#x27;configurable&#x27;</span>][<span class="string">&#x27;checkpoint_id&#x27;</span>][:<span class="number">8</span>]&#125;</span>...&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 🔄 简单重放：从第1个checkpoint继续（0.1秒！）</span></span><br><span class="line">mid_checkpoint = states[<span class="number">1</span>]</span><br><span class="line">config_replay = &#123;</span><br><span class="line">    <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;thread_id&quot;</span>: config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;thread_id&quot;</span>],</span><br><span class="line">        <span class="string">&quot;checkpoint_id&quot;</span>: mid_checkpoint.config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;checkpoint_id&quot;</span>]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 简单重放（0.1秒） ===&quot;</span>)</span><br><span class="line">result = graph.invoke(<span class="literal">None</span>, config_replay)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;结果:&quot;</span>, result)</span><br></pre></td></tr></table></figure>
+<p>代码逐步解读：</p>
+<ol>
+<li><p>导入依赖</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START</span><br><span class="line"><span class="keyword">import</span> uuid</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>MemorySaver</code>：LangGraph 内置的<strong>内存级状态存储</strong>，用来保存每个 checkpoint 的状态</p>
+</li>
+<li><p><code>StateGraph</code>/<code>START</code>：构建 LangGraph 工作流的核心组件</p>
+</li>
+<li><p><code>uuid</code>：用来生成唯一 ID，模拟 LLM 调用的结果和会话标识</p>
+</li>
 </ul>
 </li>
-<li>确定检查点<ul>
-<li><strong>通过getStateHistory方法确定检查点</strong>：可以调用getStateHistory方法，传入特定的thread_id，获取该线程的执行历史记录。在这些历史记录中，找到所需的checkpoint_id。这一步是为了定位到图执行过程中的某个特定状态，以便后续进行分析、修改或从该状态继续执行等操作。</li>
-<li><strong>设置断点确定检查点</strong>：另外一种方式是，在想要暂停执行的节点之前设置断点。当执行到该断点时，系统会记录下最新的检查点。然后可以通过查看这个检查点来分析执行状态等。</li>
+<li><p>定义状态类</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">dict</span>):  <span class="comment"># 简化状态定义</span></span><br><span class="line">    <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>这是一个简化的状态定义，继承自 <code>dict</code>，可以在里面存任意键值对（比如对话结果、中间数据等）</li>
 </ul>
 </li>
-<li>更新图状态（可选）<ul>
-<li><strong>使用updateState方法更新图状态</strong>：如果需要对图的状态进行修改，可以使用updateState方法。这个方法允许在指定的检查点处修改图的状态，然后可以从修改后的状态继续执行图。这一步是可选的，根据实际需求来决定是否要修改状态。</li>
+<li><p>构建带 Checkpoint 的 Graph</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 构建带checkpoint的graph</span></span><br><span class="line">graph = StateGraph(State)</span><br><span class="line">graph.add_node(<span class="string">&quot;slow_llm&quot;</span>, <span class="keyword">lambda</span> state: &#123;<span class="string">&quot;result&quot;</span>: <span class="string">f&quot;LLM-<span class="subst">&#123;uuid.uuid4().<span class="built_in">hex</span>[:<span class="number">4</span>]&#125;</span>&quot;</span>&#125;)</span><br><span class="line">graph.add_edge(START, <span class="string">&quot;slow_llm&quot;</span>)</span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line">graph = graph.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>add_node(&quot;slow_llm&quot;, ...)</code>：添加一个模拟 LLM 调用的节点，每次运行会生成一个带随机 ID 的结果（比如 <code>LLM-a1b2</code>）</p>
+</li>
+<li><p><code>graph.compile(checkpointer=checkpointer)</code>：编译图时绑定 <code>MemorySaver</code>，开启自动 checkpoint 功能</p>
+</li>
+<li><p>每执行一个 super-step（这里就是执行 <code>slow_llm</code> 节点），LangGraph 都会自动保存一个 checkpoint</p>
+</li>
 </ul>
 </li>
-<li>从检查点恢复执行<ul>
-<li><strong>使用invoke或stream方法从检查点恢复执行</strong>：最后，使用invoke或stream方法，传入null作为输入，并在配置中包含正确的thread_id和checkpoint_id，从而从指定的检查点恢复图的执行。这一步是时间旅行功能的核心，允许用户从历史的某个状态重新开始执行，探索不同的执行路径或结果。</li>
+<li><p>首次运行（生成历史）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 🚀 首次运行（生成历史）</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="built_in">str</span>(uuid.uuid4())&#125;&#125;</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 首次运行（3秒） ===&quot;</span>)</span><br><span class="line">graph.invoke(&#123;&#125;, config)  <span class="comment"># 模拟LLM调用，耗时3秒</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>thread_id</code>：会话的唯一标识，LangGraph 会按 <code>thread_id</code> 来隔离不同会话的 checkpoint</p>
+</li>
+<li><p><code>graph.invoke(&#123;&#125;, config)</code>：执行整个工作流，这里会执行 <code>slow_llm</code> 节点，生成第一个 checkpoint，耗时约 3 秒（模拟 LLM 调用）</p>
+</li>
+</ul>
+</li>
+<li><p>查看历史 Checkpoint</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 📜 查看历史checkpoint（逆时序）</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 历史Checkpoint ===&quot;</span>)</span><br><span class="line">states = <span class="built_in">list</span>(graph.get_state_history(config))</span><br><span class="line"><span class="keyword">for</span> i, state <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="built_in">reversed</span>(states)):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;  #<span class="subst">&#123;i&#125;</span>: next=<span class="subst">&#123;state.<span class="built_in">next</span>&#125;</span>, id=<span class="subst">&#123;state.config[<span class="string">&#x27;configurable&#x27;</span>][<span class="string">&#x27;checkpoint_id&#x27;</span>][:<span class="number">8</span>]&#125;</span>...&quot;</span>)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>graph.get_state_history(config)</code>：获取当前 <code>thread_id</code> 下的所有 checkpoint 历史</p>
+</li>
+<li><p><code>reversed(states)</code>：逆序打印，方便看到从最早到最新的 checkpoint</p>
+</li>
+<li><p>每个 <code>state</code> 里包含：</p>
+<ul>
+<li><p><code>state.next</code>：下一个要执行的节点（这里执行完 <code>slow_llm</code> 后 <code>next</code> 为空）</p>
+</li>
+<li><p><code>checkpoint_id</code>：每个 checkpoint 的唯一 ID</p>
+</li>
 </ul>
 </li>
 </ul>
-<p>基础示例代码</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 设置工具</span></span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> MessagesState, START</span><br><span class="line"><span class="keyword">from</span> langgraph.prebuilt <span class="keyword">import</span> ToolNode</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> END, StateGraph</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">play_song_on_qq</span>(<span class="params">song: <span class="built_in">str</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在qq音乐上播放歌曲&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 调用QQ音乐 API...</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;成功在QQ音乐上播放了<span class="subst">&#123;song&#125;</span>！&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">play_song_on_163</span>(<span class="params">song: <span class="built_in">str</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在网易云上播放歌曲&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 调用网易云 API...</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;成功在网易云上播放了<span class="subst">&#123;song&#125;</span>！&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">tools = [play_song_on_qq, play_song_on_163]</span><br><span class="line">tool_node = ToolNode(tools)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置模型</span></span><br><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line">deepseek = ChatOpenAI(</span><br><span class="line">    model=<span class="string">&quot;deepseek-chat&quot;</span>,</span><br><span class="line">    temperature=<span class="number">0</span>,</span><br><span class="line">    api_key=os.environ.get(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>),</span><br><span class="line">    base_url=os.environ.get(<span class="string">&quot;DEEPSEEK_API_BASE&quot;</span>),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">model = deepseek.bind_tools(tools, parallel_tool_calls=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义节点和条件边</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义确定是否继续的函数</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">should_continue</span>(<span class="params">state</span>):</span><br><span class="line">    messages = state[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line">    last_message = messages[-<span class="number">1</span>]</span><br><span class="line">    <span class="comment"># 如果没有函数调用，则结束</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> last_message.tool_calls:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;end&quot;</span></span><br><span class="line">    <span class="comment"># 否则如果有，我们继续</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;continue&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义调用模型的函数</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">call_model</span>(<span class="params">state</span>):</span><br><span class="line">    messages = state[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line">    response = model.invoke(messages)</span><br><span class="line">    <span class="comment"># 我们返回一个列表，因为这将被添加到现有列表中</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: [response]&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义一个新图</span></span><br><span class="line">workflow = StateGraph(MessagesState)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义我们将循环的两个节点</span></span><br><span class="line">workflow.add_node(<span class="string">&quot;agent&quot;</span>, call_model)</span><br><span class="line">workflow.add_node(<span class="string">&quot;action&quot;</span>, tool_node)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将入口点设置为`agent`</span></span><br><span class="line"><span class="comment"># 这意味着这个节点是第一个被调用的</span></span><br><span class="line">workflow.add_edge(START, <span class="string">&quot;agent&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 现在添加一个条件边</span></span><br><span class="line">workflow.add_conditional_edges(</span><br><span class="line">    <span class="comment"># 首先，我们定义起始节点。我们使用`agent`。</span></span><br><span class="line">    <span class="comment"># 这意味着这些是在调用`agent`节点后采取的边。</span></span><br><span class="line">    <span class="string">&quot;agent&quot;</span>,</span><br><span class="line">    <span class="comment"># 接下来，我们传入将确定下一个调用哪个节点的函数。</span></span><br><span class="line">    should_continue,</span><br><span class="line">    <span class="comment"># 最后我们传入一个映射。</span></span><br><span class="line">    <span class="comment"># 键是字符串，值是其他节点。</span></span><br><span class="line">    <span class="comment"># END是一个特殊节点，标记图应该结束。</span></span><br><span class="line">    <span class="comment"># 将会发生的是我们调用`should_continue`，然后该函数的输出</span></span><br><span class="line">    <span class="comment"># 将与此映射中的键匹配。</span></span><br><span class="line">    <span class="comment"># 根据匹配的键，然后调用相应的节点。</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment"># 如果是`tools`，则调用工具节点。</span></span><br><span class="line">        <span class="string">&quot;continue&quot;</span>: <span class="string">&quot;action&quot;</span>,</span><br><span class="line">        <span class="comment"># 否则我们结束。</span></span><br><span class="line">        <span class="string">&quot;end&quot;</span>: END,</span><br><span class="line">    &#125;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 现在我们从`tools`到`agent`添加一个普通边。</span></span><br><span class="line"><span class="comment"># 这意味着在调用`tools`之后，下一步调用`agent`节点。</span></span><br><span class="line">workflow.add_edge(<span class="string">&quot;action&quot;</span>, <span class="string">&quot;agent&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置内存</span></span><br><span class="line">memory = MemorySaver()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 最后，我们编译它！</span></span><br><span class="line"><span class="comment"># 这将它编译成一个LangChain Runnable，</span></span><br><span class="line"><span class="comment"># 意味着你可以像使用任何其他runnable一样使用它</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 我们添加`interrupt_before=[&quot;action&quot;]`</span></span><br><span class="line"><span class="comment"># 这将在调用`action`节点之前添加一个断点</span></span><br><span class="line">app = workflow.<span class="built_in">compile</span>(checkpointer=memory)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 进行简单调用，要求播放周杰伦的歌曲</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;1&quot;</span>&#125;&#125;</span><br><span class="line">input_message = HumanMessage(content=<span class="string">&quot;你能播放一首周杰伦播放量最高的歌曲吗?&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> event <span class="keyword">in</span> app.stream(&#123;<span class="string">&quot;messages&quot;</span>: [input_message]&#125;, config, stream_mode=<span class="string">&quot;values&quot;</span>):</span><br><span class="line">    event[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].pretty_print()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看记录并重放，get_state获取当前的状态，查看信息</span></span><br><span class="line">app.get_state(config).values[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用get_state_history将历史记录打印出来</span></span><br><span class="line">all_states = []</span><br><span class="line"><span class="keyword">for</span> state <span class="keyword">in</span> app.get_state_history(config):</span><br><span class="line">    <span class="built_in">print</span>(state)</span><br><span class="line">    all_states.append(state)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;--&quot;</span>)</span><br></pre></td></tr></table></figure>
-<h1 id="重放"><a href="#重放" class="headerlink" title="重放"></a>重放</h1><p>根据以上代码执行，我们可以返回任何一个状态节点，并从那个时候重新开始操作</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">to_replay = all_states[<span class="number">2</span>] <span class="comment"># 从第二状态开始，重新执行</span></span><br><span class="line"></span><br><span class="line">to_replay.values</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看下一个节点执行什么</span></span><br><span class="line">to_replay.<span class="built_in">next</span> </span><br><span class="line"></span><br><span class="line"><span class="comment"># 如果想从这个状态节点重播，只需这样</span></span><br><span class="line"><span class="keyword">for</span> event <span class="keyword">in</span> app.stream(<span class="literal">None</span>, to_replay.config):</span><br><span class="line">    <span class="keyword">for</span> v <span class="keyword">in</span> event.values():</span><br><span class="line">        <span class="built_in">print</span>(v)</span><br></pre></td></tr></table></figure>
-<h1 id="分叉"><a href="#分叉" class="headerlink" title="分叉"></a>分叉</h1><p>根据重放中的代码，从某个节点开始，对执行的数据进行分叉</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 修改最后一个消息的工具调用</span></span><br><span class="line"><span class="comment"># 我们将其从`play_song_on_qq`更改为`play_song_on_163`</span></span><br><span class="line">last_message = to_replay.values[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>]</span><br><span class="line">last_message.tool_calls[<span class="number">0</span>][<span class="string">&quot;name&quot;</span>] = <span class="string">&quot;play_song_on_163&quot;</span></span><br><span class="line"></span><br><span class="line">branch_config = app.update_state(</span><br><span class="line">    to_replay.config,</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [last_message]&#125;,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 此时整个图的流就进行了分叉处理</span></span><br><span class="line"><span class="keyword">for</span> event <span class="keyword">in</span> app.stream(<span class="literal">None</span>, branch_config):</span><br><span class="line">    <span class="keyword">for</span> v <span class="keyword">in</span> event.values():</span><br><span class="line">        <span class="built_in">print</span>(v)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>简单重放：从历史 Checkpoint 继续</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 🔄 简单重放：从第1个checkpoint继续（0.1秒！）</span></span><br><span class="line">mid_checkpoint = states[<span class="number">1</span>]</span><br><span class="line">config_replay = &#123;</span><br><span class="line">    <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;thread_id&quot;</span>: config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;thread_id&quot;</span>],</span><br><span class="line">        <span class="string">&quot;checkpoint_id&quot;</span>: mid_checkpoint.config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;checkpoint_id&quot;</span>]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 简单重放（0.1秒） ===&quot;</span>)</span><br><span class="line">result = graph.invoke(<span class="literal">None</span>, config_replay)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;结果:&quot;</span>, result)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>mid_checkpoint = states[1]</code>：从历史 checkpoint 列表中取一个 checkpoint（这里是倒数第二个，也就是 <code>slow_llm</code> 执行前的状态）</p>
+</li>
+<li><p><code>config_replay</code>：构造重放配置，指定要恢复的 <code>thread_id</code> 和 <code>checkpoint_id</code></p>
+</li>
+<li><p><code>graph.invoke(None, config_replay)</code>：从指定的 checkpoint 继续执行</p>
+<ul>
+<li><p>因为 <code>slow_llm</code> 已经在之前执行过，LangGraph 会直接恢复结果，<strong>不会重新执行 LLM 调用</strong>，耗时仅约 0.1 秒</p>
+</li>
+<li><p>最终输出的 <code>result</code> 和首次运行的结果是一样的（不会生成新的随机 ID）</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p>核心效果与优势</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">操作</th>
+<th style="text-align:left">耗时</th>
+<th style="text-align:left">行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">首次运行</td>
+<td style="text-align:left">约 3 秒</td>
+<td style="text-align:left">执行 LLM 节点，生成 checkpoint，保存结果</td>
+</tr>
+<tr>
+<td style="text-align:left">重放运行</td>
+<td style="text-align:left">约 0.1 秒</td>
+<td style="text-align:left">直接恢复 checkpoint 状态，跳过重复执行，返回相同结果</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这就是 LangGraph Checkpoint 重放的核心价值：</p>
+<ul>
+<li><strong>确定性</strong>：从同一个 checkpoint 重放，结果永远一致</li>
+<li><strong>零成本</strong>：不会重复执行昂贵的 LLM 调用或其他耗时操作</li>
+<li><strong>可回溯</strong>：随时可以回到历史任意节点，修改状态或探索新分支</li>
+</ul>
+<h2 id="修改后重放"><a href="#修改后重放" class="headerlink" title="修改后重放"></a>修改后重放</h2><p>这段代码演示了 LangGraph 中更进阶的 Checkpoint 能力 ——<strong>修改历史状态并重放</strong>，主要解决这些场景：</p>
+<ul>
+<li>调试 “如果当时改了会怎样”：修改中间步骤的状态，看看后续流程会如何变化</li>
+<li>Human-in-the-Loop 干预：人工介入修改状态，再让流程继续执行</li>
+<li>A/B 测试：从同一个历史节点出发，修改不同参数，对比不同分支的结果</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> MemorySaver</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, START</span><br><span class="line"><span class="keyword">import</span> uuid</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">State</span>(<span class="title class_ inherited__">dict</span>):  <span class="comment"># 简化状态定义</span></span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 构建带checkpoint的graph</span></span><br><span class="line">graph = StateGraph(State)</span><br><span class="line"><span class="comment"># 模拟一个耗时的LLM节点，会读取状态中的override字段</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">slow_llm</span>(<span class="params">state</span>):</span><br><span class="line">    time.sleep(<span class="number">3</span>)  <span class="comment"># 模拟耗时</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;override&quot;</span> <span class="keyword">in</span> state:</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;result&quot;</span>: <span class="string">f&quot;LLM-<span class="subst">&#123;uuid.uuid4().<span class="built_in">hex</span>[:<span class="number">4</span>]&#125;</span> | 收到override: <span class="subst">&#123;state[<span class="string">&#x27;override&#x27;</span>]&#125;</span>&quot;</span>&#125;</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;result&quot;</span>: <span class="string">f&quot;LLM-<span class="subst">&#123;uuid.uuid4().<span class="built_in">hex</span>[:<span class="number">4</span>]&#125;</span>&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line">graph.add_node(<span class="string">&quot;slow_llm&quot;</span>, slow_llm)</span><br><span class="line">graph.add_edge(START, <span class="string">&quot;slow_llm&quot;</span>)</span><br><span class="line">checkpointer = MemorySaver()</span><br><span class="line">graph = graph.<span class="built_in">compile</span>(checkpointer=checkpointer)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 🚀 首次运行（生成历史）</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="built_in">str</span>(uuid.uuid4())&#125;&#125;</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 首次运行（3秒） ===&quot;</span>)</span><br><span class="line">graph.invoke(&#123;&#125;, config)  <span class="comment"># 模拟LLM调用，耗时3秒</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 📜 查看历史checkpoint（逆时序）</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 历史Checkpoint ===&quot;</span>)</span><br><span class="line">states = <span class="built_in">list</span>(graph.get_state_history(config))</span><br><span class="line"><span class="keyword">for</span> i, state <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="built_in">reversed</span>(states)):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;  #<span class="subst">&#123;i&#125;</span>: next=<span class="subst">&#123;state.<span class="built_in">next</span>&#125;</span>, id=<span class="subst">&#123;state.config[<span class="string">&#x27;configurable&#x27;</span>][<span class="string">&#x27;checkpoint_id&#x27;</span>][:<span class="number">8</span>]&#125;</span>...&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 🔄 简单重放：从第1个checkpoint继续（0.1秒！）</span></span><br><span class="line">mid_checkpoint = states[<span class="number">1</span>]</span><br><span class="line">config_replay = &#123;</span><br><span class="line">    <span class="string">&quot;configurable&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;thread_id&quot;</span>: config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;thread_id&quot;</span>],</span><br><span class="line">        <span class="string">&quot;checkpoint_id&quot;</span>: mid_checkpoint.config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;checkpoint_id&quot;</span>]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 简单重放（0.1秒） ===&quot;</span>)</span><br><span class="line">result = graph.invoke(<span class="literal">None</span>, config_replay)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;结果:&quot;</span>, result)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ⏱️ 回到历史第1个checkpoint，修改状态</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 修改后重放 (Time Travel) ===&quot;</span>)</span><br><span class="line">selected_state = states[<span class="number">1</span>]  <span class="comment"># 选择历史状态</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 📝 修改历史状态，创建新checkpoint</span></span><br><span class="line">new_config = graph.update_state(</span><br><span class="line">    selected_state.config,</span><br><span class="line">    values=&#123;<span class="string">&quot;override&quot;</span>: <span class="string">&quot;人工修改的值！&quot;</span>&#125;  <span class="comment"># 修改状态</span></span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;新分支checkpoint:&quot;</span>, new_config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;checkpoint_id&quot;</span>][:<span class="number">8</span>])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 🚀 从修改后的状态继续执行</span></span><br><span class="line">branch_result = graph.invoke(<span class="literal">None</span>, new_config)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;新分支结果:&quot;</span>, branch_result)</span><br></pre></td></tr></table></figure>
+<p>相关代码解读</p>
+<ol>
+<li><p>回到历史 Checkpoint</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ⏱️ 回到历史第1个checkpoint，修改状态</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 修改后重放 (Time Travel) ===&quot;</span>)</span><br><span class="line">selected_state = states[<span class="number">1</span>]  <span class="comment"># 选择历史状态</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>这里的 <code>states</code> 是上一段代码中 <code>graph.get_state_history(config)</code> 获取的历史状态列表</p>
+</li>
+<li><p><code>states[1]</code> 代表选择历史中某个 checkpoint（比如执行 <code>slow_llm</code> 节点前的状态）</p>
+</li>
+<li><p>这一步相当于 “回到过去的某个时间点”</p>
+</li>
+</ul>
+</li>
+<li><p>修改历史状态，创建新分支</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 📝 修改历史状态，创建新checkpoint</span></span><br><span class="line">new_config = graph.update_state(</span><br><span class="line">    selected_state.config,</span><br><span class="line">    values=&#123;<span class="string">&quot;override&quot;</span>: <span class="string">&quot;人工修改的值！&quot;</span>&#125;  <span class="comment"># 修改状态</span></span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;新分支checkpoint:&quot;</span>, new_config[<span class="string">&quot;configurable&quot;</span>][<span class="string">&quot;checkpoint_id&quot;</span>][:<span class="number">8</span>])</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>graph.update_state()</code> 是 LangGraph 提供的<strong>修改状态并生成新 checkpoint</strong> 的方法：</p>
+<ul>
+<li><p>第一个参数 <code>selected_state.config</code>：要修改的历史 checkpoint 的配置（包含 <code>thread_id</code> 和 <code>checkpoint_id</code>）</p>
+</li>
+<li><p>第二个参数 <code>values</code>：要修改的状态键值对，这里新增了一个 <code>override</code> 字段，值为 “人工修改的值！”</p>
+</li>
+</ul>
+</li>
+<li><p>修改完成后，会生成一个<strong>全新的 checkpoint</strong>（有新的 <code>checkpoint_id</code>），相当于从历史节点分叉出了一条新的时间线</p>
+</li>
+</ul>
+</li>
+<li><p>从修改后的状态继续执行</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 🚀 从修改后的状态继续执行</span></span><br><span class="line">branch_result = graph.invoke(<span class="literal">None</span>, new_config)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;新分支结果:&quot;</span>, branch_result)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>用 <code>new_config</code> 调用 <code>graph.invoke()</code>，LangGraph 会从刚才修改后的 checkpoint 继续执行流程</p>
+</li>
+<li><p>后续节点（比如 <code>slow_llm</code>）执行时，会拿到修改后的状态（包含 <code>override</code> 字段），从而产生和原分支不同的结果</p>
+</li>
+<li><p>这一步就是 “带着修改后的状态，在新分支上继续往前走”</p>
+</li>
+</ul>
+</li>
+</ol>
+<p>核心效果与价值</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">操作</th>
+<th style="text-align:left">效果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">回到历史 checkpoint</td>
+<td style="text-align:left">回到流程执行中的任意节点</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>update_state()</code> 修改状态</td>
+<td style="text-align:left">生成一条新的分支时间线，不影响原流程</td>
+</tr>
+<tr>
+<td style="text-align:left">从新 checkpoint 执行</td>
+<td style="text-align:left">后续节点会基于修改后的状态运行，产生不同结果</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这就是 LangGraph「修改后重放」的核心价值：</p>
+<ul>
+<li><strong>支持状态分叉</strong>：同一个历史节点可以衍生出多条不同的执行分支，互不干扰</li>
+<li><strong>人工干预流程</strong>：在多轮对话或复杂工作流中，人工可以随时修改状态，引导流程走向</li>
+<li><strong>高效调试 / 对比</strong>：不用从头跑一遍流程，就能快速验证 “如果当时改了这个参数，后续会怎样”</li>
+</ul>
+<h2 id="重放模式的最佳实践"><a href="#重放模式的最佳实践" class="headerlink" title="重放模式的最佳实践"></a>重放模式的最佳实践</h2><h3 id="场景应用建议"><a href="#场景应用建议" class="headerlink" title="场景应用建议"></a>场景应用建议</h3><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">方法</th>
+<th style="text-align:left">关键 <code>config</code>/ 操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>故障恢复</strong></td>
+<td style="text-align:left">简单重放最后成功点</td>
+<td style="text-align:left"><code>checkpoint_id=最后成功checkpoint</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>HITL 干预（人工介入）</strong></td>
+<td style="text-align:left">修改后重放</td>
+<td style="text-align:left"><code>update_state()</code> + 重放</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>调试回溯</strong></td>
+<td style="text-align:left">查看历史 + 新分支</td>
+<td style="text-align:left"><code>get_state_history()</code> + Time Travel</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>生产续跑</strong></td>
+<td style="text-align:left">简单重放最新点</td>
+<td style="text-align:left"><code>input=None, config=最新config</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<ol>
+<li><p><strong>故障恢复</strong></p>
+<ul>
+<li><p><strong>场景</strong>：流程执行中崩溃、网络中断、系统重启</p>
+</li>
+<li><p><strong>做法</strong>：找到崩溃前最后一个成功的 checkpoint，直接从这里重放</p>
+</li>
+<li><p><strong>关键</strong>：通过 <code>checkpoint_id</code> 指定恢复点，不需要从头跑一遍，节省时间和成本</p>
+</li>
+</ul>
+</li>
+<li><p><strong>HITL（Human-in-the-Loop）人工干预</strong></p>
+<ul>
+<li><p><strong>场景</strong>：需要人工介入修改中间状态，比如用户纠正了错误的工具调用结果、审批流程</p>
+</li>
+<li><p><strong>做法</strong>：用 <code>update_state()</code> 修改历史状态，生成新 checkpoint，再从新分支继续执行</p>
+</li>
+<li><p><strong>关键</strong>：修改状态后会创建新分支，不会影响原流程，实现 “干预式继续”</p>
+</li>
+</ul>
+</li>
+<li><p><strong>调试回溯</strong></p>
+<ul>
+<li><p><strong>场景</strong>：想知道 “如果当时改了某个参数，流程会怎么走”，或者排查问题时回溯历史</p>
+</li>
+<li><p><strong>做法</strong>：用 <code>get_state_history()</code> 查看所有历史 checkpoint，选择任意节点做 Time Travel（时间旅行），修改状态并生成新分支测试</p>
+</li>
+<li><p><strong>关键</strong>：支持多分支对比，不用重复执行昂贵的 LLM / 工具调用</p>
+</li>
+</ul>
+</li>
+<li><p><strong>生产续跑</strong></p>
+<ul>
+<li><p><strong>场景</strong>：服务重启、会话中断后，用户重新进入对话 / 流程</p>
+</li>
+<li><p><strong>做法</strong>：用 <code>input=None</code> + 最新的 <code>config</code>（包含 <code>thread_id</code> 和最新 <code>checkpoint_id</code>）直接续跑</p>
+</li>
+<li><p><strong>关键</strong>：<code>input=None</code> 表示不传入新输入，LangGraph 会自动从上次中断的地方继续执行</p>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="实用技巧"><a href="#实用技巧" class="headerlink" title="实用技巧"></a>实用技巧</h3><ol>
+<li><p><strong>使用 <code>get_state_history()</code> 查看完整的执行历史</strong></p>
+<ul>
+<li><p>可以拿到当前 <code>thread_id</code> 下的所有 checkpoint，包括每个步骤的状态、<code>next</code> 节点、<code>checkpoint_id</code></p>
+</li>
+<li><p>调试时可以清晰看到流程的每一步变化，方便定位问题</p>
+</li>
+</ul>
+</li>
+<li><p><strong>通过 <code>update_state()</code> 创建新的执行分支</strong></p>
+<ul>
+<li><p>这是 LangGraph 实现 “时间旅行” 的核心方法</p>
+</li>
+<li><p>修改任意历史状态后，会生成一个全新的 <code>checkpoint_id</code>，衍生出独立的执行分支，原流程不受影响</p>
+</li>
+</ul>
+</li>
+<li><p><strong>利用重放机制避免重复计算，提升性能</strong></p>
+<ul>
+<li><p>重放时 LangGraph 会直接恢复已执行步骤的结果，不会重新调用 LLM / 工具</p>
+</li>
+<li><p>大幅降低调试、故障恢复、多分支测试的成本和耗时</p>
+</li>
+</ul>
+</li>
+<li><p><strong>在调试时使用 Time Travel 功能测试不同决策路径</strong></p>
+<ul>
+<li><p>从同一个历史节点出发，修改不同的状态值，就能快速测试不同分支的结果</p>
+</li>
+<li><p>适合 A/B 测试、策略对比、边界条件验证</p>
+</li>
+</ul>
+</li>
+</ol>
+<p>本质上是 LangGraph Checkpoint 能力的「生产级使用指南」：</p>
+<ul>
+<li>用<strong>简单重放</strong>解决故障恢复和续跑问题</li>
+<li>用<strong>修改后重放</strong>解决人工干预和多分支测试问题</li>
+<li>用 <code>get_state_history()</code> 和 <code>update_state()</code> 实现灵活的调试与回溯</li>
+<li>全程避免重复执行，大幅提升性能和开发效率</li>
+</ul>
 
     </div>
 
@@ -286,12 +612,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2025/09/18/ai/langchain/langgraph/4-langgraph-human-ai/" rel="prev" title="LangGraph之中断恢复和人工审核机制">
+    <a href="/2025/09/18/ai/langchain/langgraph/8-langgraph-human-ai/" rel="prev" title="LangGraph之中断恢复和人工审核机制">
       <i class="fa fa-chevron-left"></i> LangGraph之中断恢复和人工审核机制
     </a></div>
       <div class="post-nav-item">
-    <a href="/2025/09/23/ai/llm/2-prompts/" rel="next" title="AI大模型提示词工程">
-      AI大模型提示词工程 <i class="fa fa-chevron-right"></i>
+    <a href="/2025/09/18/ai/langchain/langgraph/6-langgraph-streaming/" rel="next" title="LangGraph之流式机制">
+      LangGraph之流式机制 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -351,7 +677,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%87%8D%E6%94%BE"><span class="nav-number">1.</span> <span class="nav-text">重放</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%86%E5%8F%89"><span class="nav-number">2.</span> <span class="nav-text">分叉</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-Checkpoint-%E9%87%8D%E6%94%BE%EF%BC%9F"><span class="nav-number">1.1.</span> <span class="nav-text">什么是 Checkpoint 重放？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Checkpoint-%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">Checkpoint 的结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E6%94%BE%E6%9C%BA%E5%88%B6%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="nav-number">1.3.</span> <span class="nav-text">重放机制的优势</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%87%8D%E6%94%BE%E6%A8%A1%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">重放模式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E5%8D%95%E9%87%8D%E6%94%BE"><span class="nav-number">2.1.</span> <span class="nav-text">简单重放</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E5%90%8E%E9%87%8D%E6%94%BE"><span class="nav-number">2.2.</span> <span class="nav-text">修改后重放</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E6%94%BE%E6%A8%A1%E5%BC%8F%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">2.3.</span> <span class="nav-text">重放模式的最佳实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF%E5%BA%94%E7%94%A8%E5%BB%BA%E8%AE%AE"><span class="nav-number">2.3.1.</span> <span class="nav-text">场景应用建议</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%94%A8%E6%8A%80%E5%B7%A7"><span class="nav-number">2.3.2.</span> <span class="nav-text">实用技巧</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -367,7 +693,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">182</span>
+          <span class="site-state-item-count">183</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
