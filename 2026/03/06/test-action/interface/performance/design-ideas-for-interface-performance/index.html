@@ -20,17 +20,17 @@
     var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="接口测试实战思路说明">
+  <meta name="description" content="接口性能测试设计方法：目标与 SLI&#x2F;SLO、负载模型、基准&#x2F;负载&#x2F;压力&#x2F;稳定性测试、容量分析、瓶颈定位和性能门禁。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="接口性能测试用例设计思路">
 <meta property="og:url" content="https://jinglv.github.io/2026/03/06/test-action/interface/performance/design-ideas-for-interface-performance/index.html">
 <meta property="og:site_name" content="Jean&#39;s Blog">
-<meta property="og:description" content="接口测试实战思路说明">
+<meta property="og:description" content="接口性能测试设计方法：目标与 SLI&#x2F;SLO、负载模型、基准&#x2F;负载&#x2F;压力&#x2F;稳定性测试、容量分析、瓶颈定位和性能门禁。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-05T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-03-06T09:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-21T03:30:00.000Z">
 <meta property="article:author" content="Jean Lv">
-<meta property="article:tag" content="测试实战">
+<meta property="article:tag" content="性能测试, 接口测试, Load Testing, SLI, SLO, k6">
 <meta name="twitter:card" content="summary">
 
 <link rel="canonical" href="https://jinglv.github.io/2026/03/06/test-action/interface/performance/design-ideas-for-interface-performance/">
@@ -214,10 +214,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2026-03-06 00:00:00 / 修改时间：17:00:00" itemprop="dateCreated datePublished" datetime="2026-03-06T00:00:00+08:00">2026-03-06</time>
+              <time title="创建时间：2026-03-06 00:00:00" itemprop="dateCreated datePublished" datetime="2026-03-06T00:00:00+08:00">2026-03-06</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-08-21 11:30:00" itemprop="dateModified" datetime="2026-08-21T11:30:00+08:00">2026-08-21</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -229,7 +235,7 @@
             </span>
 
           
-            <div class="post-description">接口测试实战思路说明</div>
+            <div class="post-description">接口性能测试设计方法：目标与 SLI/SLO、负载模型、基准/负载/压力/稳定性测试、容量分析、瓶颈定位和性能门禁。</div>
 
         </div>
       </header>
@@ -244,175 +250,113 @@
 <p>本文档系统梳理接口性能测试用例的设计方法论，从性能测试金字塔出发，覆盖核心指标体系、测试类型维度、测试阶段划分、瓶颈分析与调优策略，旨在指导团队构建完整的接口性能测试体系。</p>
 </blockquote>
 <hr>
-<h2 id="一、性能测试金字塔模型"><a href="#一、性能测试金字塔模型" class="headerlink" title="一、性能测试金字塔模型"></a>一、性能测试金字塔模型</h2><p>与功能测试金字塔类似，性能测试也存在层级结构——越底层验证粒度越细、越顶层贴近真实用户场景。</p>
-<pre class="mermaid">graph TD
-    T["🏔️ 顶层：全链路压测<br/>（生产级流量模拟 · 真实场景容量验证）"]
-    M["🏗️ 中层：业务场景性能测试<br/>（混合负载 · 端到端场景压测）"]
-    B["🧱 底层：单接口基线测试（数量最多）<br/>（基准性能 · 最大 TPS · 响应时间分布）"]
-
-    style T fill:#f4c2c2,stroke:#c0392b,color:#333
-    style M fill:#fdebd0,stroke:#e67e22,color:#333
-    style B fill:#d5f5e3,stroke:#27ae60,color:#333
-
-    T --> M --> B</pre>
-
+<h2 id="一、先定义性能目标，而不是先选择并发数"><a href="#一、先定义性能目标，而不是先选择并发数" class="headerlink" title="一、先定义性能目标，而不是先选择并发数"></a>一、先定义性能目标，而不是先选择并发数</h2><p>性能测试的起点不是“压 1000 个并发”，而是回答以下问题：</p>
+<ol>
+<li>哪个业务场景需要保障？</li>
+<li>预期流量、峰值和增长空间是多少？</li>
+<li>用户可感知的成功和失败如何定义？</li>
+<li>系统需要满足什么延迟、吞吐、错误率和资源目标？</li>
+<li>当超过容量时，系统应该降级、限流还是失败？</li>
+</ol>
+<p>接口性能测试可以分为三个层次，但它们并不存在统一的固定数量比例：</p>
 <div class="table-container">
 <table>
 <thead>
 <tr>
-<th>层级</th>
-<th>类型</th>
-<th>重点</th>
-<th>目标</th>
+<th style="text-align:left">层次</th>
+<th style="text-align:left">测试对象</th>
+<th style="text-align:left">主要用途</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>顶层</td>
-<td>全链路压测</td>
-<td>生产环境/镜像环境</td>
-<td>验证整体系统容量上限，发现全局瓶颈</td>
+<td style="text-align:left"><strong>组件与单接口基线</strong></td>
+<td style="text-align:left">单进程、单服务或单接口</td>
+<td style="text-align:left">发现代码、序列化、SQL 和依赖调用退化</td>
 </tr>
 <tr>
-<td>中层</td>
-<td>业务场景压测</td>
-<td>混合并发、真实业务比例</td>
-<td>验证核心业务在负载下的稳定性</td>
+<td style="text-align:left"><strong>业务场景测试</strong></td>
+<td style="text-align:left">按真实比例组合多个接口</td>
+<td style="text-align:left">验证业务吞吐、排队效应和共享资源竞争</td>
 </tr>
 <tr>
-<td>底层</td>
-<td>单接口基线测试</td>
-<td>单个接口极限</td>
-<td>建立性能基准，精准定位瓶颈接口</td>
+<td style="text-align:left"><strong>全链路容量验证</strong></td>
+<td style="text-align:left">网关、服务、缓存、数据库和消息系统</td>
+<td style="text-align:left">验证容量、限流、降级和故障传播</td>
 </tr>
 </tbody>
 </table>
 </div>
+<pre class="mermaid">graph TD
+    T["顶层：少量全链路容量验证<br/>高成本、高风险、接近真实环境"]
+    M["中层：核心业务场景测试<br/>真实比例、状态流转、共享资源"]
+    B["底层：大量组件与单接口基线<br/>反馈快、定位准、适合持续回归"]
+    T --> M --> B</pre>
+
+<p>生产环境压测并不是默认选择。只有在流量隔离、测试数据、监控、停止条件和故障预案都准备充分后，才应进行受控的生产压测。</p>
 <hr>
-<h2 id="二、性能测试核心指标体系"><a href="#二、性能测试核心指标体系" class="headerlink" title="二、性能测试核心指标体系"></a>二、性能测试核心指标体系</h2><pre class="mermaid">mindmap
-  root(("性能测试<br/>核心指标"))
-    响应时间
-      平均响应时间 Avg
-      P50 中位数
-      P90 百分位
-      P95 百分位
-      P99 百分位
-      最大响应时间 Max
-    吞吐量
-      TPS 每秒事务数
-      QPS 每秒请求数
-      RPS 每秒请求数
-      每分钟处理量 TPM
-    并发与负载
-      并发用户数 VU
-      活跃线程数
-      连接数
-      等待队列长度
-    错误率
-      HTTP 错误率
-      业务错误率
-      超时率
-      连接拒绝率
-    资源消耗
-      CPU 使用率
-      内存使用率
-      网络带宽 IO
-      磁盘 IO
-      数据库连接池使用率
-    稳定性
-      持续运行时长
-      内存泄漏趋势
-      GC 频率与耗时
-      线程泄漏</pre>
-
-<h3 id="关键指标说明"><a href="#关键指标说明" class="headerlink" title="关键指标说明"></a>关键指标说明</h3><pre class="mermaid">graph LR
-    Root["📊 性能核心指标"]
-
-    Root --> RT["⏱️ 响应时间<br/>Response Time"]
-    Root --> TP["🚀 吞吐量<br/>Throughput"]
-    Root --> ER["❌ 错误率<br/>Error Rate"]
-    Root --> RES["💻 资源消耗<br/>Resource Usage"]
-
-    RT --> RT1["P50: 中位用户体验"]
-    RT --> RT2["P95: 95% 用户体验上限"]
-    RT --> RT3["P99: 长尾用户体验"]
-    RT --> RT4["Max: 极端场景"]
-
-    TP --> TP1["TPS: 核心业务吞吐"]
-    TP --> TP2["QPS: 查询类接口吞吐"]
-    TP --> TP3["峰值 vs 平均"]
-
-    ER --> ER1["< 0.1%: 优秀"]
-    ER --> ER2["0.1%~1%: 可接受"]
-    ER --> ER3["> 1%: 需优化"]
-
-    RES --> RES1["CPU < 70% 正常"]
-    RES --> RES2["内存无持续上涨"]
-    RES --> RES3["连接池不超 80%"]
-
-    style Root fill:#6c5ce7,color:#fff
-    style RT fill:#0984e3,color:#fff
-    style TP fill:#00b894,color:#fff
-    style ER fill:#d63031,color:#fff
-    style RES fill:#e17055,color:#fff</pre>
-
-<h3 id="性能基准参考标准"><a href="#性能基准参考标准" class="headerlink" title="性能基准参考标准"></a>性能基准参考标准</h3><div class="table-container">
+<h2 id="二、建立可验收的性能指标"><a href="#二、建立可验收的性能指标" class="headerlink" title="二、建立可验收的性能指标"></a>二、建立可验收的性能指标</h2><h3 id="SLI、SLO-与-SLA"><a href="#SLI、SLO-与-SLA" class="headerlink" title="SLI、SLO 与 SLA"></a>SLI、SLO 与 SLA</h3><p>这三个概念需要区分：</p>
+<ul>
+<li><strong>SLI（Service Level Indicator）</strong>：实际测量指标，例如成功请求比例、P95 延迟；</li>
+<li><strong>SLO（Service Level Objective）</strong>：团队内部的目标，例如“滚动 30 天内 99.9% 请求成功”；</li>
+<li><strong>SLA（Service Level Agreement）</strong>：面向客户的协议，通常包含未达标后的责任或补偿。</li>
+</ul>
+<p>性能测试通常验证 <strong>SLO 或性能验收标准</strong>，不要把所有内部目标都称为 SLA。</p>
+<h3 id="核心指标"><a href="#核心指标" class="headerlink" title="核心指标"></a>核心指标</h3><div class="table-container">
 <table>
 <thead>
 <tr>
-<th>指标</th>
-<th>优秀</th>
-<th>良好</th>
-<th>可接受</th>
-<th>需优化</th>
+<th style="text-align:left">类别</th>
+<th style="text-align:left">推荐指标</th>
+<th style="text-align:left">注意事项</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>P50 响应时间</strong></td>
-<td>&lt; 50ms</td>
-<td>&lt; 100ms</td>
-<td>&lt; 200ms</td>
-<td>≥ 200ms</td>
+<td style="text-align:left"><strong>延迟</strong></td>
+<td style="text-align:left">P50、P90、P95、P99，必要时分成功与失败请求统计</td>
+<td style="text-align:left">平均值会掩盖长尾；Max 容易受单个异常样本影响</td>
 </tr>
 <tr>
-<td><strong>P95 响应时间</strong></td>
-<td>&lt; 200ms</td>
-<td>&lt; 500ms</td>
-<td>&lt; 1000ms</td>
-<td>≥ 1000ms</td>
+<td style="text-align:left"><strong>吞吐</strong></td>
+<td style="text-align:left">RPS、TPS、每分钟业务完成量</td>
+<td style="text-align:left">必须明确“事务”或“请求”的统计口径</td>
 </tr>
 <tr>
-<td><strong>P99 响应时间</strong></td>
-<td>&lt; 500ms</td>
-<td>&lt; 1000ms</td>
-<td>&lt; 2000ms</td>
-<td>≥ 2000ms</td>
+<td style="text-align:left"><strong>正确性</strong></td>
+<td style="text-align:left">HTTP 错误率、业务失败率、超时率、数据一致性</td>
+<td style="text-align:left">HTTP 200 不一定代表业务成功</td>
 </tr>
 <tr>
-<td><strong>错误率</strong></td>
-<td>&lt; 0.01%</td>
-<td>&lt; 0.1%</td>
-<td>&lt; 1%</td>
-<td>≥ 1%</td>
+<td style="text-align:left"><strong>负载</strong></td>
+<td style="text-align:left">到达率、并发请求、活跃用户、连接数、队列长度</td>
+<td style="text-align:left">VU 不等于真实并发请求数</td>
 </tr>
 <tr>
-<td><strong>CPU 使用率</strong></td>
-<td>&lt; 50%</td>
-<td>&lt; 70%</td>
-<td>&lt; 85%</td>
-<td>≥ 85%</td>
+<td style="text-align:left"><strong>资源</strong></td>
+<td style="text-align:left">CPU、内存、GC、线程、连接池、磁盘和网络</td>
+<td style="text-align:left">资源使用率必须结合饱和度和等待时间判断</td>
 </tr>
 <tr>
-<td><strong>内存使用率</strong></td>
-<td>&lt; 60%</td>
-<td>&lt; 75%</td>
-<td>&lt; 85%</td>
-<td>≥ 85%</td>
+<td style="text-align:left"><strong>依赖</strong></td>
+<td style="text-align:left">数据库延迟、缓存命中率、下游错误和重试次数</td>
+<td style="text-align:left">只看被测服务会遗漏瓶颈来源</td>
 </tr>
 </tbody>
 </table>
 </div>
+<h3 id="不要使用通用“优秀标准”"><a href="#不要使用通用“优秀标准”" class="headerlink" title="不要使用通用“优秀标准”"></a>不要使用通用“优秀标准”</h3><p>原文中类似“P95 小于 200ms 为优秀”“CPU 小于 70% 正常”“错误率小于 1% 可接受”的表格没有通用依据。搜索接口、支付接口、离线任务和大模型接口的合理目标可能相差几个数量级。</p>
+<p>每个项目应该根据以下信息制定阈值：</p>
+<ul>
+<li>用户体验和业务承诺；</li>
+<li>历史生产基线；</li>
+<li>容量规划和成本预算；</li>
+<li>上下游超时预算；</li>
+<li>错误预算和风险等级。</li>
+</ul>
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">场景：创建订单</span><br><span class="line">目标负载：300 RPS，持续 30 分钟</span><br><span class="line">验收标准：</span><br><span class="line">  - 业务成功率 &gt;= 99.95%</span><br><span class="line">  - 成功请求 P95 &lt;= 500 ms</span><br><span class="line">  - 成功请求 P99 &lt;= 900 ms</span><br><span class="line">  - 数据不重复、不丢失、不超卖</span><br><span class="line">  - 数据库连接池使用率不持续超过团队设定的安全水位</span><br><span class="line">  - 测试结束后 5 分钟内队列恢复正常</span><br></pre></td></tr></table></figure>
+<p>阈值应直接写入测试脚本或性能平台，作为自动通过/失败条件，而不是只在报告中人工观察。</p>
 <hr>
 <h2 id="三、性能测试类型与覆盖维度"><a href="#三、性能测试类型与覆盖维度" class="headerlink" title="三、性能测试类型与覆盖维度"></a>三、性能测试类型与覆盖维度</h2><p>不同的性能测试类型关注不同的系统行为，需根据测试目标选择合适的类型。</p>
 <pre class="mermaid">graph TD
@@ -427,11 +371,11 @@
     Types --> ConT["🔄 并发测试<br/>Concurrency Test"]
 
     BT --> BT1["目标：建立性能基准线<br/>场景：单用户/低并发<br/>输出：P50/P95/P99 基准值"]
-    LT --> LT1["目标：验证预期负载下表现<br/>场景：模拟正常峰值流量<br/>输出：确认 SLA 是否达标"]
+    LT --> LT1["目标：验证预期负载下表现<br/>场景：模拟正常峰值流量<br/>输出：确认 SLO 是否达标"]
     ST --> ST1["目标：找到系统崩溃点<br/>场景：持续加压至失败<br/>输出：最大承载量与失效模式"]
-    SoT --> SoT1["目标：发现内存泄漏/资源耗尽<br/>场景：中等负载持续 8~72h<br/>输出：稳定性趋势图"]
-    SPT --> SPT1["目标：验证突发流量恢复能力<br/>场景：瞬间 10x 流量冲击<br/>输出：恢复时间与降级效果"]
-    CT --> CT1["目标：规划系统容量<br/>场景：逐步加压至 SLA 边界<br/>输出：容量规划报告"]
+    SoT --> SoT1["目标：发现内存泄漏/资源耗尽<br/>场景：按资源泄漏周期确定持续时间<br/>输出：稳定性趋势图"]
+    SPT --> SPT1["目标：验证突发流量恢复能力<br/>场景：按真实突发倍率快速升降负载<br/>输出：恢复时间与降级效果"]
+    CT --> CT1["目标：规划系统容量<br/>场景：逐步加压至 SLO 或安全边界<br/>输出：容量规划报告"]
     ConT --> ConT1["目标：发现并发竞态问题<br/>场景：高并发同时操作同一资源<br/>输出：数据一致性 + 死锁排查"]
 
     style Types fill:#6c5ce7,color:#fff
@@ -447,62 +391,62 @@
 <table>
 <thead>
 <tr>
-<th>测试类型</th>
-<th>并发量</th>
-<th>持续时长</th>
-<th>核心目标</th>
-<th>典型场景</th>
+<th style="text-align:left">测试类型</th>
+<th style="text-align:left">负载方式</th>
+<th style="text-align:left">持续时间</th>
+<th style="text-align:left">核心目标</th>
+<th style="text-align:left">典型场景</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>基准测试</strong></td>
-<td>1~5 VU</td>
-<td>5~10 min</td>
-<td>建立性能基准</td>
-<td>新接口上线前</td>
+<td style="text-align:left"><strong>基准测试</strong></td>
+<td style="text-align:left">低且稳定的可重复负载</td>
+<td style="text-align:left">足以完成预热并获得稳定样本</td>
+<td style="text-align:left">建立可比较基线</td>
+<td style="text-align:left">新接口或关键代码变更</td>
 </tr>
 <tr>
-<td><strong>负载测试</strong></td>
-<td>预期峰值并发</td>
-<td>30~60 min</td>
-<td>验证 SLA 达标</td>
-<td>每次功能迭代后</td>
+<td style="text-align:left"><strong>负载测试</strong></td>
+<td style="text-align:left">预期日常和峰值负载</td>
+<td style="text-align:left">覆盖代表性的业务周期</td>
+<td style="text-align:left">验证 SLO</td>
+<td style="text-align:left">版本回归、容量验收</td>
 </tr>
 <tr>
-<td><strong>压力测试</strong></td>
-<td>超出峰值</td>
-<td>至系统失败</td>
-<td>找到崩溃点</td>
-<td>大促前容量评估</td>
+<td style="text-align:left"><strong>压力测试</strong></td>
+<td style="text-align:left">逐步超过预期峰值</td>
+<td style="text-align:left">到预设安全停止条件</td>
+<td style="text-align:left">确认饱和点和失效模式</td>
+<td style="text-align:left">大促前容量评估</td>
 </tr>
 <tr>
-<td><strong>稳定性测试</strong></td>
-<td>60%~80% 峰值</td>
-<td>8~72 h</td>
-<td>发现内存泄漏</td>
-<td>版本发布前</td>
+<td style="text-align:left"><strong>稳定性测试</strong></td>
+<td style="text-align:left">有代表性的持续负载</td>
+<td style="text-align:left">根据泄漏、队列和资源周期确定</td>
+<td style="text-align:left">发现资源泄漏和性能衰减</td>
+<td style="text-align:left">长期运行服务</td>
 </tr>
 <tr>
-<td><strong>尖峰测试</strong></td>
-<td>瞬间 5~10x</td>
-<td>5~15 min</td>
-<td>验证弹性恢复</td>
-<td>秒杀/抢购场景</td>
+<td style="text-align:left"><strong>尖峰测试</strong></td>
+<td style="text-align:left">快速升高并降低到达率</td>
+<td style="text-align:left">覆盖扩容和恢复窗口</td>
+<td style="text-align:left">验证弹性与恢复</td>
+<td style="text-align:left">秒杀、热点事件</td>
 </tr>
 <tr>
-<td><strong>容量测试</strong></td>
-<td>逐步递增</td>
-<td>阶梯式</td>
-<td>容量规划</td>
-<td>业务增长预测</td>
+<td style="text-align:left"><strong>容量测试</strong></td>
+<td style="text-align:left">阶梯式增加业务负载</td>
+<td style="text-align:left">每级保持到指标稳定</td>
+<td style="text-align:left">得到安全容量</td>
+<td style="text-align:left">业务增长规划</td>
 </tr>
 <tr>
-<td><strong>并发测试</strong></td>
-<td>高并发同时</td>
-<td>短时</td>
-<td>发现竞态问题</td>
-<td>创建/支付类接口</td>
+<td style="text-align:left"><strong>并发测试</strong></td>
+<td style="text-align:left">同时操作共享资源</td>
+<td style="text-align:left">根据竞态窗口设计</td>
+<td style="text-align:left">发现锁、重复和一致性问题</td>
+<td style="text-align:left">创建、支付、扣库存</td>
 </tr>
 </tbody>
 </table>
@@ -548,7 +492,7 @@
     S4["📡 第四阶段<br/>生产性能监控"]
 
     S1 --> F1["目标：建立性能基准<br/>• 接口 P50/P95/P99 基线<br/>• 无性能明显退步<br/><br/>工具：JMeter / k6 / Locust"]
-    S2 --> F2["目标：场景化验证<br/>• 混合业务比例压测<br/>• 核心链路 SLA 达标<br/><br/>工具：JMeter / Gatling"]
+    S2 --> F2["目标：场景化验证<br/>• 混合业务比例压测<br/>• 核心链路 SLO 达标<br/><br/>工具：JMeter / Gatling"]
     S3 --> F3["目标：容量规划<br/>• 全链路生产级压测<br/>• 识别系统瓶颈<br/>• Mock 或 Shadow 流量<br/><br/>工具：全链路压测平台"]
     S4 --> F4["目标：持续性能感知<br/>• APM 实时监控<br/>• 性能告警阈值<br/>• 定期回归基准<br/><br/>工具：Prometheus + Grafana"]
 
@@ -591,25 +535,25 @@
 <td>生产环境</td>
 </tr>
 <tr>
-<td><strong>并发规模</strong></td>
-<td>低并发（&lt; 50 VU）</td>
-<td>中等（50~500 VU）</td>
-<td>生产级（&gt; 500 VU）</td>
-<td>真实流量</td>
+<td><strong>负载规模</strong></td>
+<td>足以建立稳定基线</td>
+<td>根据目标到达率与业务比例设计</td>
+<td>按容量目标和安全边界设计</td>
+<td>真实生产流量</td>
 </tr>
 <tr>
 <td><strong>持续时长</strong></td>
-<td>5~15 分钟</td>
-<td>30~60 分钟</td>
-<td>1~4 小时</td>
-<td>7x24 持续</td>
+<td>覆盖预热并获得稳定样本</td>
+<td>覆盖一个或多个业务周期</td>
+<td>根据容量、稳定性目标确定</td>
+<td>持续观测</td>
 </tr>
 <tr>
 <td><strong>核心产出</strong></td>
 <td>接口性能基准值</td>
-<td>场景 SLA 报告</td>
-<td>系统容量规划</td>
-<td>性能告警 &amp; 趋势</td>
+<td>场景 SLO 验证报告</td>
+<td>系统容量与失效边界</td>
+<td>性能告警与趋势</td>
 </tr>
 <tr>
 <td><strong>外部依赖</strong></td>
@@ -627,7 +571,7 @@
     Start(["🚀 性能测试用例开始"]) --> Pre
 
     subgraph Pre ["⚙️ 前置准备"]
-        P1["确定性能目标<br/>（SLA: P95 < 500ms，错误率 < 0.1%）"] --> P2["准备测试数据<br/>（参数化用户/商品/订单数据）"] --> P3["环境校验<br/>（资源隔离 · 数据量级接近生产）"]
+        P1["确定性能目标<br/>（SLO、目标负载、停止条件）"] --> P2["准备测试数据<br/>（参数化用户/商品/订单数据）"] --> P3["环境校验<br/>（资源隔离 · 数据量级接近生产）"]
     end
 
     Pre --> Design
@@ -683,6 +627,12 @@
     style Open fill:#0984e3,color:#fff
     style Real fill:#e17055,color:#fff</pre>
 
+<h3 id="开放模型与封闭模型"><a href="#开放模型与封闭模型" class="headerlink" title="开放模型与封闭模型"></a>开放模型与封闭模型</h3><p>负载模型要区分两种基本方式：</p>
+<ul>
+<li><strong>封闭模型（Closed Model）</strong>：固定虚拟用户数，每个用户完成一次迭代后再发起下一次请求；系统变慢时，到达率也会下降；</li>
+<li><strong>开放模型（Open Model）</strong>：按照目标到达率持续产生请求，更适合模拟外部流量和验证排队、过载行为。</li>
+</ul>
+<p>只设置 VU 数量并不能保证达到目标 RPS。设计场景时应同时说明到达率、并发、思考时间、数据准备和迭代节奏。</p>
 <h3 id="典型爬坡策略设计"><a href="#典型爬坡策略设计" class="headerlink" title="典型爬坡策略设计"></a>典型爬坡策略设计</h3><pre class="mermaid">xychart-beta
     title "阶梯式爬坡压测负载曲线（并发用户数）"
     x-axis ["0min", "5min", "10min", "15min", "20min", "25min", "30min", "35min", "40min", "45min", "50min"]
@@ -740,7 +690,7 @@
 </table>
 </div>
 <hr>
-<h2 id="八、实战案例：电商下单接口性能测试"><a href="#八、实战案例：电商下单接口性能测试" class="headerlink" title="八、实战案例：电商下单接口性能测试"></a>八、实战案例：电商下单接口性能测试</h2><h3 id="测试目标（SLA-定义）"><a href="#测试目标（SLA-定义）" class="headerlink" title="测试目标（SLA 定义）"></a>测试目标（SLA 定义）</h3><div class="table-container">
+<h2 id="八、实战案例：电商下单接口性能测试"><a href="#八、实战案例：电商下单接口性能测试" class="headerlink" title="八、实战案例：电商下单接口性能测试"></a>八、实战案例：电商下单接口性能测试</h2><h3 id="测试目标（示例-SLO）"><a href="#测试目标（示例-SLO）" class="headerlink" title="测试目标（示例 SLO）"></a>测试目标（示例 SLO）</h3><div class="table-container">
 <table>
 <thead>
 <tr>
@@ -776,6 +726,9 @@
 </tbody>
 </table>
 </div>
+<blockquote>
+<p>以下数字用于展示用例格式，并不是通用行业基准。实际项目应使用生产流量、业务目标、资源规格和历史基线重新计算。</p>
+</blockquote>
 <h3 id="测试场景设计"><a href="#测试场景设计" class="headerlink" title="测试场景设计"></a>测试场景设计</h3><pre class="mermaid">flowchart TD
     Scenario["📋 下单接口性能测试场景"]
 
@@ -834,7 +787,7 @@
 <tr>
 <td>PERF-004</td>
 <td>下单接口—压力极限</td>
-<td>逐步加至崩溃</td>
+<td>逐步加至安全停止条件</td>
 <td>—</td>
 <td>记录最大 TPS 与失效模式</td>
 <td>P1</td>
@@ -903,20 +856,20 @@
     Root --> App["🖥️ 应用层瓶颈"]
     Root --> Net["🌐 网络/协议瓶颈"]
 
-    DB --> DB1["慢 SQL → 加索引/重写"]
-    DB --> DB2["连接池不足 → 扩连接池"]
-    DB --> DB3["热点写 → 分库分表/缓冲写"]
+    DB --> DB1["慢 SQL → 查看执行计划、数据分布和等待事件"]
+    DB --> DB2["连接池饱和 → 分析并发、事务时长与数据库容量"]
+    DB --> DB3["热点写 → 分析锁、分区、批处理和架构方案"]
     DB --> DB4["锁冲突 → 优化事务粒度"]
 
-    Cache --> C1["缓存击穿 → 互斥锁/空值缓存"]
+    Cache --> C1["缓存击穿 → 请求合并、互斥更新或过期策略"]
     Cache --> C2["缓存雪崩 → 随机 TTL/多级缓存"]
     Cache --> C3["缓存穿透 → 布隆过滤器"]
     Cache --> C4["命中率低 → 优化缓存 key 策略"]
 
-    App --> A1["线程池耗尽 → 调整线程数/异步化"]
+    App --> A1["线程池耗尽 → 分析阻塞点、队列和并发模型"]
     App --> A2["内存泄漏 → 排查对象生命周期"]
     App --> A3["GC 频繁 → 调整堆大小/GC 算法"]
-    App --> A4["序列化耗时 → 换 Protobuf/压缩"]
+    App --> A4["序列化耗时 → 先量化 Payload、CPU 与兼容成本"]
 
     Net --> N1["大 Payload → 字段精简/分页"]
     Net --> N2["频繁建连 → 连接复用/长连接"]
@@ -940,7 +893,7 @@
     P0 --> P0b["要求：<br/>✅ 全类型测试（基准/负载/压力/稳定）<br/>✅ 并发超卖/竞态验证<br/>✅ 熔断限流验证<br/>✅ 纳入 CI 性能门禁"]
 
     P1 --> P1a["示例：商品列表、订单查询、用户中心"]
-    P1 --> P1b["要求：<br/>✅ 基准 + 负载测试<br/>✅ SLA 达标验证<br/>⚠️ 简单稳定性验证"]
+    P1 --> P1b["要求：<br/>✅ 基准 + 负载测试<br/>✅ SLO 达标验证<br/>⚠️ 简单稳定性验证"]
 
     P2 --> P2a["示例：日志下载、配置读取、统计报表"]
     P2 --> P2b["要求：<br/>✅ 基本基准测试<br/>⚠️ 确认无明显性能问题"]
@@ -951,75 +904,70 @@
     style Risk fill:#6c5ce7,color:#fff</pre>
 
 <hr>
-<h2 id="十一、性能测试工具选型"><a href="#十一、性能测试工具选型" class="headerlink" title="十一、性能测试工具选型"></a>十一、性能测试工具选型</h2><pre class="mermaid">quadrantChart
-    title 性能测试工具选型 - 学习成本 vs 功能丰富度
-    x-axis "功能简单" --> "功能丰富"
-    y-axis "学习成本低" --> "学习成本高"
-    quadrant-1 "专业首选"
-    quadrant-2 "轻量易用"
-    quadrant-3 "不推荐"
-    quadrant-4 "重量级工具"
-    "k6": [0.55, 0.35]
-    "Locust": [0.45, 0.4]
-    "Gatling": [0.7, 0.65]
-    "JMeter": [0.75, 0.6]
-    "wrk": [0.25, 0.2]
-    "hey": [0.2, 0.15]
-    "Artillery": [0.5, 0.3]</pre>
-
+<h2 id="十一、性能测试工具选型"><a href="#十一、性能测试工具选型" class="headerlink" title="十一、性能测试工具选型"></a>十一、性能测试工具选型</h2><p>工具没有绝对排名，应根据协议、团队技术栈、负载规模、扩展方式和 CI/CD 集成选择。</p>
 <div class="table-container">
 <table>
 <thead>
 <tr>
-<th>工具</th>
-<th>语言</th>
-<th>适用场景</th>
-<th>优势</th>
-<th>劣势</th>
+<th style="text-align:left">工具</th>
+<th style="text-align:left">脚本方式</th>
+<th style="text-align:left">适用场景</th>
+<th style="text-align:left">特点</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>k6</strong></td>
-<td>JavaScript</td>
-<td>API / 微服务</td>
-<td>代码化、CI 集成好、报告美观</td>
-<td>不支持分布式（需 k6 Cloud）</td>
+<td style="text-align:left"><strong>k6</strong></td>
+<td style="text-align:left">JavaScript / TypeScript 风格 API</td>
+<td style="text-align:left">HTTP、WebSocket、浏览器与 CI 性能门禁</td>
+<td style="text-align:left">阈值和场景模型清晰；可通过 Kubernetes Operator 或云服务分布式执行</td>
 </tr>
 <tr>
-<td><strong>JMeter</strong></td>
-<td>GUI/XML</td>
-<td>企业级综合测试</td>
-<td>功能全、插件多、可视化</td>
-<td>资源占用高、脚本维护复杂</td>
+<td style="text-align:left"><strong>JMeter</strong></td>
+<td style="text-align:left">GUI / XML / Java 扩展</td>
+<td style="text-align:left">多协议、传统企业测试体系</td>
+<td style="text-align:left">插件丰富，但大型脚本和版本管理成本较高</td>
 </tr>
 <tr>
-<td><strong>Gatling</strong></td>
-<td>Scala/DSL</td>
-<td>高并发 API</td>
-<td>高性能、报告精美、代码化</td>
-<td>学习曲线陡</td>
+<td style="text-align:left"><strong>Gatling</strong></td>
+<td style="text-align:left">Java、JavaScript / TypeScript、Scala DSL</td>
+<td style="text-align:left">高吞吐、代码化场景</td>
+<td style="text-align:left">异步模型、报告完善，适合开发团队维护</td>
 </tr>
 <tr>
-<td><strong>Locust</strong></td>
-<td>Python</td>
-<td>自定义场景</td>
-<td>Python 编写、分布式支持好</td>
-<td>性能不如 k6/Gatling</td>
+<td style="text-align:left"><strong>Locust</strong></td>
+<td style="text-align:left">Python</td>
+<td style="text-align:left">复杂用户行为、Python 团队、分布式压测</td>
+<td style="text-align:left">可编程性强，支持 master/worker 分布式运行</td>
 </tr>
 <tr>
-<td><strong>wrk/hey</strong></td>
-<td>—</td>
-<td>单接口极限测试</td>
-<td>超轻量、命令行简单</td>
-<td>功能简单、无场景编排</td>
+<td style="text-align:left"><strong>Artillery</strong></td>
+<td style="text-align:left">YAML / JavaScript / TypeScript</td>
+<td style="text-align:left">API、WebSocket、Serverless 与 CI</td>
+<td style="text-align:left">上手快，适合代码化场景</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>wrk / hey</strong></td>
+<td style="text-align:left">命令行</td>
+<td style="text-align:left">简单 HTTP 基准与快速排查</td>
+<td style="text-align:left">轻量，但不适合复杂业务流程和严格数据校验</td>
 </tr>
 </tbody>
 </table>
 </div>
+<p>原文中“k6 不支持分布式，必须使用 k6 Cloud”和“Locust 性能一定不如 k6/Gatling”都过于绝对。工具自身的负载生成能力只是一个因素，生成机配置、脚本逻辑、网络位置和监控开销同样会影响结果。</p>
+<p>选择工具时重点检查：</p>
+<ul>
+<li>是否支持目标协议和认证方式；</li>
+<li>是否支持开放 / 封闭负载模型；</li>
+<li>是否能设置自动阈值和退出码；</li>
+<li>是否方便参数化、关联和数据清理；</li>
+<li>是否能水平扩展并观察负载生成器自身瓶颈；</li>
+<li>是否能与 Prometheus、OpenTelemetry、APM 或现有平台集成。</li>
+</ul>
 <hr>
 <h2 id="十二、完整性能测试流程总览"><a href="#十二、完整性能测试流程总览" class="headerlink" title="十二、完整性能测试流程总览"></a>十二、完整性能测试流程总览</h2><pre class="mermaid">flowchart TD
-    Req["📋 性能需求分析<br/>（确定 SLA · 业务场景 · 流量预估）"] --> Plan
+    Req["📋 性能需求分析<br/>（确定 SLO · 业务场景 · 流量预估）"] --> Plan
 
     subgraph Plan ["📝 测试计划阶段"]
         P1["接口优先级分级<br/>（P0/P1/P2）"] --> P2["测试类型选择<br/>（基准/负载/压力/稳定）"] --> P3["负载模型设计<br/>（并发数 · 爬坡策略 · 比例分配）"]
@@ -1034,7 +982,7 @@
     Prepare --> Exec
 
     subgraph Exec ["🧪 执行阶段"]
-        X1["基准测试<br/>建立性能基线"] --> X2["负载测试<br/>验证 SLA 达标"] --> X3["压力测试<br/>找到系统极限"] --> X4["稳定性测试<br/>长时运行验证"]
+        X1["基准测试<br/>建立性能基线"] --> X2["负载测试<br/>验证 SLO 达标"] --> X3["压力测试<br/>找到系统极限"] --> X4["稳定性测试<br/>长时运行验证"]
     end
 
     Exec --> Analyze
@@ -1062,7 +1010,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/%E6%B5%8B%E8%AF%95%E5%AE%9E%E6%88%98/" rel="tag"># 测试实战</a>
+              <a href="/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95-%E6%8E%A5%E5%8F%A3%E6%B5%8B%E8%AF%95-Load-Testing-SLI-SLO-k6/" rel="tag"># 性能测试, 接口测试, Load Testing, SLI, SLO, k6</a>
           </div>
 
         
@@ -1071,12 +1019,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2026/03/06/test-action/interface/function/design-idea-of-interface/" rel="prev" title="接口测试用例设计思路">
-      <i class="fa fa-chevron-left"></i> 接口测试用例设计思路
+    <a href="/2026/02/28/ai/langchain/9-langchain-Custom-Middleware/" rel="prev" title="LangChain自定义中间件的开发">
+      <i class="fa fa-chevron-left"></i> LangChain自定义中间件的开发
     </a></div>
       <div class="post-nav-item">
-    <a href="/2026/03/12/ai/langchain/15-langchain-Context/" rel="next" title="LangChain中的上下文工程">
-      LangChain中的上下文工程 <i class="fa fa-chevron-right"></i>
+    <a href="/2026/03/06/test-action/interface/function/design-idea-of-interface/" rel="next" title="接口测试用例设计思路">
+      接口测试用例设计思路 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -1136,7 +1084,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF"><span class="nav-number">1.</span> <span class="nav-text">接口性能测试用例设计思路</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E9%87%91%E5%AD%97%E5%A1%94%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">一、性能测试金字塔模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E6%A0%B8%E5%BF%83%E6%8C%87%E6%A0%87%E4%BD%93%E7%B3%BB"><span class="nav-number">1.2.</span> <span class="nav-text">二、性能测试核心指标体系</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E6%8C%87%E6%A0%87%E8%AF%B4%E6%98%8E"><span class="nav-number">1.2.1.</span> <span class="nav-text">关键指标说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E5%9F%BA%E5%87%86%E5%8F%82%E8%80%83%E6%A0%87%E5%87%86"><span class="nav-number">1.2.2.</span> <span class="nav-text">性能基准参考标准</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A6%86%E7%9B%96%E7%BB%B4%E5%BA%A6"><span class="nav-number">1.3.</span> <span class="nav-text">三、性能测试类型与覆盖维度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%84%E7%B1%BB%E5%9E%8B%E6%B5%8B%E8%AF%95%E5%AF%B9%E6%AF%94"><span class="nav-number">1.3.1.</span> <span class="nav-text">各类型测试对比</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%8D%95%E6%8E%A5%E5%8F%A3%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%9A%84%E5%85%AD%E5%A4%A7%E8%A6%86%E7%9B%96%E7%BB%B4%E5%BA%A6"><span class="nav-number">1.4.</span> <span class="nav-text">四、单接口性能测试的六大覆盖维度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E5%9C%A8%E9%A1%B9%E7%9B%AE%E4%B8%8D%E5%90%8C%E9%98%B6%E6%AE%B5%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">1.5.</span> <span class="nav-text">五、性能测试在项目不同阶段的应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%84%E9%98%B6%E6%AE%B5%E8%AF%A6%E7%BB%86%E5%AF%B9%E6%AF%94"><span class="nav-number">1.5.1.</span> <span class="nav-text">各阶段详细对比</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E8%AE%BE%E8%AE%A1%E6%A1%86%E6%9E%B6"><span class="nav-number">1.6.</span> <span class="nav-text">六、性能测试用例设计框架</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E5%9C%BA%E6%99%AF%E8%AE%BE%E8%AE%A1%EF%BC%9A%E8%B4%9F%E8%BD%BD%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.7.</span> <span class="nav-text">七、性能测试场景设计：负载模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B8%E5%9E%8B%E7%88%AC%E5%9D%A1%E7%AD%96%E7%95%A5%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.7.1.</span> <span class="nav-text">典型爬坡策略设计</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AB%E3%80%81%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%EF%BC%9A%E7%94%B5%E5%95%86%E4%B8%8B%E5%8D%95%E6%8E%A5%E5%8F%A3%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95"><span class="nav-number">1.8.</span> <span class="nav-text">八、实战案例：电商下单接口性能测试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%9B%AE%E6%A0%87%EF%BC%88SLA-%E5%AE%9A%E4%B9%89%EF%BC%89"><span class="nav-number">1.8.1.</span> <span class="nav-text">测试目标（SLA 定义）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E5%9C%BA%E6%99%AF%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.8.2.</span> <span class="nav-text">测试场景设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E8%A1%A8"><span class="nav-number">1.8.3.</span> <span class="nav-text">性能测试用例表</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E6%80%A7%E8%83%BD%E7%93%B6%E9%A2%88%E5%88%86%E6%9E%90%E4%B8%8E%E5%AE%9A%E4%BD%8D"><span class="nav-number">1.9.</span> <span class="nav-text">九、性能瓶颈分析与定位</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%93%B6%E9%A2%88%E4%B8%8E%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5"><span class="nav-number">1.9.1.</span> <span class="nav-text">常见瓶颈与优化策略</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%81%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E4%BC%98%E5%85%88%E7%BA%A7%E5%88%86%E7%BA%A7"><span class="nav-number">1.10.</span> <span class="nav-text">十、性能测试优先级分级</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E5%B7%A5%E5%85%B7%E9%80%89%E5%9E%8B"><span class="nav-number">1.11.</span> <span class="nav-text">十一、性能测试工具选型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%81%E4%BA%8C%E3%80%81%E5%AE%8C%E6%95%B4%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E6%B5%81%E7%A8%8B%E6%80%BB%E8%A7%88"><span class="nav-number">1.12.</span> <span class="nav-text">十二、完整性能测试流程总览</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF"><span class="nav-number">1.</span> <span class="nav-text">接口性能测试用例设计思路</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%85%88%E5%AE%9A%E4%B9%89%E6%80%A7%E8%83%BD%E7%9B%AE%E6%A0%87%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E5%85%88%E9%80%89%E6%8B%A9%E5%B9%B6%E5%8F%91%E6%95%B0"><span class="nav-number">1.1.</span> <span class="nav-text">一、先定义性能目标，而不是先选择并发数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%BB%BA%E7%AB%8B%E5%8F%AF%E9%AA%8C%E6%94%B6%E7%9A%84%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87"><span class="nav-number">1.2.</span> <span class="nav-text">二、建立可验收的性能指标</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SLI%E3%80%81SLO-%E4%B8%8E-SLA"><span class="nav-number">1.2.1.</span> <span class="nav-text">SLI、SLO 与 SLA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%8C%87%E6%A0%87"><span class="nav-number">1.2.2.</span> <span class="nav-text">核心指标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E8%A6%81%E4%BD%BF%E7%94%A8%E9%80%9A%E7%94%A8%E2%80%9C%E4%BC%98%E7%A7%80%E6%A0%87%E5%87%86%E2%80%9D"><span class="nav-number">1.2.3.</span> <span class="nav-text">不要使用通用“优秀标准”</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%B1%BB%E5%9E%8B%E4%B8%8E%E8%A6%86%E7%9B%96%E7%BB%B4%E5%BA%A6"><span class="nav-number">1.3.</span> <span class="nav-text">三、性能测试类型与覆盖维度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%84%E7%B1%BB%E5%9E%8B%E6%B5%8B%E8%AF%95%E5%AF%B9%E6%AF%94"><span class="nav-number">1.3.1.</span> <span class="nav-text">各类型测试对比</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%8D%95%E6%8E%A5%E5%8F%A3%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%9A%84%E5%85%AD%E5%A4%A7%E8%A6%86%E7%9B%96%E7%BB%B4%E5%BA%A6"><span class="nav-number">1.4.</span> <span class="nav-text">四、单接口性能测试的六大覆盖维度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E5%9C%A8%E9%A1%B9%E7%9B%AE%E4%B8%8D%E5%90%8C%E9%98%B6%E6%AE%B5%E7%9A%84%E5%BA%94%E7%94%A8"><span class="nav-number">1.5.</span> <span class="nav-text">五、性能测试在项目不同阶段的应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%84%E9%98%B6%E6%AE%B5%E8%AF%A6%E7%BB%86%E5%AF%B9%E6%AF%94"><span class="nav-number">1.5.1.</span> <span class="nav-text">各阶段详细对比</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E8%AE%BE%E8%AE%A1%E6%A1%86%E6%9E%B6"><span class="nav-number">1.6.</span> <span class="nav-text">六、性能测试用例设计框架</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E5%9C%BA%E6%99%AF%E8%AE%BE%E8%AE%A1%EF%BC%9A%E8%B4%9F%E8%BD%BD%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.7.</span> <span class="nav-text">七、性能测试场景设计：负载模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E6%94%BE%E6%A8%A1%E5%9E%8B%E4%B8%8E%E5%B0%81%E9%97%AD%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.7.1.</span> <span class="nav-text">开放模型与封闭模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B8%E5%9E%8B%E7%88%AC%E5%9D%A1%E7%AD%96%E7%95%A5%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.7.2.</span> <span class="nav-text">典型爬坡策略设计</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AB%E3%80%81%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%EF%BC%9A%E7%94%B5%E5%95%86%E4%B8%8B%E5%8D%95%E6%8E%A5%E5%8F%A3%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95"><span class="nav-number">1.8.</span> <span class="nav-text">八、实战案例：电商下单接口性能测试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%9B%AE%E6%A0%87%EF%BC%88%E7%A4%BA%E4%BE%8B-SLO%EF%BC%89"><span class="nav-number">1.8.1.</span> <span class="nav-text">测试目标（示例 SLO）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E5%9C%BA%E6%99%AF%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.8.2.</span> <span class="nav-text">测试场景设计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B%E8%A1%A8"><span class="nav-number">1.8.3.</span> <span class="nav-text">性能测试用例表</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E6%80%A7%E8%83%BD%E7%93%B6%E9%A2%88%E5%88%86%E6%9E%90%E4%B8%8E%E5%AE%9A%E4%BD%8D"><span class="nav-number">1.9.</span> <span class="nav-text">九、性能瓶颈分析与定位</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%93%B6%E9%A2%88%E4%B8%8E%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5"><span class="nav-number">1.9.1.</span> <span class="nav-text">常见瓶颈与优化策略</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%81%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E4%BC%98%E5%85%88%E7%BA%A7%E5%88%86%E7%BA%A7"><span class="nav-number">1.10.</span> <span class="nav-text">十、性能测试优先级分级</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%81%E4%B8%80%E3%80%81%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E5%B7%A5%E5%85%B7%E9%80%89%E5%9E%8B"><span class="nav-number">1.11.</span> <span class="nav-text">十一、性能测试工具选型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%81%E4%BA%8C%E3%80%81%E5%AE%8C%E6%95%B4%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E6%B5%81%E7%A8%8B%E6%80%BB%E8%A7%88"><span class="nav-number">1.12.</span> <span class="nav-text">十二、完整性能测试流程总览</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -1165,7 +1113,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">33</span>
+        <span class="site-state-item-count">35</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
