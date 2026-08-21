@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从提示词到自主智能体，系统理解 AI Agent 的演进阶段、七层架构、九步运行闭环、Harness Engineering、MCP 与常见开发框架。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="智能体（AI Agent）介绍：从大模型到自主执行">
+<meta property="og:url" content="https://jinglv.github.io/2026/08/20/ai/ai-agent-introduce/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从提示词到自主智能体，系统理解 AI Agent 的演进阶段、七层架构、九步运行闭环、Harness Engineering、MCP 与常见开发框架。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260820170707246.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260820170613460.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260820170935327.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260821093458621.png">
+<meta property="article:published_time" content="2026-08-19T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-21T02:30:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="AI智能体, Agent, 大模型, LLM, MCP, Harness Engineering">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260820170707246.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/08/20/ai/ai-agent-introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>智能体（AI Agent）介绍：从大模型到自主执行 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/08/20/ai/ai-agent-introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          智能体（AI Agent）介绍：从大模型到自主执行
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-08-20 00:00:00" itemprop="dateCreated datePublished" datetime="2026-08-20T00:00:00+08:00">2026-08-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-08-21 10:30:00" itemprop="dateModified" datetime="2026-08-21T10:30:00+08:00">2026-08-21</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/AI%E6%99%BA%E8%83%BD%E4%BD%93/" itemprop="url" rel="index"><span itemprop="name">AI智能体</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从提示词到自主智能体，系统理解 AI Agent 的演进阶段、七层架构、九步运行闭环、Harness Engineering、MCP 与常见开发框架。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="智能体（AI-Agent）介绍"><a href="#智能体（AI-Agent）介绍" class="headerlink" title="智能体（AI Agent）介绍"></a>智能体（AI Agent）介绍</h1><blockquote>
+<p>本文是「智能体」系列的开篇。与其把 Agent 简单理解成“接入了工具的大模型”，不如把它看成一个由模型、上下文、运行时、推理、记忆、工具和技能共同组成的执行系统。</p>
+</blockquote>
+<p>本文重点回答几个问题：</p>
+<ul>
+<li>Agent 与普通聊天机器人、传统工作流有什么区别？</li>
+<li>AI Agent 是如何从“会回答”演进到“能完成任务”的？</li>
+<li>一个现代 Agent 的完整架构包含哪些层？</li>
+<li>Agent 从接收用户目标到返回结果，要经过哪些步骤？</li>
+<li>ReAct、Workflow、Runtime、Harness Engineering 和 MCP 分别解决什么问题？</li>
+<li>面对 LangChain、LangGraph、OpenAI Agents SDK、DeepAgents 等方案，应该如何选择？</li>
+</ul>
+<hr>
+<h1 id="一、为什么需要智能体：从“会回答”到“能完成任务”"><a href="#一、为什么需要智能体：从“会回答”到“能完成任务”" class="headerlink" title="一、为什么需要智能体：从“会回答”到“能完成任务”"></a>一、为什么需要智能体：从“会回答”到“能完成任务”</h1><p>大语言模型（LLM）擅长理解上下文、生成文本和进行推理，但<strong>模型本身并不等于一个完整的执行系统</strong>。它可以提出“应该查天气、读取文件或运行测试”，却需要外部运行时真正完成这些动作，并将结果再次反馈给模型。</p>
+<p>因此，下面这些说法需要稍微修正：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">常见说法</th>
+<th style="text-align:left">更准确的理解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>LLM 没有记忆</strong></td>
+<td style="text-align:left">模型本身不会自动形成跨会话记忆，但应用可以通过上下文、会话状态、数据库或知识库提供记忆。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LLM 不会使用工具</strong></td>
+<td style="text-align:left">模型可以生成结构化的工具调用请求；工具的实际执行、权限控制和结果回传由运行时负责。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LLM 只能单轮问答</strong></td>
+<td style="text-align:left">只使用模型接口时通常是单轮生成；加入运行时后，可以形成多轮、多步骤的执行循环。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LLM 输出不可控</strong></td>
+<td style="text-align:left">幻觉和不稳定性仍然存在，但可以通过工具验证、结构化输出、评估、重试和人工审核降低风险。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Agent 的价值，不只是给模型增加“手和脚”，而是把模型放进一个可执行、可观测、可恢复的工作环境中。</strong> 模型负责理解目标和做决策，运行时负责调度工具、管理状态、处理错误，并决定何时暂停或结束。</p>
+<h2 id="Agent-的基本定义"><a href="#Agent-的基本定义" class="headerlink" title="Agent 的基本定义"></a>Agent 的基本定义</h2><p>可以用一句工程化的定义概括：</p>
+<blockquote>
+<p><strong>AI Agent 是一个以模型为决策核心，能够接收目标、使用上下文和工具，在运行时中循环执行并交付结果的系统。</strong></p>
+</blockquote>
+<p>这里的关键词是：<strong>目标、决策、工具、状态、反馈和执行</strong>。Agent 不一定完全自主，也不一定必须进行复杂规划；在高风险任务中，让人类在关键节点确认，反而是更可靠的设计。</p>
+<hr>
+<h1 id="二、智能体、大模型与传统程序的区别"><a href="#二、智能体、大模型与传统程序的区别" class="headerlink" title="二、智能体、大模型与传统程序的区别"></a>二、智能体、大模型与传统程序的区别</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">维度</th>
+<th style="text-align:left">传统程序</th>
+<th style="text-align:left">大模型（LLM）</th>
+<th style="text-align:left">智能体（Agent）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>本质</strong></td>
+<td style="text-align:left">固定逻辑和确定性流程</td>
+<td style="text-align:left">参数化概率模型</td>
+<td style="text-align:left">模型与执行环境组成的系统</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>输入</strong></td>
+<td style="text-align:left">结构化参数</td>
+<td style="text-align:left">自然语言或多模态输入</td>
+<td style="text-align:left">用户目标、上下文和环境状态</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>行为</strong></td>
+<td style="text-align:left">按预先编排的路径执行</td>
+<td style="text-align:left">生成文本或结构化结果</td>
+<td style="text-align:left">根据当前状态决定下一步行动</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>工具</strong></td>
+<td style="text-align:left">在代码中显式调用</td>
+<td style="text-align:left">只能描述要调用什么</td>
+<td style="text-align:left">选择工具，由运行时执行并回传结果</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>记忆</strong></td>
+<td style="text-align:left">通常由程序显式管理</td>
+<td style="text-align:left">依赖当前上下文窗口</td>
+<td style="text-align:left">结合会话状态、长期记忆和检索系统</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>控制方式</strong></td>
+<td style="text-align:left">程序员控制每一步</td>
+<td style="text-align:left">用户控制每一轮</td>
+<td style="text-align:left">运行时、策略和人工共同控制执行过程</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>失败处理</strong></td>
+<td style="text-align:left">由代码预先定义</td>
+<td style="text-align:left">通常只返回一次结果</td>
+<td style="text-align:left">可以重试、回滚、反思、转交或请求人工介入</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>一句话总结：<strong>大模型是决策能力，传统程序是确定性执行，智能体是把两者放进同一套闭环系统。</strong></p>
+<hr>
+<h1 id="三、智能体的演进：七个阶段"><a href="#三、智能体的演进：七个阶段" class="headerlink" title="三、智能体的演进：七个阶段"></a>三、智能体的演进：七个阶段</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260820170707246.png" alt="智能体（Agent）演进全景图：从提示词到自主智能体"></p>
+<p>智能体的演进，不是简单地“模型越来越聪明”，而是<strong>模型能力、上下文组织、工具连接和运行环境逐步补齐</strong>的过程。可以按照能力跃迁分为七个阶段：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">阶段</th>
+<th style="text-align:left">时间参考</th>
+<th style="text-align:left">核心问题</th>
+<th style="text-align:left">典型能力</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>提示词工程</strong>（Prompt Engineering）</td>
+<td style="text-align:left">2018 年以前</td>
+<td style="text-align:left">如何让模型回答得更好？</td>
+<td style="text-align:left">通过提示词约束角色、格式和任务目标</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>上下文工程</strong>（Context Engineering）</td>
+<td style="text-align:left">2018—2020 年</td>
+<td style="text-align:left">如何把正确的信息交给模型？</td>
+<td style="text-align:left">组装文档、知识库、历史对话、检索结果和工具结果</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>工具使用智能体</strong>（Tool-Using Agent）</td>
+<td style="text-align:left">2021—2022 年</td>
+<td style="text-align:left">如何让模型采取行动？</td>
+<td style="text-align:left">Function Calling、API、搜索、文件和数据库调用</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>工作流 / 编排智能体</strong>（Workflow Agent）</td>
+<td style="text-align:left">2023—2024 年</td>
+<td style="text-align:left">如何可靠地执行复杂流程？</td>
+<td style="text-align:left">DAG、状态图、条件分支、重试、回滚和人工介入</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Agent Runtime</strong></td>
+<td style="text-align:left">2025 年</td>
+<td style="text-align:left">如何让 Agent 稳定运行？</td>
+<td style="text-align:left">运行状态、记忆、计划、反思、工具和可观测性统一管理</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Harness Engineering</strong></td>
+<td style="text-align:left">2026 年</td>
+<td style="text-align:left">如何给 Agent 提供完整的工作环境？</td>
+<td style="text-align:left">权限、安全、验证、反馈、代码库规则和任务边界协同工作</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>自主进化智能体</strong></td>
+<td style="text-align:left">2026 年以后</td>
+<td style="text-align:left">如何长期完成目标并持续改进？</td>
+<td style="text-align:left">长周期任务、自主规划、经验沉淀、协作和受控自我改进</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>其中，<strong>Harness Engineering 不是某个单独的模型或 SDK</strong>，而是一种面向 Agent 的工程方法：人类负责定义目标、约束和反馈机制，Agent 在明确的工具、权限、测试与验证环境中执行任务。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260820170613460.png" alt="智能体（Agent）演进路线图"></p>
+<h2 id="从“提示词”到“工作环境”的变化"><a href="#从“提示词”到“工作环境”的变化" class="headerlink" title="从“提示词”到“工作环境”的变化"></a>从“提示词”到“工作环境”的变化</h2><p>早期关注点是“怎样写一条更好的提示词”；现在更重要的问题是：</p>
+<ul>
+<li>Agent 能否获得完成任务所需的上下文？</li>
+<li>工具是否有清晰的边界、权限和输入输出约束？</li>
+<li>任务是否可以暂停、恢复、重试和回滚？</li>
+<li>结果是否能够通过测试、规则或人工审核验证？</li>
+<li>运行过程是否可观测，出了问题能否定位原因？</li>
+</ul>
+<p>这也是为什么现代 Agent 的竞争力，越来越取决于<strong>模型之外的系统设计</strong>。</p>
+<hr>
+<h1 id="四、智能体的核心架构：七层而不是五个孤立组件"><a href="#四、智能体的核心架构：七层而不是五个孤立组件" class="headerlink" title="四、智能体的核心架构：七层而不是五个孤立组件"></a>四、智能体的核心架构：七层而不是五个孤立组件</h1><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260820170935327.png" alt="现代 AI Agent 七层架构图"></p>
+<p>传统介绍经常把 Agent 概括成“模型、规划、记忆、工具、行动”五个组件。这个概括适合入门，但在工程实践中还需要把<strong>上下文工程、运行时 / Harness 和技能层</strong>单独看出来。一个更完整的七层架构如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">层级</th>
+<th style="text-align:left">模块</th>
+<th style="text-align:left">主要职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>1</strong></td>
+<td style="text-align:left">基础模型（Foundation Model）</td>
+<td style="text-align:left">理解、生成、推理和多模态处理，提供 Agent 的基础智能。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>2</strong></td>
+<td style="text-align:left">上下文工程（Context Engineering）</td>
+<td style="text-align:left">组织系统提示词、用户输入、历史对话、检索内容、工具结果和任务约束。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>3</strong></td>
+<td style="text-align:left">运行时 / Harness（Runtime / Harness）</td>
+<td style="text-align:left">管理执行循环、状态、权限、超时、重试、并发、暂停恢复和安全边界。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>4</strong></td>
+<td style="text-align:left">推理与决策（Reasoning）</td>
+<td style="text-align:left">对目标进行拆解，选择下一步行动，依据反馈进行调整或反思。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>5</strong></td>
+<td style="text-align:left">记忆系统（Memory）</td>
+<td style="text-align:left">管理短期会话记忆、长期知识、用户偏好、任务历史和检索增强（RAG）。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>6</strong></td>
+<td style="text-align:left">工具与连接层（Tools &amp; MCP）</td>
+<td style="text-align:left">连接数据库、API、文件系统、搜索引擎、浏览器及其他外部系统。</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>7</strong></td>
+<td style="text-align:left">技能层（Skills）</td>
+<td style="text-align:left">将领域知识、操作规范和可复用工作流封装成可调用的能力模块。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="各层之间如何协作"><a href="#各层之间如何协作" class="headerlink" title="各层之间如何协作"></a>各层之间如何协作</h2><p>一次典型执行可以抽象为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">用户目标</span><br><span class="line">  ↓</span><br><span class="line">上下文工程：准备规则、历史、知识和任务状态</span><br><span class="line">  ↓</span><br><span class="line">模型推理：理解目标，选择计划或下一步行动</span><br><span class="line">  ↓</span><br><span class="line">运行时：检查权限并执行工具 / 技能</span><br><span class="line">  ↓</span><br><span class="line">观察结果：把工具输出、错误和环境变化写回上下文</span><br><span class="line">  ↓</span><br><span class="line">继续推理、修正、重试，或请求人工确认</span><br><span class="line">  ↓</span><br><span class="line">生成结果并记录运行轨迹</span><br></pre></td></tr></table></figure>
+<p>因此，<strong>Agent 不是一个“会自主思考的函数”</strong>，而是一个包含状态和执行边界的系统。模型可以更换，工具可以扩展，但运行时、权限、验证和可观测性决定了它能否真正进入生产环境。</p>
+<hr>
+<h1 id="五、Agent-如何工作：从输入到结果返回的完整闭环"><a href="#五、Agent-如何工作：从输入到结果返回的完整闭环" class="headerlink" title="五、Agent 如何工作：从输入到结果返回的完整闭环"></a>五、Agent 如何工作：从输入到结果返回的完整闭环</h1><p>前面的七层架构回答了“Agent 由什么组成”，运行流程则回答“这些组件如何在一次任务中协同工作”。完整流程不只是 ReAct 的“思考—行动—观察”，还包括上下文构建、结果验证、完成判断、安全控制和可观测性。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260821093458621.png" alt="image-20260821093458621"></p>
+<h2 id="1-主流程：九个步骤"><a href="#1-主流程：九个步骤" class="headerlink" title="1. 主流程：九个步骤"></a>1. 主流程：九个步骤</h2><p>一次完整的 Agent 运行，可以拆分为九个步骤：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">步骤</th>
+<th style="text-align:left">阶段</th>
+<th style="text-align:left">主要工作</th>
+<th style="text-align:left">核心负责方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>1</strong></td>
+<td style="text-align:left">意图理解</td>
+<td style="text-align:left">识别用户意图，解析目标、约束和期望输出。</td>
+<td style="text-align:left">Agent + LLM</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>2</strong></td>
+<td style="text-align:left">上下文构建</td>
+<td style="text-align:left">组装系统规则、对话历史、长期记忆、知识检索结果和环境状态。</td>
+<td style="text-align:left">Runtime / Context Engineering</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>3</strong></td>
+<td style="text-align:left">规划与决策</td>
+<td style="text-align:left">基于当前上下文推理，决定下一步行动，必要时拆分任务。</td>
+<td style="text-align:left">LLM</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>4</strong></td>
+<td style="text-align:left">执行动作</td>
+<td style="text-align:left">根据模型决策，调用 Skill 或 Tool，或者直接回答、追问、继续推理。</td>
+<td style="text-align:left">Runtime</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>5</strong></td>
+<td style="text-align:left">观察结果</td>
+<td style="text-align:left">接收工具或技能的执行结果，包括成功数据、错误信息和环境变化。</td>
+<td style="text-align:left">Runtime</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>6</strong></td>
+<td style="text-align:left">结果处理与验证</td>
+<td style="text-align:left">解析、过滤、校验和结构化执行结果，判断数据是否可信、完整。</td>
+<td style="text-align:left">Runtime + Guardrails / Validators</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>7</strong></td>
+<td style="text-align:left">评估与判断</td>
+<td style="text-align:left">判断目标是否完成、结果是否可靠、是否还需要更多信息。</td>
+<td style="text-align:left">LLM + Runtime 策略</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>8</strong></td>
+<td style="text-align:left">生成最终回答</td>
+<td style="text-align:left">整合有效信息，生成自然语言、结构化数据或其他交付物。</td>
+<td style="text-align:left">LLM</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>9</strong></td>
+<td style="text-align:left">返回结果</td>
+<td style="text-align:left">将答案交付给用户，并按需保存状态、记忆和运行记录。</td>
+<td style="text-align:left">Agent / Application</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这里最重要的是第 <strong>7 步“评估与判断”</strong>：</p>
+<ul>
+<li>如果目标已经完成，进入第 8、9 步，生成并返回最终结果；</li>
+<li>如果目标尚未完成，则更新上下文，回到规划阶段，开始下一轮循环；</li>
+<li>如果缺少必要信息，可以向用户追问；</li>
+<li>如果遇到高风险操作、权限不足或无法自动处理的异常，可以暂停并请求人工介入；</li>
+<li>如果达到时间、token、费用或最大循环次数限制，则由运行时终止任务并返回可解释的状态。</li>
+</ul>
+<p>因此，Agent Loop 不是无限循环，而是一个受到<strong>完成条件、失败条件、资源预算和安全策略</strong>共同约束的状态循环。</p>
+<h2 id="2-ReAct-是运行循环的核心模式，但不是完整流程"><a href="#2-ReAct-是运行循环的核心模式，但不是完整流程" class="headerlink" title="2. ReAct 是运行循环的核心模式，但不是完整流程"></a>2. ReAct 是运行循环的核心模式，但不是完整流程</h2><p>ReAct（Reasoning + Acting）通常用于描述 Agent 内部的核心循环：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Reason：根据目标、上下文和观察结果进行推理</span><br><span class="line">Act：选择并调用 Skill 或 Tool</span><br><span class="line">Observe：接收外部执行结果并写回上下文</span><br></pre></td></tr></table></figure>
+<p>它大致对应上图中的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">规划与决策（3） → 执行动作（4） → 观察结果（5）</span><br><span class="line">                         ↑              ↓</span><br><span class="line">                         └── 评估后继续循环（7）</span><br></pre></td></tr></table></figure>
+<p>但生产级 Agent 不能只实现这三个动作。它还需要在循环前完成意图理解和上下文构建，在工具返回后进行结果验证，在循环结束后生成并返回答案。换句话说：</p>
+<blockquote>
+<p><strong>ReAct 描述的是 Agent 的局部决策循环，Runtime 描述的是保障整个任务从开始到结束的完整执行机制。</strong></p>
+</blockquote>
+<h2 id="3-LLM、Agent、Runtime-与能力层如何分工"><a href="#3-LLM、Agent、Runtime-与能力层如何分工" class="headerlink" title="3. LLM、Agent、Runtime 与能力层如何分工"></a>3. LLM、Agent、Runtime 与能力层如何分工</h2><p>这几个概念容易混淆，可以按照职责区分：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">组件</th>
+<th style="text-align:left">负责什么</th>
+<th style="text-align:left">不负责什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>LLM</strong></td>
+<td style="text-align:left">理解、推理、规划、选择下一步行动、生成回答</td>
+<td style="text-align:left">不直接访问数据库、执行代码或改变外部系统</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Agent</strong></td>
+<td style="text-align:left">面向用户目标组织模型、上下文、记忆和能力，形成任务闭环</td>
+<td style="text-align:left">不等于某一次模型调用，也不等于某一个工具</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Runtime / Harness</strong></td>
+<td style="text-align:left">驱动循环、调度调用、管理状态、权限、预算、异常和暂停恢复</td>
+<td style="text-align:left">不替代模型完成语义推理</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Skill</strong></td>
+<td style="text-align:left">封装可复用的领域知识、操作步骤和工作流</td>
+<td style="text-align:left">不一定直接连接外部系统</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Tool</strong></td>
+<td style="text-align:left">执行数据库查询、API 调用、文件读写、代码运行等具体操作</td>
+<td style="text-align:left">不负责理解完整用户目标</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MCP</strong></td>
+<td style="text-align:left">标准化暴露、发现和连接工具或资源</td>
+<td style="text-align:left">MCP 本身不是工具，也不自动保证工具安全可靠</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>外部系统</strong></td>
+<td style="text-align:left">提供真实数据或接受操作，例如数据库、业务 API、文件系统和搜索服务</td>
+<td style="text-align:left">不参与 Agent 的规划与完成判断</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>例如，当用户要求“读取销售数据并生成分析报告”时，LLM 决定需要哪些数据；Runtime 校验调用是否合法；Tool 或 Skill 执行查询与分析；MCP 可以作为连接这些能力的标准协议；最终仍由 Agent 汇总结果并返回给用户。</p>
+<h2 id="4-贯穿全流程的三类治理能力"><a href="#4-贯穿全流程的三类治理能力" class="headerlink" title="4. 贯穿全流程的三类治理能力"></a>4. 贯穿全流程的三类治理能力</h2><p>完整运行流程还包含三组不属于某个单一步骤、而是贯穿始终的横切能力。</p>
+<h3 id="安全与控制"><a href="#安全与控制" class="headerlink" title="安全与控制"></a>安全与控制</h3><ul>
+<li><strong>权限与访问控制</strong>：限制用户、数据和操作权限，遵循最小权限原则；</li>
+<li><strong>Guardrails 与限制</strong>：进行内容过滤、敏感操作拦截、参数校验、超时和成本控制；</li>
+<li><strong>人工参与（HITL）</strong>：在付款、删除、发布、发送等高风险动作前进行审批或确认。</li>
+</ul>
+<h3 id="观察与监控"><a href="#观察与监控" class="headerlink" title="观察与监控"></a>观察与监控</h3><ul>
+<li><strong>日志记录</strong>：保存模型请求、工具调用、响应、错误和状态变化；</li>
+<li><strong>指标监控</strong>：统计延迟、成功率、token、成本、循环次数和资源使用；</li>
+<li><strong>追踪与调试</strong>：通过 trace 还原每一步决策和调用链路，支持问题定位与回放。</li>
+</ul>
+<h3 id="评估与优化"><a href="#评估与优化" class="headerlink" title="评估与优化"></a>评估与优化</h3><ul>
+<li><strong>效果评估</strong>：使用准确性、任务完成率、用户满意度和业务指标衡量质量；</li>
+<li><strong>提示词与 Skill 优化</strong>：根据失败案例改进指令、上下文组织和能力封装；</li>
+<li><strong>回归测试</strong>：建立固定测试集，防止模型、提示词、工具或工作流更新造成能力退化。</li>
+</ul>
+<p>所以更准确的表达是：<strong>模型负责决策，Runtime / Harness 负责执行与治理，Skill 和 Tool 提供能力，MCP 提供标准化连接，外部系统承载真实数据与操作。</strong></p>
+<hr>
+<h1 id="六、工具、MCP-与技能：Agent-如何连接外部世界"><a href="#六、工具、MCP-与技能：Agent-如何连接外部世界" class="headerlink" title="六、工具、MCP 与技能：Agent 如何连接外部世界"></a>六、工具、MCP 与技能：Agent 如何连接外部世界</h1><h2 id="工具（Tools）"><a href="#工具（Tools）" class="headerlink" title="工具（Tools）"></a>工具（Tools）</h2><p>工具是 Agent 可以调用的外部能力，例如搜索、数据库查询、文件读写、代码执行、浏览器操作和业务 API。一个好的工具应该具备：</p>
+<ul>
+<li>清晰、稳定的名称和参数 Schema；</li>
+<li>明确的返回格式和错误信息；</li>
+<li>最小必要权限；</li>
+<li>幂等、超时和审计设计；</li>
+<li>对危险操作提供预览或人工确认。</li>
+</ul>
+<h2 id="MCP（Model-Context-Protocol）"><a href="#MCP（Model-Context-Protocol）" class="headerlink" title="MCP（Model Context Protocol）"></a>MCP（Model Context Protocol）</h2><p>MCP 可以理解为一种连接标准：它让 Agent 通过统一的协议发现和使用外部工具、资源与提示模板，减少每个应用都重复编写连接适配器的工作。MCP 解决的是<strong>连接与发现问题</strong>，并不会自动解决权限、安全、数据质量或业务正确性问题。</p>
+<h2 id="技能（Skills）"><a href="#技能（Skills）" class="headerlink" title="技能（Skills）"></a>技能（Skills）</h2><p>技能位于工具之上，更接近“完成一类工作的能力”。例如“分析一份测试报告”可能会组合读取文件、运行脚本、查询缺陷系统和生成 Markdown 报告等多个工具。将这些步骤和领域规则封装成技能，可以让 Agent 复用成熟的工作方式，而不是每次从零规划。</p>
+<hr>
+<h1 id="七、主流框架与平台：按控制程度选择"><a href="#七、主流框架与平台：按控制程度选择" class="headerlink" title="七、主流框架与平台：按控制程度选择"></a>七、主流框架与平台：按控制程度选择</h1><p>截至 <strong>2026 年 8 月</strong>，可以从“控制程度”和“运行环境”两个维度理解常见方案：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方案</th>
+<th style="text-align:left">定位</th>
+<th style="text-align:left">适合场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>LangChain</strong></td>
+<td style="text-align:left">模型、工具、消息和中间件等通用抽象</td>
+<td style="text-align:left">快速搭建 LLM 应用与标准 Agent</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>LangGraph</strong></td>
+<td style="text-align:left">面向状态图的 Agent 编排运行时</td>
+<td style="text-align:left">需要分支、循环、持久化、恢复和人工介入的复杂流程</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>OpenAI Agents SDK</strong></td>
+<td style="text-align:left">提供 Agent、Runner、工具、Handoff、Guardrails 等原语</td>
+<td style="text-align:left">希望用较少抽象构建单 Agent 或多 Agent 应用</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>DeepAgents</strong></td>
+<td style="text-align:left">面向复杂任务的深度智能体能力</td>
+<td style="text-align:left">任务分解、上下文隔离、子智能体和长任务执行</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Claude Code / Devin 等 Coding Agent</strong></td>
+<td style="text-align:left">以代码仓库和开发工具为工作环境的 Agent</td>
+<td style="text-align:left">编码、测试、调试、提交和代码审查</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Dify / Coze 等平台</strong></td>
+<td style="text-align:left">可视化工作流与 Agent 平台</td>
+<td style="text-align:left">快速验证业务想法、低代码交付</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>选择时可以遵循一个简单原则：</p>
+<ul>
+<li><strong>流程确定、分支清晰</strong>：优先使用普通代码或工作流，不必强行引入 Agent。</li>
+<li><strong>需要模型在有限范围内选择动作</strong>：使用 Tool-Using Agent 或 LangChain。</li>
+<li><strong>需要循环、持久化、暂停恢复和人工审核</strong>：使用 LangGraph 或其他明确的 Runtime。</li>
+<li><strong>需要长任务、子智能体和上下文隔离</strong>：考虑 DeepAgents 等深度智能体方案。</li>
+<li><strong>需要让 Agent 操作代码库或真实工作区</strong>：重点设计 Harness，而不只是选择模型。</li>
+</ul>
+<hr>
+<h1 id="八、智能体的应用场景"><a href="#八、智能体的应用场景" class="headerlink" title="八、智能体的应用场景"></a>八、智能体的应用场景</h1><p>Agent 适合那些<strong>目标可以描述、行动可以授权、结果可以验证</strong>的任务：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">场景</th>
+<th style="text-align:left">典型应用</th>
+<th style="text-align:left">关键控制点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>知识问答</strong></td>
+<td style="text-align:left">检索企业文档、汇总资料、回答问题</td>
+<td style="text-align:left">引用来源、检索质量、权限隔离</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>代码开发</strong></td>
+<td style="text-align:left">修改代码、运行测试、提交变更、代码审查</td>
+<td style="text-align:left">沙箱、测试、差异审查、人工合并</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>数据分析</strong></td>
+<td style="text-align:left">查询数据库、生成图表、解释指标</td>
+<td style="text-align:left">SQL 权限、数据脱敏、结果校验</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>客户服务</strong></td>
+<td style="text-align:left">查询订单、处理工单、转接人工</td>
+<td style="text-align:left">身份认证、操作授权、升级策略</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>办公自动化</strong></td>
+<td style="text-align:left">整理邮件、生成文档、同步任务和日程</td>
+<td style="text-align:left">外发确认、敏感信息保护、审计</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>软件测试</strong></td>
+<td style="text-align:left">生成用例、执行测试、分析失败日志</td>
+<td style="text-align:left">环境隔离、可重复执行、人工复核</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>多智能体协作</strong></td>
+<td style="text-align:left">研究、规划、执行和审核分工</td>
+<td style="text-align:left">角色边界、通信成本、统一验收</td>
+</tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h1 id="九、挑战与展望"><a href="#九、挑战与展望" class="headerlink" title="九、挑战与展望"></a>九、挑战与展望</h1><h2 id="当前挑战"><a href="#当前挑战" class="headerlink" title="当前挑战"></a>当前挑战</h2><ul>
+<li><strong>可靠性</strong>：多步执行会放大错误，需要计划、验证、重试和人工介入。</li>
+<li><strong>上下文管理</strong>：上下文并非越多越好，必须保持相关、最新且可追溯。</li>
+<li><strong>安全与权限</strong>：工具调用可能产生真实副作用，必须遵循最小权限和可审计原则。</li>
+<li><strong>成本与延迟</strong>：循环、检索和多智能体协作都会增加模型调用次数。</li>
+<li><strong>评估困难</strong>：Agent 的结果和过程都需要评估，单看最终文本往往不够。</li>
+<li><strong>长期任务管理</strong>：任务暂停、恢复、超时、回滚和环境变化仍然是工程难点。</li>
+</ul>
+<h2 id="未来趋势"><a href="#未来趋势" class="headerlink" title="未来趋势"></a>未来趋势</h2><p>未来的重点不会只是“让模型更会回答”，而是建设更完整的 Agent 工作环境：</p>
+<ul>
+<li><strong>更强的 Runtime / Harness</strong>：让任务可控、可观测、可恢复、可治理；</li>
+<li><strong>更好的上下文工程</strong>：自动选择信息，减少噪声和上下文污染；</li>
+<li><strong>更成熟的技能与协议生态</strong>：通过 Skills、MCP 等方式复用能力；</li>
+<li><strong>更可靠的人机协同</strong>：让人类负责目标、边界和验收，Agent 负责执行；</li>
+<li><strong>受控的长期自治</strong>：在明确权限和反馈机制下完成长周期任务，而不是无限循环。</li>
+</ul>
+<hr>
+<h1 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h1><p>智能体的演进路线，可以概括为：</p>
+<blockquote>
+<p><strong>单次对话 → 工具调用 → 流程自动化 → 自主规划 → 协作智能 → 自我改进</strong></p>
+</blockquote>
+<p>理解 Agent，不能只盯着模型本身。真正决定系统能否落地的，是上下文是否准确、工具是否可靠、运行时是否可控、结果是否可验证，以及整个工作环境是否为 Agent 做了正确的设计。</p>
+<p>后续文章将分别介绍 <a href="/categories/LangChain/">LangChain 系列</a>、<a href="/categories/LangGraph/">LangGraph 系列</a>、<a href="/categories/DeepAgents/">DeepAgents 系列</a> 与 <a href="/categories/Harness-Engineering/">Harness Engineering 系列</a> 的具体实践。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AI%E6%99%BA%E8%83%BD%E4%BD%93-Agent-%E5%A4%A7%E6%A8%A1%E5%9E%8B-LLM-MCP-Harness-Engineering/" rel="tag"># AI智能体, Agent, 大模型, LLM, MCP, Harness Engineering</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/08/20/ai/ai-coding/sdd/1-introduce/" rel="prev" title="SSD介绍">
+      <i class="fa fa-chevron-left"></i> SSD介绍
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%88AI-Agent%EF%BC%89%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">智能体（AI Agent）介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E6%99%BA%E8%83%BD%E4%BD%93%EF%BC%9A%E4%BB%8E%E2%80%9C%E4%BC%9A%E5%9B%9E%E7%AD%94%E2%80%9D%E5%88%B0%E2%80%9C%E8%83%BD%E5%AE%8C%E6%88%90%E4%BB%BB%E5%8A%A1%E2%80%9D"><span class="nav-number">2.</span> <span class="nav-text">一、为什么需要智能体：从“会回答”到“能完成任务”</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Agent-%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">Agent 的基本定义</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E6%99%BA%E8%83%BD%E4%BD%93%E3%80%81%E5%A4%A7%E6%A8%A1%E5%9E%8B%E4%B8%8E%E4%BC%A0%E7%BB%9F%E7%A8%8B%E5%BA%8F%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">3.</span> <span class="nav-text">二、智能体、大模型与传统程序的区别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E6%BC%94%E8%BF%9B%EF%BC%9A%E4%B8%83%E4%B8%AA%E9%98%B6%E6%AE%B5"><span class="nav-number">4.</span> <span class="nav-text">三、智能体的演进：七个阶段</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E2%80%9C%E6%8F%90%E7%A4%BA%E8%AF%8D%E2%80%9D%E5%88%B0%E2%80%9C%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83%E2%80%9D%E7%9A%84%E5%8F%98%E5%8C%96"><span class="nav-number">4.1.</span> <span class="nav-text">从“提示词”到“工作环境”的变化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E6%A0%B8%E5%BF%83%E6%9E%B6%E6%9E%84%EF%BC%9A%E4%B8%83%E5%B1%82%E8%80%8C%E4%B8%8D%E6%98%AF%E4%BA%94%E4%B8%AA%E5%AD%A4%E7%AB%8B%E7%BB%84%E4%BB%B6"><span class="nav-number">5.</span> <span class="nav-text">四、智能体的核心架构：七层而不是五个孤立组件</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%84%E5%B1%82%E4%B9%8B%E9%97%B4%E5%A6%82%E4%BD%95%E5%8D%8F%E4%BD%9C"><span class="nav-number">5.1.</span> <span class="nav-text">各层之间如何协作</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81Agent-%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%EF%BC%9A%E4%BB%8E%E8%BE%93%E5%85%A5%E5%88%B0%E7%BB%93%E6%9E%9C%E8%BF%94%E5%9B%9E%E7%9A%84%E5%AE%8C%E6%95%B4%E9%97%AD%E7%8E%AF"><span class="nav-number">6.</span> <span class="nav-text">五、Agent 如何工作：从输入到结果返回的完整闭环</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%B8%BB%E6%B5%81%E7%A8%8B%EF%BC%9A%E4%B9%9D%E4%B8%AA%E6%AD%A5%E9%AA%A4"><span class="nav-number">6.1.</span> <span class="nav-text">1. 主流程：九个步骤</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-ReAct-%E6%98%AF%E8%BF%90%E8%A1%8C%E5%BE%AA%E7%8E%AF%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A8%A1%E5%BC%8F%EF%BC%8C%E4%BD%86%E4%B8%8D%E6%98%AF%E5%AE%8C%E6%95%B4%E6%B5%81%E7%A8%8B"><span class="nav-number">6.2.</span> <span class="nav-text">2. ReAct 是运行循环的核心模式，但不是完整流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-LLM%E3%80%81Agent%E3%80%81Runtime-%E4%B8%8E%E8%83%BD%E5%8A%9B%E5%B1%82%E5%A6%82%E4%BD%95%E5%88%86%E5%B7%A5"><span class="nav-number">6.3.</span> <span class="nav-text">3. LLM、Agent、Runtime 与能力层如何分工</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E8%B4%AF%E7%A9%BF%E5%85%A8%E6%B5%81%E7%A8%8B%E7%9A%84%E4%B8%89%E7%B1%BB%E6%B2%BB%E7%90%86%E8%83%BD%E5%8A%9B"><span class="nav-number">6.4.</span> <span class="nav-text">4. 贯穿全流程的三类治理能力</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E4%B8%8E%E6%8E%A7%E5%88%B6"><span class="nav-number">6.4.1.</span> <span class="nav-text">安全与控制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%82%E5%AF%9F%E4%B8%8E%E7%9B%91%E6%8E%A7"><span class="nav-number">6.4.2.</span> <span class="nav-text">观察与监控</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0%E4%B8%8E%E4%BC%98%E5%8C%96"><span class="nav-number">6.4.3.</span> <span class="nav-text">评估与优化</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E5%B7%A5%E5%85%B7%E3%80%81MCP-%E4%B8%8E%E6%8A%80%E8%83%BD%EF%BC%9AAgent-%E5%A6%82%E4%BD%95%E8%BF%9E%E6%8E%A5%E5%A4%96%E9%83%A8%E4%B8%96%E7%95%8C"><span class="nav-number">7.</span> <span class="nav-text">六、工具、MCP 与技能：Agent 如何连接外部世界</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%EF%BC%88Tools%EF%BC%89"><span class="nav-number">7.1.</span> <span class="nav-text">工具（Tools）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MCP%EF%BC%88Model-Context-Protocol%EF%BC%89"><span class="nav-number">7.2.</span> <span class="nav-text">MCP（Model Context Protocol）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%80%E8%83%BD%EF%BC%88Skills%EF%BC%89"><span class="nav-number">7.3.</span> <span class="nav-text">技能（Skills）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E4%B8%BB%E6%B5%81%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%B9%B3%E5%8F%B0%EF%BC%9A%E6%8C%89%E6%8E%A7%E5%88%B6%E7%A8%8B%E5%BA%A6%E9%80%89%E6%8B%A9"><span class="nav-number">8.</span> <span class="nav-text">七、主流框架与平台：按控制程度选择</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AB%E3%80%81%E6%99%BA%E8%83%BD%E4%BD%93%E7%9A%84%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">9.</span> <span class="nav-text">八、智能体的应用场景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E6%8C%91%E6%88%98%E4%B8%8E%E5%B1%95%E6%9C%9B"><span class="nav-number">10.</span> <span class="nav-text">九、挑战与展望</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BD%93%E5%89%8D%E6%8C%91%E6%88%98"><span class="nav-number">10.1.</span> <span class="nav-text">当前挑战</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%AA%E6%9D%A5%E8%B6%8B%E5%8A%BF"><span class="nav-number">10.2.</span> <span class="nav-text">未来趋势</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">11.</span> <span class="nav-text">结语</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">183</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">33</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
