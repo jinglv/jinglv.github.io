@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从基础模型与指令模型的差异出发，理解 SFT、偏好数据、奖励模型、RLHF、PPO、KL 约束、DPO、RLAIF、Reward Hacking 与模型对齐评测。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLM 对齐：SFT、RLHF、PPO 与 DPO">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/12/ai/llms/10-llm-alignment/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从基础模型与指令模型的差异出发，理解 SFT、偏好数据、奖励模型、RLHF、PPO、KL 约束、DPO、RLAIF、Reward Hacking 与模型对齐评测。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012113328454.png">
+<meta property="article:published_time" content="2026-10-12T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-12T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta property="article:tag" content="大语言模型">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="RLHF">
+<meta property="article:tag" content="PPO">
+<meta property="article:tag" content="DPO">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012113328454.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/12/ai/llms/10-llm-alignment/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LLM 对齐：SFT、RLHF、PPO 与 DPO | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/12/ai/llms/10-llm-alignment/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LLM 对齐：SFT、RLHF、PPO 与 DPO
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-12 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-12T10:00:00+08:00">2026-10-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从基础模型与指令模型的差异出发，理解 SFT、偏好数据、奖励模型、RLHF、PPO、KL 约束、DPO、RLAIF、Reward Hacking 与模型对齐评测。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="LLM-对齐：SFT、RLHF、PPO-与-DPO"><a href="#LLM-对齐：SFT、RLHF、PPO-与-DPO" class="headerlink" title="LLM 对齐：SFT、RLHF、PPO 与 DPO"></a>LLM 对齐：SFT、RLHF、PPO 与 DPO</h1><p>在上一篇文章中，我们了解了 LLM 从数据准备、预训练到后训练的整体过程。</p>
+<p>预训练让模型学会预测下一个 Token，并获得语言、知识和部分推理能力。但“会生成文本”并不等于“会按照用户意图完成任务”。一个基础模型可能：</p>
+<ul>
+<li>把问题继续补写成更多问题；</li>
+<li>模仿网页、论坛或小说的写作方式；</li>
+<li>不稳定地遵循 System Message；</li>
+<li>在信息不足时继续猜测；</li>
+<li>输出有害、偏见或不符合产品要求的内容；</li>
+<li>无法判断什么样的回答更有帮助。</li>
+</ul>
+<p>因此，还需要通过后训练塑造模型的交互行为。这个过程通常被称为 <strong>Alignment，也就是模型对齐</strong>。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012113328454.png" alt="image-20261012113328454"></p>
+<h1 id="什么是模型对齐？"><a href="#什么是模型对齐？" class="headerlink" title="什么是模型对齐？"></a>什么是模型对齐？</h1><p>可以先使用一个工程化定义：</p>
+<blockquote>
+<p>模型对齐是通过数据、训练目标、评测和部署约束，使模型行为更加符合明确规定的人类意图、产品目标和安全要求。</p>
+</blockquote>
+<p>这里有三个关键词。</p>
+<h2 id="行为"><a href="#行为" class="headerlink" title="行为"></a>行为</h2><p>对齐主要改变模型如何使用已有能力：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">是否遵循指令</span><br><span class="line">是否采用要求的格式</span><br><span class="line">是否承认不确定性</span><br><span class="line">是否拒绝危险请求</span><br><span class="line">是否避免无关或冒犯内容</span><br><span class="line">是否优先给出更有帮助的回答</span><br></pre></td></tr></table></figure>
+<h2 id="明确规定"><a href="#明确规定" class="headerlink" title="明确规定"></a>明确规定</h2><p>“符合人类价值”听起来很完整，实际上非常抽象。真实训练必须把目标落实到：</p>
+<ul>
+<li>标注规范；</li>
+<li>示例回答；</li>
+<li>偏好比较；</li>
+<li>安全政策；</li>
+<li>宪法或原则列表；</li>
+<li>自动验证器；</li>
+<li>评测集和上线标准。</li>
+</ul>
+<p>不同用户、文化、组织和应用场景的偏好可能互相冲突，因此不存在一份自动代表所有人的单一偏好数据。</p>
+<h2 id="持续过程"><a href="#持续过程" class="headerlink" title="持续过程"></a>持续过程</h2><p>对齐不是训练一次就永久完成。新任务、新语言、越狱方法和部署环境都会暴露新的失败模式：</p>
+<blockquote>
+<p>对齐是持续优化，不是一次完成。</p>
+</blockquote>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">定义目标</span><br><span class="line">   ↓</span><br><span class="line">收集示范与偏好</span><br><span class="line">   ↓</span><br><span class="line">训练</span><br><span class="line">   ↓</span><br><span class="line">能力、安全与偏差评测</span><br><span class="line">   ↓</span><br><span class="line">红队测试和线上反馈</span><br><span class="line">   ↓</span><br><span class="line">修订数据与规则</span><br><span class="line">   └────────→ 继续迭代</span><br></pre></td></tr></table></figure>
+<h1 id="能力与行为不是一回事"><a href="#能力与行为不是一回事" class="headerlink" title="能力与行为不是一回事"></a>能力与行为不是一回事</h1><p>假设基础模型已经具备总结文章的能力，但不一定知道用户希望它：</p>
+<ul>
+<li>只输出三点；</li>
+<li>使用中文；</li>
+<li>保留关键数字；</li>
+<li>不编造来源外信息；</li>
+<li>信息不足时明确说明。</li>
+</ul>
+<p>可以把两者粗略区分为：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>主要问题</th>
+<th>主要来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Capability</td>
+<td>模型能不能完成任务</td>
+<td>预训练、继续预训练、架构与规模</td>
+</tr>
+<tr>
+<td>Behavior</td>
+<td>模型是否以期望方式完成任务</td>
+<td>SFT、偏好优化、规则与部署控制</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>后训练有时也会提高任务能力，但它的数据和计算规模通常远小于预训练，更擅长让已有能力变得容易调用、格式稳定和符合产品要求。</p>
+<h1 id="一条经典对齐路线"><a href="#一条经典对齐路线" class="headerlink" title="一条经典对齐路线"></a>一条经典对齐路线</h1><p>InstructGPT 展示了一条影响深远的经典路线：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">预训练基础模型</span><br><span class="line">       ↓</span><br><span class="line">人类编写示范回答</span><br><span class="line">       ↓</span><br><span class="line">SFT</span><br><span class="line">       ↓</span><br><span class="line">对同一 Prompt 生成多个候选回答</span><br><span class="line">       ↓</span><br><span class="line">人类排序或比较候选回答</span><br><span class="line">       ↓</span><br><span class="line">训练奖励模型</span><br><span class="line">       ↓</span><br><span class="line">使用奖励模型 + KL 约束执行 PPO</span><br><span class="line">       ↓</span><br><span class="line">对齐后的策略模型</span><br></pre></td></tr></table></figure>
+<p>这条路线经常被简称为 RLHF，但需要注意：</p>
+<ol>
+<li>SFT 是进入 RLHF 前的重要起点；</li>
+<li>人类通常不直接为每个 Token 提供奖励，而是比较完整回答；</li>
+<li>奖励模型只是人类偏好的近似代理；</li>
+<li>PPO 是优化策略的一种方法，不等于 RLHF 的定义；</li>
+<li>DPO 等方法可以不训练显式奖励模型，也不运行在线 PPO 循环。</li>
+</ol>
+<h1 id="第一阶段：SFT"><a href="#第一阶段：SFT" class="headerlink" title="第一阶段：SFT"></a>第一阶段：SFT</h1><p>SFT 是 Supervised Fine-Tuning，也就是监督微调。</p>
+<h2 id="SFT-数据是什么？"><a href="#SFT-数据是什么？" class="headerlink" title="SFT 数据是什么？"></a>SFT 数据是什么？</h2><p>最基本的数据形式是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Instruction / Prompt → Ideal Response</span><br></pre></td></tr></table></figure>
+<p>聊天模型通常使用结构化消息：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;messages&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;role&quot;</span><span class="punctuation">:</span> <span class="string">&quot;system&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="string">&quot;你是一名严谨的人工智能老师。&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;role&quot;</span><span class="punctuation">:</span> <span class="string">&quot;user&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="string">&quot;什么是梯度下降？&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;role&quot;</span><span class="punctuation">:</span> <span class="string">&quot;assistant&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="string">&quot;梯度下降是一种沿损失函数下降方向更新参数的优化方法。&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>示范回答可能来自：</p>
+<ul>
+<li>人类专家编写；</li>
+<li>规则和模板生成；</li>
+<li>更强模型生成后由人类筛选；</li>
+<li>真实用户交互经过清洗和授权后构造；</li>
+<li>多个候选回答经过拒绝采样后保留较好样本。</li>
+</ul>
+<h2 id="SFT-在优化什么？"><a href="#SFT-在优化什么？" class="headerlink" title="SFT 在优化什么？"></a>SFT 在优化什么？</h2><p>SFT 仍然使用 Token 级交叉熵：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">L_SFT = -Σ log πθ(y_t | x, y_&lt;t)</span><br></pre></td></tr></table></figure>
+<p>其中：</p>
+<ul>
+<li><code>x</code> 是 Prompt；</li>
+<li><code>y</code> 是目标回答；</li>
+<li><code>πθ</code> 是正在训练的模型；</li>
+<li>每一步都提高目标回答中真实下一个 Token 的概率。</li>
+</ul>
+<p>常见做法是只对 Assistant Token 计算损失：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">System Token     → label = -100</span><br><span class="line">User Token       → label = -100</span><br><span class="line">Assistant Token  → label = 对应 Token ID</span><br></pre></td></tr></table></figure>
+<p>但这属于训练配方，而不是 SFT 的强制定义。有些系统会训练多个 Assistant Turn、完整序列，或者为不同 Token 设置权重。</p>
+<h2 id="SFT-学到了什么？"><a href="#SFT-学到了什么？" class="headerlink" title="SFT 学到了什么？"></a>SFT 学到了什么？</h2><p>SFT 可以帮助模型学习：</p>
+<ul>
+<li>对话角色和 Chat Template；</li>
+<li>指令遵循；</li>
+<li>回答格式；</li>
+<li>任务边界；</li>
+<li>示例中的表达风格；</li>
+<li>常见拒答方式；</li>
+<li>工具调用的序列格式。</li>
+</ul>
+<h2 id="SFT-的局限"><a href="#SFT-的局限" class="headerlink" title="SFT 的局限"></a>SFT 的局限</h2><p>一个 Prompt 可能有多个高质量答案，但 SFT 通常只提供一个或少数示范：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">问题：怎样解释递归？</span><br><span class="line"></span><br><span class="line">回答 A：使用函数调用自身的定义</span><br><span class="line">回答 B：使用俄罗斯套娃类比</span><br><span class="line">回答 C：通过代码和调用栈解释</span><br></pre></td></tr></table></figure>
+<p>如果三种回答都合理，单纯模仿一个目标序列不能完整表达“哪个回答更好，以及好多少”。这正是偏好数据希望补充的信息。</p>
+<h1 id="第二阶段：偏好数据"><a href="#第二阶段：偏好数据" class="headerlink" title="第二阶段：偏好数据"></a>第二阶段：偏好数据</h1><p>偏好数据通常针对同一个 Prompt 比较多个候选回答：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Prompt：解释地球为什么有四季。</span><br><span class="line"></span><br><span class="line">回答 A：地轴存在倾角，地球公转时不同地区接收太阳辐射发生变化。</span><br><span class="line">回答 B：因为夏天地球距离太阳更近。</span><br><span class="line"></span><br><span class="line">标注：A &gt; B</span><br></pre></td></tr></table></figure>
+<p>常见结构为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(prompt, chosen, rejected)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>chosen</code>：标注者更偏好的回答；</li>
+<li><code>rejected</code>：相对较差的回答。</li>
+</ul>
+<h2 id="偏好标准从哪里来？"><a href="#偏好标准从哪里来？" class="headerlink" title="偏好标准从哪里来？"></a>偏好标准从哪里来？</h2><p>标注者不能只凭模糊感觉判断，通常需要明确 Rubric：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>示例问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正确性</td>
+<td>是否包含事实、计算或逻辑错误？</td>
+</tr>
+<tr>
+<td>相关性</td>
+<td>是否直接回答用户问题？</td>
+</tr>
+<tr>
+<td>完整性</td>
+<td>是否遗漏关键条件？</td>
+</tr>
+<tr>
+<td>指令遵循</td>
+<td>是否满足格式、语言和长度要求？</td>
+</tr>
+<tr>
+<td>表达质量</td>
+<td>是否清晰、简洁、无不必要重复？</td>
+</tr>
+<tr>
+<td>安全性</td>
+<td>是否提供不应提供的危险指导？</td>
+</tr>
+<tr>
+<td>诚实性</td>
+<td>信息不足时是否承认不确定？</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="偏好数据并不等于客观真理"><a href="#偏好数据并不等于客观真理" class="headerlink" title="偏好数据并不等于客观真理"></a>偏好数据并不等于客观真理</h2><p>偏好标签可能受到以下因素影响：</p>
+<ul>
+<li>标注者知识不足；</li>
+<li>标注规范含糊；</li>
+<li>不同价值观和文化背景；</li>
+<li>更长回答看起来更全面；</li>
+<li>自信语气被误认为更正确；</li>
+<li>两个候选都很差；</li>
+<li>两个候选差异过小；</li>
+<li>候选回答来自过窄的策略分布。</li>
+</ul>
+<p>因此要记录标注者一致性、处理平局与跳过样本，并对不同人群和任务分别评测。</p>
+<h1 id="第三阶段：奖励模型"><a href="#第三阶段：奖励模型" class="headerlink" title="第三阶段：奖励模型"></a>第三阶段：奖励模型</h1><p>经典 RLHF 不会在每次 PPO 更新时实时询问人类，而是先把偏好数据训练成 Reward Model。</p>
+<h2 id="奖励模型做什么？"><a href="#奖励模型做什么？" class="headerlink" title="奖励模型做什么？"></a>奖励模型做什么？</h2><p>奖励模型读取 Prompt 与回答，并输出一个标量：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rφ(x, y) → 一个实数分数</span><br></pre></td></tr></table></figure>
+<p>分数越高，表示奖励模型认为该回答越符合训练偏好。</p>
+<p>奖励分数不是：</p>
+<ul>
+<li>事实正确率；</li>
+<li>安全概率；</li>
+<li>用户满意度百分比；</li>
+<li>不同奖励模型之间可直接比较的绝对单位。</li>
+</ul>
+<p>它主要用于同一训练体系中的相对比较。</p>
+<h2 id="Bradley–Terry-成对损失"><a href="#Bradley–Terry-成对损失" class="headerlink" title="Bradley–Terry 成对损失"></a>Bradley–Terry 成对损失</h2><p>给定 <code>chosen</code> 和 <code>rejected</code>，常见损失为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">L_RM = -log σ(r_chosen - r_rejected)</span><br></pre></td></tr></table></figure>
+<p>如果：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">r_chosen &gt;&gt; r_rejected</span><br></pre></td></tr></table></figure>
+<p>损失较小；如果奖励模型把 rejected 评得更高，损失就会变大。</p>
+<p>奖励模型训练完成后，可以对新的 Prompt—回答组合评分，但它只能泛化偏好数据中的规律，也可能被策略模型找到漏洞。</p>
+<h1 id="RLHF-中什么是强化学习？"><a href="#RLHF-中什么是强化学习？" class="headerlink" title="RLHF 中什么是强化学习？"></a>RLHF 中什么是强化学习？</h1><p>在语言模型中，可以把生成过程映射为强化学习问题：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>强化学习概念</th>
+<th>LLM 中的对应内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>State</td>
+<td>Prompt 加已经生成的 Token</td>
+</tr>
+<tr>
+<td>Action</td>
+<td>选择下一个 Token</td>
+</tr>
+<tr>
+<td>Policy</td>
+<td>语言模型 <code>πθ</code></td>
+</tr>
+<tr>
+<td>Trajectory</td>
+<td>一段完整回答</td>
+</tr>
+<tr>
+<td>Reward</td>
+<td>奖励模型、规则或验证器给出的分数</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>策略模型生成一个 Token 后，状态发生变化，再继续生成下一个 Token。完整回答结束后，奖励模型通常给出序列级分数。</p>
+<p>这会带来 Credit Assignment 问题：一个最终分数需要指导前面很多 Token 的选择。Value Model、Return 和 Advantage 就是为了解决这种优化问题。</p>
+<h1 id="RLHF-中的四个模型角色"><a href="#RLHF-中的四个模型角色" class="headerlink" title="RLHF 中的四个模型角色"></a>RLHF 中的四个模型角色</h1><p>经典 PPO-RLHF 通常涉及：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>是否更新</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Policy Model</td>
+<td>是</td>
+<td>生成回答，是最终要优化的模型</td>
+</tr>
+<tr>
+<td>Reference Model</td>
+<td>否</td>
+<td>提供原始策略基线，计算 KL 约束</td>
+</tr>
+<tr>
+<td>Reward Model</td>
+<td>否</td>
+<td>对回答给出偏好奖励</td>
+</tr>
+<tr>
+<td>Value Model / Critic</td>
+<td>是</td>
+<td>估计期望回报，帮助计算 Advantage</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>实际实现可能共享 Backbone 或 Value Head，也可能将组件分布到不同设备，但概念职责需要区分。</p>
+<h1 id="为什么需要-Reference-Model-和-KL-约束？"><a href="#为什么需要-Reference-Model-和-KL-约束？" class="headerlink" title="为什么需要 Reference Model 和 KL 约束？"></a>为什么需要 Reference Model 和 KL 约束？</h1><p>如果只要求策略最大化奖励模型分数，它可能快速偏离自然语言分布，并利用奖励模型缺陷：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">max E[rφ(x, y)]</span><br></pre></td></tr></table></figure>
+<p>因此常加入对参考模型的 KL 约束：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">max E[</span><br><span class="line">    rφ(x, y)</span><br><span class="line">    - β · KL(πθ || πref)</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>直观理解：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">奖励模型：朝更符合偏好的方向移动</span><br><span class="line">KL 约束：不要一次离原始 SFT 模型太远</span><br></pre></td></tr></table></figure>
+<p>生成样本上的每 Token KL 常用下面的 Log Probability 差异估计：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">log πθ(token | state) - log πref(token | state)</span><br></pre></td></tr></table></figure>
+<p>沿回答 Token 累积后形成 KL 惩罚信号。这里展示的是常用采样估计直觉，具体框架还可能采用不同 KL 估计器和控制策略。</p>
+<h2 id="β-的作用"><a href="#β-的作用" class="headerlink" title="β 的作用"></a>β 的作用</h2><p><code>β</code> 控制奖励优化与偏离参考模型之间的权衡：</p>
+<ul>
+<li>约束太弱，策略可能大幅漂移并投机奖励；</li>
+<li>约束太强，策略几乎无法从参考模型改善；</li>
+<li>实际训练可能使用固定、调度或自适应 KL 系数。</li>
+</ul>
+<h1 id="Value、Return-与-Advantage"><a href="#Value、Return-与-Advantage" class="headerlink" title="Value、Return 与 Advantage"></a>Value、Return 与 Advantage</h1><h2 id="Value"><a href="#Value" class="headerlink" title="Value"></a>Value</h2><p>Value Model 估计当前状态未来能获得多少回报：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">V(s_t) ≈ 从当前位置继续生成的期望回报</span><br></pre></td></tr></table></figure>
+<h2 id="Return"><a href="#Return" class="headerlink" title="Return"></a>Return</h2><p>Return 是从当前步骤开始累计的实际奖励。在 LLM RLHF 中，最终回答奖励可能只出现在最后，KL 惩罚则可以分布到每个生成 Token。</p>
+<h2 id="Advantage"><a href="#Advantage" class="headerlink" title="Advantage"></a>Advantage</h2><p>Advantage 表示这次选择比当前基线好多少：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A_t = Return_t - V(s_t)</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>A_t &gt; 0</code>：该动作结果比预期好，应提高概率；</li>
+<li><code>A_t &lt; 0</code>：该动作结果比预期差，应降低概率。</li>
+</ul>
+<p>实际 PPO 常使用 GAE（Generalized Advantage Estimation）在偏差与方差之间做权衡。</p>
+<h1 id="PPO-如何更新策略？"><a href="#PPO-如何更新策略？" class="headerlink" title="PPO 如何更新策略？"></a>PPO 如何更新策略？</h1><p>PPO 是 Proximal Policy Optimization。它的核心思想不是无限制地提高好回答概率，而是限制每次策略更新幅度。</p>
+<h2 id="概率比"><a href="#概率比" class="headerlink" title="概率比"></a>概率比</h2><p>对采样时选择的 Token，计算：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ratio_t(θ)</span><br><span class="line">= πθ(action_t | state_t)</span><br><span class="line">  / πold(action_t | state_t)</span><br></pre></td></tr></table></figure>
+<p>实现时通常使用 Log Probability：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ratio_t = exp(logπθ - logπold)</span><br></pre></td></tr></table></figure>
+<h2 id="裁剪目标"><a href="#裁剪目标" class="headerlink" title="裁剪目标"></a>裁剪目标</h2><p>PPO 的经典裁剪目标为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">L_clip</span><br><span class="line">= E[min(</span><br><span class="line">    ratio_t × A_t,</span><br><span class="line">    clip(ratio_t, 1-ε, 1+ε) × A_t</span><br><span class="line">)]</span><br></pre></td></tr></table></figure>
+<p>直观上：</p>
+<ul>
+<li>如果某个 Token 的 Advantage 为正，提高它的概率；</li>
+<li>如果 Advantage 为负，降低它的概率；</li>
+<li>但概率变化超过裁剪范围后，不再继续获得同等优化收益。</li>
+</ul>
+<p>这有助于避免单个训练批次让策略发生过大变化。</p>
+<h2 id="PPO-RLHF-训练循环"><a href="#PPO-RLHF-训练循环" class="headerlink" title="PPO-RLHF 训练循环"></a>PPO-RLHF 训练循环</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">1. Policy 根据 Prompt 在线采样回答</span><br><span class="line">2. Reward Model 给完整回答打分</span><br><span class="line">3. Policy 与 Reference 计算 KL 惩罚</span><br><span class="line">4. Value Model 估计每一步 Value</span><br><span class="line">5. 计算 Return 与 Advantage</span><br><span class="line">6. 保存采样时的 Old Log Probability</span><br><span class="line">7. 对同一批样本运行多个 PPO 更新 Epoch</span><br><span class="line">8. 使用 Clipped Policy Loss 更新 Policy</span><br><span class="line">9. 使用 Value Loss 更新 Value Model</span><br><span class="line">10. 监控 Reward、KL、长度和质量评测</span><br></pre></td></tr></table></figure>
+<h2 id="为什么-PPO-RLHF-工程复杂？"><a href="#为什么-PPO-RLHF-工程复杂？" class="headerlink" title="为什么 PPO-RLHF 工程复杂？"></a>为什么 PPO-RLHF 工程复杂？</h2><p>训练时可能同时保存或运行多个大模型，还需要在线生成回答：</p>
+<ul>
+<li>Policy；</li>
+<li>Reference；</li>
+<li>Reward Model；</li>
+<li>Value Model；</li>
+<li>Rollout 数据；</li>
+<li>每 Token Log Probability；</li>
+<li>Value、Return 和 Advantage。</li>
+</ul>
+<p>此外还要处理可变长度、EOS、Padding、分布式生成、奖励归一化、KL 控制和训练不稳定，因此显存、通信和实现复杂度都很高。</p>
+<h1 id="什么是-DPO？"><a href="#什么是-DPO？" class="headerlink" title="什么是 DPO？"></a>什么是 DPO？</h1><p>DPO 是 Direct Preference Optimization，也就是直接偏好优化。</p>
+<p>它从与 KL 约束 RLHF 目标相关的推导出发，把偏好优化改写成一个直接作用于策略模型的分类式损失：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">偏好数据</span><br><span class="line">(prompt, chosen, rejected)</span><br><span class="line">        ↓</span><br><span class="line">Policy 与 Reference 分别计算序列 Log Probability</span><br><span class="line">        ↓</span><br><span class="line">让 Policy 相对 Reference 更偏向 chosen</span><br><span class="line">        ↓</span><br><span class="line">直接反向传播更新 Policy</span><br></pre></td></tr></table></figure>
+<p>DPO 不需要：</p>
+<ul>
+<li>单独训练显式 Reward Model；</li>
+<li>在线采样 Rollout；</li>
+<li>Value Model；</li>
+<li>PPO 策略梯度循环。</li>
+</ul>
+<p>但它通常仍需要一个冻结的 Reference Model，或者使用能隐式得到参考概率的实现技巧。</p>
+<h1 id="DPO-损失如何理解？"><a href="#DPO-损失如何理解？" class="headerlink" title="DPO 损失如何理解？"></a>DPO 损失如何理解？</h1><p>设：</p>
+<ul>
+<li><code>x</code>：Prompt；</li>
+<li><code>y_w</code>：chosen，也就是 winner；</li>
+<li><code>y_l</code>：rejected，也就是 loser；</li>
+<li><code>πθ</code>：正在训练的策略；</li>
+<li><code>πref</code>：参考模型。</li>
+</ul>
+<p>DPO 常见损失为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">L_DPO = -log σ(</span><br><span class="line">    β × [</span><br><span class="line">        log πθ(y_w|x) - log πref(y_w|x)</span><br><span class="line">        - log πθ(y_l|x) + log πref(y_l|x)</span><br><span class="line">    ]</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>先定义相对参考模型的变化：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">chosen_relative</span><br><span class="line">= log πθ(y_w|x) - log πref(y_w|x)</span><br><span class="line"></span><br><span class="line">rejected_relative</span><br><span class="line">= log πθ(y_l|x) - log πref(y_l|x)</span><br></pre></td></tr></table></figure>
+<p>DPO 希望：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chosen_relative &gt; rejected_relative</span><br></pre></td></tr></table></figure>
+<p>也就是说，重点不只是让 chosen 的绝对概率变大，而是让 Policy 相对于 Reference 更偏向 chosen、远离 rejected。</p>
+<h2 id="β-不是普通学习率"><a href="#β-不是普通学习率" class="headerlink" title="β 不是普通学习率"></a>β 不是普通学习率</h2><p>DPO 中的 <code>β</code> 与参考策略约束和隐式奖励尺度有关。它会改变偏好 Margin 进入 Sigmoid 时的尺度，也会影响策略偏离参考模型的程度。</p>
+<p>不能简单记成“β 越大，训练越强”。它与数据质量、学习率、模型能力和实现细节共同作用，需要通过验证集调优。</p>
+<h1 id="PPO-RLHF-与-DPO-对比"><a href="#PPO-RLHF-与-DPO-对比" class="headerlink" title="PPO-RLHF 与 DPO 对比"></a>PPO-RLHF 与 DPO 对比</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>对比项</th>
+<th>PPO-RLHF</th>
+<th>DPO</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>偏好数据</td>
+<td>需要</td>
+<td>需要</td>
+</tr>
+<tr>
+<td>显式奖励模型</td>
+<td>通常需要</td>
+<td>不需要</td>
+</tr>
+<tr>
+<td>Value Model</td>
+<td>通常需要</td>
+<td>不需要</td>
+</tr>
+<tr>
+<td>在线采样</td>
+<td>需要</td>
+<td>训练时通常不需要</td>
+</tr>
+<tr>
+<td>Reference Model</td>
+<td>通常需要</td>
+<td>通常需要</td>
+</tr>
+<tr>
+<td>优化方式</td>
+<td>强化学习策略优化</td>
+<td>离线偏好分类式损失</td>
+</tr>
+<tr>
+<td>工程复杂度</td>
+<td>高</td>
+<td>相对较低</td>
+</tr>
+<tr>
+<td>训练稳定性</td>
+<td>对实现和超参数较敏感</td>
+<td>通常更容易训练</td>
+</tr>
+<tr>
+<td>奖励来源灵活性</td>
+<td>可接入学习奖励和可验证奖励</td>
+<td>主要依赖已有偏好对</td>
+</tr>
+<tr>
+<td>数据分布</td>
+<td>可随新 Policy 在线变化</td>
+<td>通常固定为离线数据</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>DPO 更简单，不代表它在所有场景都优于 PPO：</p>
+<ul>
+<li>离线偏好数据覆盖不足时，DPO 只能学习已有比较；</li>
+<li>需要与环境交互或使用可验证奖励时，在线 RL 可能更合适；</li>
+<li>两种方法都可能过拟合偏好数据；</li>
+<li>最终选择应由数据、任务、计算资源和评测结果决定。</li>
+</ul>
+<h1 id="RLAIF-是另一种算法吗？"><a href="#RLAIF-是另一种算法吗？" class="headerlink" title="RLAIF 是另一种算法吗？"></a>RLAIF 是另一种算法吗？</h1><p>RLAIF 是 Reinforcement Learning from AI Feedback，描述的是<strong>反馈来源</strong>，不是一种固定优化器。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">人类反馈：Human 判断 chosen / rejected</span><br><span class="line">AI 反馈：AI Judge 判断 chosen / rejected</span><br></pre></td></tr></table></figure>
+<p>AI 生成的偏好可以用于：</p>
+<ul>
+<li>训练奖励模型后执行 PPO；</li>
+<li>构造 DPO 数据；</li>
+<li>过滤 SFT 样本；</li>
+<li>依据原则生成批评和修订；</li>
+<li>对回答执行多维度评分。</li>
+</ul>
+<h2 id="Constitutional-AI"><a href="#Constitutional-AI" class="headerlink" title="Constitutional AI"></a>Constitutional AI</h2><p>Constitutional AI 使用一组明确原则指导模型批评、修订和比较回答。其经典流程同时包含监督阶段和基于 AI 偏好的强化学习阶段。</p>
+<p>优势是可以扩大监督规模并更明确地表达规则，风险包括：</p>
+<ul>
+<li>Judge Model 继承自身偏差；</li>
+<li>复杂事实判断可能不可靠；</li>
+<li>原则之间可能冲突；</li>
+<li>模型可能学会迎合 Judge 的表达偏好；</li>
+<li>大规模 AI 标签会系统性放大同一种错误。</li>
+</ul>
+<p>因此 RLAIF 仍需要人工制定原则、抽查数据和独立评测。</p>
+<h1 id="偏好优化会带来哪些风险？"><a href="#偏好优化会带来哪些风险？" class="headerlink" title="偏好优化会带来哪些风险？"></a>偏好优化会带来哪些风险？</h1><h2 id="Reward-Hacking"><a href="#Reward-Hacking" class="headerlink" title="Reward Hacking"></a>Reward Hacking</h2><p>Reward Hacking 指策略找到了提高奖励分数的方法，却没有真正实现设计者想要的目标。</p>
+<p>例如奖励模型偏爱详细回答，Policy 可能学会：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">更长</span><br><span class="line">更多小标题</span><br><span class="line">更多肯定语气</span><br><span class="line">重复结论</span><br></pre></td></tr></table></figure>
+<p>奖励分数上升，但事实性和实际帮助没有提升。</p>
+<p>根本原因是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">我们真正想要的目标</span><br><span class="line">        ↓ 无法直接计算</span><br><span class="line">使用 Reward Model 作为代理</span><br><span class="line">        ↓ 存在误差与漏洞</span><br><span class="line">Policy 优化代理指标</span><br><span class="line">        ↓</span><br><span class="line">可能偏离真实目标</span><br></pre></td></tr></table></figure>
+<h2 id="长度偏差"><a href="#长度偏差" class="headerlink" title="长度偏差"></a>长度偏差</h2><p>标注者和奖励模型可能把更长的回答判断为更全面。训练后模型就可能产生不必要的冗长内容。</p>
+<p>评测时应控制长度或分别比较同等长度回答，训练数据也应包含“简洁但完整”的正例。</p>
+<h2 id="Sycophancy：迎合用户"><a href="#Sycophancy：迎合用户" class="headerlink" title="Sycophancy：迎合用户"></a>Sycophancy：迎合用户</h2><p>如果偏好数据持续奖励“让用户感觉被认同”，模型可能接受用户的错误前提或观点，而不是指出问题。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">用户提出错误结论</span><br><span class="line">        ↓</span><br><span class="line">模型为了获得偏好而附和</span><br><span class="line">        ↓</span><br><span class="line">回答更讨喜，但更不真实</span><br></pre></td></tr></table></figure>
+<h2 id="过度拒答"><a href="#过度拒答" class="headerlink" title="过度拒答"></a>过度拒答</h2><p>安全数据如果过度奖励拒绝，模型可能把合理请求也判断成危险内容：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">真正危险请求 → 应拒绝</span><br><span class="line">正常教育问题 → 也拒绝</span><br></pre></td></tr></table></figure>
+<p>安全对齐不仅要测有害请求的拒绝率，也要测无害请求的正常回答率。</p>
+<h2 id="能力退化与-Alignment-Tax"><a href="#能力退化与-Alignment-Tax" class="headerlink" title="能力退化与 Alignment Tax"></a>能力退化与 Alignment Tax</h2><p>对齐某一目标时，模型可能在其他能力上下降，例如：</p>
+<ul>
+<li>创造性降低；</li>
+<li>回答模式趋同；</li>
+<li>专业问题中过度保守；</li>
+<li>某些基准性能下降；</li>
+<li>长回答或特定风格被过度偏好。</li>
+</ul>
+<p>因此需要同时保留通用能力评测，不能只看偏好 Win Rate。</p>
+<h2 id="Mode-Collapse-与多样性下降"><a href="#Mode-Collapse-与多样性下降" class="headerlink" title="Mode Collapse 与多样性下降"></a>Mode Collapse 与多样性下降</h2><p>如果训练过度集中在少数理想模板，模型可能对不同问题反复使用相似句式，虽然安全稳定，却失去必要的表达多样性。</p>
+<h1 id="对齐能够消除幻觉吗？"><a href="#对齐能够消除幻觉吗？" class="headerlink" title="对齐能够消除幻觉吗？"></a>对齐能够消除幻觉吗？</h1><p>不能。</p>
+<p>对齐可以通过以下方式降低部分幻觉：</p>
+<ul>
+<li>奖励承认不确定性；</li>
+<li>惩罚编造引用；</li>
+<li>训练模型根据来源回答；</li>
+<li>在证据不足时拒答；</li>
+<li>使用工具和验证器提供反馈。</li>
+</ul>
+<p>但对齐不能自动解决：</p>
+<ul>
+<li>训练知识过时；</li>
+<li>检索来源错误；</li>
+<li>奖励模型无法验证事实；</li>
+<li>长上下文信息丢失；</li>
+<li>分布外问题；</li>
+<li>多步推理错误。</li>
+</ul>
+<p>一个模型更符合偏好，不等于每个陈述都经过事实验证。</p>
+<h1 id="可验证奖励与主观偏好"><a href="#可验证奖励与主观偏好" class="headerlink" title="可验证奖励与主观偏好"></a>可验证奖励与主观偏好</h1><p>不同任务的奖励可靠程度不同。</p>
+<h2 id="主观偏好"><a href="#主观偏好" class="headerlink" title="主观偏好"></a>主观偏好</h2><p>适合人类或 AI Judge 比较：</p>
+<ul>
+<li>写作风格；</li>
+<li>是否清晰；</li>
+<li>是否有帮助；</li>
+<li>摘要是否易读；</li>
+<li>对话语气。</li>
+</ul>
+<h2 id="可验证奖励"><a href="#可验证奖励" class="headerlink" title="可验证奖励"></a>可验证奖励</h2><p>可以通过外部结果直接判断：</p>
+<ul>
+<li>数学答案是否正确；</li>
+<li>代码是否通过测试；</li>
+<li>SQL 结果是否符合预期；</li>
+<li>格式是否满足 Schema；</li>
+<li>游戏或环境任务是否成功。</li>
+</ul>
+<p>可验证奖励通常比模糊偏好更客观，但验证器本身仍可能不完整。模型也可能利用测试覆盖不足、评分脚本漏洞或环境缺陷。</p>
+<h1 id="如何评估对齐后的模型？"><a href="#如何评估对齐后的模型？" class="headerlink" title="如何评估对齐后的模型？"></a>如何评估对齐后的模型？</h1><p>不能只看 Reward Model 分数，因为 Policy 正在针对这个指标优化。</p>
+<p>建议至少分开评测：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>关注问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>指令遵循</td>
+<td>是否理解并满足显式约束？</td>
+</tr>
+<tr>
+<td>任务能力</td>
+<td>推理、代码、数学和领域任务是否退化？</td>
+</tr>
+<tr>
+<td>事实性</td>
+<td>是否减少无依据陈述和虚假引用？</td>
+</tr>
+<tr>
+<td>安全性</td>
+<td>是否拒绝真正危险的请求？</td>
+</tr>
+<tr>
+<td>过度拒答</td>
+<td>是否错误拒绝正常请求？</td>
+</tr>
+<tr>
+<td>偏差与公平</td>
+<td>是否对群体产生系统性差异？</td>
+</tr>
+<tr>
+<td>稳定性</td>
+<td>换一种表达后行为是否一致？</td>
+</tr>
+<tr>
+<td>多样性</td>
+<td>是否出现模板化和模式坍缩？</td>
+</tr>
+<tr>
+<td>鲁棒性</td>
+<td>是否容易被越狱和 Prompt Injection 绕过？</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>评测来源可以组合：</p>
+<ul>
+<li>独立人类评审；</li>
+<li>不同模型的 LLM-as-a-Judge；</li>
+<li>确定性验证器；</li>
+<li>公共与私有 Benchmark；</li>
+<li>红队测试；</li>
+<li>线上 A/B Test；</li>
+<li>真实失败案例回归集。</li>
+</ul>
+<p>Judge Model 的偏好不能被当成最终真理。需要控制位置偏差、长度偏差、自我偏好，并用部分人工金标准校准。</p>
+<h1 id="实战一：理解奖励模型成对损失"><a href="#实战一：理解奖励模型成对损失" class="headerlink" title="实战一：理解奖励模型成对损失"></a>实战一：理解奖励模型成对损失</h1><p>下面直接优化两个标量分数，观察 Bradley–Terry Loss 如何让 chosen 得分高于 rejected。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line">torch.manual_seed(<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line">chosen_score = torch.tensor([<span class="number">0.0</span>], requires_grad=<span class="literal">True</span>)</span><br><span class="line">rejected_score = torch.tensor([<span class="number">0.0</span>], requires_grad=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">optimizer = torch.optim.SGD(</span><br><span class="line">    [chosen_score, rejected_score],</span><br><span class="line">    lr=<span class="number">0.5</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> step <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>):</span><br><span class="line">    <span class="comment"># -log sigmoid(chosen - rejected)</span></span><br><span class="line">    loss = -F.logsigmoid(chosen_score - rejected_score).mean()</span><br><span class="line"></span><br><span class="line">    optimizer.zero_grad()</span><br><span class="line">    loss.backward()</span><br><span class="line">    optimizer.step()</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(</span><br><span class="line">        <span class="string">f&quot;step=<span class="subst">&#123;step:02d&#125;</span>&quot;</span>,</span><br><span class="line">        <span class="string">f&quot;loss=<span class="subst">&#123;loss.item():<span class="number">.4</span>f&#125;</span>&quot;</span>,</span><br><span class="line">        <span class="string">f&quot;chosen=<span class="subst">&#123;chosen_score.item():<span class="number">.4</span>f&#125;</span>&quot;</span>,</span><br><span class="line">        <span class="string">f&quot;rejected=<span class="subst">&#123;rejected_score.item():<span class="number">.4</span>f&#125;</span>&quot;</span>,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+<p>可以观察到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">chosen_score 逐渐增大</span><br><span class="line">rejected_score 逐渐减小</span><br><span class="line">chosen - rejected 的 Margin 增大</span><br><span class="line">loss 逐渐下降</span><br></pre></td></tr></table></figure>
+<p>真实奖励模型不会直接训练两个独立标量，而是使用 Transformer 根据 <code>Prompt + Response</code> 计算分数；这个示例只保留成对损失的核心作用。</p>
+<h1 id="实战二：理解-PPO-Clipped-Objective"><a href="#实战二：理解-PPO-Clipped-Objective" class="headerlink" title="实战二：理解 PPO Clipped Objective"></a>实战二：理解 PPO Clipped Objective</h1><p>下面用一组模拟的 Old/New Log Probability 和 Advantage 计算 PPO Policy Loss。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">ppo_clipped_policy_loss</span>(<span class="params"></span></span><br><span class="line"><span class="params">    new_log_probs: torch.Tensor,</span></span><br><span class="line"><span class="params">    old_log_probs: torch.Tensor,</span></span><br><span class="line"><span class="params">    advantages: torch.Tensor,</span></span><br><span class="line"><span class="params">    clip_epsilon: <span class="built_in">float</span> = <span class="number">0.2</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">tuple</span>[torch.Tensor, torch.Tensor, torch.Tensor]:</span><br><span class="line">    ratio = torch.exp(new_log_probs - old_log_probs)</span><br><span class="line">    unclipped = ratio * advantages</span><br><span class="line">    clipped = torch.clamp(</span><br><span class="line">        ratio,</span><br><span class="line">        <span class="number">1.0</span> - clip_epsilon,</span><br><span class="line">        <span class="number">1.0</span> + clip_epsilon,</span><br><span class="line">    ) * advantages</span><br><span class="line"></span><br><span class="line">    loss = -torch.minimum(unclipped, clipped).mean()</span><br><span class="line">    <span class="keyword">return</span> loss, ratio, clipped</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">old_log_probs = torch.log(torch.tensor([<span class="number">0.50</span>, <span class="number">0.40</span>, <span class="number">0.30</span>]))</span><br><span class="line">new_log_probs = torch.log(torch.tensor([<span class="number">0.80</span>, <span class="number">0.20</span>, <span class="number">0.33</span>]))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一个动作比预期好，第二个比预期差，第三个略好。</span></span><br><span class="line">advantages = torch.tensor([<span class="number">1.0</span>, -<span class="number">1.0</span>, <span class="number">0.5</span>])</span><br><span class="line"></span><br><span class="line">loss, ratio, clipped_objective = ppo_clipped_policy_loss(</span><br><span class="line">    new_log_probs,</span><br><span class="line">    old_log_probs,</span><br><span class="line">    advantages,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Probability Ratio：&quot;</span>, ratio)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Clipped Objective：&quot;</span>, clipped_objective)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;PPO Policy Loss：&quot;</span>, loss.item())</span><br></pre></td></tr></table></figure>
+<p>第一项概率从 <code>0.50</code> 增长到 <code>0.80</code>，Ratio 为 <code>1.6</code>，超过了 <code>1.2</code> 的上界。对于正 Advantage，裁剪目标会限制继续放大这次更新带来的收益。</p>
+<p>需要注意，完整 PPO 还必须计算 Value Loss、Return、Advantage、KL Reward、Mask 和多个训练 Epoch；这段代码只解释 Policy Clip。</p>
+<h1 id="实战三：理解-DPO-Loss"><a href="#实战三：理解-DPO-Loss" class="headerlink" title="实战三：理解 DPO Loss"></a>实战三：理解 DPO Loss</h1><p>下面直接使用 chosen/rejected 的序列 Log Probability 计算 DPO Loss。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">dpo_loss</span>(<span class="params"></span></span><br><span class="line"><span class="params">    policy_chosen_logps: torch.Tensor,</span></span><br><span class="line"><span class="params">    policy_rejected_logps: torch.Tensor,</span></span><br><span class="line"><span class="params">    reference_chosen_logps: torch.Tensor,</span></span><br><span class="line"><span class="params">    reference_rejected_logps: torch.Tensor,</span></span><br><span class="line"><span class="params">    beta: <span class="built_in">float</span> = <span class="number">0.1</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">tuple</span>[torch.Tensor, torch.Tensor]:</span><br><span class="line">    policy_log_ratio = (</span><br><span class="line">        policy_chosen_logps - policy_rejected_logps</span><br><span class="line">    )</span><br><span class="line">    reference_log_ratio = (</span><br><span class="line">        reference_chosen_logps - reference_rejected_logps</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    logits = beta * (policy_log_ratio - reference_log_ratio)</span><br><span class="line">    losses = -F.logsigmoid(logits)</span><br><span class="line">    <span class="keyword">return</span> losses.mean(), logits</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 两条样本的 Reference 序列 Log Probability。</span></span><br><span class="line">reference_chosen = torch.tensor([-<span class="number">5.0</span>, -<span class="number">4.2</span>])</span><br><span class="line">reference_rejected = torch.tensor([-<span class="number">5.3</span>, -<span class="number">4.0</span>])</span><br><span class="line"></span><br><span class="line"><span class="comment"># 情况一：Policy 与 Reference 完全相同。</span></span><br><span class="line">initial_loss, initial_margin = dpo_loss(</span><br><span class="line">    reference_chosen,</span><br><span class="line">    reference_rejected,</span><br><span class="line">    reference_chosen,</span><br><span class="line">    reference_rejected,</span><br><span class="line">    beta=<span class="number">0.1</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 情况二：Policy 相对提高 chosen，并降低 rejected。</span></span><br><span class="line">improved_policy_chosen = torch.tensor([-<span class="number">4.0</span>, -<span class="number">3.5</span>])</span><br><span class="line">improved_policy_rejected = torch.tensor([-<span class="number">6.0</span>, -<span class="number">5.0</span>])</span><br><span class="line"></span><br><span class="line">improved_loss, improved_margin = dpo_loss(</span><br><span class="line">    improved_policy_chosen,</span><br><span class="line">    improved_policy_rejected,</span><br><span class="line">    reference_chosen,</span><br><span class="line">    reference_rejected,</span><br><span class="line">    beta=<span class="number">0.1</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;初始 Margin：&quot;</span>, initial_margin)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;初始 Loss：&quot;</span>, initial_loss.item())</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;改善后 Margin：&quot;</span>, improved_margin)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;改善后 Loss：&quot;</span>, improved_loss.item())</span><br></pre></td></tr></table></figure>
+<p>当 Policy 与 Reference 相同时，隐式偏好 Margin 为 0：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-log σ(0) = log 2 ≈ 0.693</span><br></pre></td></tr></table></figure>
+<p>当 Policy 相对 Reference 更偏向 chosen 后，Margin 变大，DPO Loss 下降。</p>
+<p>真实实现中需要先对回答 Token 的 Log Probability 求和，并屏蔽 Prompt 与 Padding Token。Reference Log Probability 通常提前计算或由冻结模型得到。</p>
+<h1 id="实战四：构造可审计的偏好数据"><a href="#实战四：构造可审计的偏好数据" class="headerlink" title="实战四：构造可审计的偏好数据"></a>实战四：构造可审计的偏好数据</h1><p>偏好样本不应只保存 chosen/rejected，还应尽量记录判断原因和元数据：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">preference_sample = &#123;</span><br><span class="line">    <span class="string">&quot;prompt&quot;</span>: <span class="string">&quot;请解释地球为什么有四季。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;chosen&quot;</span>: (</span><br><span class="line">        <span class="string">&quot;地球存在四季，主要是因为地轴相对公转轨道平面&quot;</span></span><br><span class="line">        <span class="string">&quot;存在约 23.4° 的倾角。随着地球公转，不同半球接收&quot;</span></span><br><span class="line">        <span class="string">&quot;太阳辐射的角度和时长发生周期性变化。&quot;</span></span><br><span class="line">    ),</span><br><span class="line">    <span class="string">&quot;rejected&quot;</span>: <span class="string">&quot;因为夏天地球离太阳更近，冬天离太阳更远。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;label&quot;</span>: <span class="string">&quot;chosen&quot;</span>,</span><br><span class="line">    <span class="string">&quot;rubric&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;correctness&quot;</span>: <span class="string">&quot;chosen 正确说明地轴倾角，rejected 使用错误成因。&quot;</span>,</span><br><span class="line">        <span class="string">&quot;relevance&quot;</span>: <span class="string">&quot;两个回答都直接回答问题。&quot;</span>,</span><br><span class="line">        <span class="string">&quot;style&quot;</span>: <span class="string">&quot;chosen 表达清晰。&quot;</span>,</span><br><span class="line">        <span class="string">&quot;safety&quot;</span>: <span class="string">&quot;无安全问题。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;annotator_confidence&quot;</span>: <span class="number">0.98</span>,</span><br><span class="line">    <span class="string">&quot;source_ids&quot;</span>: [<span class="string">&quot;science_textbook_001&quot;</span>],</span><br><span class="line">    <span class="string">&quot;language&quot;</span>: <span class="string">&quot;zh-CN&quot;</span>,</span><br><span class="line">    <span class="string">&quot;task_type&quot;</span>: <span class="string">&quot;factual_qa&quot;</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">required_fields = &#123;</span><br><span class="line">    <span class="string">&quot;prompt&quot;</span>,</span><br><span class="line">    <span class="string">&quot;chosen&quot;</span>,</span><br><span class="line">    <span class="string">&quot;rejected&quot;</span>,</span><br><span class="line">    <span class="string">&quot;rubric&quot;</span>,</span><br><span class="line">    <span class="string">&quot;source_ids&quot;</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">missing_fields = required_fields - preference_sample.keys()</span><br><span class="line"><span class="keyword">assert</span> <span class="keyword">not</span> missing_fields, <span class="string">f&quot;缺少字段：<span class="subst">&#123;missing_fields&#125;</span>&quot;</span></span><br><span class="line"><span class="keyword">assert</span> preference_sample[<span class="string">&quot;chosen&quot;</span>] != preference_sample[<span class="string">&quot;rejected&quot;</span>]</span><br><span class="line"><span class="keyword">assert</span> <span class="number">0.0</span> &lt;= preference_sample[<span class="string">&quot;annotator_confidence&quot;</span>] &lt;= <span class="number">1.0</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;偏好样本检查通过&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>这些元数据可以帮助：</p>
+<ul>
+<li>发现某类标注标准不一致；</li>
+<li>按任务和语言切分评测；</li>
+<li>追踪事实判断的来源；</li>
+<li>分析模型究竟学到了哪类偏好；</li>
+<li>删除低置信度和存在争议的样本。</li>
+</ul>
+<h1 id="常见误区"><a href="#常见误区" class="headerlink" title="常见误区"></a>常见误区</h1><h2 id="误区一：对齐就是给模型增加知识"><a href="#误区一：对齐就是给模型增加知识" class="headerlink" title="误区一：对齐就是给模型增加知识"></a>误区一：对齐就是给模型增加知识</h2><p>对齐主要塑造模型如何表现和使用能力。大量、稳定的新领域知识通常更适合继续预训练；实时且需要引用的知识更适合外部检索和工具。</p>
+<h2 id="误区二：RLHF-就等于-PPO"><a href="#误区二：RLHF-就等于-PPO" class="headerlink" title="误区二：RLHF 就等于 PPO"></a>误区二：RLHF 就等于 PPO</h2><p>RLHF 描述使用人类反馈形成奖励或偏好信号；PPO 只是利用该信号优化策略的一种算法。</p>
+<h2 id="误区三：SFT、PPO-和-DPO-必须依次执行"><a href="#误区三：SFT、PPO-和-DPO-必须依次执行" class="headerlink" title="误区三：SFT、PPO 和 DPO 必须依次执行"></a>误区三：SFT、PPO 和 DPO 必须依次执行</h2><p>SFT 常作为起点，但 PPO-RLHF 和 DPO 通常是不同偏好优化路线。模型可能选择其中之一，也可能在不同阶段组合使用。</p>
+<h2 id="误区四：DPO-完全不需要参考模型"><a href="#误区四：DPO-完全不需要参考模型" class="headerlink" title="误区四：DPO 完全不需要参考模型"></a>误区四：DPO 完全不需要参考模型</h2><p>标准 DPO 损失包含 Reference Policy。部分实现可以通过参数高效微调或预计算参考 Log Probability 减少资源，但参考分布仍是目标定义的重要部分。</p>
+<h2 id="误区五：Reward-越高，模型就一定越好"><a href="#误区五：Reward-越高，模型就一定越好" class="headerlink" title="误区五：Reward 越高，模型就一定越好"></a>误区五：Reward 越高，模型就一定越好</h2><p>Policy 可能利用奖励模型漏洞。必须使用独立人类评测、事实验证、安全测试和能力 Benchmark 检查真实效果。</p>
+<h2 id="误区六：人类偏好代表统一的人类价值"><a href="#误区六：人类偏好代表统一的人类价值" class="headerlink" title="误区六：人类偏好代表统一的人类价值"></a>误区六：人类偏好代表统一的人类价值</h2><p>偏好取决于标注人群、规范、地区、语言和产品目标。对齐结果只能说更符合指定反馈分布，不能自动代表所有人。</p>
+<h2 id="误区七：拒绝越多，模型越安全"><a href="#误区七：拒绝越多，模型越安全" class="headerlink" title="误区七：拒绝越多，模型越安全"></a>误区七：拒绝越多，模型越安全</h2><p>过度拒答会降低正常任务可用性。安全评测必须同时衡量危险请求处理和无害请求正常回答。</p>
+<h2 id="误区八：DPO-一定比-PPO-好"><a href="#误区八：DPO-一定比-PPO-好" class="headerlink" title="误区八：DPO 一定比 PPO 好"></a>误区八：DPO 一定比 PPO 好</h2><p>DPO 工程简单且通常稳定，但在线交互、可验证奖励和探索新行为时，RL 方法仍可能具有优势。</p>
+<h2 id="误区九：对齐后就不会幻觉"><a href="#误区九：对齐后就不会幻觉" class="headerlink" title="误区九：对齐后就不会幻觉"></a>误区九：对齐后就不会幻觉</h2><p>对齐可以鼓励诚实和拒答，却不能保证模型拥有最新知识或自动验证每个事实。</p>
+<h2 id="误区十：训练完成就不需要部署期防护"><a href="#误区十：训练完成就不需要部署期防护" class="headerlink" title="误区十：训练完成就不需要部署期防护"></a>误区十：训练完成就不需要部署期防护</h2><p>输入过滤、权限控制、工具参数校验、输出审核、速率限制、人工审批和日志监控仍然是完整系统的一部分。</p>
+<h1 id="工程实践建议"><a href="#工程实践建议" class="headerlink" title="工程实践建议"></a>工程实践建议</h1><ol>
+<li>先把“好回答”拆成可操作、可标注和可评测的维度；</li>
+<li>SFT 数据重视质量、多样性和边界样本，不只追求数量；</li>
+<li>偏好数据允许平局、跳过和低置信度，不强迫每对回答分出胜负；</li>
+<li>记录标注理由、来源、语言、任务类型和标注者一致性；</li>
+<li>Reward Model 训练集、Policy 训练集与最终评测集严格隔离；</li>
+<li>PPO 同时监控 Reward、KL、Entropy、回答长度和能力回归；</li>
+<li>DPO 监控 chosen/rejected Margin、长度偏差和验证集 Loss；</li>
+<li>不使用同一个 Reward/Judge 同时训练和证明模型成功；</li>
+<li>对事实、代码和数学任务优先引入外部验证器；</li>
+<li>同时评估安全拒绝与无害请求通过率；</li>
+<li>对不同语言、群体和领域分别进行偏差分析；</li>
+<li>将红队和线上失败案例持续加入回归评测，而不是只加入训练集后遗忘。</li>
+</ol>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>本文的核心结论可以总结为：</p>
+<ol>
+<li>预训练主要获得通用能力，对齐主要塑造模型行为；</li>
+<li>对齐目标必须落实为示范、偏好、规则、验证器和评测，而不是抽象的“所有人类价值”；</li>
+<li>SFT 使用目标回答进行 Token 级监督，让模型学会指令和交互格式；</li>
+<li>偏好数据通过 chosen/rejected 表达回答之间的相对质量；</li>
+<li>Reward Model 使用成对排序损失学习偏好代理分数；</li>
+<li>PPO-RLHF 使用 Reward、Value、Advantage、KL 和裁剪目标更新策略；</li>
+<li>Reference Model 用于限制策略不要过度偏离原始 SFT 模型；</li>
+<li>DPO 直接在离线偏好对上优化 Policy，不需要显式 Reward Model 和 PPO 循环；</li>
+<li>RLAIF 改变的是反馈来源，可以与 PPO 或 DPO 等优化方法组合；</li>
+<li>Reward Hacking、长度偏差、迎合、过度拒答和能力退化都需要独立评测；</li>
+<li>更符合偏好不等于事实全部正确，也不等于模型已经绝对安全；</li>
+<li>对齐是一套持续的数据、训练、评测和部署治理流程。</li>
+</ol>
+<p>至此，LLM 基础系列已经完成从输入、生成、缓存、幻觉、Transformer、训练到对齐的核心链路：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">文本与 Prompt</span><br><span class="line">→ Tokenizer 与 Context</span><br><span class="line">→ Transformer</span><br><span class="line">→ Logits 与解码</span><br><span class="line">→ KV Cache</span><br><span class="line">→ 幻觉与可靠性</span><br><span class="line">→ 预训练与后训练</span><br><span class="line">→ SFT、RLHF、PPO 与 DPO</span><br></pre></td></tr></table></figure>
+<p>接下来可以进入独立的 Prompt Engineering 系列，讨论如何将任务、上下文、示例、约束和输出协议组织成稳定、可评测的模型输入。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2203.02155">Training Language Models to Follow Instructions with Human Feedback</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1707.06347">Proximal Policy Optimization Algorithms</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2305.18290">Direct Preference Optimization: Your Language Model Is Secretly a Reward Model</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2212.08073">Constitutional AI: Harmlessness from AI Feedback</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1706.03741">Deep Reinforcement Learning from Human Preferences</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/trl/index">Hugging Face TRL Documentation</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+              <a href="/tags/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" rel="tag"># 大语言模型</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+              <a href="/tags/RLHF/" rel="tag"># RLHF</a>
+              <a href="/tags/PPO/" rel="tag"># PPO</a>
+              <a href="/tags/DPO/" rel="tag"># DPO</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/11/ai/llms/9-llm-training/" rel="prev" title="LLM 如何训练：从预训练到后训练">
+      <i class="fa fa-chevron-left"></i> LLM 如何训练：从预训练到后训练
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#LLM-%E5%AF%B9%E9%BD%90%EF%BC%9ASFT%E3%80%81RLHF%E3%80%81PPO-%E4%B8%8E-DPO"><span class="nav-number">1.</span> <span class="nav-text">LLM 对齐：SFT、RLHF、PPO 与 DPO</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%A8%A1%E5%9E%8B%E5%AF%B9%E9%BD%90%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">什么是模型对齐？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%8C%E4%B8%BA"><span class="nav-number">2.1.</span> <span class="nav-text">行为</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%8E%E7%A1%AE%E8%A7%84%E5%AE%9A"><span class="nav-number">2.2.</span> <span class="nav-text">明确规定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%81%E7%BB%AD%E8%BF%87%E7%A8%8B"><span class="nav-number">2.3.</span> <span class="nav-text">持续过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%83%BD%E5%8A%9B%E4%B8%8E%E8%A1%8C%E4%B8%BA%E4%B8%8D%E6%98%AF%E4%B8%80%E5%9B%9E%E4%BA%8B"><span class="nav-number">3.</span> <span class="nav-text">能力与行为不是一回事</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E6%9D%A1%E7%BB%8F%E5%85%B8%E5%AF%B9%E9%BD%90%E8%B7%AF%E7%BA%BF"><span class="nav-number">4.</span> <span class="nav-text">一条经典对齐路线</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5%EF%BC%9ASFT"><span class="nav-number">5.</span> <span class="nav-text">第一阶段：SFT</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SFT-%E6%95%B0%E6%8D%AE%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">5.1.</span> <span class="nav-text">SFT 数据是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SFT-%E5%9C%A8%E4%BC%98%E5%8C%96%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">5.2.</span> <span class="nav-text">SFT 在优化什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SFT-%E5%AD%A6%E5%88%B0%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">5.3.</span> <span class="nav-text">SFT 学到了什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SFT-%E7%9A%84%E5%B1%80%E9%99%90"><span class="nav-number">5.4.</span> <span class="nav-text">SFT 的局限</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5%EF%BC%9A%E5%81%8F%E5%A5%BD%E6%95%B0%E6%8D%AE"><span class="nav-number">6.</span> <span class="nav-text">第二阶段：偏好数据</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%81%8F%E5%A5%BD%E6%A0%87%E5%87%86%E4%BB%8E%E5%93%AA%E9%87%8C%E6%9D%A5%EF%BC%9F"><span class="nav-number">6.1.</span> <span class="nav-text">偏好标准从哪里来？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%81%8F%E5%A5%BD%E6%95%B0%E6%8D%AE%E5%B9%B6%E4%B8%8D%E7%AD%89%E4%BA%8E%E5%AE%A2%E8%A7%82%E7%9C%9F%E7%90%86"><span class="nav-number">6.2.</span> <span class="nav-text">偏好数据并不等于客观真理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E9%98%B6%E6%AE%B5%EF%BC%9A%E5%A5%96%E5%8A%B1%E6%A8%A1%E5%9E%8B"><span class="nav-number">7.</span> <span class="nav-text">第三阶段：奖励模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A5%96%E5%8A%B1%E6%A8%A1%E5%9E%8B%E5%81%9A%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">7.1.</span> <span class="nav-text">奖励模型做什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Bradley%E2%80%93Terry-%E6%88%90%E5%AF%B9%E6%8D%9F%E5%A4%B1"><span class="nav-number">7.2.</span> <span class="nav-text">Bradley–Terry 成对损失</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#RLHF-%E4%B8%AD%E4%BB%80%E4%B9%88%E6%98%AF%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0%EF%BC%9F"><span class="nav-number">8.</span> <span class="nav-text">RLHF 中什么是强化学习？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#RLHF-%E4%B8%AD%E7%9A%84%E5%9B%9B%E4%B8%AA%E6%A8%A1%E5%9E%8B%E8%A7%92%E8%89%B2"><span class="nav-number">9.</span> <span class="nav-text">RLHF 中的四个模型角色</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-Reference-Model-%E5%92%8C-KL-%E7%BA%A6%E6%9D%9F%EF%BC%9F"><span class="nav-number">10.</span> <span class="nav-text">为什么需要 Reference Model 和 KL 约束？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%CE%B2-%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-number">10.1.</span> <span class="nav-text">β 的作用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Value%E3%80%81Return-%E4%B8%8E-Advantage"><span class="nav-number">11.</span> <span class="nav-text">Value、Return 与 Advantage</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Value"><span class="nav-number">11.1.</span> <span class="nav-text">Value</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Return"><span class="nav-number">11.2.</span> <span class="nav-text">Return</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Advantage"><span class="nav-number">11.3.</span> <span class="nav-text">Advantage</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#PPO-%E5%A6%82%E4%BD%95%E6%9B%B4%E6%96%B0%E7%AD%96%E7%95%A5%EF%BC%9F"><span class="nav-number">12.</span> <span class="nav-text">PPO 如何更新策略？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E7%8E%87%E6%AF%94"><span class="nav-number">12.1.</span> <span class="nav-text">概率比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A3%81%E5%89%AA%E7%9B%AE%E6%A0%87"><span class="nav-number">12.2.</span> <span class="nav-text">裁剪目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PPO-RLHF-%E8%AE%AD%E7%BB%83%E5%BE%AA%E7%8E%AF"><span class="nav-number">12.3.</span> <span class="nav-text">PPO-RLHF 训练循环</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-PPO-RLHF-%E5%B7%A5%E7%A8%8B%E5%A4%8D%E6%9D%82%EF%BC%9F"><span class="nav-number">12.4.</span> <span class="nav-text">为什么 PPO-RLHF 工程复杂？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-DPO%EF%BC%9F"><span class="nav-number">13.</span> <span class="nav-text">什么是 DPO？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DPO-%E6%8D%9F%E5%A4%B1%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3%EF%BC%9F"><span class="nav-number">14.</span> <span class="nav-text">DPO 损失如何理解？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%CE%B2-%E4%B8%8D%E6%98%AF%E6%99%AE%E9%80%9A%E5%AD%A6%E4%B9%A0%E7%8E%87"><span class="nav-number">14.1.</span> <span class="nav-text">β 不是普通学习率</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#PPO-RLHF-%E4%B8%8E-DPO-%E5%AF%B9%E6%AF%94"><span class="nav-number">15.</span> <span class="nav-text">PPO-RLHF 与 DPO 对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#RLAIF-%E6%98%AF%E5%8F%A6%E4%B8%80%E7%A7%8D%E7%AE%97%E6%B3%95%E5%90%97%EF%BC%9F"><span class="nav-number">16.</span> <span class="nav-text">RLAIF 是另一种算法吗？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Constitutional-AI"><span class="nav-number">16.1.</span> <span class="nav-text">Constitutional AI</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%81%8F%E5%A5%BD%E4%BC%98%E5%8C%96%E4%BC%9A%E5%B8%A6%E6%9D%A5%E5%93%AA%E4%BA%9B%E9%A3%8E%E9%99%A9%EF%BC%9F"><span class="nav-number">17.</span> <span class="nav-text">偏好优化会带来哪些风险？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Reward-Hacking"><span class="nav-number">17.1.</span> <span class="nav-text">Reward Hacking</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%95%BF%E5%BA%A6%E5%81%8F%E5%B7%AE"><span class="nav-number">17.2.</span> <span class="nav-text">长度偏差</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sycophancy%EF%BC%9A%E8%BF%8E%E5%90%88%E7%94%A8%E6%88%B7"><span class="nav-number">17.3.</span> <span class="nav-text">Sycophancy：迎合用户</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%87%E5%BA%A6%E6%8B%92%E7%AD%94"><span class="nav-number">17.4.</span> <span class="nav-text">过度拒答</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%BD%E5%8A%9B%E9%80%80%E5%8C%96%E4%B8%8E-Alignment-Tax"><span class="nav-number">17.5.</span> <span class="nav-text">能力退化与 Alignment Tax</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Mode-Collapse-%E4%B8%8E%E5%A4%9A%E6%A0%B7%E6%80%A7%E4%B8%8B%E9%99%8D"><span class="nav-number">17.6.</span> <span class="nav-text">Mode Collapse 与多样性下降</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AF%B9%E9%BD%90%E8%83%BD%E5%A4%9F%E6%B6%88%E9%99%A4%E5%B9%BB%E8%A7%89%E5%90%97%EF%BC%9F"><span class="nav-number">18.</span> <span class="nav-text">对齐能够消除幻觉吗？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%AF%E9%AA%8C%E8%AF%81%E5%A5%96%E5%8A%B1%E4%B8%8E%E4%B8%BB%E8%A7%82%E5%81%8F%E5%A5%BD"><span class="nav-number">19.</span> <span class="nav-text">可验证奖励与主观偏好</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E8%A7%82%E5%81%8F%E5%A5%BD"><span class="nav-number">19.1.</span> <span class="nav-text">主观偏好</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E9%AA%8C%E8%AF%81%E5%A5%96%E5%8A%B1"><span class="nav-number">19.2.</span> <span class="nav-text">可验证奖励</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E5%AF%B9%E9%BD%90%E5%90%8E%E7%9A%84%E6%A8%A1%E5%9E%8B%EF%BC%9F"><span class="nav-number">20.</span> <span class="nav-text">如何评估对齐后的模型？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%B8%80%EF%BC%9A%E7%90%86%E8%A7%A3%E5%A5%96%E5%8A%B1%E6%A8%A1%E5%9E%8B%E6%88%90%E5%AF%B9%E6%8D%9F%E5%A4%B1"><span class="nav-number">21.</span> <span class="nav-text">实战一：理解奖励模型成对损失</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%BA%8C%EF%BC%9A%E7%90%86%E8%A7%A3-PPO-Clipped-Objective"><span class="nav-number">22.</span> <span class="nav-text">实战二：理解 PPO Clipped Objective</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%B8%89%EF%BC%9A%E7%90%86%E8%A7%A3-DPO-Loss"><span class="nav-number">23.</span> <span class="nav-text">实战三：理解 DPO Loss</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E5%9B%9B%EF%BC%9A%E6%9E%84%E9%80%A0%E5%8F%AF%E5%AE%A1%E8%AE%A1%E7%9A%84%E5%81%8F%E5%A5%BD%E6%95%B0%E6%8D%AE"><span class="nav-number">24.</span> <span class="nav-text">实战四：构造可审计的偏好数据</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%AF%E5%8C%BA"><span class="nav-number">25.</span> <span class="nav-text">常见误区</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%80%EF%BC%9A%E5%AF%B9%E9%BD%90%E5%B0%B1%E6%98%AF%E7%BB%99%E6%A8%A1%E5%9E%8B%E5%A2%9E%E5%8A%A0%E7%9F%A5%E8%AF%86"><span class="nav-number">25.1.</span> <span class="nav-text">误区一：对齐就是给模型增加知识</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%8C%EF%BC%9ARLHF-%E5%B0%B1%E7%AD%89%E4%BA%8E-PPO"><span class="nav-number">25.2.</span> <span class="nav-text">误区二：RLHF 就等于 PPO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%89%EF%BC%9ASFT%E3%80%81PPO-%E5%92%8C-DPO-%E5%BF%85%E9%A1%BB%E4%BE%9D%E6%AC%A1%E6%89%A7%E8%A1%8C"><span class="nav-number">25.3.</span> <span class="nav-text">误区三：SFT、PPO 和 DPO 必须依次执行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%9B%9B%EF%BC%9ADPO-%E5%AE%8C%E5%85%A8%E4%B8%8D%E9%9C%80%E8%A6%81%E5%8F%82%E8%80%83%E6%A8%A1%E5%9E%8B"><span class="nav-number">25.4.</span> <span class="nav-text">误区四：DPO 完全不需要参考模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%94%EF%BC%9AReward-%E8%B6%8A%E9%AB%98%EF%BC%8C%E6%A8%A1%E5%9E%8B%E5%B0%B1%E4%B8%80%E5%AE%9A%E8%B6%8A%E5%A5%BD"><span class="nav-number">25.5.</span> <span class="nav-text">误区五：Reward 越高，模型就一定越好</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AD%EF%BC%9A%E4%BA%BA%E7%B1%BB%E5%81%8F%E5%A5%BD%E4%BB%A3%E8%A1%A8%E7%BB%9F%E4%B8%80%E7%9A%84%E4%BA%BA%E7%B1%BB%E4%BB%B7%E5%80%BC"><span class="nav-number">25.6.</span> <span class="nav-text">误区六：人类偏好代表统一的人类价值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%83%EF%BC%9A%E6%8B%92%E7%BB%9D%E8%B6%8A%E5%A4%9A%EF%BC%8C%E6%A8%A1%E5%9E%8B%E8%B6%8A%E5%AE%89%E5%85%A8"><span class="nav-number">25.7.</span> <span class="nav-text">误区七：拒绝越多，模型越安全</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AB%EF%BC%9ADPO-%E4%B8%80%E5%AE%9A%E6%AF%94-PPO-%E5%A5%BD"><span class="nav-number">25.8.</span> <span class="nav-text">误区八：DPO 一定比 PPO 好</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B9%9D%EF%BC%9A%E5%AF%B9%E9%BD%90%E5%90%8E%E5%B0%B1%E4%B8%8D%E4%BC%9A%E5%B9%BB%E8%A7%89"><span class="nav-number">25.9.</span> <span class="nav-text">误区九：对齐后就不会幻觉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%8D%81%EF%BC%9A%E8%AE%AD%E7%BB%83%E5%AE%8C%E6%88%90%E5%B0%B1%E4%B8%8D%E9%9C%80%E8%A6%81%E9%83%A8%E7%BD%B2%E6%9C%9F%E9%98%B2%E6%8A%A4"><span class="nav-number">25.10.</span> <span class="nav-text">误区十：训练完成就不需要部署期防护</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5%E5%BB%BA%E8%AE%AE"><span class="nav-number">26.</span> <span class="nav-text">工程实践建议</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">27.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">28.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

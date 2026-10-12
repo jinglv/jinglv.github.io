@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从上下文窗口、Prefill 和 Decode 出发，理解 Transformer 为何需要 KV Cache、缓存中保存了什么、如何估算显存，以及长上下文推理中的常见优化策略。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="上下文窗口与 KV Cache：模型如何记住前文并高效生成？">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/08/ai/llms/6-context-window-kv-cache/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从上下文窗口、Prefill 和 Decode 出发，理解 Transformer 为何需要 KV Cache、缓存中保存了什么、如何估算显存，以及长上下文推理中的常见优化策略。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012104957043.png">
+<meta property="article:published_time" content="2026-10-08T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-08T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta property="article:tag" content="大语言模型">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="Context Window">
+<meta property="article:tag" content="KV Cache">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012104957043.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/08/ai/llms/6-context-window-kv-cache/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>上下文窗口与 KV Cache：模型如何记住前文并高效生成？ | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/08/ai/llms/6-context-window-kv-cache/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          上下文窗口与 KV Cache：模型如何记住前文并高效生成？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-08 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-08T10:00:00+08:00">2026-10-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从上下文窗口、Prefill 和 Decode 出发，理解 Transformer 为何需要 KV Cache、缓存中保存了什么、如何估算显存，以及长上下文推理中的常见优化策略。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="上下文窗口与-KV-Cache：模型如何记住前文并高效生成？"><a href="#上下文窗口与-KV-Cache：模型如何记住前文并高效生成？" class="headerlink" title="上下文窗口与 KV Cache：模型如何记住前文并高效生成？"></a>上下文窗口与 KV Cache：模型如何记住前文并高效生成？</h1><p>在上一篇文章中，我们了解了模型如何通过 Logits、Softmax 和解码策略选择下一个 Token。</p>
+<p>不过，生成下一个 Token 时，模型不能只看最后一个词。它还需要参考 System Message、历史对话、当前问题以及已经生成的内容。例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">用户：小明把钥匙放进了抽屉。</span><br><span class="line">用户：随后他离开了房间。钥匙在哪里？</span><br></pre></td></tr></table></figure>
+<p>要回答“抽屉里”，模型必须能够利用前面的信息。这就引出了两个重要概念：</p>
+<ul>
+<li><strong>上下文窗口（Context Window）</strong>：本次推理中，模型最多能够处理多少 Token；</li>
+<li><strong>KV Cache</strong>：生成过程中缓存历史 Token 的注意力 Key 和 Value，避免每一步重复计算。</li>
+</ul>
+<p>它们都与“前文”有关，但解决的是两个完全不同的问题：</p>
+<blockquote>
+<p>上下文窗口决定模型最多能看多少内容；KV Cache 决定模型重复使用这些内容时能有多高效。</p>
+</blockquote>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012104957043.png" alt="image-20261012104957043"></p>
+<h1 id="先理解四个核心概念"><a href="#先理解四个核心概念" class="headerlink" title="先理解四个核心概念"></a>先理解四个核心概念</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>核心含义</th>
+<th>解决的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Context Window</td>
+<td>一次推理允许使用的最大 Token 范围</td>
+<td>模型最多能看到多少内容</td>
+</tr>
+<tr>
+<td>Prefill</td>
+<td>一次处理输入上下文，并建立初始 KV Cache</td>
+<td>理解 Prompt，准备生成第一个 Token</td>
+</tr>
+<tr>
+<td>Decode</td>
+<td>每次生成一个新 Token</td>
+<td>逐步完成回答</td>
+</tr>
+<tr>
+<td>KV Cache</td>
+<td>保存各层历史 Token 的 Key 和 Value</td>
+<td>避免 Decode 时重复计算历史 K/V</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>一次典型请求可以简化为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Prompt 与历史消息</span><br><span class="line">        ↓</span><br><span class="line">Chat Template</span><br><span class="line">        ↓</span><br><span class="line">Tokenizer</span><br><span class="line">        ↓</span><br><span class="line">输入 Token</span><br><span class="line">        ↓</span><br><span class="line">Prefill：处理全部输入并建立 KV Cache</span><br><span class="line">        ↓</span><br><span class="line">Decode：复用 KV Cache，逐个生成新 Token</span><br><span class="line">        ↓</span><br><span class="line">最终回答</span><br></pre></td></tr></table></figure>
+<h1 id="什么是上下文窗口？"><a href="#什么是上下文窗口？" class="headerlink" title="什么是上下文窗口？"></a>什么是上下文窗口？</h1><p>上下文窗口是模型在一次推理中能够处理的 Token 总量上限。</p>
+<p>如果某个模型的上下文窗口为 8,192 Token，可以先近似理解为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">输入 Token 数 + 输出 Token 数 ≤ 8,192</span><br></pre></td></tr></table></figure>
+<p>这里的输入不只有用户刚刚输入的问题，还可能包括：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">System Message</span><br><span class="line">+ 历史对话</span><br><span class="line">+ Few-shot 示例</span><br><span class="line">+ RAG 检索资料</span><br><span class="line">+ 工具调用结果</span><br><span class="line">+ 当前用户问题</span><br><span class="line">+ Chat Template 特殊 Token</span><br></pre></td></tr></table></figure>
+<p>输出则包括模型已经生成和即将生成的 Token。</p>
+<h2 id="一个具体例子"><a href="#一个具体例子" class="headerlink" title="一个具体例子"></a>一个具体例子</h2><p>假设模型的上下文窗口是 8,192 Token：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>内容</th>
+<th style="text-align:right">Token 数量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>System Message</td>
+<td style="text-align:right">300</td>
+</tr>
+<tr>
+<td>历史对话</td>
+<td style="text-align:right">2,500</td>
+</tr>
+<tr>
+<td>RAG 检索内容</td>
+<td style="text-align:right">3,000</td>
+</tr>
+<tr>
+<td>当前问题</td>
+<td style="text-align:right">200</td>
+</tr>
+<tr>
+<td>Chat Template 等额外内容</td>
+<td style="text-align:right">100</td>
+</tr>
+<tr>
+<td>输入合计</td>
+<td style="text-align:right">6,100</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>理论上还剩：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">8,192 - 6,100 = 2,092 Token</span><br></pre></td></tr></table></figure>
+<p>如果请求中又设置：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">max_new_tokens = 3,000</span><br></pre></td></tr></table></figure>
+<p>输入与最大输出之和就可能超过模型允许的范围。不同框架可能报错、缩短输出，或者按照指定策略截断输入。</p>
+<p>需要注意，部分 API 会分别公布最大输入长度和最大输出长度，实际限制应以具体模型和服务文档为准，不能只套用一个加法公式。</p>
+<h2 id="Token-数量不等于字数"><a href="#Token-数量不等于字数" class="headerlink" title="Token 数量不等于字数"></a>Token 数量不等于字数</h2><p>上下文窗口按 Token 计算，不按汉字数、单词数或文件大小计算。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">同一段文字</span><br><span class="line">   ↓</span><br><span class="line">使用不同 Tokenizer</span><br><span class="line">   ↓</span><br><span class="line">可能得到不同 Token 数量</span><br></pre></td></tr></table></figure>
+<p>因此，“支持 128K 上下文”表示大约支持 128K Token，并不等于固定支持 128K 个汉字或英文单词。</p>
+<h2 id="超出上下文窗口会怎样？"><a href="#超出上下文窗口会怎样？" class="headerlink" title="超出上下文窗口会怎样？"></a>超出上下文窗口会怎样？</h2><p>常见处理方式包括：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>处理方式</th>
+<th>行为</th>
+<th>风险</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>直接报错</td>
+<td>拒绝超长请求</td>
+<td>调用失败</td>
+</tr>
+<tr>
+<td>从左侧截断</td>
+<td>删除最早的 Token</td>
+<td>System 或关键历史可能丢失</td>
+</tr>
+<tr>
+<td>从右侧截断</td>
+<td>删除输入尾部 Token</td>
+<td>当前问题可能不完整</td>
+</tr>
+<tr>
+<td>保留首尾</td>
+<td>留下开头规则和最新消息</td>
+<td>中间信息可能丢失</td>
+</tr>
+<tr>
+<td>摘要压缩</td>
+<td>将旧历史总结后再输入</td>
+<td>摘要可能遗漏细节</td>
+</tr>
+<tr>
+<td>RAG 检索</td>
+<td>只加入与问题相关的片段</td>
+<td>取决于检索质量</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>截断是一种应用层策略，不是模型突然获得了额外空间。生产系统应明确决定哪些内容可以删除，不能盲目依赖 Tokenizer 的默认截断。</p>
+<h1 id="上下文窗口不是长期记忆"><a href="#上下文窗口不是长期记忆" class="headerlink" title="上下文窗口不是长期记忆"></a>上下文窗口不是长期记忆</h1><p>这是最常见的误解之一。</p>
+<p>模型能够在当前请求里引用前文，并不意味着它已经把对话永久保存进参数。对普通无状态 API 而言，下一次请求通常仍需要再次提交相关历史：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">第一次请求：[System] + [问题 A]</span><br><span class="line">第二次请求：[System] + [问题 A] + [回答 A] + [问题 B]</span><br></pre></td></tr></table></figure>
+<p>如果第二次请求只发送“问题 B”，模型未必知道前面讨论过什么。</p>
+<p>可以把几个概念区分开：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>保存在哪里</th>
+<th>生命周期</th>
+<th>是否改变模型参数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Context</td>
+<td>本次请求的 Token 序列</td>
+<td>通常到请求结束</td>
+<td>否</td>
+</tr>
+<tr>
+<td>KV Cache</td>
+<td>推理引擎的内存或显存</td>
+<td>通常到序列结束或缓存被回收</td>
+<td>否</td>
+</tr>
+<tr>
+<td>对话数据库</td>
+<td>应用自己的存储系统</td>
+<td>由应用决定</td>
+<td>否</td>
+</tr>
+<tr>
+<td>模型参数</td>
+<td>权重文件</td>
+<td>训练后长期存在</td>
+<td>是，只有训练才会更新</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>因此：</p>
+<blockquote>
+<p>上下文窗口是模型的“工作台大小”，不是永久记忆容量；KV Cache 是计算缓存，也不是聊天记录数据库。</p>
+</blockquote>
+<h1 id="为什么生成会分成-Prefill-和-Decode？"><a href="#为什么生成会分成-Prefill-和-Decode？" class="headerlink" title="为什么生成会分成 Prefill 和 Decode？"></a>为什么生成会分成 Prefill 和 Decode？</h1><p>大语言模型的在线推理通常分成两个阶段。</p>
+<h2 id="Prefill：处理输入"><a href="#Prefill：处理输入" class="headerlink" title="Prefill：处理输入"></a>Prefill：处理输入</h2><p>Prefill 也叫 Prompt Processing。模型一次接收 Prompt 中的多个 Token，通过 Transformer 的所有层进行计算：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[Token 1, Token 2, ..., Token N]</span><br><span class="line">              ↓</span><br><span class="line">      Transformer 多层计算</span><br><span class="line">              ↓</span><br><span class="line">建立每一层、每个历史 Token 的 K/V Cache</span><br><span class="line">              ↓</span><br><span class="line">得到第一个输出 Token 的 Logits</span><br></pre></td></tr></table></figure>
+<p>这一阶段可以并行处理多个输入 Token，但自注意力需要建立它们之间的关系。输入越长，Prefill 的计算量和首 Token 等待时间通常越大。</p>
+<p>衡量 Prefill 用户体验时，经常使用：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TTFT = Time To First Token</span><br></pre></td></tr></table></figure>
+<p>也就是从请求发出到看见第一个输出 Token 的时间。</p>
+<h2 id="Decode：逐-Token-生成"><a href="#Decode：逐-Token-生成" class="headerlink" title="Decode：逐 Token 生成"></a>Decode：逐 Token 生成</h2><p>得到第一个输出 Token 后，模型进入 Decode 阶段：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">生成 Token N+1</span><br><span class="line">      ↓</span><br><span class="line">加入上下文</span><br><span class="line">      ↓</span><br><span class="line">生成 Token N+2</span><br><span class="line">      ↓</span><br><span class="line">继续循环</span><br></pre></td></tr></table></figure>
+<p>自回归模型必须等上一个 Token 生成后，才能确定下一步输入，所以同一条序列的 Decode 主要是串行过程。</p>
+<p>衡量 Decode 速度时，常见指标包括：</p>
+<ul>
+<li>每秒生成 Token 数（Tokens/s）；</li>
+<li>相邻输出 Token 的时间间隔（Inter-Token Latency，ITL）。</li>
+</ul>
+<h2 id="两个阶段的差异"><a href="#两个阶段的差异" class="headerlink" title="两个阶段的差异"></a>两个阶段的差异</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>对比项</th>
+<th>Prefill</th>
+<th>Decode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>输入规模</td>
+<td>一批 Prompt Token</td>
+<td>每一步通常 1 个新 Token</td>
+</tr>
+<tr>
+<td>并行程度</td>
+<td>Token 维度可较充分并行</td>
+<td>单条序列逐步生成</td>
+</tr>
+<tr>
+<td>主要体验指标</td>
+<td>TTFT</td>
+<td>Tokens/s、ITL</td>
+</tr>
+<tr>
+<td>KV Cache 行为</td>
+<td>创建并填充</td>
+<td>读取历史缓存并追加新 K/V</td>
+</tr>
+<tr>
+<td>典型瓶颈</td>
+<td>长 Prompt 的计算</td>
+<td>内存带宽、缓存访问和逐步调度</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="Attention-中的-Q、K、V"><a href="#Attention-中的-Q、K、V" class="headerlink" title="Attention 中的 Q、K、V"></a>Attention 中的 Q、K、V</h1><p>要理解 KV Cache，先回顾 Self-Attention。</p>
+<p>每一层会把当前隐藏状态分别投影成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Q = Query</span><br><span class="line">K = Key</span><br><span class="line">V = Value</span><br></pre></td></tr></table></figure>
+<p>简化后的注意力公式为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Attention(Q, K, V)</span><br><span class="line">= softmax(Q × Kᵀ / √d_head) × V</span><br></pre></td></tr></table></figure>
+<p>可以直观地理解为：</p>
+<ul>
+<li>Query 表示当前位置正在寻找什么信息；</li>
+<li>Key 表示每个历史位置可以用什么特征被匹配；</li>
+<li>Value 表示匹配到该位置后实际取回的内容表示。</li>
+</ul>
+<p>例如生成新 Token 时，新 Token 的 Query 会与所有可见历史 Token 的 Key 计算相关性，再用相关性权重聚合对应的 Value。</p>
+<h1 id="为什么只缓存-K-和-V？"><a href="#为什么只缓存-K-和-V？" class="headerlink" title="为什么只缓存 K 和 V？"></a>为什么只缓存 K 和 V？</h1><p>在 Causal Language Model 中，过去的 Token 不能看未来。因此，已经处理过的历史 Token，其 K 和 V 不会因为后面又生成了新 Token 而改变。</p>
+<p>生成第 <code>t</code> 个 Token 时，需要：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Q_t</span><br><span class="line">K_1, K_2, ..., K_t</span><br><span class="line">V_1, V_2, ..., V_t</span><br></pre></td></tr></table></figure>
+<p>生成第 <code>t+1</code> 个 Token 时，过去的 K/V 仍然可以直接使用：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">新计算：Q_(t+1), K_(t+1), V_(t+1)</span><br><span class="line">直接复用：K_1 ... K_t, V_1 ... V_t</span><br></pre></td></tr></table></figure>
+<p>当前 Query 用完即可，下一步会根据新的隐藏状态产生新的 Query，所以通常没有必要保存所有历史 Query。这就是它叫 <strong>KV Cache</strong>，而不是 QKV Cache 的原因。</p>
+<h1 id="没有-KV-Cache-会发生什么？"><a href="#没有-KV-Cache-会发生什么？" class="headerlink" title="没有 KV Cache 会发生什么？"></a>没有 KV Cache 会发生什么？</h1><p>假设 Prompt 有 4 个 Token，正在继续生成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">输入：[A, B, C, D]</span><br></pre></td></tr></table></figure>
+<p>没有缓存时：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">生成 E：重新计算 [A, B, C, D]</span><br><span class="line">生成 F：重新计算 [A, B, C, D, E]</span><br><span class="line">生成 G：重新计算 [A, B, C, D, E, F]</span><br></pre></td></tr></table></figure>
+<p>大量历史 Token 的 K/V 投影会被重复计算。</p>
+<p>使用 KV Cache 后：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Prefill：计算并保存 A、B、C、D 的 K/V</span><br><span class="line">生成 E：读取 A-D 的 K/V，只追加 E 的 K/V</span><br><span class="line">生成 F：读取 A-E 的 K/V，只追加 F 的 K/V</span><br><span class="line">生成 G：读取 A-F 的 K/V，只追加 G 的 K/V</span><br></pre></td></tr></table></figure>
+<p>因此 KV Cache 用更多内存换取更少的重复计算。</p>
+<h2 id="一个容易说错的地方"><a href="#一个容易说错的地方" class="headerlink" title="一个容易说错的地方"></a>一个容易说错的地方</h2><p>KV Cache 并没有让每一步 Attention 变成常数复杂度。</p>
+<p>生成新 Token 时，新 Query 仍需与可见范围内所有历史 Key 计算注意力，并读取对应 Value。历史越长，本步需要读取的数据通常越多。</p>
+<p>KV Cache 省掉的是：</p>
+<ul>
+<li>历史 Token 在各层重新产生 K/V 的计算；</li>
+<li>历史部分大量重复的 Transformer 前向计算。</li>
+</ul>
+<p>它没有消除新 Token 对历史上下文的 Attention 访问。</p>
+<h1 id="KV-Cache-中到底保存了什么？"><a href="#KV-Cache-中到底保存了什么？" class="headerlink" title="KV Cache 中到底保存了什么？"></a>KV Cache 中到底保存了什么？</h1><p>对于普通 Decoder-only Transformer，每一层通常都有一组 Key Cache 和 Value Cache：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Layer 0: K_cache, V_cache</span><br><span class="line">Layer 1: K_cache, V_cache</span><br><span class="line">Layer 2: K_cache, V_cache</span><br><span class="line">...</span><br><span class="line">Layer L: K_cache, V_cache</span><br></pre></td></tr></table></figure>
+<p>一种常见的张量形状是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[batch_size, num_key_value_heads, sequence_length, head_dim]</span><br></pre></td></tr></table></figure>
+<p>其中：</p>
+<ul>
+<li><code>batch_size</code>：同时处理的序列数量；</li>
+<li><code>num_key_value_heads</code>：Key/Value Head 的数量；</li>
+<li><code>sequence_length</code>：当前缓存的 Token 数量；</li>
+<li><code>head_dim</code>：每个 Head 的维度。</li>
+</ul>
+<p>模型实现不同，维度顺序也可能不同，不能假设所有框架都采用完全相同的布局。</p>
+<h2 id="MHA、MQA-和-GQA-对缓存的影响"><a href="#MHA、MQA-和-GQA-对缓存的影响" class="headerlink" title="MHA、MQA 和 GQA 对缓存的影响"></a>MHA、MQA 和 GQA 对缓存的影响</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Attention 类型</th>
+<th>Query Head</th>
+<th>KV Head</th>
+<th>KV Cache 特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MHA</td>
+<td>多个</td>
+<td>通常与 Query Head 数相同</td>
+<td>缓存较大</td>
+</tr>
+<tr>
+<td>MQA</td>
+<td>多个</td>
+<td>通常只有 1 个</td>
+<td>缓存显著减小</td>
+</tr>
+<tr>
+<td>GQA</td>
+<td>多个</td>
+<td>少于 Query Head、但多于 1 个</td>
+<td>在质量和效率之间折中</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>现在很多 LLM 使用 GQA，原因之一就是它可以减少 KV Cache 的容量和读取带宽。估算缓存时应读取 <code>num_key_value_heads</code>，不能总是直接使用 <code>num_attention_heads</code>。</p>
+<h1 id="如何估算-KV-Cache-显存？"><a href="#如何估算-KV-Cache-显存？" class="headerlink" title="如何估算 KV Cache 显存？"></a>如何估算 KV Cache 显存？</h1><p>对标准全注意力 Decoder，可以使用下面的近似公式：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">KV Cache Bytes</span><br><span class="line">≈ batch_size</span><br><span class="line">× sequence_length</span><br><span class="line">× num_layers</span><br><span class="line">× 2</span><br><span class="line">× num_key_value_heads</span><br><span class="line">× head_dim</span><br><span class="line">× bytes_per_element</span><br></pre></td></tr></table></figure>
+<p>公式中的 <code>2</code> 代表 Key 和 Value 两份缓存。</p>
+<p>如果使用 Beam Search，还需要考虑 Beam 数；推理框架的内存对齐、分页和元数据也可能带来额外开销。因此这是理论近似值，不等于进程最终显存占用。</p>
+<h2 id="示例：估算一个-GQA-模型"><a href="#示例：估算一个-GQA-模型" class="headerlink" title="示例：估算一个 GQA 模型"></a>示例：估算一个 GQA 模型</h2><p>假设模型配置为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Layers = 28</span><br><span class="line">KV Heads = 4</span><br><span class="line">Head Dim = 128</span><br><span class="line">Context = 32,768</span><br><span class="line">DType = BF16，每个元素 2 Bytes</span><br><span class="line">Batch = 1</span><br></pre></td></tr></table></figure>
+<p>那么：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">KV Cache</span><br><span class="line">= 1 × 32,768 × 28 × 2 × 4 × 128 × 2</span><br><span class="line">= 1,879,048,192 Bytes</span><br><span class="line">≈ 1.75 GiB</span><br></pre></td></tr></table></figure>
+<p>这还只是单条序列的 KV Cache，不包括：</p>
+<ul>
+<li>模型权重；</li>
+<li>临时激活值；</li>
+<li>CUDA Kernel 工作区；</li>
+<li>Logits 和采样状态；</li>
+<li>推理框架自身开销。</li>
+</ul>
+<p>当 Batch Size、并发请求数或上下文长度增加时，KV Cache 很容易成为推理服务的主要显存消费者。</p>
+<h1 id="上下文窗口与-KV-Cache-的关系"><a href="#上下文窗口与-KV-Cache-的关系" class="headerlink" title="上下文窗口与 KV Cache 的关系"></a>上下文窗口与 KV Cache 的关系</h1><p>两者相关，但不能互相替代：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>上下文窗口</th>
+<th>KV Cache</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>决定能处理多少 Token</td>
+<td>是</td>
+<td>否</td>
+</tr>
+<tr>
+<td>加速自回归生成</td>
+<td>否</td>
+<td>是</td>
+</tr>
+<tr>
+<td>占用额外显存</td>
+<td>间接相关</td>
+<td>是</td>
+</tr>
+<tr>
+<td>保存模型知识</td>
+<td>否</td>
+<td>否</td>
+</tr>
+<tr>
+<td>请求结束后必须永久保留</td>
+<td>否</td>
+<td>否</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>上下文越长，通常需要缓存的 K/V 越多：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">更长的上下文窗口</span><br><span class="line">        ↓</span><br><span class="line">允许处理更多 Token</span><br><span class="line">        ↓</span><br><span class="line">KV Cache 可能线性增长</span><br><span class="line">        ↓</span><br><span class="line">单请求显存变大、可同时服务的请求变少</span><br></pre></td></tr></table></figure>
+<p>但增加 KV Cache 容量不会让一个原本只支持 8K 的模型自动变成 128K 模型。模型的位置编码、训练长度、注意力实现和服务限制也需要支持长上下文。</p>
+<h1 id="为什么“支持-128K”不等于“128K-都能用好”？"><a href="#为什么“支持-128K”不等于“128K-都能用好”？" class="headerlink" title="为什么“支持 128K”不等于“128K 都能用好”？"></a>为什么“支持 128K”不等于“128K 都能用好”？</h1><p>上下文窗口描述的是可接收范围，不保证模型能同等有效地使用窗口中的每一处信息。</p>
+<p>长上下文能力还受到以下因素影响：</p>
+<ul>
+<li>模型是否在足够长的数据上训练或继续训练；</li>
+<li>位置编码及其扩展方式；</li>
+<li>重要信息在上下文中的位置；</li>
+<li>无关信息对注意力的干扰；</li>
+<li>推理精度和缓存量化；</li>
+<li>任务是否需要跨很远位置组合信息。</li>
+</ul>
+<p>因此可能出现：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">请求没有超出长度限制</span><br><span class="line">        ≠</span><br><span class="line">模型一定能准确找到并使用所有细节</span><br></pre></td></tr></table></figure>
+<p>应用仍应通过检索、重排、摘要和明确的 Prompt 结构减少无关内容，而不是把所有资料都塞进上下文。</p>
+<h1 id="常见-KV-Cache-优化方式"><a href="#常见-KV-Cache-优化方式" class="headerlink" title="常见 KV Cache 优化方式"></a>常见 KV Cache 优化方式</h1><h2 id="Dynamic-Cache"><a href="#Dynamic-Cache" class="headerlink" title="Dynamic Cache"></a>Dynamic Cache</h2><p>Dynamic Cache 随生成长度逐步增长：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">长度 100 → 缓存 100 个位置</span><br><span class="line">长度 101 → 缓存 101 个位置</span><br><span class="line">长度 102 → 缓存 102 个位置</span><br></pre></td></tr></table></figure>
+<p>它使用灵活，也是 Transformers 中许多模型的默认缓存方式，但不断变化的张量形状可能不利于某些编译优化。</p>
+<h2 id="Static-Cache"><a href="#Static-Cache" class="headerlink" title="Static Cache"></a>Static Cache</h2><p>Static Cache 预先分配最大缓存空间：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">预先分配 4,096 个位置</span><br><span class="line">实际只使用前 300 个位置</span><br><span class="line">其余位置保持未使用并通过 Mask 屏蔽</span><br></pre></td></tr></table></figure>
+<p>固定形状更适合 <code>torch.compile</code> 或某些硬件编译器，但短请求可能浪费已分配空间。</p>
+<h2 id="Sliding-Window-Attention"><a href="#Sliding-Window-Attention" class="headerlink" title="Sliding Window Attention"></a>Sliding Window Attention</h2><p>滑动窗口注意力只让某些层关注最近固定数量的 Token：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">完整历史：[1, 2, 3, ..., 8,191, 8,192]</span><br><span class="line">滑动窗口：只关注最近 W 个 Token</span><br></pre></td></tr></table></figure>
+<p>当缓存达到窗口长度后，相关层不再无限增长。这样可以控制计算和显存，但窗口之外的信息无法被这些局部注意力层直接访问。部分模型会混合全局注意力层与滑动窗口层，具体行为取决于模型架构。</p>
+<h2 id="Quantized-Cache"><a href="#Quantized-Cache" class="headerlink" title="Quantized Cache"></a>Quantized Cache</h2><p>缓存量化把 FP16/BF16 的 K/V 压缩为更低位宽：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">BF16 KV Cache</span><br><span class="line">      ↓</span><br><span class="line">INT8 / INT4 等量化表示</span><br><span class="line">      ↓</span><br><span class="line">显存下降，但增加量化开销并可能影响精度</span><br></pre></td></tr></table></figure>
+<p>它更适合显存紧张的长上下文场景。短上下文时，量化和反量化开销可能反而降低速度。</p>
+<h2 id="Offloaded-Cache"><a href="#Offloaded-Cache" class="headerlink" title="Offloaded Cache"></a>Offloaded Cache</h2><p>缓存卸载把部分 KV Cache 移到 CPU 内存，需要使用时再传回 GPU。</p>
+<p>优点是节省 GPU 显存，代价是增加 CPU-GPU 数据传输，吞吐和延迟可能变差。</p>
+<h2 id="Paged-KV-Cache"><a href="#Paged-KV-Cache" class="headerlink" title="Paged KV Cache"></a>Paged KV Cache</h2><p>在线推理服务中的请求长度各不相同。如果为每条请求预留一大块连续显存，容易出现浪费和碎片。</p>
+<p>Paged KV Cache 将缓存拆成固定大小的 Block，并通过映射表组织逻辑上连续、物理上可以不连续的缓存：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">请求的逻辑 Token： [0 ... 15] [16 ... 31] [32 ... 47]</span><br><span class="line">                         ↓          ↓          ↓</span><br><span class="line">物理缓存 Block：       Block 7    Block 2    Block 11</span><br></pre></td></tr></table></figure>
+<p>这类设计便于动态增长、回收和共享缓存块，是 vLLM 等高吞吐推理系统的重要思想。</p>
+<h2 id="Prefix-Caching"><a href="#Prefix-Caching" class="headerlink" title="Prefix Caching"></a>Prefix Caching</h2><p>如果多个请求拥有完全相同的 Token 前缀，可以复用该前缀已经计算好的 KV Cache：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">共同前缀：相同的 System Prompt + 相同的长文档</span><br><span class="line">                         ↓</span><br><span class="line">                    只计算一次</span><br><span class="line">                    ↙          ↘</span><br><span class="line">              用户问题 A      用户问题 B</span><br></pre></td></tr></table></figure>
+<p>这和单次生成中的 KV Cache 有区别：</p>
+<ul>
+<li>普通 KV Cache 复用同一序列已经处理过的历史 Token；</li>
+<li>Prefix Caching 尝试在多个请求或多次生成之间复用相同前缀。</li>
+</ul>
+<p>只有 Token ID 序列以及影响其计算的模型配置一致时，缓存才可以安全复用。仅仅“文字看起来差不多”并不够。</p>
+<h1 id="多轮对话中的-KV-Cache"><a href="#多轮对话中的-KV-Cache" class="headerlink" title="多轮对话中的 KV Cache"></a>多轮对话中的 KV Cache</h1><p>多轮聊天看起来天然适合复用缓存，但实际实现需要谨慎。</p>
+<p>第一轮：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[System] [User A] [Assistant A]</span><br></pre></td></tr></table></figure>
+<p>第二轮加入：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[System] [User A] [Assistant A] [User B]</span><br></pre></td></tr></table></figure>
+<p>如果前缀完全一致，理论上可以保留第一轮的缓存，只计算新增的 <code>[User B]</code>。但如果应用重新渲染 Chat Template、修改 System Message、截断旧消息，或者在历史中间插入工具结果，原有缓存就可能不再对应新的 Token 序列。</p>
+<p>因此：</p>
+<blockquote>
+<p>能保存对话文本，不代表一定能直接复用上一次 KV Cache；缓存复用要求 Token 级前缀一致。</p>
+</blockquote>
+<h1 id="实战一：计算输入占用了多少上下文"><a href="#实战一：计算输入占用了多少上下文" class="headerlink" title="实战一：计算输入占用了多少上下文"></a>实战一：计算输入占用了多少上下文</h1><p>下面使用 Tokenizer 统计一组聊天消息的实际 Token 数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_ID = <span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)</span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名耐心的人工智能老师。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请用通俗语言解释上下文窗口与 KV Cache。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># tokenize=True 让 Chat Template 直接返回 Token ID。</span></span><br><span class="line">input_ids = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">context_limit = <span class="number">32_768</span>  <span class="comment"># 示例值，应以实际模型配置和服务文档为准。</span></span><br><span class="line">input_tokens = <span class="built_in">len</span>(input_ids)</span><br><span class="line">remaining_tokens = context_limit - input_tokens</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;输入 Token 数：&quot;</span>, input_tokens)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;上下文窗口示例值：&quot;</span>, context_limit)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;理论剩余 Token 数：&quot;</span>, remaining_tokens)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Token ID 前 20 项：&quot;</span>, input_ids[:<span class="number">20</span>])</span><br></pre></td></tr></table></figure>
+<p>这段代码同时统计了角色标记、消息边界和生成起始标记，因此比直接对用户问题调用 <code>tokenizer()</code> 更接近模型真实接收的输入。</p>
+<h1 id="实战二：观察-KV-Cache-的形状和增长"><a href="#实战二：观察-KV-Cache-的形状和增长" class="headerlink" title="实战二：观察 KV Cache 的形状和增长"></a>实战二：观察 KV Cache 的形状和增长</h1><p>下面手动执行一次 Prefill，再生成一个 Token，观察 Cache Sequence Length 如何变化。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_ID = <span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)</span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(MODEL_ID)</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line">prompt = <span class="string">&quot;KV Cache 的主要作用是&quot;</span></span><br><span class="line">inputs = tokenizer(prompt, return_tensors=<span class="string">&quot;pt&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">    <span class="comment"># Prefill：处理整个 Prompt，并返回各层 KV Cache。</span></span><br><span class="line">    prefill_outputs = model(</span><br><span class="line">        **inputs,</span><br><span class="line">        use_cache=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">cache = prefill_outputs.past_key_values</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Prompt Token 数：&quot;</span>, inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>])</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;缓存对象类型：&quot;</span>, <span class="built_in">type</span>(cache).__name__)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> <span class="built_in">hasattr</span>(cache, <span class="string">&quot;get_seq_length&quot;</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Prefill 后缓存长度：&quot;</span>, cache.get_seq_length())</span><br><span class="line"></span><br><span class="line"><span class="comment"># 为兼容不同 Transformers 版本，转换成旧式 Tuple 后检查张量。</span></span><br><span class="line">legacy_cache = (</span><br><span class="line">    cache.to_legacy_cache()</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">hasattr</span>(cache, <span class="string">&quot;to_legacy_cache&quot;</span>)</span><br><span class="line">    <span class="keyword">else</span> cache</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">first_layer_key, first_layer_value = legacy_cache[<span class="number">0</span>][:<span class="number">2</span>]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;第一层 Key Shape：&quot;</span>, <span class="built_in">tuple</span>(first_layer_key.shape))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;第一层 Value Shape：&quot;</span>, <span class="built_in">tuple</span>(first_layer_value.shape))</span><br><span class="line"></span><br><span class="line"><span class="comment"># Greedy 选择 Prefill 后的第一个输出 Token。</span></span><br><span class="line">next_token_id = torch.argmax(</span><br><span class="line">    prefill_outputs.logits[:, -<span class="number">1</span>, :],</span><br><span class="line">    dim=-<span class="number">1</span>,</span><br><span class="line">    keepdim=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Attention Mask 要覆盖“历史缓存 + 当前新 Token”。</span></span><br><span class="line">next_attention_mask = torch.cat(</span><br><span class="line">    [</span><br><span class="line">        inputs[<span class="string">&quot;attention_mask&quot;</span>],</span><br><span class="line">        torch.ones((<span class="number">1</span>, <span class="number">1</span>), dtype=inputs[<span class="string">&quot;attention_mask&quot;</span>].dtype),</span><br><span class="line">    ],</span><br><span class="line">    dim=<span class="number">1</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">    decode_outputs = model(</span><br><span class="line">        input_ids=next_token_id,</span><br><span class="line">        attention_mask=next_attention_mask,</span><br><span class="line">        past_key_values=cache,</span><br><span class="line">        use_cache=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">updated_cache = decode_outputs.past_key_values</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> <span class="built_in">hasattr</span>(updated_cache, <span class="string">&quot;get_seq_length&quot;</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Decode 一步后缓存长度：&quot;</span>, updated_cache.get_seq_length())</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;第一个生成 Token：&quot;</span>, tokenizer.decode(next_token_id[<span class="number">0</span>]))</span><br></pre></td></tr></table></figure>
+<p>预期可以观察到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Prefill 后缓存长度 = Prompt Token 数</span><br><span class="line">Decode 一步后缓存长度 = Prompt Token 数 + 1</span><br></pre></td></tr></table></figure>
+<p>这里传给 Decode 的 <code>input_ids</code> 只有刚生成的一个 Token，而不是完整 Prompt。这正是 KV Cache 发挥作用的地方。</p>
+<h1 id="实战三：验证有无缓存生成结果一致"><a href="#实战三：验证有无缓存生成结果一致" class="headerlink" title="实战三：验证有无缓存生成结果一致"></a>实战三：验证有无缓存生成结果一致</h1><p>KV Cache 是推理优化，不应该改变相同解码条件下的模型语义。下面使用 Greedy Decoding 对比两次输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_ID = <span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)</span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(MODEL_ID)</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line">inputs = tokenizer(</span><br><span class="line">    <span class="string">&quot;请用三句话解释 KV Cache。&quot;</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate</span>(<span class="params">use_cache: <span class="built_in">bool</span></span>):</span><br><span class="line">    start = time.perf_counter()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">        output_ids = model.generate(</span><br><span class="line">            **inputs,</span><br><span class="line">            max_new_tokens=<span class="number">40</span>,</span><br><span class="line">            do_sample=<span class="literal">False</span>,</span><br><span class="line">            use_cache=use_cache,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    elapsed = time.perf_counter() - start</span><br><span class="line">    new_tokens = output_ids[:, inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>]:]</span><br><span class="line">    text = tokenizer.decode(new_tokens[<span class="number">0</span>], skip_special_tokens=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">return</span> output_ids, text, elapsed</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 先预热一次，减少首次运行初始化对计时的影响。</span></span><br><span class="line"><span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">    model.generate(</span><br><span class="line">        **inputs,</span><br><span class="line">        max_new_tokens=<span class="number">2</span>,</span><br><span class="line">        do_sample=<span class="literal">False</span>,</span><br><span class="line">        use_cache=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">cached_ids, cached_text, cached_time = generate(use_cache=<span class="literal">True</span>)</span><br><span class="line">uncached_ids, uncached_text, uncached_time = generate(use_cache=<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 使用 KV Cache ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(cached_text)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;耗时：<span class="subst">&#123;cached_time:<span class="number">.3</span>f&#125;</span> 秒&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 不使用 KV Cache ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(uncached_text)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;耗时：<span class="subst">&#123;uncached_time:<span class="number">.3</span>f&#125;</span> 秒&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\nToken 序列是否相同：&quot;</span>, torch.equal(cached_ids, uncached_ids))</span><br></pre></td></tr></table></figure>
+<p>在 Greedy、相同硬件和相同数值条件下，两组 Token 通常相同。耗时差异会受到设备、输入长度、输出长度、Transformers 版本和计时误差影响；Prompt 和输出太短时，缓存管理开销甚至可能掩盖收益，所以不要把单次运行当作严谨 Benchmark。</p>
+<h1 id="实战四：通用-KV-Cache-容量计算器"><a href="#实战四：通用-KV-Cache-容量计算器" class="headerlink" title="实战四：通用 KV Cache 容量计算器"></a>实战四：通用 KV Cache 容量计算器</h1><p>下面的脚本不需要下载模型，可以直接计算理论缓存大小：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">estimate_kv_cache_gib</span>(<span class="params"></span></span><br><span class="line"><span class="params">    *,</span></span><br><span class="line"><span class="params">    batch_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    sequence_length: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    num_layers: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    num_key_value_heads: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    head_dim: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    bytes_per_element: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    num_beams: <span class="built_in">int</span> = <span class="number">1</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">float</span>:</span><br><span class="line">    total_bytes = (</span><br><span class="line">        batch_size</span><br><span class="line">        * num_beams</span><br><span class="line">        * sequence_length</span><br><span class="line">        * num_layers</span><br><span class="line">        * <span class="number">2</span>  <span class="comment"># Key + Value</span></span><br><span class="line">        * num_key_value_heads</span><br><span class="line">        * head_dim</span><br><span class="line">        * bytes_per_element</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> total_bytes / (<span class="number">1024</span> ** <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">size_gib = estimate_kv_cache_gib(</span><br><span class="line">    batch_size=<span class="number">1</span>,</span><br><span class="line">    sequence_length=<span class="number">32_768</span>,</span><br><span class="line">    num_layers=<span class="number">28</span>,</span><br><span class="line">    num_key_value_heads=<span class="number">4</span>,</span><br><span class="line">    head_dim=<span class="number">128</span>,</span><br><span class="line">    bytes_per_element=<span class="number">2</span>,  <span class="comment"># FP16 或 BF16</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;理论 KV Cache：<span class="subst">&#123;size_gib:<span class="number">.2</span>f&#125;</span> GiB&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>输出为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">理论 KV Cache：1.75 GiB</span><br></pre></td></tr></table></figure>
+<p>如果想读取本地模型配置自动计算，可以使用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoConfig</span><br><span class="line"></span><br><span class="line">MODEL_ID = <span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line">config = AutoConfig.from_pretrained(MODEL_ID)</span><br><span class="line"></span><br><span class="line">num_layers = config.num_hidden_layers</span><br><span class="line">num_attention_heads = config.num_attention_heads</span><br><span class="line">num_key_value_heads = <span class="built_in">getattr</span>(</span><br><span class="line">    config,</span><br><span class="line">    <span class="string">&quot;num_key_value_heads&quot;</span>,</span><br><span class="line">    num_attention_heads,</span><br><span class="line">)</span><br><span class="line">head_dim = <span class="built_in">getattr</span>(</span><br><span class="line">    config,</span><br><span class="line">    <span class="string">&quot;head_dim&quot;</span>,</span><br><span class="line">    config.hidden_size // num_attention_heads,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Layers：&quot;</span>, num_layers)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Attention Heads：&quot;</span>, num_attention_heads)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;KV Heads：&quot;</span>, num_key_value_heads)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Head Dim：&quot;</span>, head_dim)</span><br></pre></td></tr></table></figure>
+<h1 id="常见误区"><a href="#常见误区" class="headerlink" title="常见误区"></a>常见误区</h1><h2 id="误区一：上下文窗口就是模型的长期记忆"><a href="#误区一：上下文窗口就是模型的长期记忆" class="headerlink" title="误区一：上下文窗口就是模型的长期记忆"></a>误区一：上下文窗口就是模型的长期记忆</h2><p>上下文只在当前推理中参与计算。是否长期保存用户信息，取决于应用是否使用数据库、摘要、向量检索或其他记忆系统。</p>
+<h2 id="误区二：KV-Cache-保存了原始聊天文本"><a href="#误区二：KV-Cache-保存了原始聊天文本" class="headerlink" title="误区二：KV Cache 保存了原始聊天文本"></a>误区二：KV Cache 保存了原始聊天文本</h2><p>KV Cache 保存的是各层 Attention 所需的数值张量，不是可以直接阅读的聊天记录。应用仍需保存原始消息，才能编辑、展示、检索或重新组织对话。</p>
+<h2 id="误区三：KV-Cache-会修改模型参数"><a href="#误区三：KV-Cache-会修改模型参数" class="headerlink" title="误区三：KV Cache 会修改模型参数"></a>误区三：KV Cache 会修改模型参数</h2><p>KV Cache 只保存本次推理的中间计算结果，不会执行反向传播，也不会更新模型权重。</p>
+<h2 id="误区四：KV-Cache-越大，模型能力越强"><a href="#误区四：KV-Cache-越大，模型能力越强" class="headerlink" title="误区四：KV Cache 越大，模型能力越强"></a>误区四：KV Cache 越大，模型能力越强</h2><p>缓存只能减少重复计算。它不能增加模型知识，也不能突破模型架构和服务规定的上下文上限。</p>
+<h2 id="误区五：使用-KV-Cache-后，每个新-Token-都是-O-1"><a href="#误区五：使用-KV-Cache-后，每个新-Token-都是-O-1" class="headerlink" title="误区五：使用 KV Cache 后，每个新 Token 都是 O(1)"></a>误区五：使用 KV Cache 后，每个新 Token 都是 O(1)</h2><p>历史 K/V 不需要重新计算，但新 Query 通常仍要与可见的历史 Key 做 Attention，并读取历史 Value。上下文越长，Decode 单步成本通常仍会增加。</p>
+<h2 id="误区六：上下文没有超限，模型就不会忘记"><a href="#误区六：上下文没有超限，模型就不会忘记" class="headerlink" title="误区六：上下文没有超限，模型就不会忘记"></a>误区六：上下文没有超限，模型就不会忘记</h2><p>信息位于允许窗口内，只表示模型能够接收它，不保证模型一定准确关注、检索和利用它。</p>
+<h2 id="误区七：多轮对话一定会自动复用-KV-Cache"><a href="#误区七：多轮对话一定会自动复用-KV-Cache" class="headerlink" title="误区七：多轮对话一定会自动复用 KV Cache"></a>误区七：多轮对话一定会自动复用 KV Cache</h2><p>很多 API 每轮都会重新提交并计算完整历史。跨轮缓存是否存在、缓存多久以及是否计费，由具体服务决定。</p>
+<h2 id="误区八：相同文字一定可以复用-Prefix-Cache"><a href="#误区八：相同文字一定可以复用-Prefix-Cache" class="headerlink" title="误区八：相同文字一定可以复用 Prefix Cache"></a>误区八：相同文字一定可以复用 Prefix Cache</h2><p>缓存复用需要 Token 序列和相关计算条件一致。Chat Template、空格、特殊 Token 或 System Message 的变化，都可能让前缀不再相同。</p>
+<h2 id="误区九：KV-Cache-应该在训练时使用"><a href="#误区九：KV-Cache-应该在训练时使用" class="headerlink" title="误区九：KV Cache 应该在训练时使用"></a>误区九：KV Cache 应该在训练时使用</h2><p>训练通常需要并行计算完整序列并保存反向传播所需状态，KV Cache 主要面向自回归推理。训练时错误启用缓存可能造成结果或梯度问题。</p>
+<h1 id="工程实践建议"><a href="#工程实践建议" class="headerlink" title="工程实践建议"></a>工程实践建议</h1><ol>
+<li>在发送请求前用对应 Tokenizer 统计完整 Chat Template 的 Token 数；</li>
+<li>为输出预留空间，不要让输入占满整个上下文窗口；</li>
+<li>明确历史截断、摘要和 RAG 资料选择策略；</li>
+<li>根据 <code>num_key_value_heads</code> 而不是只看 Attention Head 数估算缓存；</li>
+<li>并发容量规划时同时计算模型权重和每个活跃请求的 KV Cache；</li>
+<li>短请求优先使用默认 Dynamic Cache，不必过早优化；</li>
+<li>形状固定且需要编译加速时，再评估 Static Cache；</li>
+<li>显存不足时评估滑动窗口、缓存量化或 CPU Offload 的质量与延迟代价；</li>
+<li>大规模在线服务可以使用 Paged KV Cache、Continuous Batching 和 Prefix Caching；</li>
+<li>Benchmark 应区分 TTFT、ITL、吞吐量和最大并发数，不能只看一次请求的总耗时。</li>
+</ol>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>本文的核心结论可以总结为：</p>
+<ol>
+<li>上下文窗口限制一次推理能够容纳的 Token 总量；</li>
+<li>输入中还包括 System、历史消息、工具结果、检索资料和 Chat Template；</li>
+<li>上下文窗口是工作空间，不是模型的长期记忆；</li>
+<li>Prefill 处理完整输入并建立初始 KV Cache；</li>
+<li>Decode 复用历史 K/V，每一步只为新 Token 追加缓存；</li>
+<li>KV Cache 避免重复计算历史 K/V，但不会消除新 Token 对历史的 Attention；</li>
+<li>KV Cache 容量随层数、序列长度、Batch、KV Head 数和数据精度增长；</li>
+<li>MQA 和 GQA 可以通过减少 KV Head 降低缓存开销；</li>
+<li>Dynamic、Static、Sliding Window、Quantized、Offloaded 和 Paged Cache 各有不同取舍；</li>
+<li>KV Cache 不增加模型知识，也不能突破模型本身的上下文限制。</li>
+</ol>
+<p>理解 Context Window 和 KV Cache 后，我们就能解释几个常见现象：为什么长 Prompt 的首字等待更久、为什么长对话越来越占显存、为什么高并发推理需要精细管理缓存，以及为什么“支持更长上下文”通常伴随着更高的推理成本。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/cache_explanation">Hugging Face Transformers：Caching</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/kv_cache">Hugging Face Transformers：Cache Strategies</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/main_classes/text_generation">Hugging Face Transformers：Generation</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.vllm.ai/en/latest/design/paged_attention/">vLLM：PagedAttention</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+              <a href="/tags/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" rel="tag"># 大语言模型</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+              <a href="/tags/Context-Window/" rel="tag"># Context Window</a>
+              <a href="/tags/KV-Cache/" rel="tag"># KV Cache</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/07/ai/llms/5-logits-softmax/" rel="prev" title="Logits、Softmax 与概率：模型如何选择下一个 Token？">
+      <i class="fa fa-chevron-left"></i> Logits、Softmax 与概率：模型如何选择下一个 Token？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/09/ai/llms/7-llm-hallucination/" rel="next" title="LLM 幻觉：为什么模型会一本正经地说错？">
+      LLM 幻觉：为什么模型会一本正经地说错？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%E4%B8%8E-KV-Cache%EF%BC%9A%E6%A8%A1%E5%9E%8B%E5%A6%82%E4%BD%95%E8%AE%B0%E4%BD%8F%E5%89%8D%E6%96%87%E5%B9%B6%E9%AB%98%E6%95%88%E7%94%9F%E6%88%90%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">上下文窗口与 KV Cache：模型如何记住前文并高效生成？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%88%E7%90%86%E8%A7%A3%E5%9B%9B%E4%B8%AA%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">先理解四个核心概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">什么是上下文窗口？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%85%B7%E4%BD%93%E4%BE%8B%E5%AD%90"><span class="nav-number">3.1.</span> <span class="nav-text">一个具体例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Token-%E6%95%B0%E9%87%8F%E4%B8%8D%E7%AD%89%E4%BA%8E%E5%AD%97%E6%95%B0"><span class="nav-number">3.2.</span> <span class="nav-text">Token 数量不等于字数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B6%85%E5%87%BA%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%E4%BC%9A%E6%80%8E%E6%A0%B7%EF%BC%9F"><span class="nav-number">3.3.</span> <span class="nav-text">超出上下文窗口会怎样？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%E4%B8%8D%E6%98%AF%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">4.</span> <span class="nav-text">上下文窗口不是长期记忆</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%9F%E6%88%90%E4%BC%9A%E5%88%86%E6%88%90-Prefill-%E5%92%8C-Decode%EF%BC%9F"><span class="nav-number">5.</span> <span class="nav-text">为什么生成会分成 Prefill 和 Decode？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Prefill%EF%BC%9A%E5%A4%84%E7%90%86%E8%BE%93%E5%85%A5"><span class="nav-number">5.1.</span> <span class="nav-text">Prefill：处理输入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Decode%EF%BC%9A%E9%80%90-Token-%E7%94%9F%E6%88%90"><span class="nav-number">5.2.</span> <span class="nav-text">Decode：逐 Token 生成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%A4%E4%B8%AA%E9%98%B6%E6%AE%B5%E7%9A%84%E5%B7%AE%E5%BC%82"><span class="nav-number">5.3.</span> <span class="nav-text">两个阶段的差异</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Attention-%E4%B8%AD%E7%9A%84-Q%E3%80%81K%E3%80%81V"><span class="nav-number">6.</span> <span class="nav-text">Attention 中的 Q、K、V</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8F%AA%E7%BC%93%E5%AD%98-K-%E5%92%8C-V%EF%BC%9F"><span class="nav-number">7.</span> <span class="nav-text">为什么只缓存 K 和 V？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B2%A1%E6%9C%89-KV-Cache-%E4%BC%9A%E5%8F%91%E7%94%9F%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">8.</span> <span class="nav-text">没有 KV Cache 会发生什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%AE%B9%E6%98%93%E8%AF%B4%E9%94%99%E7%9A%84%E5%9C%B0%E6%96%B9"><span class="nav-number">8.1.</span> <span class="nav-text">一个容易说错的地方</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#KV-Cache-%E4%B8%AD%E5%88%B0%E5%BA%95%E4%BF%9D%E5%AD%98%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">9.</span> <span class="nav-text">KV Cache 中到底保存了什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#MHA%E3%80%81MQA-%E5%92%8C-GQA-%E5%AF%B9%E7%BC%93%E5%AD%98%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">9.1.</span> <span class="nav-text">MHA、MQA 和 GQA 对缓存的影响</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BC%B0%E7%AE%97-KV-Cache-%E6%98%BE%E5%AD%98%EF%BC%9F"><span class="nav-number">10.</span> <span class="nav-text">如何估算 KV Cache 显存？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B%EF%BC%9A%E4%BC%B0%E7%AE%97%E4%B8%80%E4%B8%AA-GQA-%E6%A8%A1%E5%9E%8B"><span class="nav-number">10.1.</span> <span class="nav-text">示例：估算一个 GQA 模型</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%E4%B8%8E-KV-Cache-%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">11.</span> <span class="nav-text">上下文窗口与 KV Cache 的关系</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E2%80%9C%E6%94%AF%E6%8C%81-128K%E2%80%9D%E4%B8%8D%E7%AD%89%E4%BA%8E%E2%80%9C128K-%E9%83%BD%E8%83%BD%E7%94%A8%E5%A5%BD%E2%80%9D%EF%BC%9F"><span class="nav-number">12.</span> <span class="nav-text">为什么“支持 128K”不等于“128K 都能用好”？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81-KV-Cache-%E4%BC%98%E5%8C%96%E6%96%B9%E5%BC%8F"><span class="nav-number">13.</span> <span class="nav-text">常见 KV Cache 优化方式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Dynamic-Cache"><span class="nav-number">13.1.</span> <span class="nav-text">Dynamic Cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Static-Cache"><span class="nav-number">13.2.</span> <span class="nav-text">Static Cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sliding-Window-Attention"><span class="nav-number">13.3.</span> <span class="nav-text">Sliding Window Attention</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Quantized-Cache"><span class="nav-number">13.4.</span> <span class="nav-text">Quantized Cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Offloaded-Cache"><span class="nav-number">13.5.</span> <span class="nav-text">Offloaded Cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Paged-KV-Cache"><span class="nav-number">13.6.</span> <span class="nav-text">Paged KV Cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Prefix-Caching"><span class="nav-number">13.7.</span> <span class="nav-text">Prefix Caching</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E8%BD%AE%E5%AF%B9%E8%AF%9D%E4%B8%AD%E7%9A%84-KV-Cache"><span class="nav-number">14.</span> <span class="nav-text">多轮对话中的 KV Cache</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%B8%80%EF%BC%9A%E8%AE%A1%E7%AE%97%E8%BE%93%E5%85%A5%E5%8D%A0%E7%94%A8%E4%BA%86%E5%A4%9A%E5%B0%91%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">15.</span> <span class="nav-text">实战一：计算输入占用了多少上下文</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%BA%8C%EF%BC%9A%E8%A7%82%E5%AF%9F-KV-Cache-%E7%9A%84%E5%BD%A2%E7%8A%B6%E5%92%8C%E5%A2%9E%E9%95%BF"><span class="nav-number">16.</span> <span class="nav-text">实战二：观察 KV Cache 的形状和增长</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%B8%89%EF%BC%9A%E9%AA%8C%E8%AF%81%E6%9C%89%E6%97%A0%E7%BC%93%E5%AD%98%E7%94%9F%E6%88%90%E7%BB%93%E6%9E%9C%E4%B8%80%E8%87%B4"><span class="nav-number">17.</span> <span class="nav-text">实战三：验证有无缓存生成结果一致</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E5%9B%9B%EF%BC%9A%E9%80%9A%E7%94%A8-KV-Cache-%E5%AE%B9%E9%87%8F%E8%AE%A1%E7%AE%97%E5%99%A8"><span class="nav-number">18.</span> <span class="nav-text">实战四：通用 KV Cache 容量计算器</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%AF%E5%8C%BA"><span class="nav-number">19.</span> <span class="nav-text">常见误区</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%80%EF%BC%9A%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AA%97%E5%8F%A3%E5%B0%B1%E6%98%AF%E6%A8%A1%E5%9E%8B%E7%9A%84%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">19.1.</span> <span class="nav-text">误区一：上下文窗口就是模型的长期记忆</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%8C%EF%BC%9AKV-Cache-%E4%BF%9D%E5%AD%98%E4%BA%86%E5%8E%9F%E5%A7%8B%E8%81%8A%E5%A4%A9%E6%96%87%E6%9C%AC"><span class="nav-number">19.2.</span> <span class="nav-text">误区二：KV Cache 保存了原始聊天文本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%89%EF%BC%9AKV-Cache-%E4%BC%9A%E4%BF%AE%E6%94%B9%E6%A8%A1%E5%9E%8B%E5%8F%82%E6%95%B0"><span class="nav-number">19.3.</span> <span class="nav-text">误区三：KV Cache 会修改模型参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%9B%9B%EF%BC%9AKV-Cache-%E8%B6%8A%E5%A4%A7%EF%BC%8C%E6%A8%A1%E5%9E%8B%E8%83%BD%E5%8A%9B%E8%B6%8A%E5%BC%BA"><span class="nav-number">19.4.</span> <span class="nav-text">误区四：KV Cache 越大，模型能力越强</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%94%EF%BC%9A%E4%BD%BF%E7%94%A8-KV-Cache-%E5%90%8E%EF%BC%8C%E6%AF%8F%E4%B8%AA%E6%96%B0-Token-%E9%83%BD%E6%98%AF-O-1"><span class="nav-number">19.5.</span> <span class="nav-text">误区五：使用 KV Cache 后，每个新 Token 都是 O(1)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AD%EF%BC%9A%E4%B8%8A%E4%B8%8B%E6%96%87%E6%B2%A1%E6%9C%89%E8%B6%85%E9%99%90%EF%BC%8C%E6%A8%A1%E5%9E%8B%E5%B0%B1%E4%B8%8D%E4%BC%9A%E5%BF%98%E8%AE%B0"><span class="nav-number">19.6.</span> <span class="nav-text">误区六：上下文没有超限，模型就不会忘记</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%83%EF%BC%9A%E5%A4%9A%E8%BD%AE%E5%AF%B9%E8%AF%9D%E4%B8%80%E5%AE%9A%E4%BC%9A%E8%87%AA%E5%8A%A8%E5%A4%8D%E7%94%A8-KV-Cache"><span class="nav-number">19.7.</span> <span class="nav-text">误区七：多轮对话一定会自动复用 KV Cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AB%EF%BC%9A%E7%9B%B8%E5%90%8C%E6%96%87%E5%AD%97%E4%B8%80%E5%AE%9A%E5%8F%AF%E4%BB%A5%E5%A4%8D%E7%94%A8-Prefix-Cache"><span class="nav-number">19.8.</span> <span class="nav-text">误区八：相同文字一定可以复用 Prefix Cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B9%9D%EF%BC%9AKV-Cache-%E5%BA%94%E8%AF%A5%E5%9C%A8%E8%AE%AD%E7%BB%83%E6%97%B6%E4%BD%BF%E7%94%A8"><span class="nav-number">19.9.</span> <span class="nav-text">误区九：KV Cache 应该在训练时使用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5%E5%BB%BA%E8%AE%AE"><span class="nav-number">20.</span> <span class="nav-text">工程实践建议</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">21.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">22.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

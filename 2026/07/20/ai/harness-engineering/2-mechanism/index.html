@@ -20,18 +20,20 @@
     var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="Harness Engineering 学习笔记：八类常见故障及其治理机制。">
+  <meta name="description" content="Harness Engineering 学习笔记：八类常见故障及其运行控制、工具契约、状态恢复、权限、验证与预算机制。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Harness Engineering：八类应对机制">
+<meta property="og:title" content="Harness Engineering：故障点的应对机制">
 <meta property="og:url" content="https://jinglv.github.io/2026/07/20/ai/harness-engineering/2-mechanism/index.html">
 <meta property="og:site_name" content="Jean&#39;s Blog">
-<meta property="og:description" content="Harness Engineering 学习笔记：八类常见故障及其治理机制。">
+<meta property="og:description" content="Harness Engineering 学习笔记：八类常见故障及其运行控制、工具契约、状态恢复、权限、验证与预算机制。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908143647861.png">
 <meta property="article:published_time" content="2026-07-19T16:00:00.000Z">
-<meta property="article:modified_time" content="2026-08-19T04:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-07T16:00:00.000Z">
 <meta property="article:author" content="Jean Lv">
 <meta property="article:tag" content="Harness Engineering">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908143647861.png">
 
 <link rel="canonical" href="https://jinglv.github.io/2026/07/20/ai/harness-engineering/2-mechanism/">
 
@@ -46,7 +48,7 @@
   };
 </script>
 
-  <title>Harness Engineering：八类应对机制 | Jean's Blog</title>
+  <title>Harness Engineering：故障点的应对机制 | Jean's Blog</title>
   
 
 
@@ -205,7 +207,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Harness Engineering：八类应对机制
+          Harness Engineering：故障点的应对机制
         </h1>
 
         <div class="post-meta">
@@ -222,7 +224,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-08-19 12:00:00" itemprop="dateModified" datetime="2026-08-19T12:00:00+08:00">2026-08-19</time>
+                <time title="修改时间：2026-09-08 00:00:00" itemprop="dateModified" datetime="2026-09-08T00:00:00+08:00">2026-09-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -235,7 +237,7 @@
             </span>
 
           
-            <div class="post-description">Harness Engineering 学习笔记：八类常见故障及其治理机制。</div>
+            <div class="post-description">Harness Engineering 学习笔记：八类常见故障及其运行控制、工具契约、状态恢复、权限、验证与预算机制。</div>
 
         </div>
       </header>
@@ -246,59 +248,31 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>上一节介绍了智能体的八种常见失效方式，以及 Harness Engineering 中对应的治理思路。本章进一步说明这些机制的目标、边界和最小实现。</p>
-<pre class="mermaid">mindmap
-  root["Harness Engineering 驾驭机制"]
-    ["1.Agent Loop 四相循环"]
-      ["解决故障：循环失控"]
-      ["核心逻辑：四段闭环、最大迭代硬限制、双重终止条件"]
-      ["类比：驾校开车标准化流程"]
-      ["代码要点：循环内置完成状态判断"]
-    ["2.Tool Use 工具编排"]
-      ["解决故障：工具异常被静默吞噬"]
-      ["核心逻辑：统一 Schema、结构化错误、稳定的工具契约"]
-      ["类比：USB-C标准接口统一故障码"]
-      ["代码要点：统一封装safe_tool_call"]
-    ["3.Progress Tracking 进度追踪"]
-      ["解决故障：进程中断状态丢失"]
-      ["核心逻辑：JSON持久化、断点续跑"]
-      ["最佳实践：进度文件+Git双Checkpoint"]
-      ["类比：游戏自动存档"]
-      ["代码要点：save_progress / load_progress"]
-    ["4.Context Management 上下文管理"]
-      ["解决故障：上下文溢出、Prompt缓存失效"]
-      ["核心逻辑：Token监控、固定System Prompt"]
-      ["策略：历史摘要压缩 / 重置上下文"]
-      ["踩坑警告：系统提示词禁止写入动态信息"]
-      ["类比：工位文件归档清理"]
-    ["5.Feature List 任务拆解"]
-      ["解决故障：上下文溢出（源头缓解）"]
-      ["核心逻辑：任务清单拆分，单次仅执行一项任务"]
-      ["清单持久化到磁盘，按需读取以节省上下文"]
-      ["类比：Trello待办看板"]
-      ["代码要点：get_next_task获取未完成任务"]
-    ["6.Verification Loop 验证闭环"]
-      ["解决故障：工具报错后AI虚假自洽成功"]
-      ["核心逻辑：真机自动化测试，以返回码为准"]
-      ["约束：禁止修改测试用例掩盖bug"]
-      ["类比：QA验收测试"]
-      ["代码要点：subprocess执行自动化用例"]
-    ["7.Subagents 子代理分治"]
-      ["解决故障：上下文溢出（分流方案）"]
-      ["核心逻辑：子代理独立上下文，隔离中间日志"]
-      ["类比：CEO外包专业顾问，仅接收最终报告"]
-      ["代码要点：sub_messages全新消息列表"]
-    ["8.Generator-Evaluator三角色架构"]
-      ["解决故障：无独立自动化评审、自评偏袒"]
-      ["核心逻辑：规划/生成/评审角色分离、对抗校验"]
-      ["类比：论文审稿机制"]
-      ["代码要点：独立Evaluator调用LLM校验产出"]</pre>
-
-<h1 id="机制-X-故障模式-对照矩阵"><a href="#机制-X-故障模式-对照矩阵" class="headerlink" title="机制 X 故障模式 对照矩阵"></a>机制 X 故障模式 对照矩阵</h1><div class="table-container">
+        <p>上一节介绍了裸奔智能体的八类常见故障。本章不再把“换一个更强的模型”当作默认答案，而是从 Harness 的角度，为每类故障补上模型外部的工程约束。</p>
+<p>本文采用下面八个机制：</p>
+<ol>
+<li><strong>Runtime Control</strong>：让循环一定有出口；</li>
+<li><strong>Tool Contract</strong>：让工具失败可见、可分类；</li>
+<li><strong>Checkpoint &amp; Task Ledger</strong>：让长任务可以恢复；</li>
+<li><strong>Context &amp; Cache Management</strong>：让上下文保持在预算内；</li>
+<li><strong>Permission &amp; Sandbox</strong>：让高风险动作不能越权；</li>
+<li><strong>Verification &amp; Evaluation</strong>：让“完成”必须有外部证据；</li>
+<li><strong>Subagent Isolation</strong>：让独立子任务隔离上下文；</li>
+<li><strong>Budget &amp; Observability</strong>：让资源消耗可限制、可追踪。</li>
+</ol>
+<blockquote>
+<p>这些机制不是严格的一一对应关系。例如任务拆解既能帮助状态恢复，也能缓解上下文压力；但“有帮助”不等于“能替代”。Subagent 可以减少主 Agent 的上下文污染，却可能增加整个系统的 Token 消耗。</p>
+</blockquote>
+<h2 id="机制与故障对照矩阵"><a href="#机制与故障对照矩阵" class="headerlink" title="机制与故障对照矩阵"></a>机制与故障对照矩阵</h2><ul>
+<li><strong>主解</strong>：直接约束该故障；</li>
+<li><strong>辅助</strong>：只能缓解，不能单独解决；</li>
+<li><strong>可能增加</strong>：使用不当时会放大该问题。</li>
+</ul>
+<div class="table-container">
 <table>
 <thead>
 <tr>
-<th>机制 \ 故障</th>
+<th>机制</th>
 <th>循环失控</th>
 <th>Context 溢出</th>
 <th>Cache Miss</th>
@@ -311,40 +285,40 @@
 </thead>
 <tbody>
 <tr>
-<td>Agent Loop四相循环</td>
+<td>Runtime Control</td>
 <td>主解</td>
 <td>-</td>
 <td>-</td>
 <td>-</td>
 <td>-</td>
-<td>辅</td>
 <td>-</td>
-<td>辅</td>
+<td>-</td>
+<td>辅助</td>
 </tr>
 <tr>
-<td>Tool Use工具编排</td>
+<td>Tool Contract</td>
 <td>-</td>
 <td>-</td>
 <td>-</td>
 <td>主解</td>
 <td>-</td>
-<td>-</td>
+<td>辅助</td>
 <td>-</td>
 <td>-</td>
 </tr>
 <tr>
-<td>Progress Tracking进度追踪</td>
+<td>Checkpoint &amp; Task Ledger</td>
 <td>-</td>
-<td>-</td>
+<td>辅助</td>
 <td>-</td>
 <td>-</td>
 <td>主解</td>
 <td>-</td>
 <td>-</td>
-<td>-</td>
+<td>辅助</td>
 </tr>
 <tr>
-<td>Context Management上下文管理</td>
+<td>Context &amp; Cache Management</td>
 <td>-</td>
 <td>主解</td>
 <td>主解</td>
@@ -352,44 +326,10 @@
 <td>-</td>
 <td>-</td>
 <td>-</td>
-<td>辅</td>
+<td>辅助</td>
 </tr>
 <tr>
-<td>Feature List任务拆解</td>
-<td>-</td>
-<td>源头</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>辅</td>
-</tr>
-<tr>
-<td>Verification Loop验证闭环</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>下游</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-</tr>
-<tr>
-<td>Subagents子代理分治</td>
-<td>-</td>
-<td>另一解</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>辅</td>
-</tr>
-<tr>
-<td>Generator-Evaluator生成 - 评估对抗</td>
-<td>-</td>
+<td>Permission &amp; Sandbox</td>
 <td>-</td>
 <td>-</td>
 <td>-</td>
@@ -397,99 +337,208 @@
 <td>-</td>
 <td>主解</td>
 <td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Verification &amp; Evaluation</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>主解</td>
+<td>可能增加</td>
+</tr>
+<tr>
+<td>Subagent Isolation</td>
+<td>-</td>
+<td>辅助</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>辅助</td>
+<td>辅助</td>
+<td>可能增加</td>
+</tr>
+<tr>
+<td>Budget &amp; Observability</td>
+<td>辅助</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>主解</td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>以下是对应的故障机制的详解。</p>
-<h1 id="Agent-Loop-四相循环（循环失控）"><a href="#Agent-Loop-四相循环（循环失控）" class="headerlink" title="Agent Loop 四相循环（循环失控）"></a>Agent Loop 四相循环（循环失控）</h1><p><strong>怎么让一个循环不失控</strong>。</p>
-<p><strong>一句话定义</strong>：把一次 agent 迭代拆成 Gather Context（收集上下文）→ Take Action（执行动作）→ Verify（验证结果）→ Iterate（迭代改进）四个阶段，并硬性加上 max_iterations 和显式终止条件。</p>
-<pre class="mermaid">flowchart TD
-    %% 中心圆形节点：Agent Loop
-    Center((Agent<br/>Loop))
-
-    %% 四个流程节点
-    G["Gather Context<br/>（收集上下文）"]
-    T["Take Action<br/>（执行动作）"]
-    V["Verify<br/>（验证结果）"]
-    I["Iterate<br/>（迭代改进）"]
-
-    %% 顺时针闭环
-    G --> T
-    T --> V
-    V --> I
-    I --> G
-
-    %% 配色贴近原图
-    style G stroke:#64748b
-    style T fill:#fffbeb,stroke:#d97706
-    style V fill:#f0fdf4,stroke:#059669
-    style I fill:#f5f3ff,stroke:#6d28d9
-    style Center stroke:#aaa,fill:#f8f8f8
-
-    %% 顶部文本标注（多数渲染器支持note）
-    note["🔴 HARNESS BOUNDARY: MAX_ITERATIONS (拦截保护层)"]</pre>
-
-
-<p><strong>参考资料</strong>：<a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk">Building agents with the Claude Agent SDK</a>（Anthropic，2025-09-29，作者 Thariq Shihipar）。</p>
-<p><strong>解哪条故障</strong>：故障 ① 循环失控——naive agent 的 <code>while True</code> 在这里被替换成 <code>for i in range(MAX_ITER)</code>，每轮还有显式的 verify 阶段做”能不能停”的判断。</p>
-<p><strong>生活化类比</strong>：<strong>驾校教练教你开车的四步口诀</strong>——“看路况 → 踩油门 → 看前方 → 调整方向”。每一步都有明确动作，开完一圈看有没有到终点；到了就停、没到就再来一圈——但你不会无限圈兜下去，因为教练给你定了”跑 10 圈就必须停”的硬规则。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 机制：Agent Loop 四相循环</span></span><br><span class="line"><span class="comment"># 解 ① 号故障：带 max_iterations 硬刹车 + 显式终止条件</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># —— 下列四个函数 + state.is_done() 是&quot;四相&quot;的教学标签 ——</span></span><br><span class="line"><span class="comment"># 在真实 agent 里对应到 cell [55] naive_agent 的具体片段：</span></span><br><span class="line"><span class="comment">#   gather_context(state) ≈ 构造/读取 messages（见 cell [55] messages 初始化）</span></span><br><span class="line"><span class="comment">#   take_action(context)  ≈ client.chat.completions.create(...)（见 cell [55] LLM 调用）</span></span><br><span class="line"><span class="comment">#   verify(action)        ≈ 机制 6.6 的 verify_with_pytest（真机验证）</span></span><br><span class="line"><span class="comment">#   iterate(state, r)     ≈ messages.append(...) + state 更新</span></span><br><span class="line"><span class="comment">#   state.is_done()       ≈ msg.tool_calls 为空时的 break 条件</span></span><br><span class="line">MAX_ITER = <span class="number">20</span>  <span class="comment"># 硬性上限，到点必停</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">agent_loop</span>(<span class="params">initial_state</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    四相循环主函数</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        initial_state: 初始状态对象（含任务、历史、已完成标记）</span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        final_state: 循环结束时的最终状态</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    state = initial_state</span><br><span class="line">    <span class="comment"># for 循环代替 while True，保证最大迭代次数</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(MAX_ITER):</span><br><span class="line">        context = gather_context(state)    <span class="comment"># 相 1：收集上下文</span></span><br><span class="line">        action = take_action(context)      <span class="comment"># 相 2：执行动作</span></span><br><span class="line">        result = verify(action)            <span class="comment"># 相 3：验证结果</span></span><br><span class="line">        state = iterate(state, result)     <span class="comment"># 相 4：迭代状态</span></span><br><span class="line">        <span class="comment"># 显式终止条件：状态自报完成才退出</span></span><br><span class="line">        <span class="keyword">if</span> state.is_done():</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">    <span class="keyword">return</span> state</span><br></pre></td></tr></table></figure>
-<p>这段代码里最关键的一行是 <code>for i in range(MAX_ITER)</code> 取代了 naive agent 的 <code>while True</code>。我们可能会觉得”这不就是加了个计数器吗”——对，就是加了个计数器。但这个计数器背后的工程思维是：<strong>agent 不该完全信任模型的自我终止判断，系统必须有一个强制出口</strong>。Anthropic 官方博文里用的词是 “structured loop with guaranteed exit”——有保证的出口，这就是我们的第一道刹车。</p>
-<h1 id="Tool-Use工具编排（Tool错误处理为空字符串）"><a href="#Tool-Use工具编排（Tool错误处理为空字符串）" class="headerlink" title="Tool Use工具编排（Tool错误处理为空字符串）"></a>Tool Use工具编排（Tool错误处理为空字符串）</h1><p><strong>工具失败了 agent 要看得见</strong></p>
-<p><strong>一句话定义</strong>：所有工具调用包裹在结构化 schema 里（名字、参数、返回格式统一），失败时返回 <code>&#123;&quot;status&quot;: &quot;error&quot;, &quot;error&quot;: &quot;...&quot;&#125;</code> 这样的结构化回传，<strong>而不是空字符串或异常被吞</strong>。</p>
-<p><strong>参考资料</strong>：<a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk">Building agents with the Claude Agent SDK</a>（Anthropic，2025-09-29）。MCP（Model Context Protocol）则是连接 AI 应用与外部数据源、工具和工作流的开放协议。它与单次 Function Calling 的工具 schema 有交集，但两者不是简单的“标准版 / 非标准版”关系。</p>
-<p><strong>解哪条故障</strong>：故障 ④ tool 错误处理为空字符串——naive agent 里 <code>except: result = &quot;&quot;</code> 是典型症状，修复方式是把 error 变成结构化 return，而不是字符串或异常。</p>
-<p><strong>生活化类比</strong>：<strong>USB-C 接口</strong>。任何设备插上 USB-C 线，host 都能通过标准协议读到对方的身份、能力、故障码；不兼容的设备也能返回”设备不识别”，而不是一条死线静默。工具 schema 就是 agent 世界的 USB-C。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 机制：Tool Use 工具编排</span></span><br><span class="line"><span class="comment"># 解 ④ 号故障：工具失败必须结构化回传，agent 才能感知</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># TOOL_REGISTRY 示例：即 cell [55] 三个 tool 函数的字典封装，集中查表</span></span><br><span class="line">TOOL_REGISTRY = &#123;<span class="string">&quot;read_file&quot;</span>: read_file, <span class="string">&quot;write_file&quot;</span>: write_file, <span class="string">&quot;run_pytest&quot;</span>: run_pytest&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">safe_tool_call</span>(<span class="params">tool_name: <span class="built_in">str</span>, **kwargs</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    结构化工具调用包装器</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        tool_name: 工具名（从 TOOL_REGISTRY 查表）</span></span><br><span class="line"><span class="string">        **kwargs: 工具参数（JSON schema 约束）</span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        dict: &#123;&quot;status&quot;: &quot;ok&quot;|&quot;error&quot;, &quot;result&quot;: 或 &quot;error&quot;: 字符串&#125;</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="comment"># 成功路径：正常返回结果</span></span><br><span class="line">        result = TOOL_REGISTRY[tool_name](**kwargs)</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;status&quot;</span>: <span class="string">&quot;ok&quot;</span>, <span class="string">&quot;result&quot;</span>: result&#125;</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="comment"># 关键改进：error 不是空字符串，agent 能感知失败</span></span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;status&quot;</span>: <span class="string">&quot;error&quot;</span>, <span class="string">&quot;error&quot;</span>: <span class="built_in">str</span>(e)&#125;</span><br></pre></td></tr></table></figure>
-<p>对比 naive agent 里的 <code>except: result = &quot;&quot;</code> 和这段代码的 <code>return &#123;&quot;status&quot;: &quot;error&quot;, &quot;error&quot;: str(e)&#125;</code>——两者差别只有一行，但工程含义完全不同。前者是”失败了装作没事”，后者是”失败了把失败本身当作第一公民返回”。agent 下一轮看到 <code>status: error</code> 才会触发修复路径，看到空字符串就以为成功。<strong>结构化错误是 agent 能跑长任务的第一块基石</strong>。</p>
-<h1 id="Progress-Tracking-进度追踪（状态丢失）"><a href="#Progress-Tracking-进度追踪（状态丢失）" class="headerlink" title="Progress Tracking 进度追踪（状态丢失）"></a>Progress Tracking 进度追踪（状态丢失）</h1><p><strong>kill 进程或者关电脑之后，agent 能不能从断点接着跑</strong></p>
-<p><strong>一句话定义</strong>：把每一步的进度写到一个持久文件（Anthropic 官方用的是 <code>claude-progress.txt</code>）+ 在完成里程碑时打 git commit，这样即使 session 断了，重启时能读取进度文件从断点续传。</p>
-<p><strong>参考资料</strong>：<a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective Harnesses for Long-Running Agents</a>（Anthropic，2025-11-26，作者 Justin Young）。原文原话：”a claude-progress.txt file that keeps a log of what agents have done”。</p>
-<p><strong>生活化类比</strong>：<strong>游戏存档</strong>。开放世界游戏不可能指望玩家一次通关，必须每过一个小任务自动存档；agent 跑长任务也是同样——每完成一个子步骤就”存档”，断了能”读档”接着跑。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 机制：Progress Tracking</span></span><br><span class="line"><span class="comment"># 解 ⑤ 号故障：跨 session 续传的最小基础设施</span></span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">import</span> pathlib</span><br><span class="line"></span><br><span class="line">PROGRESS_FILE = pathlib.Path(<span class="string">&quot;claude-progress.json&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">save_progress</span>(<span class="params">state: <span class="built_in">dict</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    每步完成后写进度文件，失败后可续传</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        state: 当前 agent 状态（含已完成任务、上下文快照）</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 每步写磁盘，写 JSON 格式方便人类阅读和工具消费</span></span><br><span class="line">    PROGRESS_FILE.write_text(json.dumps(state, indent=<span class="number">2</span>, ensure_ascii=<span class="literal">False</span>))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load_progress</span>() -&gt; <span class="built_in">dict</span> | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    启动时先读进度，有则续传</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        dict 或 None：有进度则返回状态，无则返回 None（全新开始）</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 存在即续传，不存在即从零开始</span></span><br><span class="line">    <span class="keyword">if</span> PROGRESS_FILE.exists():</span><br><span class="line">        <span class="keyword">return</span> json.loads(PROGRESS_FILE.read_text())</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
-<p>这段代码看上去简单到不值得写成独立机制——不就是 JSON 读写吗？但我们需要想清楚一件事：<strong>没有它，agent 跑 30 分钟失败一次就得从零开始</strong>。Anthropic 官方博文给出的最佳实践更强：progress 文件 + git commit 双重 checkpoint——前者记录 agent 的思考过程，后者记录代码的物理改动，两个维度的断点都可以续上。</p>
-<h1 id="Context-Management-上下文管理（context-溢出-cache-miss）"><a href="#Context-Management-上下文管理（context-溢出-cache-miss）" class="headerlink" title="Context Management 上下文管理（context 溢出 / cache miss）"></a>Context Management 上下文管理（context 溢出 / cache miss）</h1><p><strong>context window 要溢出怎么办</strong></p>
-<p><strong>一句话定义</strong>：持续监控当前 messages 的 token 数，超过阈值时触发压缩（compaction）或重置（reset），同时<strong>保持 system prompt 前缀稳定不变</strong>以命中 prompt cache。</p>
-<p><strong>参考资料</strong>：<a target="_blank" rel="noopener" href="https://platform.claude.com/cookbook/tool-use-automatic-context-compaction">Automatic Context Compaction Cookbook</a>（Claude Agent SDK）。压缩、裁剪和新会话恢复是可组合的策略，不应描述成厂商已经从 compaction 单向迁移到 reset。</p>
-<p><strong>解哪条故障</strong>：一次救两条——故障 ② context 溢出（压缩能降维度）和故障 ③ cache miss（保持前缀稳定才能命中 cache）。</p>
-<p><strong>生活化类比</strong>：<strong>工位清理</strong>。你工位上的文件堆到爬不动的时候，有两种策略：<strong>压缩（把过期文件归档成一页摘要）</strong> 或 <strong>重置（今天新文件从空桌开始）</strong>。agent 的 context 也一样，到某个阈值就得做出这个选择。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 机制：Context Management</span></span><br><span class="line"><span class="comment"># 解 ②③ 号故障：超阈值时压缩非前缀部分，保持 system prompt 前缀不变</span></span><br><span class="line">CONTEXT_THRESHOLD = <span class="number">80_000</span>  <span class="comment"># token 阈值（示意值，按模型实际 window 调整）</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">call_llm_for_summary</span>(<span class="params">msgs: <span class="built_in">list</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    把一串 messages 压成一段摘要</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    真实实现会调 LLM 生成带语义的总结；此处用最朴素的&quot;拼接+截断&quot;演示&quot;压缩动作的形态&quot;，</span></span><br><span class="line"><span class="string">    让学员看清 messages 从 N 条 → 1 条 summary 的数据流，而不是 LLM 本身怎么总结。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        msgs: 待压缩的消息列表（不含 system prompt）</span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 摘要字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 仅演示形态：把所有 content 拼接后截断；真实场景请换成 LLM 摘要</span></span><br><span class="line">    joined = <span class="string">&quot; | &quot;</span>.join(<span class="built_in">str</span>(m.get(<span class="string">&quot;content&quot;</span>, <span class="string">&quot;&quot;</span>))[:<span class="number">80</span>] <span class="keyword">for</span> m <span class="keyword">in</span> msgs)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;[前 <span class="subst">&#123;<span class="built_in">len</span>(msgs)&#125;</span> 条消息压缩摘要] <span class="subst">&#123;joined[:<span class="number">500</span>]&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">manage_context</span>(<span class="params">messages: <span class="built_in">list</span>, token_count: <span class="built_in">int</span></span>) -&gt; <span class="built_in">list</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    上下文管理器：超阈值触发压缩</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        messages: 当前消息列表（OpenAI 格式）</span></span><br><span class="line"><span class="string">        token_count: 当前总 token 数（由上层调用方估算）</span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        list: 处理后的 messages（未超阈值则原样返回）</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 未超阈值直接返回，保持 prompt cache 命中</span></span><br><span class="line">    <span class="keyword">if</span> token_count &lt;= CONTEXT_THRESHOLD:</span><br><span class="line">        <span class="keyword">return</span> messages</span><br><span class="line">    <span class="comment"># 超阈值才触发压缩；system prompt（messages[0]）永远不动以保 cache</span></span><br><span class="line">    summary = call_llm_for_summary(messages[<span class="number">1</span>:])</span><br><span class="line">    <span class="comment"># 返回前缀稳定 + 压缩摘要的新 messages</span></span><br><span class="line">    <span class="keyword">return</span> [messages[<span class="number">0</span>], &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: summary&#125;]</span><br></pre></td></tr></table></figure>
-<p>这段代码里最容易被忽略的是 <code>messages[0]</code> 这一行——<strong>system prompt 永远不动</strong>。为什么？因为 prompt cache 是按前缀匹配的，前缀一变整个 cache 作废，延迟翻倍、费用翻倍（解 ③ 号故障）。很多 Agent 开发者第一反应是”在 system prompt 里加时间戳或当前任务”，这是 cache miss 最常见的起因。正确做法是：system prompt 是恒定的”角色定义”，当前任务进 user 消息，永远不要动前缀。</p>
+<hr>
+<h2 id="1-Runtime-Control：让-Agent-Loop-一定有出口"><a href="#1-Runtime-Control：让-Agent-Loop-一定有出口" class="headerlink" title="1. Runtime Control：让 Agent Loop 一定有出口"></a>1. Runtime Control：让 Agent Loop 一定有出口</h2><p><strong>故障症状</strong>：Agent 使用 <code>while True</code> 不断调用模型和工具；模型没有正确结束，系统也没有强制停止条件。</p>
+<p><strong>一句话定义</strong>：把一次 Agent 迭代组织成 Gather Context（收集上下文）→ Take Action（执行动作）→ Verify（验证结果）→ Repeat（决定继续或退出），并由 Harness 设置最大轮数、超时、预算和明确的终止状态。</p>
+<p>Anthropic 在 <a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk">Building agents with the Claude Agent SDK</a> 中将基本反馈循环描述为 Gather context、Take action、Verify work、Repeat。本文将它称为“四阶段循环”，这是便于讲解的工程抽象，不是固定的行业标准。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908143647861.png" alt=""></p>
+<h3 id="最小控制流"><a href="#最小控制流" class="headerlink" title="最小控制流"></a>最小控制流</h3><p>下面是教学伪代码，省略模型客户端和具体状态实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">MAX_ITERATIONS = <span class="number">20</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">agent_loop</span>(<span class="params">initial_state</span>):</span><br><span class="line">    state = initial_state</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> iteration <span class="keyword">in</span> <span class="built_in">range</span>(MAX_ITERATIONS):</span><br><span class="line">        <span class="keyword">if</span> state.budget_exhausted():</span><br><span class="line">            <span class="keyword">return</span> state.finish(<span class="string">&quot;budget_exceeded&quot;</span>)</span><br><span class="line"></span><br><span class="line">        context = gather_context(state)</span><br><span class="line">        action = take_action(context)</span><br><span class="line">        result = execute_and_verify(action)</span><br><span class="line">        state = apply_result(state, result)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> result.needs_user_input:</span><br><span class="line">            <span class="keyword">return</span> state.finish(<span class="string">&quot;needs_user_input&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> completion_evidence_satisfied(state):</span><br><span class="line">            <span class="keyword">return</span> state.finish(<span class="string">&quot;completed&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> state.finish(<span class="string">&quot;max_iterations_exceeded&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>这里真正重要的不是 <code>for</code> 比 <code>while</code> 更高级，而是 Harness 不把停止权完全交给模型。</p>
+<p>“模型没有继续调用工具”也不能直接等价为“任务成功”。系统还需要区分：</p>
+<ul>
+<li>正常完成；</li>
+<li>达到最大轮数；</li>
+<li>达到最大输出长度；</li>
+<li>预算耗尽；</li>
+<li>超时；</li>
+<li>模型拒绝；</li>
+<li>等待用户输入；</li>
+<li>验证失败。</li>
+</ul>
+<h3 id="生产环境还应增加"><a href="#生产环境还应增加" class="headerlink" title="生产环境还应增加"></a>生产环境还应增加</h3><ul>
+<li>单次模型调用和工具调用超时；</li>
+<li>连续重复同一动作的检测；</li>
+<li>长时间无有效进展的检测；</li>
+<li>重试次数与退避策略；</li>
+<li>用户取消信号；</li>
+<li>每种停止原因的日志和指标。</li>
+</ul>
+<hr>
+<h2 id="2-Tool-Contract：让工具失败成为一等结果"><a href="#2-Tool-Contract：让工具失败成为一等结果" class="headerlink" title="2. Tool Contract：让工具失败成为一等结果"></a>2. Tool Contract：让工具失败成为一等结果</h2><p><strong>故障症状</strong>：工具抛出异常后，上层统一返回空字符串；模型无法区分“执行成功但结果为空”和“工具执行失败”。</p>
+<p><strong>一句话定义</strong>：为每个工具定义稳定的名称、参数 Schema、返回结构和错误分类，并将错误以机器可识别的形式返回。</p>
+<p>结构化错误不一定非要是某个固定 JSON 字典。关键是协议里必须有明确的失败信号，例如 <a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use">Claude Tool Result</a> 的 <code>is_error</code>，或 <a target="_blank" rel="noopener" href="https://modelcontextprotocol.io/specification/2025-06-18/server/tools">MCP Tool Result</a> 的 <code>isError</code>。</p>
+<h3 id="最小工具包装器"><a href="#最小工具包装器" class="headerlink" title="最小工具包装器"></a>最小工具包装器</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">TOOL_REGISTRY = &#123;</span><br><span class="line">    <span class="string">&quot;read_file&quot;</span>: read_file,</span><br><span class="line">    <span class="string">&quot;write_file&quot;</span>: write_file,</span><br><span class="line">    <span class="string">&quot;run_pytest&quot;</span>: run_pytest,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">tool_error</span>(<span class="params">call_id: <span class="built_in">str</span>, code: <span class="built_in">str</span>, message: <span class="built_in">str</span>, retryable=<span class="literal">False</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;tool_call_id&quot;</span>: call_id,</span><br><span class="line">        <span class="string">&quot;status&quot;</span>: <span class="string">&quot;error&quot;</span>,</span><br><span class="line">        <span class="string">&quot;code&quot;</span>: code,</span><br><span class="line">        <span class="string">&quot;message&quot;</span>: message,</span><br><span class="line">        <span class="string">&quot;retryable&quot;</span>: retryable,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">safe_tool_call</span>(<span class="params">call_id: <span class="built_in">str</span>, tool_name: <span class="built_in">str</span>, arguments: <span class="built_in">dict</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    tool = TOOL_REGISTRY.get(tool_name)</span><br><span class="line">    <span class="keyword">if</span> tool <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="keyword">return</span> tool_error(call_id, <span class="string">&quot;UNKNOWN_TOOL&quot;</span>, <span class="string">&quot;工具不存在&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        validated = validate_arguments(tool_name, arguments)</span><br><span class="line">        result = tool(**validated)</span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;tool_call_id&quot;</span>: call_id,</span><br><span class="line">            <span class="string">&quot;status&quot;</span>: <span class="string">&quot;ok&quot;</span>,</span><br><span class="line">            <span class="string">&quot;result&quot;</span>: result,</span><br><span class="line">        &#125;</span><br><span class="line">    <span class="keyword">except</span> PermissionError:</span><br><span class="line">        <span class="keyword">return</span> tool_error(call_id, <span class="string">&quot;PERMISSION_DENIED&quot;</span>, <span class="string">&quot;操作超出允许范围&quot;</span>)</span><br><span class="line">    <span class="keyword">except</span> TimeoutError:</span><br><span class="line">        <span class="keyword">return</span> tool_error(call_id, <span class="string">&quot;TIMEOUT&quot;</span>, <span class="string">&quot;工具执行超时&quot;</span>, retryable=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">except</span> Exception:</span><br><span class="line">        <span class="comment"># 不把原始异常直接返回给模型，避免泄漏路径、密钥或内部实现。</span></span><br><span class="line">        <span class="keyword">return</span> tool_error(call_id, <span class="string">&quot;TOOL_FAILED&quot;</span>, <span class="string">&quot;工具执行失败&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="一个可靠的工具结果至少要回答"><a href="#一个可靠的工具结果至少要回答" class="headerlink" title="一个可靠的工具结果至少要回答"></a>一个可靠的工具结果至少要回答</h3><ol>
+<li>调用了哪个工具、对应哪个 <code>tool_call_id</code>；</li>
+<li>调用是否成功；</li>
+<li>失败属于参数、权限、超时、临时故障还是永久故障；</li>
+<li>是否值得重试；</li>
+<li>输出是否被截断，完整 Artifact 在哪里。</li>
+</ol>
+<p>Tool Contract 解决的是“系统是否正确报告工具执行结果”。它不能证明整个任务已经完成，任务级正确性还要交给 Verification。</p>
+<hr>
+<h2 id="3-Checkpoint-amp-Task-Ledger：让长任务可以恢复"><a href="#3-Checkpoint-amp-Task-Ledger：让长任务可以恢复" class="headerlink" title="3. Checkpoint &amp; Task Ledger：让长任务可以恢复"></a>3. Checkpoint &amp; Task Ledger：让长任务可以恢复</h2><p><strong>故障症状</strong>：Agent 运行半小时后进程中断；代码可能已经改了一半，但系统不知道完成了什么、验证了什么、下一步是什么。</p>
+<p><strong>一句话定义</strong>：将任务状态、完成证据和下一步动作持久化，并把它与代码版本关联，使新 Session 可以从最近一个可靠检查点继续。</p>
+<p>Anthropic 在 <a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective Harnesses for Long-Running Agents</a> 中使用 progress 文件、feature list 和 Git commit 帮助跨 Session 恢复。</p>
+<h3 id="Task-Ledger-应记录什么"><a href="#Task-Ledger-应记录什么" class="headerlink" title="Task Ledger 应记录什么"></a>Task Ledger 应记录什么</h3><p>Feature 应当是一个可以端到端验收的功能切片，而不是“读文件”“改文件”“跑测试”这样的操作步骤。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">state = &#123;</span><br><span class="line">    <span class="string">&quot;schema_version&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    <span class="string">&quot;current_feature&quot;</span>: <span class="string">&quot;CALC-001&quot;</span>,</span><br><span class="line">    <span class="string">&quot;features&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;id&quot;</span>: <span class="string">&quot;CALC-001&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;add 函数能够正确处理大整数输入&quot;</span>,</span><br><span class="line">            <span class="string">&quot;acceptance_criteria&quot;</span>: [</span><br><span class="line">                <span class="string">&quot;现有测试全部通过&quot;</span>,</span><br><span class="line">                <span class="string">&quot;新增大整数回归测试&quot;</span>,</span><br><span class="line">                <span class="string">&quot;普通整数加法行为不变&quot;</span>,</span><br><span class="line">            ],</span><br><span class="line">            <span class="string">&quot;status&quot;</span>: <span class="string">&quot;in_progress&quot;</span>,</span><br><span class="line">            <span class="string">&quot;evidence&quot;</span>: [],</span><br><span class="line">        &#125;</span><br><span class="line">    ],</span><br><span class="line">    <span class="string">&quot;last_verified_commit&quot;</span>: <span class="literal">None</span>,</span><br><span class="line">    <span class="string">&quot;next_action&quot;</span>: <span class="string">&quot;运行新增回归测试&quot;</span>,</span><br><span class="line">    <span class="string">&quot;last_error&quot;</span>: <span class="literal">None</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>读取测试、修改实现和运行 pytest，是完成 <code>CALC-001</code> 的内部步骤，不应该被拆成三个互相隔离的 Feature。</p>
+<h3 id="原子保存最小实现"><a href="#原子保存最小实现" class="headerlink" title="原子保存最小实现"></a>原子保存最小实现</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</span><br><span class="line"></span><br><span class="line">STATE_FILE = Path(<span class="string">&quot;agent-state.json&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">save_state</span>(<span class="params">state: <span class="built_in">dict</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    temporary = STATE_FILE.with_suffix(<span class="string">&quot;.json.tmp&quot;</span>)</span><br><span class="line">    temporary.write_text(</span><br><span class="line">        json.dumps(state, indent=<span class="number">2</span>, ensure_ascii=<span class="literal">False</span>),</span><br><span class="line">        encoding=<span class="string">&quot;utf-8&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">    os.replace(temporary, STATE_FILE)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load_state</span>() -&gt; <span class="built_in">dict</span> | <span class="literal">None</span>:</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> STATE_FILE.exists():</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">return</span> json.loads(STATE_FILE.read_text(encoding=<span class="string">&quot;utf-8&quot;</span>))</span><br><span class="line">    <span class="keyword">except</span> json.JSONDecodeError <span class="keyword">as</span> error:</span><br><span class="line">        <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;状态文件已损坏，需要恢复上一检查点&quot;</span>) <span class="keyword">from</span> error</span><br></pre></td></tr></table></figure>
+<p><code>os.replace</code> 可以避免进程在写文件中途退出后留下半截 JSON。真实系统还应保留上一份有效 Checkpoint，而不是在解析失败后静默从零开始。</p>
+<h3 id="不要保存“思考过程”"><a href="#不要保存“思考过程”" class="headerlink" title="不要保存“思考过程”"></a>不要保存“思考过程”</h3><p>Progress 文件应该保存：</p>
+<ul>
+<li>已完成动作；</li>
+<li>当前 Feature；</li>
+<li>修改过的文件；</li>
+<li>外部验证证据；</li>
+<li>最近错误；</li>
+<li>下一步动作；</li>
+<li>对应的 Git commit。</li>
+</ul>
+<p>它不需要保存模型完整的内部推理。可恢复性依赖的是结构化状态和外部证据，而不是一段冗长的思维记录。</p>
+<h3 id="Checkpoint-的边界"><a href="#Checkpoint-的边界" class="headerlink" title="Checkpoint 的边界"></a>Checkpoint 的边界</h3><p>如果工具已经产生副作用，但进程在保存状态前崩溃，恢复后可能重复执行。因此支付、发送消息、创建资源等操作还需要幂等键或操作日志，不能只靠一个 JSON 文件。</p>
+<hr>
+<h2 id="4-Context-amp-Cache-Management：控制工作区，而不是堆积历史"><a href="#4-Context-amp-Cache-Management：控制工作区，而不是堆积历史" class="headerlink" title="4. Context &amp; Cache Management：控制工作区，而不是堆积历史"></a>4. Context &amp; Cache Management：控制工作区，而不是堆积历史</h2><p><strong>故障症状</strong>：Messages 不断增长，直到超过上下文窗口；或者动态信息被放进可缓存前缀，导致每轮都重新处理相同的大段内容。</p>
+<p><strong>一句话定义</strong>：为输入、输出和工具结果设置 Token 预算；保留稳定前缀、当前任务和近期工作集，将较旧历史压缩为结构化交接摘要。</p>
+<p>Anthropic 的 <a target="_blank" rel="noopener" href="https://platform.claude.com/cookbook/tool-use-automatic-context-compaction">Automatic Context Compaction Cookbook</a> 展示了在接近窗口上限时总结历史、清理上下文并继续运行的方式。</p>
+<h3 id="Context-Window-不是长期记忆"><a href="#Context-Window-不是长期记忆" class="headerlink" title="Context Window 不是长期记忆"></a>Context Window 不是长期记忆</h3><p>可以把它理解为办公桌：</p>
+<ul>
+<li>当前任务和最近工具结果放在桌面；</li>
+<li>长期状态放进 Task Ledger、数据库或 Artifact；</li>
+<li>旧历史压缩成可验证的交接摘要；</li>
+<li>需要时再从外部存储按需读取。</li>
+</ul>
+<h3 id="压缩时应该保留什么"><a href="#压缩时应该保留什么" class="headerlink" title="压缩时应该保留什么"></a>压缩时应该保留什么</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">RECENT_MESSAGES = <span class="number">8</span></span><br><span class="line">SAFETY_MARGIN = <span class="number">4_000</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">manage_context</span>(<span class="params">cacheable_prefix, history, token_count, context_window, output_reserve</span>):</span><br><span class="line">    limit = context_window - output_reserve - SAFETY_MARGIN</span><br><span class="line">    <span class="keyword">if</span> token_count &lt;= limit:</span><br><span class="line">        <span class="keyword">return</span> cacheable_prefix, history</span><br><span class="line"></span><br><span class="line">    old_messages = history[:-RECENT_MESSAGES]</span><br><span class="line">    recent_messages = history[-RECENT_MESSAGES:]</span><br><span class="line"></span><br><span class="line">    summary = summarize_history(</span><br><span class="line">        old_messages,</span><br><span class="line">        required_fields=[</span><br><span class="line">            <span class="string">&quot;current_goal&quot;</span>,</span><br><span class="line">            <span class="string">&quot;acceptance_criteria&quot;</span>,</span><br><span class="line">            <span class="string">&quot;completed_actions&quot;</span>,</span><br><span class="line">            <span class="string">&quot;changed_files&quot;</span>,</span><br><span class="line">            <span class="string">&quot;verification_evidence&quot;</span>,</span><br><span class="line">            <span class="string">&quot;open_errors&quot;</span>,</span><br><span class="line">            <span class="string">&quot;next_action&quot;</span>,</span><br><span class="line">        ],</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    handoff = &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;以下是上一段工作的结构化交接摘要：\n&quot;</span> + summary,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> cacheable_prefix, [handoff, *recent_messages]</span><br></pre></td></tr></table></figure>
+<p>这是厂商无关的教学伪代码。不同 API 对 System Prompt、Tools、Messages 和 Cache Breakpoint 的表达方式不同，接入时应使用对应厂商的原生格式。</p>
+<h3 id="Prompt-Cache-的准确理解"><a href="#Prompt-Cache-的准确理解" class="headerlink" title="Prompt Cache 的准确理解"></a>Prompt Cache 的准确理解</h3><p><a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">Prompt Caching</a> 通常依赖<strong>缓存断点之前的前缀匹配</strong>。因此更稳妥的原则是：</p>
+<ul>
+<li>稳定策略、工具定义和长文档放在可复用前缀；</li>
+<li>当前时间、用户输入、task ID 和本轮状态放在动态后缀；</li>
+<li>不要在希望缓存的前缀中插入每轮变化的数据；</li>
+<li>通过 API Usage 字段验证是否命中，不要凭感觉判断。</li>
+</ul>
+<p>不同厂商的 Usage 字段不同。例如 Anthropic 使用 <code>cache_read_input_tokens</code>、<code>cache_creation_input_tokens</code> 等字段；其他 API 可能使用 <code>cached_tokens</code>。缓存对延迟和费用的影响取决于模型、缓存长度和计费规则，不能统一概括为“翻倍”。</p>
+<hr>
+<h2 id="5-Permission-amp-Sandbox：让能力服从最小权限"><a href="#5-Permission-amp-Sandbox：让能力服从最小权限" class="headerlink" title="5. Permission &amp; Sandbox：让能力服从最小权限"></a>5. Permission &amp; Sandbox：让能力服从最小权限</h2><p><strong>故障症状</strong>：Agent 可以写入任意路径、执行任意命令、访问不必要的密钥，甚至在没有确认的情况下执行删除、发布或支付操作。</p>
+<p><strong>一句话定义</strong>：默认拒绝，只向任务开放必要的目录、工具和网络能力；高风险动作在执行前进入确定性的权限检查或人工审批。Claude Agent SDK 的 <a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/agent-sdk/permissions">Permissions</a> 也将工具可用性、权限模式和运行时授权作为独立控制面。</p>
+<h3 id="路径边界最小实现"><a href="#路径边界最小实现" class="headerlink" title="路径边界最小实现"></a>路径边界最小实现</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</span><br><span class="line"></span><br><span class="line">WORKSPACE = Path.cwd().resolve()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">resolve_workspace_path</span>(<span class="params">raw_path: <span class="built_in">str</span></span>) -&gt; Path:</span><br><span class="line">    path = (WORKSPACE / raw_path).resolve()</span><br><span class="line">    <span class="keyword">if</span> path != WORKSPACE <span class="keyword">and</span> WORKSPACE <span class="keyword">not</span> <span class="keyword">in</span> path.parents:</span><br><span class="line">        <span class="keyword">raise</span> PermissionError(<span class="string">&quot;目标路径不在允许的工作区内&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> path</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">write_workspace_file</span>(<span class="params">raw_path: <span class="built_in">str</span>, content: <span class="built_in">str</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    path = resolve_workspace_path(raw_path)</span><br><span class="line">    path.write_text(content, encoding=<span class="string">&quot;utf-8&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h3 id="命令执行原则"><a href="#命令执行原则" class="headerlink" title="命令执行原则"></a>命令执行原则</h3><ul>
+<li>参数使用数组，不拼接 Shell 字符串；</li>
+<li>默认 <code>shell=False</code>；</li>
+<li>使用命令 Allowlist；</li>
+<li>固定工作目录和环境变量；</li>
+<li>不把生产密钥暴露给不需要它的工具；</li>
+<li>对删除、发布、转账、外发消息等动作要求人工确认；</li>
+<li>文件、网络和进程权限尽量放在操作系统或容器边界执行，而不只写在 Prompt 里。</li>
+</ul>
+<p>Prompt 中的“请不要删除文件”只是一条模型指令；Sandbox 和权限检查才是模型无法绕过的系统边界。</p>
+<hr>
+<h2 id="6-Verification-amp-Evaluation：完成必须有外部证据"><a href="#6-Verification-amp-Evaluation：完成必须有外部证据" class="headerlink" title="6. Verification &amp; Evaluation：完成必须有外部证据"></a>6. Verification &amp; Evaluation：完成必须有外部证据</h2><p><strong>故障症状</strong>：Agent 修改了代码后直接宣布“已经修复”，没有运行测试；或者只依赖另一个 LLM 阅读文本并给出主观批准。</p>
+<p><strong>一句话定义</strong>：把验收标准转成可执行检查，验证失败就带着诊断结果进入有上限的修复循环，验证通过后才更新 Task Ledger。</p>
+<h3 id="确定性验证优先"><a href="#确定性验证优先" class="headerlink" title="确定性验证优先"></a>确定性验证优先</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line"></span><br><span class="line">MAX_OUTPUT_CHARS = <span class="number">8_000</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">run_pytest</span>(<span class="params">cwd: <span class="built_in">str</span> = <span class="string">&quot;.&quot;</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        result = subprocess.run(</span><br><span class="line">            [<span class="string">&quot;pytest&quot;</span>, <span class="string">&quot;--tb=short&quot;</span>, <span class="string">&quot;--quiet&quot;</span>],</span><br><span class="line">            cwd=cwd,</span><br><span class="line">            capture_output=<span class="literal">True</span>,</span><br><span class="line">            text=<span class="literal">True</span>,</span><br><span class="line">            timeout=<span class="number">300</span>,</span><br><span class="line">            check=<span class="literal">False</span>,</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">except</span> subprocess.TimeoutExpired:</span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;passed&quot;</span>: <span class="literal">False</span>,</span><br><span class="line">            <span class="string">&quot;returncode&quot;</span>: <span class="literal">None</span>,</span><br><span class="line">            <span class="string">&quot;summary&quot;</span>: <span class="string">&quot;pytest 执行超时&quot;</span>,</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    output = result.stdout + result.stderr</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;passed&quot;</span>: result.returncode == <span class="number">0</span>,</span><br><span class="line">        <span class="string">&quot;returncode&quot;</span>: result.returncode,</span><br><span class="line">        <span class="string">&quot;summary&quot;</span>: output[-MAX_OUTPUT_CHARS:],</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>完整日志可以保存为 Artifact，只把摘要放进 Context，避免一次失败输出占满窗口。</p>
+<h3 id="真正的-Verification-Loop"><a href="#真正的-Verification-Loop" class="headerlink" title="真正的 Verification Loop"></a>真正的 Verification Loop</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">MAX_REPAIR_ATTEMPTS = <span class="number">3</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">verification_loop</span>(<span class="params">feature, state</span>):</span><br><span class="line">    <span class="keyword">for</span> attempt <span class="keyword">in</span> <span class="built_in">range</span>(MAX_REPAIR_ATTEMPTS):</span><br><span class="line">        evidence = run_required_checks(feature)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> evidence.all_passed:</span><br><span class="line">            <span class="keyword">return</span> state.mark_passed(feature.<span class="built_in">id</span>, evidence)</span><br><span class="line"></span><br><span class="line">        state = repair_from_evidence(state, feature, evidence)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> state.mark_failed(feature.<span class="built_in">id</span>, <span class="string">&quot;verification_attempts_exhausted&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>“Loop”意味着验证失败后会重新修复、重新验证，并且重试次数有上限，而不是只调用一次测试函数。</p>
+<h3 id="不要把测试规则写得过于绝对"><a href="#不要把测试规则写得过于绝对" class="headerlink" title="不要把测试规则写得过于绝对"></a>不要把测试规则写得过于绝对</h3><p>Mock 是正常的单元测试技术，问题在于只用 Mock 验证本应进行集成或端到端测试的关键路径。</p>
+<p>同样，规则不应该是“任何测试都禁止修改”，而应该是：</p>
 <blockquote>
-<p><strong>【踩坑预警】</strong> 在 system prompt 里加时间戳、用户名、当前任务<br><strong>后果</strong>：很多开发者把当前任务状态、时间戳或 task_id 写进 system prompt，以为”让模型知道当前在做什么”更好——实际上这会让每轮的 system prompt 前缀都不同，prompt cache 全部失效，<strong>延迟和费用双双翻倍</strong>。在一个长任务里，这项失误的成本可能是数十美元。<br><strong>正确做法</strong>：system prompt 只放固定的”角色定义”（永不变），当前任务、时间、task_id 全部放进 user 消息。<br><strong>排查方法</strong>：看 API 返回里的 <code>cached_tokens</code> 字段——如果你在多轮循环中这个字段始终是 0 或远小于 system prompt 的 token 数，说明前缀被改动了、cache 没命中。</p>
-<p><strong>【常见误区】</strong> 把 context window 当成”memory”<br><strong>后果</strong>：很多初学者以为 “context 越大 agent 记得越多”，于是把所有历史对话都塞进 context 等同于”长期记忆”——实际上 context window 只是一次请求的<strong>短期工作区</strong>，超阈值必须清理；跨 Session 信息需要由进度文件、Checkpoint、数据库或其他持久化机制承担。<br><strong>正确做法</strong>：把 context window 当”工位”（本次会话要用的文件）、把 progress 文件当”档案柜”（跨 session 持久的记忆）；需要 Agent 跨天保留的信息应写入可靠的外部存储，而不能只依赖当前 Context。</p>
+<p>禁止为了掩盖实现缺陷而删除、跳过或放宽既有验收测试。需求确实变化时，测试修改需要说明理由并接受独立评审。</p>
 </blockquote>
-<h1 id="Feature-List-任务拆解（context-溢出的源头）"><a href="#Feature-List-任务拆解（context-溢出的源头）" class="headerlink" title="Feature List 任务拆解（context 溢出的源头）"></a>Feature List 任务拆解（context 溢出的源头）</h1><p><strong>解决的是 context 溢出的源头——一次让 agent 做太多事</strong></p>
-<p><strong>一句话定义</strong>：把大任务拆成 JSON 格式的清单（<code>[&#123;id, task, status&#125;]</code>），<strong>强制 agent 单次迭代只做一件事</strong>，每件事做完标记状态再取下一件。</p>
-<p><strong>参考资料</strong>：<a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective Harnesses for Long-Running Agents</a>（Anthropic，2025-11-26）。原文给出了完整的 JSON feature 结构示例，passes 字段标注 true/false。</p>
-<p><strong>解哪条故障</strong>：故障 ② context 溢出的源头——naive agent 一次把 “读文件 + 修 bug + 跑 pytest” 全塞进去，context 自然爆。Feature List 把它切成 3 个独立子任务，每个子任务 context 小得多。</p>
-<p><strong>生活化类比</strong>：<strong>待办清单</strong>。你早上不会一口气处理 10 件事，而是列一个清单、做完一件划掉一件。agent 也一样——清单是它的<strong>外置工作记忆</strong>，不依赖 context window。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 机制：Feature List 任务拆解</span></span><br><span class="line"><span class="comment"># 解 ② 号故障的源头：强制单次只做一件事</span></span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"><span class="comment"># 典型 feature list 结构：id / task / status 三字段</span></span><br><span class="line">feature_list = [</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>, <span class="string">&quot;task&quot;</span>: <span class="string">&quot;读取 test_calculator.py&quot;</span>, <span class="string">&quot;status&quot;</span>: <span class="string">&quot;pending&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">2</span>, <span class="string">&quot;task&quot;</span>: <span class="string">&quot;修复 add 函数的整数溢出 bug&quot;</span>, <span class="string">&quot;status&quot;</span>: <span class="string">&quot;pending&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">3</span>, <span class="string">&quot;task&quot;</span>: <span class="string">&quot;运行 pytest 验证全部通过&quot;</span>, <span class="string">&quot;status&quot;</span>: <span class="string">&quot;pending&quot;</span>&#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_next_task</span>(<span class="params">features: <span class="built_in">list</span></span>) -&gt; <span class="built_in">dict</span> | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    取下一个 pending 任务，防止 agent 贪心多做</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        features: feature list（字典列表）</span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        dict 或 None：最早的 pending 任务，全部完成则 None</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 按 id 顺序取第一个 pending，强制单步执行</span></span><br><span class="line">    <span class="comment"># 这里用 next + 生成器是为了短路——找到第一个立即返回，不遍历全表</span></span><br><span class="line">    <span class="comment"># 如果 agent 想&quot;一次做多件&quot;，这个函数只返回一件，它就不得不分多轮</span></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">next</span>((f <span class="keyword">for</span> f <span class="keyword">in</span> features <span class="keyword">if</span> f[<span class="string">&quot;status&quot;</span>] == <span class="string">&quot;pending&quot;</span>), <span class="literal">None</span>)</span><br></pre></td></tr></table></figure>
-<p>这个机制可以把它理解成 <strong>agent 世界的 Trello 看板</strong>。每个 task 是一张卡片、有明确的 pending / in_progress / passes 状态。Anthropic 的示例将清单保存在 JSON 文件中，以磁盘内容作为事实来源；Agent 执行时仍需按需把相关任务读取到 Context。</p>
-<h1 id="Verification-Loop-验证闭环（Tool-错误的下游）"><a href="#Verification-Loop-验证闭环（Tool-错误的下游）" class="headerlink" title="Verification Loop 验证闭环（Tool 错误的下游）"></a>Verification Loop 验证闭环（Tool 错误的下游）</h1><p><strong>跟 Tool Use是一组搭档——Tool Use管”工具层面的结构化错误”，Verification Loop任务层面的真机验证”</strong></p>
-<p><strong>一句话定义</strong>：每个 feature 完成后，用 Playwright / Puppeteer / pytest 等真机工具去<strong>实际验证功能</strong>，而不是只看 LLM 自己说”我觉得做好了”。验证失败就回退重做，验证通过才标记 passes=true。</p>
-<p><strong>参考资料</strong>：<a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective Harnesses for Long-Running Agents</a>（Anthropic，2025-11-26）。原文明确提到 Puppeteer MCP server 用于前端功能验证，以及一句非常狠的规则：”It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality”（<strong>不可接受删掉或修改测试，因为这会导致功能缺失或带 bug</strong>）。</p>
-<p><strong>解哪条故障</strong>：故障 ④ tool 错误吞的下游——光在工具调用层面返回 <code>error</code> 不够，任务层面必须有”真机验证”才能确认功能真的跑通。</p>
-<p><strong>生活化类比</strong>：<strong>QA 验收测试</strong>。开发说”我修好了”不算数，得 QA 真的点按钮、真的跑场景、真的截图对照才算数。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 机制：Verification Loop</span></span><br><span class="line"><span class="comment"># 解 ④ 号故障的下游：任务层面真机验证，不只看 LLM 自评</span></span><br><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">verify_with_pytest</span>() -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    pytest 真机验证</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        dict: &#123;&quot;passed&quot;: bool, &quot;output&quot;: str&#125;</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 真跑 pytest，不 mock 不 skip（mock 会让 agent 看到&quot;假通过&quot;）</span></span><br><span class="line">    <span class="comment"># --tb=short 让错误回溯简短，避免 stdout 溢出塞满 context</span></span><br><span class="line">    result = subprocess.run(</span><br><span class="line">        [<span class="string">&quot;pytest&quot;</span>, <span class="string">&quot;--tb=short&quot;</span>], capture_output=<span class="literal">True</span>, text=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 关键：returncode 不丢弃，作为 passed 判定依据</span></span><br><span class="line">    <span class="comment"># stdout + stderr 合并返回，让 agent 能看到完整错误信息</span></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;passed&quot;</span>: result.returncode == <span class="number">0</span>,</span><br><span class="line">        <span class="string">&quot;output&quot;</span>: result.stdout + result.stderr,</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-<p>对比 naive agent 的 <code>run_pytest</code> 函数（它丢掉了 returncode），这里显式保留 <code>result.returncode == 0</code> 作为 passed 判定——<strong>“通过”必须来自外部真实反馈，而不是 agent 自己说通过了</strong>。Anthropic 官方还额外约束：”不能改测试让它通过”——如果 agent 发现测试在报错，正确路径是”去修实现”，错误路径是”把测试改成能过”。这是保证验证闭环不被 agent 作弊的最后一道防线。</p>
-<h1 id="Subagents-子代理分治（context-溢出的另一种解法）"><a href="#Subagents-子代理分治（context-溢出的另一种解法）" class="headerlink" title="Subagents 子代理分治（context 溢出的另一种解法）"></a>Subagents 子代理分治（context 溢出的另一种解法）</h1><p> <strong>context 溢出</strong>的<strong>第二种解法</strong>——和 <strong>Context Management压缩、Feature List拆分互补</strong>。</p>
-<p><strong>一句话定义</strong>：把特定子任务派发给一个<strong>独立 context 的子 agent</strong>，子 agent 在自己的 messages 列表里工作、完成后只把结果返回主 agent，主 Agent 通常只接收子任务结果，从而减少中间工具日志和试错过程对主 Context 的占用。</p>
-<p><strong>参考资料</strong>：<a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk">Building agents with the Claude Agent SDK</a>（Anthropic，2025-09-29）。Claude Code 等编码 Agent 可以通过子 Agent 将任务放入独立上下文（参见 <a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective Harnesses</a> 中关于 Subagents 的讨论）。</p>
-<p><strong>解哪条故障</strong>：故障 ② context 溢出的另一解法——子 Agent 可以在独立 Context 中处理多轮试错和大量工具调用，主 Agent 主要接收结构化结果，但仍需承担任务编排和结果整合成本。</p>
-<p><strong>生活化类比</strong>：<strong>外包给顾问</strong>。CEO 把一块专业问题外包给咨询顾问，顾问自己开了一个独立项目（独立资料库、独立讨论），几周后只交一份结论给 CEO。CEO 的主 context 没有被顾问讨论的中间文档污染。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 机制：Subagents 子代理分治</span></span><br><span class="line"><span class="comment"># 解 ② 号故障：独立 context 隔离，主 agent 不被子任务中间过程污染</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># —— run_loop 即机制 6.1 的 agent_loop（完整四相循环） ——</span></span><br><span class="line"><span class="comment"># 重点不在 run_loop 内部怎么跑，而在 sub_messages 是全新列表，与主 agent 完全隔离：</span></span><br><span class="line"><span class="comment"># 主 agent 看不到子任务的中间 tool_calls 轨迹，只拿得到 subagent 的最终 return 值。</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">subagent</span>(<span class="params">task: <span class="built_in">str</span>, tools: <span class="built_in">list</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    子代理：独立 messages 列表完成子任务</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        task: 子任务描述（自然语言）</span></span><br><span class="line"><span class="string">        tools: 子代理可用工具清单</span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 子任务的最终结论（不含中间过程）</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 子代理有独立的 messages，不共享主 agent 历史</span></span><br><span class="line">    sub_messages = [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是专注于单一子任务的助手&quot;</span>&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: task&#125;,</span><br><span class="line">    ]</span><br><span class="line">    <span class="comment"># 内部跑一个完整的 agent loop，但外部看不到中间步骤</span></span><br><span class="line">    <span class="keyword">return</span> run_loop(sub_messages, tools)</span><br></pre></td></tr></table></figure>
-<p>注意 <code>sub_messages = [...]</code> 这一行——它不是从主 agent 的 messages 复制过来的，而是<strong>全新的独立列表</strong>。这是 Subagents 机制的核心：<strong>context 是隔离的</strong>。主 agent 拿到的只有子 agent 的最终 return 值，中间子 agent 跑了 20 轮工具调用主 agent 一无所知——正因为”一无所知”，主 context 才能保持干净。</p>
-<h1 id="Generator-Evaluator（三角色分工与独立评审）"><a href="#Generator-Evaluator（三角色分工与独立评审）" class="headerlink" title="Generator-Evaluator（三角色分工与独立评审）"></a>Generator-Evaluator（三角色分工与独立评审）</h1><p><strong>它不再是在单 agent 上打补丁，而是直接引入多 agent 架构</strong></p>
-<p>Anthropic 的文章说该架构“受到 GAN 启发”，但这里并不存在 GAN 的训练过程、损失函数或参数更新。更准确的理解是：把规划、生成和评审职责分开，用独立评审减少生成者自评带来的偏差。</p>
-<p><strong>一句话定义</strong>：把任务处理流拆成三个角色：<strong>Planner（规划者）</strong>拆任务，<strong>Generator（生成者）</strong>完成实现，<strong>Evaluator（评估者）</strong>依据独立标准检查产物。评估输入应尽量聚焦可观察结果和验收标准，而不是接受生成者的自我声明。</p>
-<p><strong>参考资料</strong>：<a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/harness-design-long-running-apps">Harness Design for Long-Running Application Development</a>（Anthropic，2026-03-24，作者 Prithvi Rajasekaran）。原文原话：”Taking inspiration from Generative Adversarial Networks (GANs)”，并明确设计了 <strong>three-agent architecture—planner, generator, and evaluator</strong>。</p>
-<p><strong>解哪条故障</strong>：故障 ⑦ 缺自动化评审——naive agent 里没有任何独立评审角色，agent 自己说做完就做完；Generator-Evaluator 架构把”评审”作为一个独立 agent 机械执行的步骤，打破”生成者自评偏见”。</p>
-<p><strong>生活化类比</strong>：<strong>论文评审制度</strong>。作者（Generator）写论文，审稿人（Evaluator）不看作者的写作过程只看论文本身，按评分标准打分；编辑（Planner）在作者和审稿人之间做协调，决定修改方向和是否录用。三个角色分离才能保证论文质量，让作者自己评自己的论文质量无法保证。</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 教学示例：真实项目应把 call_llm 替换为模型客户端，并启用结构化输出。</span></span><br><span class="line"><span class="keyword">import</span> json</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">call_llm</span>(<span class="params">prompt: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">raise</span> NotImplementedError(<span class="string">&quot;请接入真实模型客户端&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">planner</span>(<span class="params">task: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[<span class="built_in">str</span>]:</span><br><span class="line">    raw = call_llm(</span><br><span class="line">        <span class="string">&quot;将任务拆成 JSON 字符串数组，每项都必须可独立验收：\n&quot;</span> + task</span><br><span class="line">    )</span><br><span class="line">    tasks = json.loads(raw)</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(tasks, <span class="built_in">list</span>) <span class="keyword">or</span> <span class="keyword">not</span> <span class="built_in">all</span>(<span class="built_in">isinstance</span>(item, <span class="built_in">str</span>) <span class="keyword">for</span> item <span class="keyword">in</span> tasks):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;Planner 必须返回字符串数组&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> tasks</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generator</span>(<span class="params">subtask: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">return</span> call_llm(<span class="string">f&quot;完成以下子任务，并返回最终产物：\n<span class="subst">&#123;subtask&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">evaluator</span>(<span class="params">artifact: <span class="built_in">str</span>, criteria: <span class="built_in">str</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]:</span><br><span class="line">    raw = call_llm(</span><br><span class="line">        <span class="string">&quot;仅依据验收标准评估产物，返回 &quot;</span></span><br><span class="line">        <span class="string">&#x27;&#123;&quot;approved&quot;: true|false, &quot;feedback&quot;: &quot;...&quot;&#125;：\n&#x27;</span></span><br><span class="line">        <span class="string">f&quot;验收标准：<span class="subst">&#123;criteria&#125;</span>\n\n产物：<span class="subst">&#123;artifact&#125;</span>&quot;</span></span><br><span class="line">    )</span><br><span class="line">    result = json.loads(raw)</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(result.get(<span class="string">&quot;approved&quot;</span>), <span class="built_in">bool</span>):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;Evaluator 缺少布尔字段 approved&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
-<p>示例要求 Planner 和 Evaluator 返回结构化 JSON，并对结果做最小校验。真正的可靠性仍应来自外部证据，例如 pytest、类型检查、静态分析或浏览器测试；“换一个 Agent 再评一次”只能降低部分自评偏差，不能替代确定性验证。</p>
-<p>走到这里，我们已经把八大机制的核心逻辑过了一遍。手里现在有：Agent Loop 的四相刹车（救①）/ Tool Use 的结构化错误（救④）/ Progress Tracking 的游戏存档（救⑤）/ Context Management 的工位清理（救②③）/ Feature List 的待办清单（救②源头）/ Verification Loop 的 QA 闸（救④下游）/ Subagents 的外包顾问（救②另一解法）/ Generator-Evaluator 的论文评审（救⑦）——这八个工具，就是你接下来看任何 Agent 产品时的解析框架。</p>
+<h3 id="Evaluator-是补充，不是证据本身"><a href="#Evaluator-是补充，不是证据本身" class="headerlink" title="Evaluator 是补充，不是证据本身"></a>Evaluator 是补充，不是证据本身</h3><p>对于 UI 观感、文案质量或开放式产物，可以加入独立 Evaluator：</p>
+<ol>
+<li>Planner 生成任务和验收标准；</li>
+<li>Generator 生成产物；</li>
+<li>自动化工具收集测试、浏览器、API 或数据库证据；</li>
+<li>Evaluator 根据标准和证据评估；</li>
+<li>不通过则将反馈返回 Generator；</li>
+<li>达到最大评估轮数后失败退出。</li>
+</ol>
+<p>Anthropic 在 <a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/harness-design-long-running-apps">Harness Design for Long-Running Application Development</a> 中将这种模式描述为受 GAN 启发的 Planner、Generator、Evaluator 三角色架构。但它没有 GAN 的训练、损失函数或参数更新，更准确的称呼是“角色分离与独立评估”。</p>
+<p>另一个 LLM 的批准仍然是随机判断，不能替代 pytest、类型检查、静态分析、浏览器操作或人工审批等外部证据。</p>
+<hr>
+<h2 id="7-Subagent-Isolation：隔离上下文，而不是复制混乱"><a href="#7-Subagent-Isolation：隔离上下文，而不是复制混乱" class="headerlink" title="7. Subagent Isolation：隔离上下文，而不是复制混乱"></a>7. Subagent Isolation：隔离上下文，而不是复制混乱</h2><p><strong>故障症状</strong>：主 Agent 同时处理多个独立问题，工具日志和试错过程互相污染，导致 Context 迅速膨胀。</p>
+<p><strong>一句话定义</strong>：把边界清晰、可以独立验收的子任务交给独立 Context；主 Agent 只接收结构化结果和必要证据。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">SUBAGENT_SYSTEM_PROMPT = <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">你负责一个边界明确的子任务。</span></span><br><span class="line"><span class="string">只使用允许的工具，并返回结构化结果：</span></span><br><span class="line"><span class="string">status、summary、changed_files、evidence、artifacts、blockers。</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">run_subagent</span>(<span class="params">task: <span class="built_in">str</span>, tools: <span class="built_in">list</span>, budget</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    messages = [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: SUBAGENT_SYSTEM_PROMPT&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: task&#125;,</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    result = run_loop(</span><br><span class="line">        messages=messages,</span><br><span class="line">        tools=tools,</span><br><span class="line">        max_iterations=budget.max_iterations,</span><br><span class="line">        max_cost_usd=budget.max_cost_usd,</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> validate_subagent_result(result)</span><br></pre></td></tr></table></figure>
+<p>主 Agent 不需要接收子 Agent 的全部中间日志，但也不应该只接收一句“已经完成”。至少应返回：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;status&quot;</span><span class="punctuation">:</span> <span class="string">&quot;completed&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;summary&quot;</span><span class="punctuation">:</span> <span class="string">&quot;修复了整数溢出并新增回归测试&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;changed_files&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;calculator.py&quot;</span><span class="punctuation">,</span> <span class="string">&quot;test_calculator.py&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;evidence&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;pytest: 12 passed&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;artifacts&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;blockers&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<h3 id="适合交给-Subagent-的任务"><a href="#适合交给-Subagent-的任务" class="headerlink" title="适合交给 Subagent 的任务"></a>适合交给 Subagent 的任务</h3><ul>
+<li>相互独立的代码调查；</li>
+<li>针对单个模块的修改；</li>
+<li>独立测试和审查；</li>
+<li>大量中间输出但最终结果很短的研究任务。</li>
+</ul>
+<h3 id="不适合拆分的任务"><a href="#不适合拆分的任务" class="headerlink" title="不适合拆分的任务"></a>不适合拆分的任务</h3><ul>
+<li>下一步立即依赖结果的阻塞任务；</li>
+<li>多个 Agent 会同时修改同一文件的任务；</li>
+<li>需要共享大量隐含上下文的小任务；</li>
+<li>任务价值低于额外编排成本的场景。</li>
+</ul>
+<p>Subagent 是上下文隔离和并行化机制，不是成本控制机制。多个 Agent 会重复读取信息、调用模型和使用工具，总费用可能明显上升。因此每个 Subagent 都应有独立的工具权限、最大轮数和预算。</p>
+<hr>
+<h2 id="8-Budget-amp-Observability：让成本有硬上限"><a href="#8-Budget-amp-Observability：让成本有硬上限" class="headerlink" title="8. Budget &amp; Observability：让成本有硬上限"></a>8. Budget &amp; Observability：让成本有硬上限</h2><p><strong>故障症状</strong>：系统只限制了单次输出，却没有限制整个任务的调用次数、Token、工具执行时间或费用；发生死循环时只能等账单报警。</p>
+<p><strong>一句话定义</strong>：在任务开始前定义资源预算，每轮执行前检查硬限制，同时记录能解释成本和失败原因的运行指标。Claude Agent SDK 的 <a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/agent-sdk/cost-tracking">Cost tracking</a> 也分别提供成本追踪、预算限制和最大轮数控制。</p>
+<h3 id="最小预算检查"><a href="#最小预算检查" class="headerlink" title="最小预算检查"></a>最小预算检查</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">BudgetExceeded</span>(<span class="title class_ inherited__">RuntimeError</span>):</span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">check_budget</span>(<span class="params">usage: <span class="built_in">dict</span>, limits: <span class="built_in">dict</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    checks = &#123;</span><br><span class="line">        <span class="string">&quot;max_turns&quot;</span>: usage[<span class="string">&quot;turns&quot;</span>],</span><br><span class="line">        <span class="string">&quot;max_tool_calls&quot;</span>: usage[<span class="string">&quot;tool_calls&quot;</span>],</span><br><span class="line">        <span class="string">&quot;max_total_tokens&quot;</span>: usage[<span class="string">&quot;total_tokens&quot;</span>],</span><br><span class="line">        <span class="string">&quot;max_cost_usd&quot;</span>: usage[<span class="string">&quot;cost_usd&quot;</span>],</span><br><span class="line">        <span class="string">&quot;max_elapsed_seconds&quot;</span>: usage[<span class="string">&quot;elapsed_seconds&quot;</span>],</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> limit_name, current_value <span class="keyword">in</span> checks.items():</span><br><span class="line">        maximum = limits.get(limit_name)</span><br><span class="line">        <span class="keyword">if</span> maximum <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span> <span class="keyword">and</span> current_value &gt;= maximum:</span><br><span class="line">            <span class="keyword">raise</span> BudgetExceeded(<span class="string">f&quot;<span class="subst">&#123;limit_name&#125;</span> exceeded: <span class="subst">&#123;current_value&#125;</span> &gt;= <span class="subst">&#123;maximum&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>调用模型和工具之前检查预算，可以避免已经超限后才停止。真实系统还应为单个 Subagent、单个工具和整个父任务分别设置预算。</p>
+<h3 id="至少记录这些指标"><a href="#至少记录这些指标" class="headerlink" title="至少记录这些指标"></a>至少记录这些指标</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">run_id</span><br><span class="line">iteration</span><br><span class="line">model</span><br><span class="line">stop_reason</span><br><span class="line">input_tokens</span><br><span class="line">output_tokens</span><br><span class="line">cache_read_tokens</span><br><span class="line">cost_usd</span><br><span class="line">tool_name</span><br><span class="line">tool_call_id</span><br><span class="line">tool_latency_ms</span><br><span class="line">tool_status</span><br><span class="line">verification_status</span><br><span class="line">checkpoint_id</span><br></pre></td></tr></table></figure>
+<p>Runtime Control 的最大轮数只能减少最坏情况，不能代替成本预算。Budget 负责“不能超过多少”，Observability 负责“为什么花了这些资源、在哪里失败”。</p>
+<p>可以同时设置：</p>
+<ul>
+<li><strong>硬限制</strong>：超过后立即停止；</li>
+<li><strong>软阈值</strong>：达到 70% 或 90% 时压缩上下文、降低并发或请求用户确认；</li>
+<li><strong>异常告警</strong>：单轮 Token、工具延迟或失败率突然升高时记录并告警。</li>
+</ul>
+<hr>
+<h2 id="总结：Harness-的价值是建立不可绕过的不变量"><a href="#总结：Harness-的价值是建立不可绕过的不变量" class="headerlink" title="总结：Harness 的价值是建立不可绕过的不变量"></a>总结：Harness 的价值是建立不可绕过的不变量</h2><p>八个机制最终可以收束成八条工程不变量：</p>
+<ol>
+<li><strong>循环一定有出口</strong>；</li>
+<li><strong>工具失败一定可见</strong>；</li>
+<li><strong>任务中断后一定可以从可靠状态恢复</strong>；</li>
+<li><strong>上下文一定受预算约束</strong>；</li>
+<li><strong>高风险动作一定经过权限检查</strong>；</li>
+<li><strong>完成状态一定有外部证据</strong>；</li>
+<li><strong>子任务隔离不能丢失结果和证据</strong>；</li>
+<li><strong>资源消耗一定可限制、可解释</strong>。</li>
+</ol>
+<p>模型负责提出下一步动作，Harness 负责决定这个动作是否允许执行、执行结果是否可信、任务是否真的完成，以及系统什么时候必须停止。这才是 Harness Engineering 相比单纯 Prompt Engineering 多出来的工程价值。</p>
 
     </div>
 
@@ -573,7 +622,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%BA%E5%88%B6-X-%E6%95%85%E9%9A%9C%E6%A8%A1%E5%BC%8F-%E5%AF%B9%E7%85%A7%E7%9F%A9%E9%98%B5"><span class="nav-number">1.</span> <span class="nav-text">机制 X 故障模式 对照矩阵</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Agent-Loop-%E5%9B%9B%E7%9B%B8%E5%BE%AA%E7%8E%AF%EF%BC%88%E5%BE%AA%E7%8E%AF%E5%A4%B1%E6%8E%A7%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">Agent Loop 四相循环（循环失控）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Tool-Use%E5%B7%A5%E5%85%B7%E7%BC%96%E6%8E%92%EF%BC%88Tool%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86%E4%B8%BA%E7%A9%BA%E5%AD%97%E7%AC%A6%E4%B8%B2%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">Tool Use工具编排（Tool错误处理为空字符串）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Progress-Tracking-%E8%BF%9B%E5%BA%A6%E8%BF%BD%E8%B8%AA%EF%BC%88%E7%8A%B6%E6%80%81%E4%B8%A2%E5%A4%B1%EF%BC%89"><span class="nav-number">4.</span> <span class="nav-text">Progress Tracking 进度追踪（状态丢失）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Context-Management-%E4%B8%8A%E4%B8%8B%E6%96%87%E7%AE%A1%E7%90%86%EF%BC%88context-%E6%BA%A2%E5%87%BA-cache-miss%EF%BC%89"><span class="nav-number">5.</span> <span class="nav-text">Context Management 上下文管理（context 溢出 &#x2F; cache miss）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Feature-List-%E4%BB%BB%E5%8A%A1%E6%8B%86%E8%A7%A3%EF%BC%88context-%E6%BA%A2%E5%87%BA%E7%9A%84%E6%BA%90%E5%A4%B4%EF%BC%89"><span class="nav-number">6.</span> <span class="nav-text">Feature List 任务拆解（context 溢出的源头）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Verification-Loop-%E9%AA%8C%E8%AF%81%E9%97%AD%E7%8E%AF%EF%BC%88Tool-%E9%94%99%E8%AF%AF%E7%9A%84%E4%B8%8B%E6%B8%B8%EF%BC%89"><span class="nav-number">7.</span> <span class="nav-text">Verification Loop 验证闭环（Tool 错误的下游）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Subagents-%E5%AD%90%E4%BB%A3%E7%90%86%E5%88%86%E6%B2%BB%EF%BC%88context-%E6%BA%A2%E5%87%BA%E7%9A%84%E5%8F%A6%E4%B8%80%E7%A7%8D%E8%A7%A3%E6%B3%95%EF%BC%89"><span class="nav-number">8.</span> <span class="nav-text">Subagents 子代理分治（context 溢出的另一种解法）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Generator-Evaluator%EF%BC%88%E4%B8%89%E8%A7%92%E8%89%B2%E5%88%86%E5%B7%A5%E4%B8%8E%E7%8B%AC%E7%AB%8B%E8%AF%84%E5%AE%A1%EF%BC%89"><span class="nav-number">9.</span> <span class="nav-text">Generator-Evaluator（三角色分工与独立评审）</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%BA%E5%88%B6%E4%B8%8E%E6%95%85%E9%9A%9C%E5%AF%B9%E7%85%A7%E7%9F%A9%E9%98%B5"><span class="nav-number">1.</span> <span class="nav-text">机制与故障对照矩阵</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Runtime-Control%EF%BC%9A%E8%AE%A9-Agent-Loop-%E4%B8%80%E5%AE%9A%E6%9C%89%E5%87%BA%E5%8F%A3"><span class="nav-number">2.</span> <span class="nav-text">1. Runtime Control：让 Agent Loop 一定有出口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%B0%8F%E6%8E%A7%E5%88%B6%E6%B5%81"><span class="nav-number">2.1.</span> <span class="nav-text">最小控制流</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83%E8%BF%98%E5%BA%94%E5%A2%9E%E5%8A%A0"><span class="nav-number">2.2.</span> <span class="nav-text">生产环境还应增加</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Tool-Contract%EF%BC%9A%E8%AE%A9%E5%B7%A5%E5%85%B7%E5%A4%B1%E8%B4%A5%E6%88%90%E4%B8%BA%E4%B8%80%E7%AD%89%E7%BB%93%E6%9E%9C"><span class="nav-number">3.</span> <span class="nav-text">2. Tool Contract：让工具失败成为一等结果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%B0%8F%E5%B7%A5%E5%85%B7%E5%8C%85%E8%A3%85%E5%99%A8"><span class="nav-number">3.1.</span> <span class="nav-text">最小工具包装器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%8F%AF%E9%9D%A0%E7%9A%84%E5%B7%A5%E5%85%B7%E7%BB%93%E6%9E%9C%E8%87%B3%E5%B0%91%E8%A6%81%E5%9B%9E%E7%AD%94"><span class="nav-number">3.2.</span> <span class="nav-text">一个可靠的工具结果至少要回答</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Checkpoint-amp-Task-Ledger%EF%BC%9A%E8%AE%A9%E9%95%BF%E4%BB%BB%E5%8A%A1%E5%8F%AF%E4%BB%A5%E6%81%A2%E5%A4%8D"><span class="nav-number">4.</span> <span class="nav-text">3. Checkpoint &amp; Task Ledger：让长任务可以恢复</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Task-Ledger-%E5%BA%94%E8%AE%B0%E5%BD%95%E4%BB%80%E4%B9%88"><span class="nav-number">4.1.</span> <span class="nav-text">Task Ledger 应记录什么</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E5%AD%90%E4%BF%9D%E5%AD%98%E6%9C%80%E5%B0%8F%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.2.</span> <span class="nav-text">原子保存最小实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E8%A6%81%E4%BF%9D%E5%AD%98%E2%80%9C%E6%80%9D%E8%80%83%E8%BF%87%E7%A8%8B%E2%80%9D"><span class="nav-number">4.3.</span> <span class="nav-text">不要保存“思考过程”</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Checkpoint-%E7%9A%84%E8%BE%B9%E7%95%8C"><span class="nav-number">4.4.</span> <span class="nav-text">Checkpoint 的边界</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Context-amp-Cache-Management%EF%BC%9A%E6%8E%A7%E5%88%B6%E5%B7%A5%E4%BD%9C%E5%8C%BA%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E5%A0%86%E7%A7%AF%E5%8E%86%E5%8F%B2"><span class="nav-number">5.</span> <span class="nav-text">4. Context &amp; Cache Management：控制工作区，而不是堆积历史</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Context-Window-%E4%B8%8D%E6%98%AF%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">5.1.</span> <span class="nav-text">Context Window 不是长期记忆</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%8B%E7%BC%A9%E6%97%B6%E5%BA%94%E8%AF%A5%E4%BF%9D%E7%95%99%E4%BB%80%E4%B9%88"><span class="nav-number">5.2.</span> <span class="nav-text">压缩时应该保留什么</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Prompt-Cache-%E7%9A%84%E5%87%86%E7%A1%AE%E7%90%86%E8%A7%A3"><span class="nav-number">5.3.</span> <span class="nav-text">Prompt Cache 的准确理解</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-Permission-amp-Sandbox%EF%BC%9A%E8%AE%A9%E8%83%BD%E5%8A%9B%E6%9C%8D%E4%BB%8E%E6%9C%80%E5%B0%8F%E6%9D%83%E9%99%90"><span class="nav-number">6.</span> <span class="nav-text">5. Permission &amp; Sandbox：让能力服从最小权限</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%AF%E5%BE%84%E8%BE%B9%E7%95%8C%E6%9C%80%E5%B0%8F%E5%AE%9E%E7%8E%B0"><span class="nav-number">6.1.</span> <span class="nav-text">路径边界最小实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E5%8E%9F%E5%88%99"><span class="nav-number">6.2.</span> <span class="nav-text">命令执行原则</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-Verification-amp-Evaluation%EF%BC%9A%E5%AE%8C%E6%88%90%E5%BF%85%E9%A1%BB%E6%9C%89%E5%A4%96%E9%83%A8%E8%AF%81%E6%8D%AE"><span class="nav-number">7.</span> <span class="nav-text">6. Verification &amp; Evaluation：完成必须有外部证据</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AE%E5%AE%9A%E6%80%A7%E9%AA%8C%E8%AF%81%E4%BC%98%E5%85%88"><span class="nav-number">7.1.</span> <span class="nav-text">确定性验证优先</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9C%9F%E6%AD%A3%E7%9A%84-Verification-Loop"><span class="nav-number">7.2.</span> <span class="nav-text">真正的 Verification Loop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E8%A6%81%E6%8A%8A%E6%B5%8B%E8%AF%95%E8%A7%84%E5%88%99%E5%86%99%E5%BE%97%E8%BF%87%E4%BA%8E%E7%BB%9D%E5%AF%B9"><span class="nav-number">7.3.</span> <span class="nav-text">不要把测试规则写得过于绝对</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Evaluator-%E6%98%AF%E8%A1%A5%E5%85%85%EF%BC%8C%E4%B8%8D%E6%98%AF%E8%AF%81%E6%8D%AE%E6%9C%AC%E8%BA%AB"><span class="nav-number">7.4.</span> <span class="nav-text">Evaluator 是补充，不是证据本身</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-Subagent-Isolation%EF%BC%9A%E9%9A%94%E7%A6%BB%E4%B8%8A%E4%B8%8B%E6%96%87%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E5%A4%8D%E5%88%B6%E6%B7%B7%E4%B9%B1"><span class="nav-number">8.</span> <span class="nav-text">7. Subagent Isolation：隔离上下文，而不是复制混乱</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%82%E5%90%88%E4%BA%A4%E7%BB%99-Subagent-%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="nav-number">8.1.</span> <span class="nav-text">适合交给 Subagent 的任务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E9%80%82%E5%90%88%E6%8B%86%E5%88%86%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="nav-number">8.2.</span> <span class="nav-text">不适合拆分的任务</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-Budget-amp-Observability%EF%BC%9A%E8%AE%A9%E6%88%90%E6%9C%AC%E6%9C%89%E7%A1%AC%E4%B8%8A%E9%99%90"><span class="nav-number">9.</span> <span class="nav-text">8. Budget &amp; Observability：让成本有硬上限</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%B0%8F%E9%A2%84%E7%AE%97%E6%A3%80%E6%9F%A5"><span class="nav-number">9.1.</span> <span class="nav-text">最小预算检查</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%B3%E5%B0%91%E8%AE%B0%E5%BD%95%E8%BF%99%E4%BA%9B%E6%8C%87%E6%A0%87"><span class="nav-number">9.2.</span> <span class="nav-text">至少记录这些指标</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93%EF%BC%9AHarness-%E7%9A%84%E4%BB%B7%E5%80%BC%E6%98%AF%E5%BB%BA%E7%AB%8B%E4%B8%8D%E5%8F%AF%E7%BB%95%E8%BF%87%E7%9A%84%E4%B8%8D%E5%8F%98%E9%87%8F"><span class="nav-number">10.</span> <span class="nav-text">总结：Harness 的价值是建立不可绕过的不变量</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -589,20 +638,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">184</span>
+          <span class="site-state-item-count">179</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-count">27</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">41</span>
+        <span class="site-state-item-count">53</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

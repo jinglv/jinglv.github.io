@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从 Agent Loop 与 Agent Harness 的基础概念出发，详细介绍 Claude Code 和 OpenAI Codex 的项目配置、MCP、Skills、权限、子智能体及完整开发闭环。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于 Agent Harness 的智能体编程工具：Claude Code 与 Codex">
+<meta property="og:url" content="https://jinglv.github.io/2026/09/07/ai/harness-engineering/5-ai-editor_%E5%89%AF%E6%9C%AC/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从 Agent Loop 与 Agent Harness 的基础概念出发，详细介绍 Claude Code 和 OpenAI Codex 的项目配置、MCP、Skills、权限、子智能体及完整开发闭环。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908144940057.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145001621.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145025285.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145058431.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260907172239056.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145126397.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145148009.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145244314.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145321217.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145343326.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145420702.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145442568.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260907172410807.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145509253.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145532182.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145602333.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145701858.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145730516.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145805590.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145830937.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260907173345962.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145906952.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145948195.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150038462.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150105084.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150217080.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150244491.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150312422.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150409069.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150440795.png">
+<meta property="article:published_time" content="2026-09-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-07T09:17:19.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="Harness Engineering, Agent Harness, Agent Loop, Claude Code, Codex, Coding Agent">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908144940057.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/09/07/ai/harness-engineering/5-ai-editor_%E5%89%AF%E6%9C%AC/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>基于 Agent Harness 的智能体编程工具：Claude Code 与 Codex | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/09/07/ai/harness-engineering/5-ai-editor_%E5%89%AF%E6%9C%AC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          基于 Agent Harness 的智能体编程工具：Claude Code 与 Codex
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-09-07 00:00:00 / 修改时间：17:17:19" itemprop="dateCreated datePublished" datetime="2026-09-07T00:00:00+08:00">2026-09-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Harness-Engineering/" itemprop="url" rel="index"><span itemprop="name">Harness Engineering</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从 Agent Loop 与 Agent Harness 的基础概念出发，详细介绍 Claude Code 和 OpenAI Codex 的项目配置、MCP、Skills、权限、子智能体及完整开发闭环。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>过去我们使用 AI 编程工具，通常是把它当作一个代码生成器：输入 Prompt，得到代码，然后由程序员复制、修改、运行和调试。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908144940057.png" style="zoom:50%;" /></p>
+<p>Claude Code、OpenAI Codex 等新一代智能体编程工具已经不再局限于“生成一段代码”。它们可以进入真实项目，读取仓库上下文，搜索源代码，调用 Shell 和外部工具，修改文件，运行测试，根据失败结果继续修复，并最终交付可以审查的代码变更。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145001621.png" alt=""></p>
+<p>这种变化背后有两个关键概念：</p>
+<ul>
+<li><strong>Agent Loop</strong>：让 Agent 能够持续规划、执行、观察和调整；</li>
+<li><strong>Agent Harness</strong>：为 Agent Loop 提供上下文、工具、权限、状态、验证和反馈环境。</li>
+</ul>
+<p>Claude Code 和 Codex 正是这类 Coding Agent / Agent Harness 的代表性工具。</p>
+<p>需要先说明一个术语问题：日常讨论中经常会使用“Harness Agent”和“Loop Agent”来帮助区分职责，但从系统架构上看，更准确的表达是：</p>
+<blockquote>
+<p><strong>Agent Loop 是执行机制，Agent Harness 是承载这个循环的运行环境。Claude Code 和 Codex 通常同时包含两者，而不是先运行一个 Harness Agent，再调用另一个独立的 Loop Agent。</strong></p>
+</blockquote>
+<p>本文先介绍 Agent Harness 和 Agent Loop 的基础关系，再分别介绍 Claude Code 与 Codex 在项目开发中如何配置和使用。</p>
+<h1 id="一、从传统-AI-到智能体工具"><a href="#一、从传统-AI-到智能体工具" class="headerlink" title="一、从传统 AI 到智能体工具"></a>一、从传统 AI 到智能体工具</h1><h2 id="1-传统-AI-更像“回答问题的工具”"><a href="#1-传统-AI-更像“回答问题的工具”" class="headerlink" title="1. 传统 AI 更像“回答问题的工具”"></a>1. 传统 AI 更像“回答问题的工具”</h2><p>传统对话式 AI 的主要交互方式是：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145025285.png" alt="" style="zoom:50%;" /></p>
+<p>它可以解释技术、生成函数或给出修改建议，但通常仍然依赖程序员完成后续动作：</p>
+<ul>
+<li>找到应该修改的文件；</li>
+<li>判断代码是否符合现有架构；</li>
+<li>把代码复制到项目中；</li>
+<li>运行测试和启动服务；</li>
+<li>把报错重新交给模型；</li>
+<li>决定何时提交代码。</li>
+</ul>
+<p>此时的 AI 主要负责“给答案”，人负责“完成任务”。</p>
+<h2 id="2-Agent-更像“完成任务的伙伴”"><a href="#2-Agent-更像“完成任务的伙伴”" class="headerlink" title="2. Agent 更像“完成任务的伙伴”"></a>2. Agent 更像“完成任务的伙伴”</h2><p>Agent 的目标不是只返回一段文本，而是在授权范围内完成一组连续动作。</p>
+<p>例如用户提出：</p>
+<blockquote>
+<p>为测试平台增加 AI 测试用例生成功能，并补充后端测试。</p>
+</blockquote>
+<p>Agent 需要完成的工作可能包括：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145058431.png" alt=""></p>
+<p>这意味着 Agent 必须具备四类能力：</p>
+<ol>
+<li><strong>理解</strong>：知道任务、项目和约束是什么；</li>
+<li><strong>行动</strong>：能够读取文件、执行命令和访问外部系统；</li>
+<li><strong>反馈</strong>：能够观察测试、日志、浏览器和 Git 状态；</li>
+<li><strong>持续执行</strong>：能够根据反馈进入下一轮，而不是一次回答后结束。</li>
+</ol>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260907172239056.png" alt="Harness 负责构建运行环境，Loop 负责持续执行任务，两者共同组成完整的智能体工作系统"></p>
+<h1 id="二、Agent-Loop：让智能体持续完成任务"><a href="#二、Agent-Loop：让智能体持续完成任务" class="headerlink" title="二、Agent Loop：让智能体持续完成任务"></a>二、Agent Loop：让智能体持续完成任务</h1><h2 id="1-Agent-Loop-的基本结构"><a href="#1-Agent-Loop-的基本结构" class="headerlink" title="1. Agent Loop 的基本结构"></a>1. Agent Loop 的基本结构</h2><p>Agent Loop 是 Agent 的核心执行机制，可以概括为：</p>
+<p><strong>Plan → Act → Observe → Reflect → Repeat</strong></p>
+<p>展开以后是：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145126397.png" alt=""></p>
+<p>各阶段的职责如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">阶段</th>
+<th style="text-align:left">主要问题</th>
+<th style="text-align:left">编程任务中的典型动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Goal</strong></td>
+<td style="text-align:left">最终要完成什么？</td>
+<td style="text-align:left">增加一个功能、修复一个 Bug、完成一次重构</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Plan</strong></td>
+<td style="text-align:left">应该分几步完成？</td>
+<td style="text-align:left">找入口、读测试、确定修改范围、安排验证</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Act</strong></td>
+<td style="text-align:left">现在执行什么动作？</td>
+<td style="text-align:left">读写文件、运行命令、调用 MCP、委派子任务</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Observe</strong></td>
+<td style="text-align:left">动作产生了什么结果？</td>
+<td style="text-align:left">读取命令输出、错误堆栈、页面截图、Git Diff</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Reflect</strong></td>
+<td style="text-align:left">下一步应该怎样调整？</td>
+<td style="text-align:left">修复错误、修改方案、补充上下文、重新测试</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Done</strong></td>
+<td style="text-align:left">是否满足验收标准？</td>
+<td style="text-align:left">测试通过、构建成功、结果可审查</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>OpenAI 在 Codex agent loop 的技术拆解中描述了同样的过程：模型可以返回最终消息，也可以请求工具调用；Harness 执行工具，把结果加入上下文，再让模型继续推理，直到模型停止请求工具并返回结果。</p>
+<p>因此，一次用户请求并不一定只对应一次模型调用，而可能包含多轮：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145148009.png" alt=""></p>
+<h2 id="2-Loop-Agent-不能脱离环境独立工作"><a href="#2-Loop-Agent-不能脱离环境独立工作" class="headerlink" title="2. Loop Agent 不能脱离环境独立工作"></a>2. Loop Agent 不能脱离环境独立工作</h2><p>只有循环，没有良好的运行环境，Agent 仍然很难完成真实项目。</p>
+<p>它可能不知道：</p>
+<ul>
+<li>应该先读哪个文件；</li>
+<li>项目使用 npm、pnpm 还是其他工具；</li>
+<li>哪些目录不能修改；</li>
+<li>哪些操作需要用户确认；</li>
+<li>测试命令是什么；</li>
+<li>什么结果才算完成；</li>
+<li>失败后如何恢复。</li>
+</ul>
+<p>所以 Agent Loop 解决的是“如何持续执行”，但不负责提供完整的项目环境。这个环境由 Agent Harness 提供。</p>
+<h1 id="三、Agent-Harness：为-Agent-Loop-构建工作环境"><a href="#三、Agent-Harness：为-Agent-Loop-构建工作环境" class="headerlink" title="三、Agent Harness：为 Agent Loop 构建工作环境"></a>三、Agent Harness：为 Agent Loop 构建工作环境</h1><h2 id="1-什么是-Agent-Harness？"><a href="#1-什么是-Agent-Harness？" class="headerlink" title="1. 什么是 Agent Harness？"></a>1. 什么是 Agent Harness？</h2><p>Agent Harness 可以理解为围绕模型和 Agent Loop 构建的一整套工程运行环境。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145244314.png" style="zoom:50%;" /></p>
+<p>可以用一句话概括两者关系：</p>
+<blockquote>
+<p><strong>Loop 是 Agent 的心跳，Harness 是 Agent 的工作环境。</strong></p>
+</blockquote>
+<h2 id="2-Harness-管理哪些内容？"><a href="#2-Harness-管理哪些内容？" class="headerlink" title="2. Harness 管理哪些内容？"></a>2. Harness 管理哪些内容？</h2><h3 id="Context：项目上下文"><a href="#Context：项目上下文" class="headerlink" title="Context：项目上下文"></a>Context：项目上下文</h3><p>让 Agent 知道：</p>
+<ul>
+<li>项目是什么；</li>
+<li>目录结构是什么；</li>
+<li>当前任务是什么；</li>
+<li>架构如何设计；</li>
+<li>应该遵守哪些约定；</li>
+<li>当前代码和 Git 状态是什么。</li>
+</ul>
+<p>常见载体包括：</p>
+<ul>
+<li><code>CLAUDE.md</code> / <code>AGENTS.md</code>；</li>
+<li><code>README.md</code> / <code>ARCHITECTURE.md</code>；</li>
+<li>项目文档和源代码；</li>
+<li>Git 历史；</li>
+<li>当前任务描述。</li>
+</ul>
+<h3 id="Rules：项目规则"><a href="#Rules：项目规则" class="headerlink" title="Rules：项目规则"></a>Rules：项目规则</h3><p>告诉 Agent 什么应该做、什么不能做：</p>
+<ul>
+<li>使用什么技术栈；</li>
+<li>遵循什么编码规范；</li>
+<li>修改后运行什么测试；</li>
+<li>哪些接口必须保持兼容；</li>
+<li>哪些目录不能修改；</li>
+<li>哪些操作需要人工确认。</li>
+</ul>
+<h3 id="Tools：本地执行能力"><a href="#Tools：本地执行能力" class="headerlink" title="Tools：本地执行能力"></a>Tools：本地执行能力</h3><p>常见工具包括：</p>
+<ul>
+<li>读取和修改文件；</li>
+<li>Shell / Terminal；</li>
+<li>代码搜索；</li>
+<li>Git；</li>
+<li>测试与构建工具；</li>
+<li>浏览器；</li>
+<li>日志查看器。</li>
+</ul>
+<h3 id="MCP：连接外部世界"><a href="#MCP：连接外部世界" class="headerlink" title="MCP：连接外部世界"></a>MCP：连接外部世界</h3><p>MCP 让 Agent 可以连接外部服务，例如：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">外部系统</th>
+<th style="text-align:left">Agent 可使用的能力</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">GitHub</td>
+<td style="text-align:left">Issue、PR、Actions</td>
+</tr>
+<tr>
+<td style="text-align:left">Linear</td>
+<td style="text-align:left">任务管理</td>
+</tr>
+<tr>
+<td style="text-align:left">PostgreSQL</td>
+<td style="text-align:left">数据查询</td>
+</tr>
+<tr>
+<td style="text-align:left">Playwright</td>
+<td style="text-align:left">浏览器自动化</td>
+</tr>
+<tr>
+<td style="text-align:left">Sentry</td>
+<td style="text-align:left">错误监控</td>
+</tr>
+<tr>
+<td style="text-align:left">Slack</td>
+<td style="text-align:left">消息通知</td>
+</tr>
+<tr>
+<td style="text-align:left">企业 API</td>
+<td style="text-align:left">内部业务系统</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="Skills：封装专业工作方法"><a href="#Skills：封装专业工作方法" class="headerlink" title="Skills：封装专业工作方法"></a>Skills：封装专业工作方法</h3><p>Skill 告诉 Agent 某类任务应该怎样完成，例如：</p>
+<ul>
+<li>代码审查；</li>
+<li>前端设计与 React 开发；</li>
+<li>数据库迁移；</li>
+<li>测试用例设计；</li>
+<li>故障排查；</li>
+<li>发布流程。</li>
+</ul>
+<h3 id="Permissions、Hooks-与-Sandbox：限制和控制行为"><a href="#Permissions、Hooks-与-Sandbox：限制和控制行为" class="headerlink" title="Permissions、Hooks 与 Sandbox：限制和控制行为"></a>Permissions、Hooks 与 Sandbox：限制和控制行为</h3><p>它们负责：</p>
+<ul>
+<li>限制文件读写范围；</li>
+<li>限制命令和网络访问；</li>
+<li>在危险操作前请求审批；</li>
+<li>在工具调用前后执行检查；</li>
+<li>在任务完成前自动运行验证。</li>
+</ul>
+<h3 id="Git-与-Tests：保存状态并验证结果"><a href="#Git-与-Tests：保存状态并验证结果" class="headerlink" title="Git 与 Tests：保存状态并验证结果"></a>Git 与 Tests：保存状态并验证结果</h3><p>Git 提供版本状态和恢复能力，Tests 提供事实反馈。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145321217.png" alt=""></p>
+<h2 id="3-Model、Harness、Loop、MCP-和-Skill-的区别"><a href="#3-Model、Harness、Loop、MCP-和-Skill-的区别" class="headerlink" title="3. Model、Harness、Loop、MCP 和 Skill 的区别"></a>3. Model、Harness、Loop、MCP 和 Skill 的区别</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">概念</th>
+<th style="text-align:left">核心作用</th>
+<th style="text-align:left">可以类比为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Model</strong></td>
+<td style="text-align:left">理解、推理和生成</td>
+<td style="text-align:left">大脑</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Agent Loop</strong></td>
+<td style="text-align:left">持续规划、执行、观察和调整</td>
+<td style="text-align:left">心跳 / 执行循环</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Agent Harness</strong></td>
+<td style="text-align:left">管理上下文、工具、权限、状态和验证</td>
+<td style="text-align:left">工作环境 / 操作系统</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Tools</strong></td>
+<td style="text-align:left">执行具体动作</td>
+<td style="text-align:left">手和脚</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>MCP</strong></td>
+<td style="text-align:left">标准化连接外部工具与数据</td>
+<td style="text-align:left">外部接口</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Skills</strong></td>
+<td style="text-align:left">提供可复用的专业工作流</td>
+<td style="text-align:left">工作手册</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Tests / Evals</strong></td>
+<td style="text-align:left">判断结果是否真的正确</td>
+<td style="text-align:left">验收机制</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>最容易混淆的是 MCP 和 Skill：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145343326.png" alt="" style="zoom:50%;" /></p>
+<p>例如实现登录功能时：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145420702.png" alt="" style="zoom:50%;" /></p>
+<p>Skill 提供方法，MCP 提供能力，Harness 将它们组织进 Agent Loop。</p>
+<h1 id="四、Claude-Code：面向项目开发的-Agent-Harness"><a href="#四、Claude-Code：面向项目开发的-Agent-Harness" class="headerlink" title="四、Claude Code：面向项目开发的 Agent Harness"></a>四、Claude Code：面向项目开发的 Agent Harness</h1><h2 id="1-Claude-Code-是什么？"><a href="#1-Claude-Code-是什么？" class="headerlink" title="1. Claude Code 是什么？"></a>1. Claude Code 是什么？</h2><p>Claude Code 是面向软件开发的 Coding Agent。它将 Claude 模型与项目上下文、文件和 Shell 工具、权限、MCP、Skills、Hooks、Subagents 以及 Git/Test 反馈组合在一起。</p>
+<p>因此，Claude Code 不应只被理解为：</p>
+<blockquote>
+<p>一个可以在终端中生成代码的 Claude。</p>
+</blockquote>
+<p>更准确的理解是：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145442568.png" alt=""></p>
+<p>Claude Code 的价值在于：它可以在真实仓库中持续执行开发任务，而不是只给出代码片段。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260907172410807.png" alt="CLAUDE.md、Rules、Skills、MCP、Hooks、Permissions、Subagent 与 Git/Test 共同组成 Claude Code 的项目开发环境。"></p>
+<h2 id="2-Claude-Code-的项目配置结构"><a href="#2-Claude-Code-的项目配置结构" class="headerlink" title="2. Claude Code 的项目配置结构"></a>2. Claude Code 的项目配置结构</h2><p>一个典型项目可以这样组织：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">project/</span><br><span class="line">├─ CLAUDE.md                    # 项目上下文与长期规则</span><br><span class="line">├─ .mcp.json                    # 项目级 MCP Server 配置</span><br><span class="line">├─ .claude/</span><br><span class="line">│  ├─ settings.json             # 团队共享配置、权限和 Hooks</span><br><span class="line">│  ├─ settings.local.json       # 本机配置，通常不提交</span><br><span class="line">│  ├─ rules/                    # 路径级或技术栈规则</span><br><span class="line">│  ├─ skills/                   # 可复用工作流</span><br><span class="line">│  │  └─ &lt;skill-name&gt;/</span><br><span class="line">│  │     ├─ SKILL.md</span><br><span class="line">│  │     ├─ references/</span><br><span class="line">│  │     └─ scripts/</span><br><span class="line">│  └─ agents/                   # 自定义 Subagent</span><br><span class="line">├─ src/</span><br><span class="line">├─ tests/</span><br><span class="line">├─ docs/</span><br><span class="line">└─ .git/</span><br></pre></td></tr></table></figure>
+<p>这些文件的职责不同：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">配置</th>
+<th style="text-align:left">主要职责</th>
+<th style="text-align:left">适合存放的内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>CLAUDE.md</code></td>
+<td style="text-align:left">项目长期上下文</td>
+<td style="text-align:left">项目目标、架构入口、构建命令、编码约定</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>.claude/rules/</code></td>
+<td style="text-align:left">更细粒度规则</td>
+<td style="text-align:left">前端、后端、数据库、测试或目录级规范</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>.claude/skills/</code></td>
+<td style="text-align:left">可复用专业流程</td>
+<td style="text-align:left">代码审查、测试、发布、数据库迁移</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>.claude/agents/</code></td>
+<td style="text-align:left">专项子智能体</td>
+<td style="text-align:left">code-reviewer、test-engineer、frontend-reviewer</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>.mcp.json</code></td>
+<td style="text-align:left">项目外部工具</td>
+<td style="text-align:left">GitHub、Linear、Playwright、数据库</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>settings.json</code></td>
+<td style="text-align:left">行为控制</td>
+<td style="text-align:left">权限、Hooks、工具策略和项目设置</td>
+</tr>
+<tr>
+<td style="text-align:left">Git + Tests</td>
+<td style="text-align:left">状态和验证</td>
+<td style="text-align:left">Diff、历史、测试结果和反馈闭环</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="3-CLAUDE-md：让-Claude-Code-认识项目"><a href="#3-CLAUDE-md：让-Claude-Code-认识项目" class="headerlink" title="3. CLAUDE.md：让 Claude Code 认识项目"></a>3. CLAUDE.md：让 Claude Code 认识项目</h2><p><code>CLAUDE.md</code> 不是某一次对话中的普通 Prompt，而是项目级的持久上下文入口。</p>
+<p>一个简化示例：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="section"># AI Test Platform</span></span><br><span class="line"></span><br><span class="line"><span class="section">## Project Structure</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> frontend/：React + TypeScript 前端</span><br><span class="line"><span class="bullet">-</span> backend/：Python 后端</span><br><span class="line"><span class="bullet">-</span> tests/：自动化测试</span><br><span class="line"><span class="bullet">-</span> docs/：架构与产品文档</span><br><span class="line"></span><br><span class="line"><span class="section">## Development Commands</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 前端测试：pnpm test</span><br><span class="line"><span class="bullet">-</span> 前端检查：pnpm lint</span><br><span class="line"><span class="bullet">-</span> 后端测试：pytest</span><br><span class="line"></span><br><span class="line"><span class="section">## Working Agreements</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 修改前先读取相关实现和测试</span><br><span class="line"><span class="bullet">-</span> 优先复用现有组件</span><br><span class="line"><span class="bullet">-</span> 所有 API 变更必须补充测试</span><br><span class="line"><span class="bullet">-</span> 不直接修改已经发布的数据库迁移</span><br><span class="line"><span class="bullet">-</span> 未运行验证时不能声称任务完成</span><br></pre></td></tr></table></figure>
+<p><code>CLAUDE.md</code> 最适合充当项目地图，而不是把所有知识都堆在一个文件中。</p>
+<p>详细的架构文档仍然放在 <code>docs/</code> 中，再由 <code>CLAUDE.md</code> 告诉 Claude Code应该去哪里读取。</p>
+<h2 id="4-Rules：把长期规则拆分到正确的范围"><a href="#4-Rules：把长期规则拆分到正确的范围" class="headerlink" title="4. Rules：把长期规则拆分到正确的范围"></a>4. Rules：把长期规则拆分到正确的范围</h2><p>当项目变大以后，可以将规则拆分到 <code>.claude/rules/</code>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">.claude/rules/</span><br><span class="line">├─ frontend.md</span><br><span class="line">├─ backend.md</span><br><span class="line">├─ database.md</span><br><span class="line">└─ testing.md</span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="section"># Frontend Rules</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 使用 TypeScript</span><br><span class="line"><span class="bullet">-</span> 优先复用现有组件</span><br><span class="line"><span class="bullet">-</span> UI 组件遵循项目设计系统</span><br><span class="line"><span class="bullet">-</span> 新页面必须考虑响应式布局和可访问性</span><br><span class="line"><span class="bullet">-</span> 修改完成后运行 lint、typecheck 和相关测试</span><br></pre></td></tr></table></figure>
+<p>拆分规则有两个好处：</p>
+<ol>
+<li>避免 <code>CLAUDE.md</code> 无限膨胀；</li>
+<li>让某类规则只在相关路径和任务中生效。</li>
+</ol>
+<h2 id="5-Skills：把重复开发过程变成专业工作流"><a href="#5-Skills：把重复开发过程变成专业工作流" class="headerlink" title="5. Skills：把重复开发过程变成专业工作流"></a>5. Skills：把重复开发过程变成专业工作流</h2><p>Claude Code Skill 通常放在：</p>
+<p><code>.claude/skills/&lt;skill-name&gt;/SKILL.md</code></p>
+<p>一个 Skill 目录可以包含：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">frontend-design/</span><br><span class="line">├─ SKILL.md</span><br><span class="line">├─ references/</span><br><span class="line">│  └─ design-system.md</span><br><span class="line">└─ scripts/</span><br><span class="line">   └─ check-ui.sh</span><br></pre></td></tr></table></figure>
+<p>例如 <code>frontend-design</code> Skill 可以规定：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145509253.png" alt=""></p>
+<p>适合沉淀为 Skill 的内容通常具有两个特点：</p>
+<ul>
+<li>会在多个任务中重复使用；</li>
+<li>不应该在每次对话中重新解释。</li>
+</ul>
+<p>例如：</p>
+<ul>
+<li><code>frontend-design</code>；</li>
+<li><code>react-best-practices</code>；</li>
+<li><code>code-review</code>；</li>
+<li><code>testing</code>；</li>
+<li><code>database-migration</code>；</li>
+<li><code>release-checklist</code>。</li>
+</ul>
+<h2 id="6-MCP：让-Claude-Code-使用外部系统"><a href="#6-MCP：让-Claude-Code-使用外部系统" class="headerlink" title="6. MCP：让 Claude Code 使用外部系统"></a>6. MCP：让 Claude Code 使用外部系统</h2><p>Claude Code 可以通过 MCP 连接项目外部的工具和数据：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145532182.png" alt="" style="zoom:50%;" /></p>
+<p>例如，一个完整的开发任务可能同时使用：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">MCP Server</th>
+<th style="text-align:left">在开发任务中的作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">GitHub</td>
+<td style="text-align:left">读取 Issue、检查 PR、创建或更新 PR</td>
+</tr>
+<tr>
+<td style="text-align:left">PostgreSQL</td>
+<td style="text-align:left">查看数据库结构和查询数据</td>
+</tr>
+<tr>
+<td style="text-align:left">Playwright</td>
+<td style="text-align:left">启动浏览器并验证页面</td>
+</tr>
+<tr>
+<td style="text-align:left">Sentry</td>
+<td style="text-align:left">读取线上错误和事件信息</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>但 MCP 不是 Prompt，也不是 Skill。MCP Server 提供的是可调用能力，具体应该按照什么步骤调用，仍然需要项目规则或 Skill 指导。</p>
+<h2 id="7-Hooks、Permissions-与-Subagent"><a href="#7-Hooks、Permissions-与-Subagent" class="headerlink" title="7. Hooks、Permissions 与 Subagent"></a>7. Hooks、Permissions 与 Subagent</h2><h3 id="Hooks"><a href="#Hooks" class="headerlink" title="Hooks"></a>Hooks</h3><p>Hooks 适合执行确定性动作，例如：</p>
+<ul>
+<li>修改文件后运行格式检查；</li>
+<li>工具调用前检查危险命令；</li>
+<li>任务结束时运行测试；</li>
+<li>记录操作日志；</li>
+<li>发送完成通知。</li>
+</ul>
+<p>如果一项检查“必须执行”，就不应该只依赖模型是否记得，更适合由 Hook 或 CI 强制完成。</p>
+<h3 id="Permissions"><a href="#Permissions" class="headerlink" title="Permissions"></a>Permissions</h3><p>Permissions 决定 Claude Code：</p>
+<ul>
+<li>可以读取哪些文件；</li>
+<li>可以修改哪些目录；</li>
+<li>可以执行哪些命令；</li>
+<li>哪些动作必须询问用户；</li>
+<li>哪些动作应该直接拒绝。</li>
+</ul>
+<p>需要特别保护：</p>
+<ul>
+<li><code>.env</code> 和密钥文件；</li>
+<li>生产数据库；</li>
+<li>删除操作；</li>
+<li>远程 Git Push；</li>
+<li>发布和部署命令。</li>
+</ul>
+<h3 id="Subagent"><a href="#Subagent" class="headerlink" title="Subagent"></a>Subagent</h3><p>Subagent 适合处理独立或上下文较大的专项任务，例如：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145602333.png" style="zoom:50%;" /></p>
+<p>Subagent 的主要价值是隔离上下文。大量搜索结果、日志和测试输出可以留在子任务中，主 Agent 只接收结论和必要证据。</p>
+<h2 id="8-使用-Claude-Code-完成一次真实开发任务"><a href="#8-使用-Claude-Code-完成一次真实开发任务" class="headerlink" title="8. 使用 Claude Code 完成一次真实开发任务"></a>8. 使用 Claude Code 完成一次真实开发任务</h2><p>启动项目中的 Claude Code 后，不建议一开始就说：</p>
+<blockquote>
+<p>帮我写一个页面。</p>
+</blockquote>
+<p>更好的任务输入应该包含目标、范围、约束和验收标准：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">任务：为测试平台增加测试用例列表页。</span><br><span class="line"></span><br><span class="line">范围：</span><br><span class="line">- frontend/src/pages/test-cases/</span><br><span class="line">- frontend/src/components/</span><br><span class="line">- 相关测试文件</span><br><span class="line"></span><br><span class="line">约束：</span><br><span class="line">- 先读取 CLAUDE.md 和前端 Rules</span><br><span class="line">- 优先复用已有组件</span><br><span class="line">- 不修改后端 API</span><br><span class="line"></span><br><span class="line">验收标准：</span><br><span class="line">- 支持分页、状态筛选和关键字搜索</span><br><span class="line">- 页面具有加载、空数据和错误状态</span><br><span class="line">- lint、typecheck 和相关测试通过</span><br><span class="line"></span><br><span class="line">执行方式：</span><br><span class="line">先探索项目并给出计划，确认修改范围后再实施。</span><br></pre></td></tr></table></figure>
+<p>一次完整的 Claude Code Harness Loop 可以概括为：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145701858.png" alt="" style="zoom:50%;" /></p>
+<p>真正的开发闭环不是：</p>
+<p><strong>Prompt → 生成代码 → 结束</strong></p>
+<p>而是：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145730516.png" alt="" style="zoom:50%;" /></p>
+<h1 id="五、OpenAI-Codex：共享-Harness-驱动的代码-Agent"><a href="#五、OpenAI-Codex：共享-Harness-驱动的代码-Agent" class="headerlink" title="五、OpenAI Codex：共享 Harness 驱动的代码 Agent"></a>五、OpenAI Codex：共享 Harness 驱动的代码 Agent</h1><h2 id="1-Codex-是什么？"><a href="#1-Codex-是什么？" class="headerlink" title="1. Codex 是什么？"></a>1. Codex 是什么？</h2><p>Codex 是 OpenAI 面向软件开发的 Coding Agent。它可以从不同产品入口接收任务，例如 CLI、IDE、桌面应用或云端任务，但这些入口背后的核心仍然是 Agent Loop 和执行环境。</p>
+<p>可以将 Codex 理解为：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145805590.png" alt="" style="zoom:50%;" /></p>
+<p>Codex Harness 负责把下面的过程组织起来：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145830937.png" alt="" style="zoom:50%;" /></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260907173345962.png" alt="Codex 将项目上下文、Skills、MCP、执行环境和验证过程组织进持续运行的开发闭环"></p>
+<h2 id="2-Codex-的项目配置结构"><a href="#2-Codex-的项目配置结构" class="headerlink" title="2. Codex 的项目配置结构"></a>2. Codex 的项目配置结构</h2><p>按照当前官方文档，一个项目可以这样组织：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">project/</span><br><span class="line">├─ AGENTS.md                    # 仓库级长期规则和项目入口</span><br><span class="line">├─ .codex/</span><br><span class="line">│  ├─ config.toml               # 项目级配置，需要信任该项目</span><br><span class="line">│  ├─ hooks.json                # 可选：项目级生命周期 Hooks</span><br><span class="line">│  └─ agents/                   # 可选：项目级自定义 Agent</span><br><span class="line">│     ├─ reviewer.toml</span><br><span class="line">│     └─ test-engineer.toml</span><br><span class="line">├─ .agents/</span><br><span class="line">│  └─ skills/                   # 仓库级 Skills</span><br><span class="line">│     ├─ frontend-design/</span><br><span class="line">│     │  └─ SKILL.md</span><br><span class="line">│     ├─ testing/</span><br><span class="line">│     │  └─ SKILL.md</span><br><span class="line">│     └─ database-design/</span><br><span class="line">│        └─ SKILL.md</span><br><span class="line">├─ frontend/</span><br><span class="line">├─ backend/</span><br><span class="line">├─ tests/</span><br><span class="line">├─ docs/</span><br><span class="line">└─ .git/</span><br></pre></td></tr></table></figure>
+<p>用户级配置通常位于：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">~/.codex/</span><br><span class="line">├─ config.toml</span><br><span class="line">├─ hooks.json</span><br><span class="line">├─ agents/</span><br><span class="line">└─ AGENTS.md</span><br></pre></td></tr></table></figure>
+<p>项目 <code>.codex/config.toml</code> 只会在项目被信任后加载。这样可以避免打开一个陌生仓库时，自动执行其中的高权限配置或 Hook。</p>
+<h2 id="3-AGENTS-md：Codex-的项目指令入口"><a href="#3-AGENTS-md：Codex-的项目指令入口" class="headerlink" title="3. AGENTS.md：Codex 的项目指令入口"></a>3. AGENTS.md：Codex 的项目指令入口</h2><p>Codex 在开始工作前会发现并读取 <code>AGENTS.md</code>。</p>
+<p>它支持分层规则：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145906952.png" style="zoom:50%;" /></p>
+<p>离当前工作目录越近的规则越具体，可以覆盖上层约定。</p>
+<p>一个项目级示例：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="section"># AI Test Platform</span></span><br><span class="line"></span><br><span class="line"><span class="section">## Project Structure</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> frontend/：React + TypeScript</span><br><span class="line"><span class="bullet">-</span> backend/：Python API</span><br><span class="line"><span class="bullet">-</span> tests/：自动化测试</span><br><span class="line"><span class="bullet">-</span> docs/：架构与产品文档</span><br><span class="line"></span><br><span class="line"><span class="section">## Development Rules</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">-</span> 修改前先搜索现有实现</span><br><span class="line"><span class="bullet">-</span> 优先复用已有模块</span><br><span class="line"><span class="bullet">-</span> 所有 API 变更必须更新测试</span><br><span class="line"><span class="bullet">-</span> 不直接修改已经发布的 migration</span><br><span class="line"><span class="bullet">-</span> 不在未经授权时执行 git push 或部署</span><br><span class="line"></span><br><span class="line"><span class="section">## Verification</span></span><br><span class="line"></span><br><span class="line">修改前端后运行：</span><br><span class="line"><span class="bullet">-</span> pnpm lint</span><br><span class="line"><span class="bullet">-</span> pnpm typecheck</span><br><span class="line"><span class="bullet">-</span> pnpm test</span><br><span class="line"></span><br><span class="line">修改后端后运行：</span><br><span class="line"><span class="bullet">-</span> pytest</span><br><span class="line"></span><br><span class="line"><span class="section">## Completion</span></span><br><span class="line"></span><br><span class="line">最终结果必须包含：</span><br><span class="line"><span class="bullet">-</span> 修改文件列表</span><br><span class="line"><span class="bullet">-</span> 测试和验证结果</span><br><span class="line"><span class="bullet">-</span> 未完成事项或剩余风险</span><br></pre></td></tr></table></figure>
+<p><code>AGENTS.md</code> 最适合存放稳定、长期、每次任务都应该知道的信息。复杂操作流程更适合写成 Skill，详细设计文档更适合放在 <code>docs/</code> 中。</p>
+<h2 id="4-config-toml：配置-Codex-的运行环境"><a href="#4-config-toml：配置-Codex-的运行环境" class="headerlink" title="4. config.toml：配置 Codex 的运行环境"></a>4. config.toml：配置 Codex 的运行环境</h2><p>Codex 的个人默认配置位于：</p>
+<p><code>~/.codex/config.toml</code></p>
+<p>项目级配置可以位于：</p>
+<p><code>project/.codex/config.toml</code></p>
+<p>它可以用于管理：</p>
+<ul>
+<li>默认模型和推理强度；</li>
+<li>Sandbox；</li>
+<li>Approval Policy；</li>
+<li>MCP Server；</li>
+<li>Hooks；</li>
+<li>功能开关；</li>
+<li>Subagent 默认值；</li>
+<li>Shell 环境变量策略。</li>
+</ul>
+<p>一个只表达结构的简化示例：</p>
+<figure class="highlight toml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># project/.codex/config.toml</span></span><br><span class="line"></span><br><span class="line"><span class="attr">approval_policy</span> = <span class="string">&quot;on-request&quot;</span></span><br><span class="line"><span class="attr">sandbox_mode</span> = <span class="string">&quot;workspace-write&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="section">[mcp_servers.github]</span></span><br><span class="line"><span class="attr">command</span> = <span class="string">&quot;your-github-mcp-command&quot;</span></span><br><span class="line"><span class="attr">args</span> = []</span><br><span class="line"></span><br><span class="line"><span class="section">[mcp_servers.playwright]</span></span><br><span class="line"><span class="attr">command</span> = <span class="string">&quot;your-playwright-mcp-command&quot;</span></span><br><span class="line"><span class="attr">args</span> = []</span><br><span class="line"></span><br><span class="line"><span class="section">[agents]</span></span><br><span class="line"><span class="attr">enabled</span> = <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>示例中的 MCP 命令需要根据实际 Server 和认证方式配置，不应直接把 Token 写入仓库。</p>
+<h2 id="5-Codex-Skills：为任务提供专业流程"><a href="#5-Codex-Skills：为任务提供专业流程" class="headerlink" title="5. Codex Skills：为任务提供专业流程"></a>5. Codex Skills：为任务提供专业流程</h2><p>Codex 的仓库级 Skill 可以放在：</p>
+<p><code>.agents/skills/&lt;skill-name&gt;/SKILL.md</code></p>
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">.agents/skills/</span><br><span class="line">├─ frontend-design/</span><br><span class="line">│  ├─ SKILL.md</span><br><span class="line">│  └─ references/</span><br><span class="line">├─ react-best-practices/</span><br><span class="line">│  └─ SKILL.md</span><br><span class="line">├─ testing/</span><br><span class="line">│  ├─ SKILL.md</span><br><span class="line">│  └─ scripts/</span><br><span class="line">└─ database-design/</span><br><span class="line">   └─ SKILL.md</span><br></pre></td></tr></table></figure>
+<p>Codex 会先看到 Skill 的名称和描述，在任务相关时再加载完整的 <code>SKILL.md</code>。这种渐进加载方式可以减少无关内容占用主上下文。</p>
+<p>一个简化 Skill：</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">name: testing</span><br><span class="line"><span class="section">description: 为新增功能设计、执行和检查单元测试、集成测试与端到端测试。</span></span><br><span class="line"><span class="section">---</span></span><br><span class="line"></span><br><span class="line"><span class="bullet">1.</span> 先读取现有测试结构和项目测试规则。</span><br><span class="line"><span class="bullet">2.</span> 根据风险选择单元、集成或端到端测试。</span><br><span class="line"><span class="bullet">3.</span> 优先复用现有 Fixture 和测试工具。</span><br><span class="line"><span class="bullet">4.</span> 运行最相关的小范围测试，再运行完整验证。</span><br><span class="line"><span class="bullet">5.</span> 记录失败原因、修复内容和最终结果。</span><br></pre></td></tr></table></figure>
+<p>Skill 不是工具本身。它可以指导 Codex 使用 Shell、浏览器或 MCP，但实际能力仍然由这些工具提供。</p>
+<h2 id="6-Codex-MCP：连接外部工具与上下文"><a href="#6-Codex-MCP：连接外部工具与上下文" class="headerlink" title="6. Codex MCP：连接外部工具与上下文"></a>6. Codex MCP：连接外部工具与上下文</h2><p>Codex 的 MCP Server 通常配置在 <code>config.toml</code> 中。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908145948195.png" style="zoom:50%;" /></p>
+<p>Codex CLI、IDE 和同一 Host 上的桌面体验可以共享 MCP 配置，但云端或其他运行环境是否可以使用同一个 Server，仍然取决于它是否能访问对应网络、进程和凭据。</p>
+<p>MCP 使用时要重点检查：</p>
+<ul>
+<li>Server 是本地 STDIO 还是远程 HTTP；</li>
+<li>凭据从哪里读取；</li>
+<li>哪些工具可以自动执行；</li>
+<li>哪些写操作需要审批；</li>
+<li>MCP 输出是否可能包含不可信内容。</li>
+</ul>
+<h2 id="7-Sandbox、Approvals-与-Hooks"><a href="#7-Sandbox、Approvals-与-Hooks" class="headerlink" title="7. Sandbox、Approvals 与 Hooks"></a>7. Sandbox、Approvals 与 Hooks</h2><h3 id="Sandbox"><a href="#Sandbox" class="headerlink" title="Sandbox"></a>Sandbox</h3><p>Sandbox 控制 Codex 运行命令时可以访问的文件系统和网络范围。</p>
+<p>典型思路是：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150038462.png" style="zoom:50%;" /></p>
+<p>沙箱的目标不是阻止 Agent 工作，而是限制失败时的影响范围。</p>
+<h3 id="Approvals"><a href="#Approvals" class="headerlink" title="Approvals"></a>Approvals</h3><p>Approvals 决定 Codex 在什么情况下暂停并询问用户。</p>
+<p>例如：</p>
+<ul>
+<li>写入工作区外目录；</li>
+<li>访问受限制网络；</li>
+<li>执行高风险命令；</li>
+<li>使用需要额外权限的工具；</li>
+<li>进行不可逆外部操作。</li>
+</ul>
+<h3 id="Hooks-1"><a href="#Hooks-1" class="headerlink" title="Hooks"></a>Hooks</h3><p>Codex 可以从 <code>hooks.json</code> 或 <code>config.toml</code> 中的 <code>[hooks]</code> 配置加载生命周期 Hook。</p>
+<p>Hooks 适合：</p>
+<ul>
+<li>执行格式化和静态检查；</li>
+<li>记录工具调用；</li>
+<li>检查敏感操作；</li>
+<li>在任务阶段变化时发送通知；</li>
+<li>把组织策略变成确定性流程。</li>
+</ul>
+<h2 id="8-Subagents-与-Worktrees"><a href="#8-Subagents-与-Worktrees" class="headerlink" title="8. Subagents 与 Worktrees"></a>8. Subagents 与 Worktrees</h2><p>Codex 可以把独立任务交给 Subagent，例如：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150105084.png" alt="" style="zoom:50%;" /></p>
+<p>项目级自定义 Agent 可以放在：</p>
+<p><code>.codex/agents/&lt;agent-name&gt;.toml</code></p>
+<p>并行 Agent 更适合：</p>
+<ul>
+<li>代码探索；</li>
+<li>测试分析；</li>
+<li>日志排查；</li>
+<li>多维度代码 Review；</li>
+<li>相互独立的模块任务。</li>
+</ul>
+<p>对于多个会写代码的任务，应使用 Worktree 或其他方式隔离工作区，避免多个 Agent 同时修改同一文件。</p>
+<h2 id="9-使用-Codex-完成一次真实开发任务"><a href="#9-使用-Codex-完成一次真实开发任务" class="headerlink" title="9. 使用 Codex 完成一次真实开发任务"></a>9. 使用 Codex 完成一次真实开发任务</h2><p>一个适合 Codex 的任务输入可以写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">请先读取 AGENTS.md，并按照其中的导航查看相关文档。</span><br><span class="line"></span><br><span class="line">任务：为测试平台新增 AI 测试用例生成接口。</span><br><span class="line"></span><br><span class="line">范围：</span><br><span class="line">- backend/app/api/</span><br><span class="line">- backend/app/services/</span><br><span class="line">- tests/api/</span><br><span class="line"></span><br><span class="line">要求：</span><br><span class="line">- 先探索现有 API 和测试结构</span><br><span class="line">- 输出实现计划后再修改</span><br><span class="line">- 优先复用已有模型和错误处理</span><br><span class="line">- 不修改数据库结构</span><br><span class="line"></span><br><span class="line">验收标准：</span><br><span class="line">- 新接口测试通过</span><br><span class="line">- 原有 API 测试不回归</span><br><span class="line">- 输出 git diff 摘要</span><br><span class="line">- 无法完成的验证必须明确说明原因</span><br></pre></td></tr></table></figure>
+<p>Codex 的完整开发 Loop 可以概括为：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150217080.png" alt="" style="zoom:50%;" /></p>
+<p>这正是 Codex Harness 的核心价值：把模型推理、项目上下文、工具调用、权限控制和验证反馈组织成持续运行的工程过程。</p>
+<h1 id="六、Claude-Code-与-Codex-的关键差异"><a href="#六、Claude-Code-与-Codex-的关键差异" class="headerlink" title="六、Claude Code 与 Codex 的关键差异"></a>六、Claude Code 与 Codex 的关键差异</h1><p>Claude Code 和 Codex 都属于 Coding Agent / Agent Harness，但它们的配置载体和产品入口并不完全相同。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">能力</th>
+<th style="text-align:left">Claude Code</th>
+<th style="text-align:left">OpenAI Codex</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">项目长期规则</td>
+<td style="text-align:left"><code>CLAUDE.md</code></td>
+<td style="text-align:left"><code>AGENTS.md</code>，支持目录级分层覆盖</td>
+</tr>
+<tr>
+<td style="text-align:left">项目配置</td>
+<td style="text-align:left"><code>.claude/settings.json</code> 等</td>
+<td style="text-align:left"><code>.codex/config.toml</code>，可信项目中加载</td>
+</tr>
+<tr>
+<td style="text-align:left">仓库级 Skills</td>
+<td style="text-align:left"><code>.claude/skills/</code></td>
+<td style="text-align:left"><code>.agents/skills/</code></td>
+</tr>
+<tr>
+<td style="text-align:left">MCP 配置</td>
+<td style="text-align:left">常见项目配置为 <code>.mcp.json</code></td>
+<td style="text-align:left"><code>~/.codex/config.toml</code> 或项目 <code>.codex/config.toml</code></td>
+</tr>
+<tr>
+<td style="text-align:left">Hooks</td>
+<td style="text-align:left">Claude Code 生命周期 Hooks</td>
+<td style="text-align:left"><code>hooks.json</code> 或 <code>config.toml</code> 中的 <code>[hooks]</code></td>
+</tr>
+<tr>
+<td style="text-align:left">子智能体</td>
+<td style="text-align:left"><code>.claude/agents/</code>、Subagents / Agent Teams</td>
+<td style="text-align:left">内置或 <code>.codex/agents/</code> 自定义 Subagents</td>
+</tr>
+<tr>
+<td style="text-align:left">权限控制</td>
+<td style="text-align:left">Permissions + Hooks</td>
+<td style="text-align:left">Sandbox + Approval Policy + Permissions + Hooks</td>
+</tr>
+<tr>
+<td style="text-align:left">状态与并行</td>
+<td style="text-align:left">会话、Subagents、团队协作能力</td>
+<td style="text-align:left">Threads / Tasks、Subagents、Worktrees</td>
+</tr>
+<tr>
+<td style="text-align:left">主要使用方式</td>
+<td style="text-align:left">以终端和项目工作流为核心</td>
+<td style="text-align:left">CLI、IDE、桌面与云端任务等多种入口</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>它们的共同点比差异更重要：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150244491.png" alt="" style="zoom:50%;" /></p>
+<p>选择工具时，不应只比较一次代码生成效果，更应该比较：</p>
+<ul>
+<li>是否适合团队当前的开发入口；</li>
+<li>项目规则是否容易维护；</li>
+<li>Skills 和 MCP 是否能复用现有工作流；</li>
+<li>权限和审批是否符合安全要求；</li>
+<li>长任务是否容易恢复、并行和审查；</li>
+<li>测试、浏览器、日志和 CI 是否能进入反馈闭环。</li>
+</ul>
+<h1 id="七、在同一个项目中使用-Claude-Code-和-Codex"><a href="#七、在同一个项目中使用-Claude-Code-和-Codex" class="headerlink" title="七、在同一个项目中使用 Claude Code 和 Codex"></a>七、在同一个项目中使用 Claude Code 和 Codex</h1><p>如果一个项目需要同时支持 Claude Code 和 Codex，可以让两者读取同一套工程事实，但使用各自的入口配置。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">AI-Test-Platform/</span><br><span class="line">├─ CLAUDE.md                    # Claude Code 项目入口</span><br><span class="line">├─ AGENTS.md                    # Codex 项目入口</span><br><span class="line">├─ .mcp.json                    # Claude Code MCP 配置</span><br><span class="line">├─ .claude/</span><br><span class="line">│  ├─ settings.json</span><br><span class="line">│  ├─ rules/</span><br><span class="line">│  ├─ skills/</span><br><span class="line">│  └─ agents/</span><br><span class="line">├─ .codex/</span><br><span class="line">│  ├─ config.toml</span><br><span class="line">│  ├─ hooks.json</span><br><span class="line">│  └─ agents/</span><br><span class="line">├─ .agents/</span><br><span class="line">│  └─ skills/                   # Codex 仓库级 Skills</span><br><span class="line">├─ docs/                        # 两种工具共享的事实来源</span><br><span class="line">│  ├─ architecture.md</span><br><span class="line">│  ├─ development.md</span><br><span class="line">│  ├─ testing.md</span><br><span class="line">│  └─ security.md</span><br><span class="line">├─ frontend/</span><br><span class="line">├─ backend/</span><br><span class="line">├─ tests/</span><br><span class="line">└─ .git/</span><br></pre></td></tr></table></figure>
+<p>为了避免维护两套相互矛盾的规则，可以采用下面的方式：</p>
+<h2 id="1-把事实放到共享文档"><a href="#1-把事实放到共享文档" class="headerlink" title="1. 把事实放到共享文档"></a>1. 把事实放到共享文档</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">共享文档</th>
+<th style="text-align:left">内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>docs/architecture.md</code></td>
+<td style="text-align:left">架构和模块边界</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>docs/development.md</code></td>
+<td style="text-align:left">开发和构建流程</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>docs/testing.md</code></td>
+<td style="text-align:left">测试策略</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>docs/security.md</code></td>
+<td style="text-align:left">安全约束</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="2-让入口文件只负责导航"><a href="#2-让入口文件只负责导航" class="headerlink" title="2. 让入口文件只负责导航"></a>2. 让入口文件只负责导航</h2><p><code>CLAUDE.md</code> 和 <code>AGENTS.md</code> 都引用相同的 <code>docs/</code> 文档，同时只保留各自工具需要的少量使用规则。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150312422.png" style="zoom:50%;" /></p>
+<h2 id="3-将重复流程沉淀为-Skills"><a href="#3-将重复流程沉淀为-Skills" class="headerlink" title="3. 将重复流程沉淀为 Skills"></a>3. 将重复流程沉淀为 Skills</h2><p>例如：</p>
+<ul>
+<li><code>frontend-design</code>；</li>
+<li><code>backend-development</code>；</li>
+<li><code>database-design</code>；</li>
+<li><code>testing</code>；</li>
+<li><code>code-review</code>；</li>
+<li><code>agent-evaluation</code>。</li>
+</ul>
+<p>如果需要同时支持两种 Skill 目录，可以维护一套共享源文件，再通过构建、同步或链接方式生成对应目录，但不要让两份内容长期手工漂移。</p>
+<h2 id="4-让测试成为统一验收标准"><a href="#4-让测试成为统一验收标准" class="headerlink" title="4. 让测试成为统一验收标准"></a>4. 让测试成为统一验收标准</h2><p>无论使用 Claude Code 还是 Codex，都应该执行相同的项目验证：</p>
+<ul>
+<li><strong>前端</strong>：lint + typecheck + unit test + E2E；</li>
+<li><strong>后端</strong>：lint + typecheck + pytest；</li>
+<li><strong>项目</strong>：build + security check + Git Diff review。</li>
+</ul>
+<p>工具可以不同，但“完成”的定义必须一致。</p>
+<h1 id="八、Harness-Agent-工具的正确使用方式"><a href="#八、Harness-Agent-工具的正确使用方式" class="headerlink" title="八、Harness Agent 工具的正确使用方式"></a>八、Harness Agent 工具的正确使用方式</h1><h2 id="1-不要只给一句模糊指令"><a href="#1-不要只给一句模糊指令" class="headerlink" title="1. 不要只给一句模糊指令"></a>1. 不要只给一句模糊指令</h2><p>不推荐：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">帮我实现登录功能。</span><br></pre></td></tr></table></figure>
+<p>推荐：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">目标：增加邮箱密码登录。</span><br><span class="line">范围：frontend/auth、backend/auth 和相关测试。</span><br><span class="line">约束：不修改现有用户表结构，不引入新的认证依赖。</span><br><span class="line">验收：登录成功、错误密码、空密码和锁定用户都有测试。</span><br><span class="line">流程：先探索现有实现并输出计划，再开始修改。</span><br></pre></td></tr></table></figure>
+<h2 id="2-先让-Agent-建立项目理解"><a href="#2-先让-Agent-建立项目理解" class="headerlink" title="2. 先让 Agent 建立项目理解"></a>2. 先让 Agent 建立项目理解</h2><p>复杂任务开始前，让 Agent 先回答：</p>
+<ul>
+<li>相关模块在哪里？</li>
+<li>现有实现是什么？</li>
+<li>需要修改哪些文件？</li>
+<li>有哪些潜在风险？</li>
+<li>准备运行哪些验证？</li>
+</ul>
+<h2 id="3-把规则写入-Harness，而不是每次重复提示"><a href="#3-把规则写入-Harness，而不是每次重复提示" class="headerlink" title="3. 把规则写入 Harness，而不是每次重复提示"></a>3. 把规则写入 Harness，而不是每次重复提示</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:left">需要沉淀的内容</th>
+<th style="text-align:left">放置位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">长期项目规则</td>
+<td style="text-align:left"><code>CLAUDE.md</code> / <code>AGENTS.md</code></td>
+</tr>
+<tr>
+<td style="text-align:left">路径或技术栈规则</td>
+<td style="text-align:left">Rules / 分层 <code>AGENTS.md</code></td>
+</tr>
+<tr>
+<td style="text-align:left">重复工作流</td>
+<td style="text-align:left">Skills</td>
+</tr>
+<tr>
+<td style="text-align:left">外部工具</td>
+<td style="text-align:left">MCP</td>
+</tr>
+<tr>
+<td style="text-align:left">必须执行的检查</td>
+<td style="text-align:left">Hooks / CI</td>
+</tr>
+<tr>
+<td style="text-align:left">高风险操作</td>
+<td style="text-align:left">Permissions / Sandbox / Approvals</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="4-用外部反馈判断是否完成"><a href="#4-用外部反馈判断是否完成" class="headerlink" title="4. 用外部反馈判断是否完成"></a>4. 用外部反馈判断是否完成</h2><p>完成任务必须有证据：</p>
+<ul>
+<li>测试结果；</li>
+<li>构建结果；</li>
+<li>浏览器截图；</li>
+<li>日志和指标；</li>
+<li>Git Diff；</li>
+<li>代码 Review。</li>
+</ul>
+<p>不能只因为 Agent 回复“已经完成”，就认为任务真正结束。</p>
+<h2 id="5-让人负责目标和边界，让-Agent-负责执行"><a href="#5-让人负责目标和边界，让-Agent-负责执行" class="headerlink" title="5. 让人负责目标和边界，让 Agent 负责执行"></a>5. 让人负责目标和边界，让 Agent 负责执行</h2><p>在 Harness Engineering 的工作方式中，人和 Agent 的职责逐渐变成：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150409069.png" style="zoom:50%;" /></p>
+<p>这不是把软件工程完全交给 Agent，而是把 Agent 放进一个可控制、可验证、可恢复的工程环境中。</p>
+<h1 id="九、总结"><a href="#九、总结" class="headerlink" title="九、总结"></a>九、总结</h1><p>Claude Code 和 Codex 的意义，不只是让模型能够生成更多代码，而是把模型放进一个真实的软件工程执行环境。</p>
+<p>这个环境中包含：</p>
+<ul>
+<li>Context 与 Rules；</li>
+<li>Skills、Tools 与 MCP；</li>
+<li>Permissions、Sandbox 与 Hooks；</li>
+<li>Subagents 与任务状态；</li>
+<li>Git、Tests 与 Feedback。</li>
+</ul>
+<p>Agent Loop 负责持续运行：</p>
+<p><strong>Plan → Act → Observe → Reflect → Repeat</strong></p>
+<p>Agent Harness 负责让这个循环能够安全、稳定地发生：</p>
+<ul>
+<li>知道项目是什么；</li>
+<li>知道应该遵守什么规则；</li>
+<li>拥有完成任务需要的工具；</li>
+<li>只能在允许的边界中行动；</li>
+<li>可以读取真实执行结果；</li>
+<li>能够根据失败继续修复；</li>
+<li>最终通过测试和审查证明完成。</li>
+</ul>
+<p>因此，更准确的理解不是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Claude Code / Codex</span><br><span class="line">= 更强的代码生成器</span><br></pre></td></tr></table></figure>
+<p>而是：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908150440795.png" alt="" style="zoom:50%;" /></p>
+<p>这也是 Harness Engineering 的核心思想：</p>
+<blockquote>
+<p><strong>不要只思考如何让模型生成代码，而要设计一个让 Agent 能够理解项目、执行任务、验证结果并持续改进的工程环境。</strong></p>
+</blockquote>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents">Anthropic：Demystifying evals for AI agents</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Anthropic：Effective harnesses for long-running agents</a></li>
+<li><a target="_blank" rel="noopener" href="https://code.claude.com/docs/en/features-overview">Claude Code：Extend Claude Code</a></li>
+<li><a target="_blank" rel="noopener" href="https://code.claude.com/docs/en/settings">Claude Code：Settings</a></li>
+<li><a target="_blank" rel="noopener" href="https://code.claude.com/docs/en/skills">Claude Code：Skills</a></li>
+<li><a target="_blank" rel="noopener" href="https://openai.com/index/unrolling-the-codex-agent-loop/">OpenAI：Unrolling the Codex agent loop</a></li>
+<li><a target="_blank" rel="noopener" href="https://openai.com/index/harness-engineering/">OpenAI：Harness engineering</a></li>
+<li><a target="_blank" rel="noopener" href="https://learn.chatgpt.com/docs/agent-configuration/agents-md">OpenAI Codex：AGENTS.md</a></li>
+<li><a target="_blank" rel="noopener" href="https://learn.chatgpt.com/docs/config-file/config-basic">OpenAI Codex：Config basics</a></li>
+<li><a target="_blank" rel="noopener" href="https://learn.chatgpt.com/docs/build-skills">OpenAI Codex：Skills</a></li>
+<li><a target="_blank" rel="noopener" href="https://learn.chatgpt.com/docs/extend/mcp">OpenAI Codex：MCP</a></li>
+<li><a target="_blank" rel="noopener" href="https://learn.chatgpt.com/docs/agent-configuration/subagents">OpenAI Codex：Subagents</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Harness-Engineering-Agent-Harness-Agent-Loop-Claude-Code-Codex-Coding-Agent/" rel="tag"># Harness Engineering, Agent Harness, Agent Loop, Claude Code, Codex, Coding Agent</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/09/04/ai/ai-evaluation/system-test/3-performance/" rel="prev" title="AI应用性能测试">
+      <i class="fa fa-chevron-left"></i> AI应用性能测试
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/09/07/ai/harness-engineering/5-ai-editor/" rel="next" title="基于 Agent Harness 的智能体编程工具：Claude Code 与 Codex">
+      基于 Agent Harness 的智能体编程工具：Claude Code 与 Codex <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E4%BB%8E%E4%BC%A0%E7%BB%9F-AI-%E5%88%B0%E6%99%BA%E8%83%BD%E4%BD%93%E5%B7%A5%E5%85%B7"><span class="nav-number">2.</span> <span class="nav-text">一、从传统 AI 到智能体工具</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BC%A0%E7%BB%9F-AI-%E6%9B%B4%E5%83%8F%E2%80%9C%E5%9B%9E%E7%AD%94%E9%97%AE%E9%A2%98%E7%9A%84%E5%B7%A5%E5%85%B7%E2%80%9D"><span class="nav-number">2.1.</span> <span class="nav-text">1. 传统 AI 更像“回答问题的工具”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Agent-%E6%9B%B4%E5%83%8F%E2%80%9C%E5%AE%8C%E6%88%90%E4%BB%BB%E5%8A%A1%E7%9A%84%E4%BC%99%E4%BC%B4%E2%80%9D"><span class="nav-number">2.2.</span> <span class="nav-text">2. Agent 更像“完成任务的伙伴”</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81Agent-Loop%EF%BC%9A%E8%AE%A9%E6%99%BA%E8%83%BD%E4%BD%93%E6%8C%81%E7%BB%AD%E5%AE%8C%E6%88%90%E4%BB%BB%E5%8A%A1"><span class="nav-number">3.</span> <span class="nav-text">二、Agent Loop：让智能体持续完成任务</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Agent-Loop-%E7%9A%84%E5%9F%BA%E6%9C%AC%E7%BB%93%E6%9E%84"><span class="nav-number">3.1.</span> <span class="nav-text">1. Agent Loop 的基本结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Loop-Agent-%E4%B8%8D%E8%83%BD%E8%84%B1%E7%A6%BB%E7%8E%AF%E5%A2%83%E7%8B%AC%E7%AB%8B%E5%B7%A5%E4%BD%9C"><span class="nav-number">3.2.</span> <span class="nav-text">2. Loop Agent 不能脱离环境独立工作</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81Agent-Harness%EF%BC%9A%E4%B8%BA-Agent-Loop-%E6%9E%84%E5%BB%BA%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83"><span class="nav-number">4.</span> <span class="nav-text">三、Agent Harness：为 Agent Loop 构建工作环境</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BB%80%E4%B9%88%E6%98%AF-Agent-Harness%EF%BC%9F"><span class="nav-number">4.1.</span> <span class="nav-text">1. 什么是 Agent Harness？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Harness-%E7%AE%A1%E7%90%86%E5%93%AA%E4%BA%9B%E5%86%85%E5%AE%B9%EF%BC%9F"><span class="nav-number">4.2.</span> <span class="nav-text">2. Harness 管理哪些内容？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Context%EF%BC%9A%E9%A1%B9%E7%9B%AE%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">4.2.1.</span> <span class="nav-text">Context：项目上下文</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Rules%EF%BC%9A%E9%A1%B9%E7%9B%AE%E8%A7%84%E5%88%99"><span class="nav-number">4.2.2.</span> <span class="nav-text">Rules：项目规则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Tools%EF%BC%9A%E6%9C%AC%E5%9C%B0%E6%89%A7%E8%A1%8C%E8%83%BD%E5%8A%9B"><span class="nav-number">4.2.3.</span> <span class="nav-text">Tools：本地执行能力</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MCP%EF%BC%9A%E8%BF%9E%E6%8E%A5%E5%A4%96%E9%83%A8%E4%B8%96%E7%95%8C"><span class="nav-number">4.2.4.</span> <span class="nav-text">MCP：连接外部世界</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Skills%EF%BC%9A%E5%B0%81%E8%A3%85%E4%B8%93%E4%B8%9A%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95"><span class="nav-number">4.2.5.</span> <span class="nav-text">Skills：封装专业工作方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Permissions%E3%80%81Hooks-%E4%B8%8E-Sandbox%EF%BC%9A%E9%99%90%E5%88%B6%E5%92%8C%E6%8E%A7%E5%88%B6%E8%A1%8C%E4%B8%BA"><span class="nav-number">4.2.6.</span> <span class="nav-text">Permissions、Hooks 与 Sandbox：限制和控制行为</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Git-%E4%B8%8E-Tests%EF%BC%9A%E4%BF%9D%E5%AD%98%E7%8A%B6%E6%80%81%E5%B9%B6%E9%AA%8C%E8%AF%81%E7%BB%93%E6%9E%9C"><span class="nav-number">4.2.7.</span> <span class="nav-text">Git 与 Tests：保存状态并验证结果</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Model%E3%80%81Harness%E3%80%81Loop%E3%80%81MCP-%E5%92%8C-Skill-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">4.3.</span> <span class="nav-text">3. Model、Harness、Loop、MCP 和 Skill 的区别</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81Claude-Code%EF%BC%9A%E9%9D%A2%E5%90%91%E9%A1%B9%E7%9B%AE%E5%BC%80%E5%8F%91%E7%9A%84-Agent-Harness"><span class="nav-number">5.</span> <span class="nav-text">四、Claude Code：面向项目开发的 Agent Harness</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Claude-Code-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">5.1.</span> <span class="nav-text">1. Claude Code 是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Claude-Code-%E7%9A%84%E9%A1%B9%E7%9B%AE%E9%85%8D%E7%BD%AE%E7%BB%93%E6%9E%84"><span class="nav-number">5.2.</span> <span class="nav-text">2. Claude Code 的项目配置结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-CLAUDE-md%EF%BC%9A%E8%AE%A9-Claude-Code-%E8%AE%A4%E8%AF%86%E9%A1%B9%E7%9B%AE"><span class="nav-number">5.3.</span> <span class="nav-text">3. CLAUDE.md：让 Claude Code 认识项目</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Rules%EF%BC%9A%E6%8A%8A%E9%95%BF%E6%9C%9F%E8%A7%84%E5%88%99%E6%8B%86%E5%88%86%E5%88%B0%E6%AD%A3%E7%A1%AE%E7%9A%84%E8%8C%83%E5%9B%B4"><span class="nav-number">5.4.</span> <span class="nav-text">4. Rules：把长期规则拆分到正确的范围</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-Skills%EF%BC%9A%E6%8A%8A%E9%87%8D%E5%A4%8D%E5%BC%80%E5%8F%91%E8%BF%87%E7%A8%8B%E5%8F%98%E6%88%90%E4%B8%93%E4%B8%9A%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="nav-number">5.5.</span> <span class="nav-text">5. Skills：把重复开发过程变成专业工作流</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-MCP%EF%BC%9A%E8%AE%A9-Claude-Code-%E4%BD%BF%E7%94%A8%E5%A4%96%E9%83%A8%E7%B3%BB%E7%BB%9F"><span class="nav-number">5.6.</span> <span class="nav-text">6. MCP：让 Claude Code 使用外部系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-Hooks%E3%80%81Permissions-%E4%B8%8E-Subagent"><span class="nav-number">5.7.</span> <span class="nav-text">7. Hooks、Permissions 与 Subagent</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Hooks"><span class="nav-number">5.7.1.</span> <span class="nav-text">Hooks</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Permissions"><span class="nav-number">5.7.2.</span> <span class="nav-text">Permissions</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Subagent"><span class="nav-number">5.7.3.</span> <span class="nav-text">Subagent</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-%E4%BD%BF%E7%94%A8-Claude-Code-%E5%AE%8C%E6%88%90%E4%B8%80%E6%AC%A1%E7%9C%9F%E5%AE%9E%E5%BC%80%E5%8F%91%E4%BB%BB%E5%8A%A1"><span class="nav-number">5.8.</span> <span class="nav-text">8. 使用 Claude Code 完成一次真实开发任务</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81OpenAI-Codex%EF%BC%9A%E5%85%B1%E4%BA%AB-Harness-%E9%A9%B1%E5%8A%A8%E7%9A%84%E4%BB%A3%E7%A0%81-Agent"><span class="nav-number">6.</span> <span class="nav-text">五、OpenAI Codex：共享 Harness 驱动的代码 Agent</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Codex-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">6.1.</span> <span class="nav-text">1. Codex 是什么？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Codex-%E7%9A%84%E9%A1%B9%E7%9B%AE%E9%85%8D%E7%BD%AE%E7%BB%93%E6%9E%84"><span class="nav-number">6.2.</span> <span class="nav-text">2. Codex 的项目配置结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-AGENTS-md%EF%BC%9ACodex-%E7%9A%84%E9%A1%B9%E7%9B%AE%E6%8C%87%E4%BB%A4%E5%85%A5%E5%8F%A3"><span class="nav-number">6.3.</span> <span class="nav-text">3. AGENTS.md：Codex 的项目指令入口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-config-toml%EF%BC%9A%E9%85%8D%E7%BD%AE-Codex-%E7%9A%84%E8%BF%90%E8%A1%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">6.4.</span> <span class="nav-text">4. config.toml：配置 Codex 的运行环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-Codex-Skills%EF%BC%9A%E4%B8%BA%E4%BB%BB%E5%8A%A1%E6%8F%90%E4%BE%9B%E4%B8%93%E4%B8%9A%E6%B5%81%E7%A8%8B"><span class="nav-number">6.5.</span> <span class="nav-text">5. Codex Skills：为任务提供专业流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-Codex-MCP%EF%BC%9A%E8%BF%9E%E6%8E%A5%E5%A4%96%E9%83%A8%E5%B7%A5%E5%85%B7%E4%B8%8E%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">6.6.</span> <span class="nav-text">6. Codex MCP：连接外部工具与上下文</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-Sandbox%E3%80%81Approvals-%E4%B8%8E-Hooks"><span class="nav-number">6.7.</span> <span class="nav-text">7. Sandbox、Approvals 与 Hooks</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Sandbox"><span class="nav-number">6.7.1.</span> <span class="nav-text">Sandbox</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Approvals"><span class="nav-number">6.7.2.</span> <span class="nav-text">Approvals</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hooks-1"><span class="nav-number">6.7.3.</span> <span class="nav-text">Hooks</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-Subagents-%E4%B8%8E-Worktrees"><span class="nav-number">6.8.</span> <span class="nav-text">8. Subagents 与 Worktrees</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#9-%E4%BD%BF%E7%94%A8-Codex-%E5%AE%8C%E6%88%90%E4%B8%80%E6%AC%A1%E7%9C%9F%E5%AE%9E%E5%BC%80%E5%8F%91%E4%BB%BB%E5%8A%A1"><span class="nav-number">6.9.</span> <span class="nav-text">9. 使用 Codex 完成一次真实开发任务</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AD%E3%80%81Claude-Code-%E4%B8%8E-Codex-%E7%9A%84%E5%85%B3%E9%94%AE%E5%B7%AE%E5%BC%82"><span class="nav-number">7.</span> <span class="nav-text">六、Claude Code 与 Codex 的关键差异</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E5%9C%A8%E5%90%8C%E4%B8%80%E4%B8%AA%E9%A1%B9%E7%9B%AE%E4%B8%AD%E4%BD%BF%E7%94%A8-Claude-Code-%E5%92%8C-Codex"><span class="nav-number">8.</span> <span class="nav-text">七、在同一个项目中使用 Claude Code 和 Codex</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%8A%8A%E4%BA%8B%E5%AE%9E%E6%94%BE%E5%88%B0%E5%85%B1%E4%BA%AB%E6%96%87%E6%A1%A3"><span class="nav-number">8.1.</span> <span class="nav-text">1. 把事实放到共享文档</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E8%AE%A9%E5%85%A5%E5%8F%A3%E6%96%87%E4%BB%B6%E5%8F%AA%E8%B4%9F%E8%B4%A3%E5%AF%BC%E8%88%AA"><span class="nav-number">8.2.</span> <span class="nav-text">2. 让入口文件只负责导航</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%B0%86%E9%87%8D%E5%A4%8D%E6%B5%81%E7%A8%8B%E6%B2%89%E6%B7%80%E4%B8%BA-Skills"><span class="nav-number">8.3.</span> <span class="nav-text">3. 将重复流程沉淀为 Skills</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E8%AE%A9%E6%B5%8B%E8%AF%95%E6%88%90%E4%B8%BA%E7%BB%9F%E4%B8%80%E9%AA%8C%E6%94%B6%E6%A0%87%E5%87%86"><span class="nav-number">8.4.</span> <span class="nav-text">4. 让测试成为统一验收标准</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AB%E3%80%81Harness-Agent-%E5%B7%A5%E5%85%B7%E7%9A%84%E6%AD%A3%E7%A1%AE%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="nav-number">9.</span> <span class="nav-text">八、Harness Agent 工具的正确使用方式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%B8%8D%E8%A6%81%E5%8F%AA%E7%BB%99%E4%B8%80%E5%8F%A5%E6%A8%A1%E7%B3%8A%E6%8C%87%E4%BB%A4"><span class="nav-number">9.1.</span> <span class="nav-text">1. 不要只给一句模糊指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%85%88%E8%AE%A9-Agent-%E5%BB%BA%E7%AB%8B%E9%A1%B9%E7%9B%AE%E7%90%86%E8%A7%A3"><span class="nav-number">9.2.</span> <span class="nav-text">2. 先让 Agent 建立项目理解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%8A%8A%E8%A7%84%E5%88%99%E5%86%99%E5%85%A5-Harness%EF%BC%8C%E8%80%8C%E4%B8%8D%E6%98%AF%E6%AF%8F%E6%AC%A1%E9%87%8D%E5%A4%8D%E6%8F%90%E7%A4%BA"><span class="nav-number">9.3.</span> <span class="nav-text">3. 把规则写入 Harness，而不是每次重复提示</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E7%94%A8%E5%A4%96%E9%83%A8%E5%8F%8D%E9%A6%88%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E5%AE%8C%E6%88%90"><span class="nav-number">9.4.</span> <span class="nav-text">4. 用外部反馈判断是否完成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E8%AE%A9%E4%BA%BA%E8%B4%9F%E8%B4%A3%E7%9B%AE%E6%A0%87%E5%92%8C%E8%BE%B9%E7%95%8C%EF%BC%8C%E8%AE%A9-Agent-%E8%B4%9F%E8%B4%A3%E6%89%A7%E8%A1%8C"><span class="nav-number">9.5.</span> <span class="nav-text">5. 让人负责目标和边界，让 Agent 负责执行</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">10.</span> <span class="nav-text">九、总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">11.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

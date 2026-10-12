@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从 Token Embedding 出发，理解 Self-Attention、QKV、Causal Mask、Multi-Head Attention、残差连接、归一化和 FFN 如何组成现代 Decoder-only LLM。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Transformer 架构：LLM 如何理解 Token 之间的关系？">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/10/ai/llms/8-transformer-architecture/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从 Token Embedding 出发，理解 Self-Attention、QKV、Causal Mask、Multi-Head Attention、残差连接、归一化和 FFN 如何组成现代 Decoder-only LLM。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012112946341.png">
+<meta property="article:published_time" content="2026-10-10T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-10T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta property="article:tag" content="大语言模型">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="Transformer">
+<meta property="article:tag" content="Attention">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012112946341.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/10/ai/llms/8-transformer-architecture/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Transformer 架构：LLM 如何理解 Token 之间的关系？ | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/10/ai/llms/8-transformer-architecture/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Transformer 架构：LLM 如何理解 Token 之间的关系？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-10 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-10T10:00:00+08:00">2026-10-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从 Token Embedding 出发，理解 Self-Attention、QKV、Causal Mask、Multi-Head Attention、残差连接、归一化和 FFN 如何组成现代 Decoder-only LLM。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Transformer-架构：LLM-如何理解-Token-之间的关系？"><a href="#Transformer-架构：LLM-如何理解-Token-之间的关系？" class="headerlink" title="Transformer 架构：LLM 如何理解 Token 之间的关系？"></a>Transformer 架构：LLM 如何理解 Token 之间的关系？</h1><p>在前面的文章中，我们已经了解：</p>
+<ul>
+<li>Tokenizer 把文本转换成 Token ID；</li>
+<li>Chat Template 把对话组织成模型约定的输入格式；</li>
+<li>上下文窗口限制模型一次能够处理多少 Token；</li>
+<li>Transformer 最终输出 Logits，用来预测下一个 Token；</li>
+<li>KV Cache 保存历史 Token 的 Key 和 Value，加速逐 Token 生成。</li>
+</ul>
+<p>但中间还缺少最重要的一块：</p>
+<blockquote>
+<p>Token ID 进入模型后，究竟经历了什么，模型又是怎样结合上下文理解每个 Token 的？</p>
+</blockquote>
+<p>这个问题的答案就是 <strong>Transformer</strong>。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012112946341.png" alt="image-20261012112946341"></p>
+<h1 id="先看完整数据流"><a href="#先看完整数据流" class="headerlink" title="先看完整数据流"></a>先看完整数据流</h1><p>现代文本 LLM 通常采用 Decoder-only Transformer。一次前向计算可以简化为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">文本</span><br><span class="line">  ↓</span><br><span class="line">Tokenizer</span><br><span class="line">  ↓</span><br><span class="line">Token IDs</span><br><span class="line">  ↓</span><br><span class="line">Token Embedding + 位置信息</span><br><span class="line">  ↓</span><br><span class="line">Transformer Block × N</span><br><span class="line">  ├─ Causal Self-Attention</span><br><span class="line">  ├─ Residual Connection</span><br><span class="line">  ├─ Normalization</span><br><span class="line">  └─ Feed Forward Network</span><br><span class="line">  ↓</span><br><span class="line">Contextual Hidden States</span><br><span class="line">  ↓</span><br><span class="line">LM Head</span><br><span class="line">  ↓</span><br><span class="line">完整词表的 Logits</span><br><span class="line">  ↓</span><br><span class="line">选择下一个 Token</span><br></pre></td></tr></table></figure>
+<p>每个 Transformer Block 都会进一步更新 Token 的表示。经过多层之后，一个 Token 的向量不再只表示它自身，还融合了上下文中其他可见 Token 的信息。</p>
+<h1 id="Transformer-解决了什么问题？"><a href="#Transformer-解决了什么问题？" class="headerlink" title="Transformer 解决了什么问题？"></a>Transformer 解决了什么问题？</h1><p>语言是有上下文的。同一个词在不同句子中的含义可能完全不同：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">苹果很好吃。</span><br><span class="line">苹果发布了新系统。</span><br></pre></td></tr></table></figure>
+<p>两个“苹果”拥有相同的 Token Embedding，但一个表示水果，另一个表示公司。</p>
+<p>模型需要根据周围内容，动态更新每个 Token 的表示：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">初始 Embedding</span><br><span class="line">    “苹果”的基础表示</span><br><span class="line">            ↓</span><br><span class="line">Self-Attention 读取上下文</span><br><span class="line">            ↓</span><br><span class="line">上下文化 Hidden State</span><br><span class="line">    当前句子中“苹果”的具体含义</span><br></pre></td></tr></table></figure>
+<p>Transformer 的核心价值不是简单记住单词，而是让序列中的每个位置根据其他相关位置动态计算自己的表示。</p>
+<h1 id="Transformer-出现之前"><a href="#Transformer-出现之前" class="headerlink" title="Transformer 出现之前"></a>Transformer 出现之前</h1><p>早期序列模型经常使用 RNN、LSTM 或 GRU，按照顺序逐步处理 Token：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Token 1 → Token 2 → Token 3 → ... → Token N</span><br></pre></td></tr></table></figure>
+<p>这种结构能够处理序列，但训练时存在一些限制：</p>
+<ul>
+<li>时间步之间依赖较强，不容易充分并行；</li>
+<li>很长距离的信息需要经过多步传递；</li>
+<li>长序列上的梯度和记忆较难处理；</li>
+<li>训练大规模模型的效率受到限制。</li>
+</ul>
+<p>2017 年的论文《Attention Is All You Need》提出 Transformer，使用 Attention 为主的结构替代循环结构。训练时，同一层中的多个 Token 可以并行计算，这为扩大数据、参数和计算规模提供了重要基础。</p>
+<p>需要注意，论文标题虽然叫“Attention Is All You Need”，但完整 Transformer 并不只有 Attention。它还包括：</p>
+<ul>
+<li>Embedding；</li>
+<li>位置信息；</li>
+<li>Feed Forward Network；</li>
+<li>Residual Connection；</li>
+<li>Normalization；</li>
+<li>输出层。</li>
+</ul>
+<h1 id="从-Token-ID-到-Token-Embedding"><a href="#从-Token-ID-到-Token-Embedding" class="headerlink" title="从 Token ID 到 Token Embedding"></a>从 Token ID 到 Token Embedding</h1><p>Tokenizer 输出的是整数 ID：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">文本：我喜欢人工智能</span><br><span class="line">Token IDs：[35946, 105205, 1773, 64312]</span><br></pre></td></tr></table></figure>
+<p>Token ID 本身只是词表索引，不表达“两个数字越接近，语义就越接近”。模型需要通过 Embedding Matrix 查表，把每个 ID 转换成连续向量：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Embedding Matrix Shape</span><br><span class="line">= [vocab_size, hidden_size]</span><br></pre></td></tr></table></figure>
+<p>查表后：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">input_ids shape</span><br><span class="line">= [batch_size, sequence_length]</span><br><span class="line"></span><br><span class="line">hidden_states shape</span><br><span class="line">= [batch_size, sequence_length, hidden_size]</span><br></pre></td></tr></table></figure>
+<p>例如词表大小为 151,936、隐藏维度为 896，那么 Embedding Matrix 可以理解为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[151,936, 896]</span><br></pre></td></tr></table></figure>
+<p>每个 Token ID 会取出其中一行，得到长度为 896 的初始表示。</p>
+<h2 id="Embedding-是上下文无关的起点"><a href="#Embedding-是上下文无关的起点" class="headerlink" title="Embedding 是上下文无关的起点"></a>Embedding 是上下文无关的起点</h2><p>同一个 Token ID 在查表时总会得到同一个基础向量。真正与上下文相关的变化发生在 Transformer Block 中：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Token Embedding：上下文无关的初始表示</span><br><span class="line">Hidden State：经过上下文计算后的动态表示</span><br></pre></td></tr></table></figure>
+<p>因此，不能把 Embedding 和最终 Hidden State 当成完全相同的概念。</p>
+<h1 id="为什么需要位置信息？"><a href="#为什么需要位置信息？" class="headerlink" title="为什么需要位置信息？"></a>为什么需要位置信息？</h1><p>Self-Attention 本身主要根据向量内容计算关系。如果不加入位置信息，模型很难区分：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">小明批评了小红</span><br><span class="line">小红批评了小明</span><br></pre></td></tr></table></figure>
+<p>两句话包含相似的 Token，但顺序决定了不同含义。</p>
+<p>原始 Transformer 使用正弦和余弦 Positional Encoding，并把它加入 Token Embedding。现代 LLM 还常见：</p>
+<ul>
+<li>Learned Position Embedding；</li>
+<li>RoPE，Rotary Position Embedding；</li>
+<li>ALiBi；</li>
+<li>相对位置偏置。</li>
+</ul>
+<p>其中 RoPE 被许多 Decoder-only LLM 使用。它通常不是简单向输入向量加一个位置向量，而是对 Attention 中的 Query 和 Key 应用与位置相关的旋转，让注意力分数包含相对位置信息。</p>
+<p>可以先记住：</p>
+<blockquote>
+<p>Embedding 告诉模型“这是什么 Token”，位置信息告诉模型“它出现在什么位置以及与其他 Token 相隔多远”。</p>
+</blockquote>
+<h1 id="一个-Transformer-Block-里有什么？"><a href="#一个-Transformer-Block-里有什么？" class="headerlink" title="一个 Transformer Block 里有什么？"></a>一个 Transformer Block 里有什么？</h1><p>现代 Decoder-only 模型常见的 Pre-Norm Block 可以简化为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">x</span><br><span class="line">│</span><br><span class="line">├─────────────── Residual ───────────────┐</span><br><span class="line">│                                        │</span><br><span class="line">└→ Norm → Causal Self-Attention ─────────┼→ 相加</span><br><span class="line">                                         ↓</span><br><span class="line">                                        h</span><br><span class="line">│</span><br><span class="line">├─────────────── Residual ───────────────┐</span><br><span class="line">│                                        │</span><br><span class="line">└→ Norm → FFN / MLP ─────────────────────┼→ 相加</span><br><span class="line">                                         ↓</span><br><span class="line">                                      output</span><br></pre></td></tr></table></figure>
+<p>公式可以写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">h = x + Attention(Norm(x))</span><br><span class="line">output = h + MLP(Norm(h))</span><br></pre></td></tr></table></figure>
+<p>不同模型可能使用不同设计：</p>
+<ul>
+<li>Pre-Norm 或 Post-Norm；</li>
+<li>LayerNorm 或 RMSNorm；</li>
+<li>GELU、SiLU、SwiGLU 等激活与门控结构；</li>
+<li>标准 Attention、GQA、MQA 或局部 Attention；</li>
+<li>是否使用 Bias；</li>
+<li>Residual 的具体缩放方式。</li>
+</ul>
+<p>因此，“Transformer Block”代表一类基本结构，不表示所有模型源码完全相同。</p>
+<h1 id="Self-Attention-是什么？"><a href="#Self-Attention-是什么？" class="headerlink" title="Self-Attention 是什么？"></a>Self-Attention 是什么？</h1><p>Self-Attention 让序列中的每个位置，根据当前任务动态关注同一序列中的其他相关位置。</p>
+<p>考虑句子：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">小明把书交给小红，因为她明天要考试。</span><br></pre></td></tr></table></figure>
+<p>当模型处理“她”时，需要结合上下文判断“她”更可能指向“小红”。Attention 提供了一种可学习的关系计算方式。</p>
+<p>“Self”表示 Query、Key 和 Value 都来自同一个输入序列，而不是来自另一个编码器或外部数据库。</p>
+<h1 id="Q、K、V-分别是什么？"><a href="#Q、K、V-分别是什么？" class="headerlink" title="Q、K、V 分别是什么？"></a>Q、K、V 分别是什么？</h1><p>输入 Hidden States 记为 <code>X</code>。模型使用三个可训练的线性投影得到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Q = XW_Q</span><br><span class="line">K = XW_K</span><br><span class="line">V = XW_V</span><br></pre></td></tr></table></figure>
+<p>其中 <code>W_Q</code>、<code>W_K</code> 和 <code>W_V</code> 是训练得到的参数。</p>
+<p>可以用一个不完全等价但容易理解的比喻：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>直观问题</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Query</td>
+<td>我当前要寻找什么？</td>
+<td>表示当前位置的查询需求</td>
+</tr>
+<tr>
+<td>Key</td>
+<td>我可以通过什么特征被匹配？</td>
+<td>表示每个位置用于匹配的索引</td>
+</tr>
+<tr>
+<td>Value</td>
+<td>匹配后实际取回什么？</td>
+<td>表示每个位置提供的信息</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>假设当前正在更新“她”的表示：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">“她”的 Query</span><br><span class="line">    ↓</span><br><span class="line">与“小明”“书”“小红”“因为”等位置的 Key 比较</span><br><span class="line">    ↓</span><br><span class="line">得到每个位置的注意力权重</span><br><span class="line">    ↓</span><br><span class="line">按照权重聚合各位置的 Value</span><br><span class="line">    ↓</span><br><span class="line">形成包含上下文信息的新表示</span><br></pre></td></tr></table></figure>
+<p>Q、K、V 不是人工编写的规则，也不直接等于自然语言中的问题、关键词和答案。它们是模型训练得到的高维向量。</p>
+<h1 id="Scaled-Dot-Product-Attention"><a href="#Scaled-Dot-Product-Attention" class="headerlink" title="Scaled Dot-Product Attention"></a>Scaled Dot-Product Attention</h1><p>Attention 的核心公式是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Attention(Q, K, V)</span><br><span class="line">= softmax(QKᵀ / √d_head + Mask) V</span><br></pre></td></tr></table></figure>
+<p>可以分成五步理解。</p>
+<h2 id="第一步：计算相似度"><a href="#第一步：计算相似度" class="headerlink" title="第一步：计算相似度"></a>第一步：计算相似度</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scores = QKᵀ</span><br></pre></td></tr></table></figure>
+<p>每个 Query 与所有 Key 做点积，得到位置之间的匹配分数。</p>
+<p>如果序列长度为 <code>T</code>，注意力分数矩阵通常具有：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[T, T]</span><br></pre></td></tr></table></figure>
+<p>第 <code>i</code> 行表示位置 <code>i</code> 对所有位置的关注分数。</p>
+<h2 id="第二步：除以缩放因子"><a href="#第二步：除以缩放因子" class="headerlink" title="第二步：除以缩放因子"></a>第二步：除以缩放因子</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">scaled_scores = scores / √d_head</span><br></pre></td></tr></table></figure>
+<p>维度较大时，点积的绝对值可能变大，使 Softmax 进入非常陡峭的区域。除以 <code>√d_head</code> 可以帮助控制数值尺度，使训练更稳定。</p>
+<h2 id="第三步：加入-Mask"><a href="#第三步：加入-Mask" class="headerlink" title="第三步：加入 Mask"></a>第三步：加入 Mask</h2><p>不允许关注的位置会被加上一个极大的负数，理论上可以理解为负无穷：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">masked_score = -∞</span><br></pre></td></tr></table></figure>
+<p>经过 Softmax 后，对应概率接近 0。</p>
+<h2 id="第四步：转换为权重"><a href="#第四步：转换为权重" class="headerlink" title="第四步：转换为权重"></a>第四步：转换为权重</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">weights = softmax(scaled_scores)</span><br></pre></td></tr></table></figure>
+<p>每一行的注意力权重之和为 1。</p>
+<h2 id="第五步：聚合-Value"><a href="#第五步：聚合-Value" class="headerlink" title="第五步：聚合 Value"></a>第五步：聚合 Value</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">output = weights × V</span><br></pre></td></tr></table></figure>
+<p>当前 Token 根据注意力权重，从其他可见位置的 Value 中聚合信息。</p>
+<h1 id="什么是-Causal-Mask？"><a href="#什么是-Causal-Mask？" class="headerlink" title="什么是 Causal Mask？"></a>什么是 Causal Mask？</h1><p>Decoder-only LLM 使用 Causal Attention，也叫 Masked Self-Attention。</p>
+<p>训练模型预测下一个 Token 时，当前位置不能偷看未来答案。例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">输入：我 喜欢 人工 智能</span><br><span class="line"></span><br><span class="line">位置“我”只能看“我”</span><br><span class="line">位置“喜欢”可以看“我 喜欢”</span><br><span class="line">位置“人工”可以看“我 喜欢 人工”</span><br><span class="line">位置“智能”可以看“我 喜欢 人工 智能”</span><br></pre></td></tr></table></figure>
+<p>对应的可见性矩阵为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">           Key 位置</span><br><span class="line">           1   2   3   4</span><br><span class="line">Query 1    ✓   ×   ×   ×</span><br><span class="line">Query 2    ✓   ✓   ×   ×</span><br><span class="line">Query 3    ✓   ✓   ✓   ×</span><br><span class="line">Query 4    ✓   ✓   ✓   ✓</span><br></pre></td></tr></table></figure>
+<p>Mask 可以表示成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">0   -∞  -∞  -∞</span><br><span class="line">0    0  -∞  -∞</span><br><span class="line">0    0   0  -∞</span><br><span class="line">0    0   0   0</span><br></pre></td></tr></table></figure>
+<p>它保证了训练阶段每个位置只能利用当前及之前的 Token，与真实生成时“未来 Token 尚不存在”的条件保持一致。</p>
+<h1 id="Padding-Mask-与-Causal-Mask-不相同"><a href="#Padding-Mask-与-Causal-Mask-不相同" class="headerlink" title="Padding Mask 与 Causal Mask 不相同"></a>Padding Mask 与 Causal Mask 不相同</h1><p>批量处理不同长度句子时，较短序列可能需要 Padding：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">句子 A：[Token, Token, Token, Token]</span><br><span class="line">句子 B：[Token, Token, PAD,   PAD]</span><br></pre></td></tr></table></figure>
+<p>Padding Mask 用来阻止模型关注补齐位置；Causal Mask 用来阻止模型关注未来位置。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Mask</th>
+<th>屏蔽什么</th>
+<th>主要目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Causal Mask</td>
+<td>未来 Token</td>
+<td>保持自回归因果性</td>
+</tr>
+<tr>
+<td>Padding Mask</td>
+<td>PAD Token</td>
+<td>忽略批处理补齐内容</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>推理框架可能把多个 Mask 合并后交给 Attention Kernel。</p>
+<h1 id="为什么需要-Multi-Head-Attention？"><a href="#为什么需要-Multi-Head-Attention？" class="headerlink" title="为什么需要 Multi-Head Attention？"></a>为什么需要 Multi-Head Attention？</h1><p>如果只有一组 Q、K、V，模型只能在一个表示子空间里计算关系。Multi-Head Attention 会并行使用多组投影：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Head 1 = Attention(Q₁, K₁, V₁)</span><br><span class="line">Head 2 = Attention(Q₂, K₂, V₂)</span><br><span class="line">...</span><br><span class="line">Head H = Attention(Qₕ, Kₕ, Vₕ)</span><br></pre></td></tr></table></figure>
+<p>再把多个 Head 的结果拼接并投影：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MultiHead(Q, K, V)</span><br><span class="line">= Concat(head₁, head₂, ..., headₕ) W_O</span><br></pre></td></tr></table></figure>
+<p>不同 Head 可以学习不同的关系模式，例如：</p>
+<ul>
+<li>临近 Token 关系；</li>
+<li>指代关系；</li>
+<li>语法结构；</li>
+<li>实体与属性；</li>
+<li>长距离依赖；</li>
+<li>特定格式边界。</li>
+</ul>
+<p>这些不是预先分配给每个 Head 的固定任务，而是训练过程中形成的表示模式。也不能简单把某个 Attention Head 的最高权重解释为模型完整的“思考原因”。</p>
+<h1 id="MHA、MQA-与-GQA"><a href="#MHA、MQA-与-GQA" class="headerlink" title="MHA、MQA 与 GQA"></a>MHA、MQA 与 GQA</h1><p>传统 Multi-Head Attention 中，每个 Query Head 通常拥有对应的 Key Head 和 Value Head：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Query Heads = 32</span><br><span class="line">Key Heads   = 32</span><br><span class="line">Value Heads = 32</span><br></pre></td></tr></table></figure>
+<p>在自回归生成中，所有历史 Key 和 Value 都需要写入 KV Cache。为了减少缓存和内存带宽，现代模型还会使用 MQA 或 GQA。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th style="text-align:right">Query Head 数</th>
+<th style="text-align:right">KV Head 数</th>
+<th>特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MHA</td>
+<td style="text-align:right">H</td>
+<td style="text-align:right">H</td>
+<td>表达能力强，KV Cache 较大</td>
+</tr>
+<tr>
+<td>MQA</td>
+<td style="text-align:right">H</td>
+<td style="text-align:right">1</td>
+<td>多个 Query Head 共享一组 K/V，缓存最小</td>
+</tr>
+<tr>
+<td>GQA</td>
+<td style="text-align:right">H</td>
+<td style="text-align:right">介于 1 和 H 之间</td>
+<td>多组 Query Head 共享 K/V，兼顾质量和效率</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">28 个 Query Heads</span><br><span class="line">4 个 KV Heads</span><br></pre></td></tr></table></figure>
+<p>意味着每 7 个 Query Heads 共享一组 K/V。GQA 论文提出的核心思想就是在 MHA 与 MQA 之间折中，使推理速度和质量取得更好的平衡。</p>
+<h1 id="Attention-之后为什么还需要-FFN？"><a href="#Attention-之后为什么还需要-FFN？" class="headerlink" title="Attention 之后为什么还需要 FFN？"></a>Attention 之后为什么还需要 FFN？</h1><p>Attention 主要负责不同 Token 位置之间的信息交换。每个位置聚合上下文后，还需要进行更复杂的非线性变换，这就是 Feed Forward Network，也经常叫 MLP。</p>
+<p>原始 Transformer 的 FFN 可以简化为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FFN(x) = W₂ · activation(W₁x + b₁) + b₂</span><br></pre></td></tr></table></figure>
+<p>典型的数据流是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">hidden_size</span><br><span class="line">    ↓ 扩展</span><br><span class="line">intermediate_size</span><br><span class="line">    ↓ 激活与特征变换</span><br><span class="line">hidden_size</span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hidden_size = 4096</span><br><span class="line">intermediate_size = 11008</span><br></pre></td></tr></table></figure>
+<p>许多现代 LLM 使用带门控的结构，例如 SwiGLU：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">MLP(x) = down_proj(</span><br><span class="line">    SiLU(gate_proj(x)) * up_proj(x)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>可以直观地理解为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Attention：让 Token 之间交换信息</span><br><span class="line">FFN / MLP：对每个位置的特征进行非线性加工</span><br></pre></td></tr></table></figure>
+<p>FFN 通常独立应用于每个 Token 位置，但所有位置共享同一组 FFN 参数。</p>
+<h1 id="Residual-Connection-有什么作用？"><a href="#Residual-Connection-有什么作用？" class="headerlink" title="Residual Connection 有什么作用？"></a>Residual Connection 有什么作用？</h1><p>Residual Connection，也叫残差连接或跳跃连接，会把子层输入直接加回输出：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">output = x + sublayer(x)</span><br></pre></td></tr></table></figure>
+<p>它的作用包括：</p>
+<ul>
+<li>保留原始信息通道；</li>
+<li>让子层主要学习需要补充的变化；</li>
+<li>改善深层网络的梯度传播；</li>
+<li>使大量 Transformer Block 可以稳定堆叠。</li>
+</ul>
+<p>不能把 Residual 理解为简单“复制一份文本”。它传递的是 Hidden State 张量。</p>
+<h1 id="LayerNorm-与-RMSNorm"><a href="#LayerNorm-与-RMSNorm" class="headerlink" title="LayerNorm 与 RMSNorm"></a>LayerNorm 与 RMSNorm</h1><p>深层神经网络中的数值分布会不断变化。Normalization 用来稳定各层输入尺度，改善训练过程。</p>
+<h2 id="LayerNorm"><a href="#LayerNorm" class="headerlink" title="LayerNorm"></a>LayerNorm</h2><p>LayerNorm 会进行均值中心化和方差缩放，再应用可学习参数。</p>
+<h2 id="RMSNorm"><a href="#RMSNorm" class="headerlink" title="RMSNorm"></a>RMSNorm</h2><p>RMSNorm 主要根据均方根缩放向量，不做与 LayerNorm 完全相同的均值中心化。许多现代 LLM 使用 RMSNorm，因为它结构更简单、计算高效，并且在实践中表现良好。</p>
+<h2 id="Pre-Norm-与-Post-Norm"><a href="#Pre-Norm-与-Post-Norm" class="headerlink" title="Pre-Norm 与 Post-Norm"></a>Pre-Norm 与 Post-Norm</h2><p>原始 Transformer 常见 Post-Norm：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">output = Norm(x + Sublayer(x))</span><br></pre></td></tr></table></figure>
+<p>现代 LLM 常见 Pre-Norm：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">output = x + Sublayer(Norm(x))</span><br></pre></td></tr></table></figure>
+<p>Pre-Norm 往往更有利于训练很深的网络，但具体模型可能采用变体，阅读源码时应以实际结构为准。</p>
+<h1 id="为什么要堆叠很多层？"><a href="#为什么要堆叠很多层？" class="headerlink" title="为什么要堆叠很多层？"></a>为什么要堆叠很多层？</h1><p>一个 Transformer Block 只能完成有限的表示变换。堆叠多层后，每层都在前一层 Hidden States 的基础上继续计算：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">初始 Embedding</span><br><span class="line">    ↓</span><br><span class="line">Layer 1：建立基础局部和语法关系</span><br><span class="line">    ↓</span><br><span class="line">Layer 2：组合更复杂的上下文特征</span><br><span class="line">    ↓</span><br><span class="line">...</span><br><span class="line">    ↓</span><br><span class="line">Layer N：形成面向下一个 Token 预测的高层表示</span><br></pre></td></tr></table></figure>
+<p>这里的层级解释只是直观理解。真实模型不会严格规定“第几层只负责语法”或“第几层只负责事实”。能力通常分布在多个层、Head 和 MLP 参数中。</p>
+<p>经过所有层后，Hidden States 的形状通常仍然是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[batch_size, sequence_length, hidden_size]</span><br></pre></td></tr></table></figure>
+<p>序列长度和隐藏维度通常不变，但张量中的数值已经包含越来越丰富的上下文信息。</p>
+<h1 id="从-Hidden-State-到-Logits"><a href="#从-Hidden-State-到-Logits" class="headerlink" title="从 Hidden State 到 Logits"></a>从 Hidden State 到 Logits</h1><p>对于 Causal Language Model，最后还要把 Hidden State 映射回完整词表：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logits = hidden_states × W_vocab</span><br></pre></td></tr></table></figure>
+<p>LM Head 输出形状为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[batch_size, sequence_length, vocab_size]</span><br></pre></td></tr></table></figure>
+<p>在生成下一个 Token 时，主要使用最后一个有效位置：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">next_token_logits = logits[:, -<span class="number">1</span>, :]</span><br></pre></td></tr></table></figure>
+<p>然后经过 Temperature、Top-k、Top-p 等处理，使用 Greedy 或 Sampling 选择下一个 Token。</p>
+<p>一些模型会让 LM Head 与输入 Token Embedding 共享权重，称为 Weight Tying。它可以减少参数量，并让输入表示与输出词表映射共享结构；但并非所有模型都必须使用。</p>
+<h1 id="为什么现代文本-LLM-常用-Decoder-only？"><a href="#为什么现代文本-LLM-常用-Decoder-only？" class="headerlink" title="为什么现代文本 LLM 常用 Decoder-only？"></a>为什么现代文本 LLM 常用 Decoder-only？</h1><p>原始 Transformer 为机器翻译设计，包含 Encoder 和 Decoder。后来形成了三种常见架构。</p>
+<h2 id="Encoder-only"><a href="#Encoder-only" class="headerlink" title="Encoder-only"></a>Encoder-only</h2><p>代表模型：BERT 类模型。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">输入 Token</span><br><span class="line">   ↓</span><br><span class="line">双向 Self-Attention</span><br><span class="line">   ↓</span><br><span class="line">每个位置融合左右两侧上下文</span><br><span class="line">   ↓</span><br><span class="line">分类、抽取、表示学习</span><br></pre></td></tr></table></figure>
+<p>它适合理解输入，但默认不是按顺序生成长文本的架构。</p>
+<h2 id="Decoder-only"><a href="#Decoder-only" class="headerlink" title="Decoder-only"></a>Decoder-only</h2><p>代表模型：GPT、Llama、Qwen 等大量生成式 LLM。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">已有 Token</span><br><span class="line">   ↓</span><br><span class="line">Causal Self-Attention</span><br><span class="line">   ↓</span><br><span class="line">预测下一个 Token</span><br><span class="line">   ↓</span><br><span class="line">循环生成</span><br></pre></td></tr></table></figure>
+<p>它把各种任务统一为文本续写：问答、翻译、摘要、代码生成都可以表示成“根据当前上下文继续生成”。</p>
+<h2 id="Encoder-Decoder"><a href="#Encoder-Decoder" class="headerlink" title="Encoder-Decoder"></a>Encoder-Decoder</h2><p>代表模型：原始 Transformer、T5 等。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Encoder 处理输入</span><br><span class="line">        ↓</span><br><span class="line">Decoder 通过 Cross-Attention 读取 Encoder 输出</span><br><span class="line">        ↓</span><br><span class="line">生成目标序列</span><br></pre></td></tr></table></figure>
+<p>它适合输入到输出的转换任务，例如翻译和摘要。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>架构</th>
+<th>Attention 特点</th>
+<th>常见用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Encoder-only</td>
+<td>通常双向读取输入</td>
+<td>分类、检索、Embedding、抽取</td>
+</tr>
+<tr>
+<td>Decoder-only</td>
+<td>Causal，只看当前及以前</td>
+<td>对话、文本生成、代码生成</td>
+</tr>
+<tr>
+<td>Encoder-Decoder</td>
+<td>Encoder 双向，Decoder 因果并带 Cross-Attention</td>
+<td>翻译、摘要、条件生成</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="Self-Attention-与-Cross-Attention"><a href="#Self-Attention-与-Cross-Attention" class="headerlink" title="Self-Attention 与 Cross-Attention"></a>Self-Attention 与 Cross-Attention</h1><p>Self-Attention 的 Q、K、V 来自同一个序列：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Q = 输入序列</span><br><span class="line">K = 输入序列</span><br><span class="line">V = 输入序列</span><br></pre></td></tr></table></figure>
+<p>Cross-Attention 中，Query 通常来自 Decoder，Key 和 Value 来自 Encoder 输出：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Q = Decoder Hidden States</span><br><span class="line">K = Encoder Hidden States</span><br><span class="line">V = Encoder Hidden States</span><br></pre></td></tr></table></figure>
+<p>Decoder-only LLM 的标准 Block 主要使用 Causal Self-Attention，并不需要单独的 Encoder Cross-Attention 才能读取 Prompt，因为 Prompt 与输出前缀本来就在同一条 Token 序列中。</p>
+<h1 id="Transformer-与-KV-Cache-的关系"><a href="#Transformer-与-KV-Cache-的关系" class="headerlink" title="Transformer 与 KV Cache 的关系"></a>Transformer 与 KV Cache 的关系</h1><p>在 Decoder 的每层 Self-Attention 中，历史 Token 都会产生 Key 和 Value：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Layer 1：K₁...Kₜ，V₁...Vₜ</span><br><span class="line">Layer 2：K₁...Kₜ，V₁...Vₜ</span><br><span class="line">...</span><br><span class="line">Layer N：K₁...Kₜ，V₁...Vₜ</span><br></pre></td></tr></table></figure>
+<p>生成下一个 Token 时，过去位置的 K/V 不会因为未来 Token 出现而改变，所以可以缓存：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">新 Token Hidden State</span><br><span class="line">       ↓</span><br><span class="line">只计算新 Token 在每层的 Q、K、V</span><br><span class="line">       ↓</span><br><span class="line">Q_new 与历史 K_cache 计算注意力</span><br><span class="line">       ↓</span><br><span class="line">聚合历史 V_cache</span><br><span class="line">       ↓</span><br><span class="line">把 K_new、V_new 追加到缓存</span><br></pre></td></tr></table></figure>
+<p>因此 KV Cache 不是 Transformer 之外的神秘记忆，而是对各层 Causal Self-Attention 中历史 K/V 张量的推理优化。</p>
+<h1 id="训练与推理时有什么不同？"><a href="#训练与推理时有什么不同？" class="headerlink" title="训练与推理时有什么不同？"></a>训练与推理时有什么不同？</h1><h2 id="训练阶段"><a href="#训练阶段" class="headerlink" title="训练阶段"></a>训练阶段</h2><p>训练数据中完整序列已知，可以一次并行计算所有位置：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：A B C D</span><br><span class="line">标签：B C D E</span><br></pre></td></tr></table></figure>
+<p>Causal Mask 确保每个位置不能看到其标签对应的未来 Token，但 GPU 仍然可以并行计算多个位置的矩阵运算。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">位置 A 预测 B</span><br><span class="line">位置 B 预测 C</span><br><span class="line">位置 C 预测 D</span><br><span class="line">位置 D 预测 E</span><br></pre></td></tr></table></figure>
+<p>这种方式常称为 Teacher Forcing：训练时每个位置看到的历史通常来自真实训练序列，而不是模型刚刚生成的错误结果。</p>
+<h2 id="推理阶段"><a href="#推理阶段" class="headerlink" title="推理阶段"></a>推理阶段</h2><p>未来 Token 尚不存在，只能逐个生成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">A B C D → 生成 E</span><br><span class="line">A B C D E → 生成 F</span><br><span class="line">A B C D E F → 生成 G</span><br></pre></td></tr></table></figure>
+<p>KV Cache 用来避免每一步重复计算整个历史的 K/V。</p>
+<h1 id="Attention-的计算复杂度"><a href="#Attention-的计算复杂度" class="headerlink" title="Attention 的计算复杂度"></a>Attention 的计算复杂度</h1><p>标准全注意力需要构造 Token 两两之间的分数矩阵：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[sequence_length, sequence_length]</span><br></pre></td></tr></table></figure>
+<p>因此在序列长度维度上，Attention Score 的计算量通常近似：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O(n²)</span><br></pre></td></tr></table></figure>
+<p>当上下文从 4K 增加到 8K 时，仅从理论矩阵元素数量看：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">4K × 4K → 约 1,678 万</span><br><span class="line">8K × 8K → 约 6,711 万</span><br></pre></td></tr></table></figure>
+<p>序列长度翻倍，分数矩阵规模约变为四倍。这也是长上下文成本较高的原因之一。</p>
+<p>需要区分：</p>
+<ul>
+<li>FlashAttention 等算法可以减少中间显存读写并提高执行效率；</li>
+<li>Sliding Window、Sparse Attention 等方法可以减少可见关系；</li>
+<li>这些优化不等于所有场景都把标准全注意力数学关系自动变成 O(n)。</li>
+</ul>
+<h1 id="实战一：手写-Scaled-Dot-Product-Attention"><a href="#实战一：手写-Scaled-Dot-Product-Attention" class="headerlink" title="实战一：手写 Scaled Dot-Product Attention"></a>实战一：手写 Scaled Dot-Product Attention</h1><p>下面使用 PyTorch 实现单头 Causal Self-Attention 的核心计算。</p>
+<h2 id="安装依赖"><a href="#安装依赖" class="headerlink" title="安装依赖"></a>安装依赖</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -U torch</span><br></pre></td></tr></table></figure>
+<h2 id="可执行代码"><a href="#可执行代码" class="headerlink" title="可执行代码"></a>可执行代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">torch.manual_seed(<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line">batch_size = <span class="number">1</span></span><br><span class="line">sequence_length = <span class="number">4</span></span><br><span class="line">head_dim = <span class="number">8</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 为了突出 Attention 核心，这里直接构造 Q、K、V。</span></span><br><span class="line">query = torch.randn(batch_size, sequence_length, head_dim)</span><br><span class="line">key = torch.randn(batch_size, sequence_length, head_dim)</span><br><span class="line">value = torch.randn(batch_size, sequence_length, head_dim)</span><br><span class="line"></span><br><span class="line"><span class="comment"># [batch, query_position, key_position]</span></span><br><span class="line">scores = query @ key.transpose(-<span class="number">2</span>, -<span class="number">1</span>)</span><br><span class="line">scores = scores / math.sqrt(head_dim)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 上三角表示未来位置，需要屏蔽。</span></span><br><span class="line">future_mask = torch.triu(</span><br><span class="line">    torch.ones(sequence_length, sequence_length, dtype=torch.<span class="built_in">bool</span>),</span><br><span class="line">    diagonal=<span class="number">1</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">masked_scores = scores.masked_fill(future_mask, <span class="built_in">float</span>(<span class="string">&quot;-inf&quot;</span>))</span><br><span class="line">attention_weights = torch.softmax(masked_scores, dim=-<span class="number">1</span>)</span><br><span class="line">output = attention_weights @ value</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Scores Shape：&quot;</span>, scores.shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Attention Weights Shape：&quot;</span>, attention_weights.shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Output Shape：&quot;</span>, output.shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\nCausal Mask：&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(future_mask)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\nAttention Weights：&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(attention_weights.<span class="built_in">round</span>(decimals=<span class="number">3</span>))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n每一行权重之和：&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(attention_weights.<span class="built_in">sum</span>(dim=-<span class="number">1</span>))</span><br></pre></td></tr></table></figure>
+<p>观察输出时应该注意：</p>
+<ol>
+<li>第一行只有第一个位置的权重非零；</li>
+<li>第二行只能关注前两个位置；</li>
+<li>被屏蔽的未来位置经过 Softmax 后权重为 0；</li>
+<li>每一行允许位置的权重之和为 1；</li>
+<li>最终 Output 是对应 Value 的加权和。</li>
+</ol>
+<h1 id="实战二：实现一个简化-Transformer-Block"><a href="#实战二：实现一个简化-Transformer-Block" class="headerlink" title="实战二：实现一个简化 Transformer Block"></a>实战二：实现一个简化 Transformer Block</h1><p>下面使用 PyTorch 内置 MultiheadAttention，构造一个 Pre-Norm Decoder Block。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CausalTransformerBlock</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self,</span></span><br><span class="line"><span class="params">        hidden_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">        num_heads: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">        intermediate_size: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    </span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">        <span class="built_in">super</span>().__init__()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.attention_norm = nn.LayerNorm(hidden_size)</span><br><span class="line">        <span class="variable language_">self</span>.attention = nn.MultiheadAttention(</span><br><span class="line">            embed_dim=hidden_size,</span><br><span class="line">            num_heads=num_heads,</span><br><span class="line">            batch_first=<span class="literal">True</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.mlp_norm = nn.LayerNorm(hidden_size)</span><br><span class="line">        <span class="variable language_">self</span>.mlp = nn.Sequential(</span><br><span class="line">            nn.Linear(hidden_size, intermediate_size),</span><br><span class="line">            nn.GELU(),</span><br><span class="line">            nn.Linear(intermediate_size, hidden_size),</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, hidden_states: torch.Tensor</span>) -&gt; torch.Tensor:</span><br><span class="line">        sequence_length = hidden_states.shape[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># True 表示这个 Query-Key 位置不允许参与 Attention。</span></span><br><span class="line">        causal_mask = torch.triu(</span><br><span class="line">            torch.ones(</span><br><span class="line">                sequence_length,</span><br><span class="line">                sequence_length,</span><br><span class="line">                dtype=torch.<span class="built_in">bool</span>,</span><br><span class="line">                device=hidden_states.device,</span><br><span class="line">            ),</span><br><span class="line">            diagonal=<span class="number">1</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 第一个 Pre-Norm + Attention + Residual。</span></span><br><span class="line">        normed = <span class="variable language_">self</span>.attention_norm(hidden_states)</span><br><span class="line">        attention_output, _ = <span class="variable language_">self</span>.attention(</span><br><span class="line">            query=normed,</span><br><span class="line">            key=normed,</span><br><span class="line">            value=normed,</span><br><span class="line">            attn_mask=causal_mask,</span><br><span class="line">            need_weights=<span class="literal">False</span>,</span><br><span class="line">        )</span><br><span class="line">        hidden_states = hidden_states + attention_output</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 第二个 Pre-Norm + MLP + Residual。</span></span><br><span class="line">        hidden_states = hidden_states + <span class="variable language_">self</span>.mlp(</span><br><span class="line">            <span class="variable language_">self</span>.mlp_norm(hidden_states)</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> hidden_states</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">torch.manual_seed(<span class="number">42</span>)</span><br><span class="line"></span><br><span class="line">block = CausalTransformerBlock(</span><br><span class="line">    hidden_size=<span class="number">64</span>,</span><br><span class="line">    num_heads=<span class="number">4</span>,</span><br><span class="line">    intermediate_size=<span class="number">256</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">inputs = torch.randn(<span class="number">2</span>, <span class="number">10</span>, <span class="number">64</span>)</span><br><span class="line">outputs = block(inputs)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;输入 Shape：&quot;</span>, inputs.shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;输出 Shape：&quot;</span>, outputs.shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;参数量：&quot;</span>, <span class="built_in">sum</span>(p.numel() <span class="keyword">for</span> p <span class="keyword">in</span> block.parameters()))</span><br></pre></td></tr></table></figure>
+<p>这个简化实现体现了核心结构，但不是生产级 LLM Block。真实模型还可能包含：</p>
+<ul>
+<li>RMSNorm；</li>
+<li>RoPE；</li>
+<li>GQA；</li>
+<li>SwiGLU；</li>
+<li>Attention Dropout；</li>
+<li>高性能 Attention Kernel；</li>
+<li>KV Cache；</li>
+<li>Tensor Parallel；</li>
+<li>混合精度和量化。</li>
+</ul>
+<h1 id="实战三：查看真实模型的-Transformer-配置"><a href="#实战三：查看真实模型的-Transformer-配置" class="headerlink" title="实战三：查看真实模型的 Transformer 配置"></a>实战三：查看真实模型的 Transformer 配置</h1><p>下面读取 Qwen2.5-0.5B-Instruct 的配置，观察隐藏维度、层数、Attention Head 和 KV Head。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -U torch transformers</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoConfig, AutoModelForCausalLM</span><br><span class="line"></span><br><span class="line">MODEL_ID = <span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line">config = AutoConfig.from_pretrained(MODEL_ID)</span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(MODEL_ID)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;模型类型：&quot;</span>, config.model_type)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;词表大小：&quot;</span>, config.vocab_size)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;隐藏维度：&quot;</span>, config.hidden_size)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Transformer 层数：&quot;</span>, config.num_hidden_layers)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Attention Heads：&quot;</span>, config.num_attention_heads)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;KV Heads：&quot;</span>, config.num_key_value_heads)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;中间层维度：&quot;</span>, config.intermediate_size)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;最大位置配置：&quot;</span>, config.max_position_embeddings)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;总参数量：&quot;</span>, <span class="string">f&quot;<span class="subst">&#123;model.num_parameters():,&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 第一层 Transformer Block ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(model.model.layers[<span class="number">0</span>])</span><br></pre></td></tr></table></figure>
+<p>输出的第一层结构中，可以重点寻找：</p>
+<ul>
+<li><code>self_attn</code>：Self-Attention；</li>
+<li><code>q_proj</code>、<code>k_proj</code>、<code>v_proj</code>：Q、K、V 投影；</li>
+<li><code>o_proj</code>：Attention 输出投影；</li>
+<li><code>mlp</code>：前馈网络；</li>
+<li><code>gate_proj</code>、<code>up_proj</code>、<code>down_proj</code>：门控 MLP；</li>
+<li><code>input_layernorm</code>：Attention 前的归一化；</li>
+<li><code>post_attention_layernorm</code>：MLP 前的归一化。</li>
+</ul>
+<p>模型内部属性名称不是 Transformers 的跨模型统一接口，其他架构可能使用不同路径和命名。</p>
+<h1 id="实战四：观察-Hidden-States、Attention-和-KV-Cache"><a href="#实战四：观察-Hidden-States、Attention-和-KV-Cache" class="headerlink" title="实战四：观察 Hidden States、Attention 和 KV Cache"></a>实战四：观察 Hidden States、Attention 和 KV Cache</h1><p>下面执行一次真实模型前向传播，并打印关键张量 Shape。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_ID = <span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)</span><br><span class="line"></span><br><span class="line"><span class="comment"># eager 实现便于返回 Attention Weights，主要用于学习和观察。</span></span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(</span><br><span class="line">    MODEL_ID,</span><br><span class="line">    attn_implementation=<span class="string">&quot;eager&quot;</span>,</span><br><span class="line">)</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line">inputs = tokenizer(</span><br><span class="line">    <span class="string">&quot;Transformer 通过注意力机制理解上下文。&quot;</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">    outputs = model(</span><br><span class="line">        **inputs,</span><br><span class="line">        output_hidden_states=<span class="literal">True</span>,</span><br><span class="line">        output_attentions=<span class="literal">True</span>,</span><br><span class="line">        use_cache=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Input IDs：&quot;</span>, inputs[<span class="string">&quot;input_ids&quot;</span>].shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Logits：&quot;</span>, outputs.logits.shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Hidden States 数量：&quot;</span>, <span class="built_in">len</span>(outputs.hidden_states))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Embedding 输出：&quot;</span>, outputs.hidden_states[<span class="number">0</span>].shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;最后一层 Hidden States：&quot;</span>, outputs.hidden_states[-<span class="number">1</span>].shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Attention 层数：&quot;</span>, <span class="built_in">len</span>(outputs.attentions))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;第一层 Attention：&quot;</span>, outputs.attentions[<span class="number">0</span>].shape)</span><br><span class="line"></span><br><span class="line">cache = outputs.past_key_values</span><br><span class="line">legacy_cache = (</span><br><span class="line">    cache.to_legacy_cache()</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">hasattr</span>(cache, <span class="string">&quot;to_legacy_cache&quot;</span>)</span><br><span class="line">    <span class="keyword">else</span> cache</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">first_layer_key, first_layer_value = legacy_cache[<span class="number">0</span>][:<span class="number">2</span>]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;第一层 Key Cache：&quot;</span>, first_layer_key.shape)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;第一层 Value Cache：&quot;</span>, first_layer_value.shape)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 下一个 Token 只使用最后一个有效位置的 Logits。</span></span><br><span class="line">next_token_id = torch.argmax(outputs.logits[:, -<span class="number">1</span>, :], dim=-<span class="number">1</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Greedy 下一个 Token：&quot;</span>, tokenizer.decode(next_token_id))</span><br></pre></td></tr></table></figure>
+<p>常见的 Shape 关系为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Input IDs</span><br><span class="line">[batch, sequence]</span><br><span class="line"></span><br><span class="line">Hidden States</span><br><span class="line">[batch, sequence, hidden_size]</span><br><span class="line"></span><br><span class="line">Attention Weights</span><br><span class="line">[batch, attention_heads, query_sequence, key_sequence]</span><br><span class="line"></span><br><span class="line">KV Cache</span><br><span class="line">[batch, kv_heads, sequence, head_dim]</span><br><span class="line"></span><br><span class="line">Logits</span><br><span class="line">[batch, sequence, vocab_size]</span><br></pre></td></tr></table></figure>
+<p>这里可以把前几篇文章串起来：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Tokenizer 产生 Input IDs</span><br><span class="line">        ↓</span><br><span class="line">Transformer 产生 Hidden States</span><br><span class="line">        ↓</span><br><span class="line">每层 Attention 产生可缓存的 K/V</span><br><span class="line">        ↓</span><br><span class="line">LM Head 产生 Logits</span><br><span class="line">        ↓</span><br><span class="line">解码器选择下一个 Token</span><br></pre></td></tr></table></figure>
+<h1 id="Attention-权重能解释模型吗？"><a href="#Attention-权重能解释模型吗？" class="headerlink" title="Attention 权重能解释模型吗？"></a>Attention 权重能解释模型吗？</h1><p>Attention Weights 可以帮助观察某一层、某个 Head 在一次计算中如何分配权重，但不能直接等同于模型完整的推理解释。</p>
+<p>原因包括：</p>
+<ul>
+<li>模型有很多层和很多 Head；</li>
+<li>Value 和输出投影会继续变换信息；</li>
+<li>FFN 保存和处理大量特征；</li>
+<li>Residual 会混合多条信息路径；</li>
+<li>相同输出可能由多个内部路径共同形成；</li>
+<li>最高 Attention 权重不等于对最终 Logit 的最大因果贡献。</li>
+</ul>
+<p>因此，可视化 Attention 是分析工具之一，而不是“模型为什么这样回答”的完整证明。</p>
+<h1 id="Transformer-的知识存在哪里？"><a href="#Transformer-的知识存在哪里？" class="headerlink" title="Transformer 的知识存在哪里？"></a>Transformer 的知识存在哪里？</h1><p>不能简单回答“都存在 Attention 里”。模型能力分布在：</p>
+<ul>
+<li>Token Embedding；</li>
+<li>Q/K/V/O 投影；</li>
+<li>FFN / MLP 参数；</li>
+<li>Normalization 参数；</li>
+<li>LM Head；</li>
+<li>多层组件之间的组合关系。</li>
+</ul>
+<p>研究通常认为 FFN 与事实和特征表示有密切关系，但知识不是一个可以直接读取的普通数据库表。模型回答问题时，会通过多层 Attention 与 MLP 的共同计算激活相关表示。</p>
+<h1 id="常见误区"><a href="#常见误区" class="headerlink" title="常见误区"></a>常见误区</h1><h2 id="误区一：Transformer-就是-Attention"><a href="#误区一：Transformer-就是-Attention" class="headerlink" title="误区一：Transformer 就是 Attention"></a>误区一：Transformer 就是 Attention</h2><p>Attention 是核心组件，但完整 Transformer 还包括 Embedding、位置信息、FFN、Residual、Normalization 和输出映射。</p>
+<h2 id="误区二：Attention-是在搜索模型训练数据"><a href="#误区二：Attention-是在搜索模型训练数据" class="headerlink" title="误区二：Attention 是在搜索模型训练数据"></a>误区二：Attention 是在搜索模型训练数据</h2><p>Self-Attention 处理的是当前序列中的 Hidden States，不会自动搜索原始训练语料或互联网。</p>
+<h2 id="误区三：Attention-Weight-就是概率正确率"><a href="#误区三：Attention-Weight-就是概率正确率" class="headerlink" title="误区三：Attention Weight 就是概率正确率"></a>误区三：Attention Weight 就是概率正确率</h2><p>它表示某个 Head 在特定层中的信息聚合权重，不是事实正确概率。</p>
+<h2 id="误区四：每个-Attention-Head-都有固定的人类可读职责"><a href="#误区四：每个-Attention-Head-都有固定的人类可读职责" class="headerlink" title="误区四：每个 Attention Head 都有固定的人类可读职责"></a>误区四：每个 Attention Head 都有固定的人类可读职责</h2><p>Head 的功能通过训练形成，可能分布、重叠或依赖其他层，不能机械标记成“语法 Head”“事实 Head”。</p>
+<h2 id="误区五：Decoder-only-模型看不到-Prompt"><a href="#误区五：Decoder-only-模型看不到-Prompt" class="headerlink" title="误区五：Decoder-only 模型看不到 Prompt"></a>误区五：Decoder-only 模型看不到 Prompt</h2><p>它不能看未来 Token，但可以通过 Causal Attention 读取当前位置之前的 System、历史消息、用户问题和已生成内容。</p>
+<h2 id="误区六：训练时模型逐-Token-串行计算所有位置"><a href="#误区六：训练时模型逐-Token-串行计算所有位置" class="headerlink" title="误区六：训练时模型逐 Token 串行计算所有位置"></a>误区六：训练时模型逐 Token 串行计算所有位置</h2><p>训练中已知完整序列，可以利用 Causal Mask 并行计算多个位置。推理时未来 Token 未知，才必须逐步生成。</p>
+<h2 id="误区七：位置编码只是给-Token-编号"><a href="#误区七：位置编码只是给-Token-编号" class="headerlink" title="误区七：位置编码只是给 Token 编号"></a>误区七：位置编码只是给 Token 编号</h2><p>位置机制会进入 Attention 关系计算。RoPE 等方法还会显式影响 Query 与 Key 的相对位置关系。</p>
+<h2 id="误区八：层数越多，模型一定越好"><a href="#误区八：层数越多，模型一定越好" class="headerlink" title="误区八：层数越多，模型一定越好"></a>误区八：层数越多，模型一定越好</h2><p>模型能力还取决于隐藏维度、数据、训练方法、参数分配、计算预算和优化稳定性。单独增加层数不保证质量提升。</p>
+<h2 id="误区九：KV-Cache-保存了完整-Hidden-States"><a href="#误区九：KV-Cache-保存了完整-Hidden-States" class="headerlink" title="误区九：KV Cache 保存了完整 Hidden States"></a>误区九：KV Cache 保存了完整 Hidden States</h2><p>标准 KV Cache 主要保存每一层历史位置的 Key 和 Value，不等同于保存全部中间状态。</p>
+<h2 id="误区十：FlashAttention-改变了模型含义"><a href="#误区十：FlashAttention-改变了模型含义" class="headerlink" title="误区十：FlashAttention 改变了模型含义"></a>误区十：FlashAttention 改变了模型含义</h2><p>在等价配置和允许的数值误差下，FlashAttention 主要优化 Attention 的计算与内存访问方式，不是把模型换成另一套语义规则。</p>
+<h1 id="如何阅读一个真实-LLM-架构？"><a href="#如何阅读一个真实-LLM-架构？" class="headerlink" title="如何阅读一个真实 LLM 架构？"></a>如何阅读一个真实 LLM 架构？</h1><p>拿到模型配置时，可以按下面顺序检查：</p>
+<ol>
+<li><code>vocab_size</code>：词表有多大；</li>
+<li><code>hidden_size</code>：每个 Token 的主表示维度；</li>
+<li><code>num_hidden_layers</code>：堆叠多少个 Block；</li>
+<li><code>num_attention_heads</code>：Query Head 数；</li>
+<li><code>num_key_value_heads</code>：是 MHA、GQA 还是 MQA；</li>
+<li><code>head_dim</code>：每个 Head 的维度；</li>
+<li><code>intermediate_size</code>：MLP 扩展维度；</li>
+<li><code>hidden_act</code>：MLP 激活函数；</li>
+<li><code>max_position_embeddings</code> 与 RoPE 配置：位置与上下文设置；</li>
+<li>Norm 类型和位置：Pre-Norm、Post-Norm、RMSNorm 或 LayerNorm；</li>
+<li>是否使用 Sliding Window、MoE 等特殊结构；</li>
+<li>LM Head 是否与输入 Embedding 共享权重。</li>
+</ol>
+<p>这些配置可以帮助我们判断参数主要花在哪里、KV Cache 大小如何估算，以及模型推理时可能有哪些性能特点。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>本文的核心内容可以总结为：</p>
+<ol>
+<li>Transformer 让每个 Token 根据上下文动态更新自己的 Hidden State；</li>
+<li>Token Embedding 提供初始表示，位置信息提供顺序和相对距离；</li>
+<li>Self-Attention 的 Q、K、V 来自同一序列；</li>
+<li><code>QKᵀ</code> 计算匹配分数，Softmax 产生权重，再对 V 加权聚合；</li>
+<li>Causal Mask 保证当前位置不能看到未来 Token；</li>
+<li>Multi-Head Attention 允许模型在多个表示子空间中建模关系；</li>
+<li>MQA 和 GQA 通过减少 KV Head 降低 KV Cache 与推理带宽；</li>
+<li>FFN 对每个位置进行非线性特征变换；</li>
+<li>Residual 和 Normalization 让深层网络更容易稳定训练；</li>
+<li>多个 Block 堆叠后，LM Head 将最终 Hidden States 映射成词表 Logits；</li>
+<li>Decoder-only、Encoder-only 和 Encoder-Decoder 适合不同任务；</li>
+<li>KV Cache 本质上缓存的是各层 Causal Self-Attention 的历史 Key 和 Value。</li>
+</ol>
+<p>现在，我们已经能够把一次 LLM 推理的核心路径完整串起来：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">文本</span><br><span class="line">→ Token</span><br><span class="line">→ Embedding 与位置</span><br><span class="line">→ Transformer Blocks</span><br><span class="line">→ Hidden States</span><br><span class="line">→ Logits</span><br><span class="line">→ 解码</span><br><span class="line">→ 下一个 Token</span><br></pre></td></tr></table></figure>
+<p>下一篇将进入训练阶段，介绍模型如何通过海量文本完成预训练，再通过 SFT 和偏好对齐逐步成为能够遵循指令的聊天助手。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2104.09864">RoFormer：Enhanced Transformer with Rotary Position Embedding</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2305.13245">GQA：Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/main_classes/output">Hugging Face Transformers：Model Outputs</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/cache_explanation">Hugging Face Transformers：Cache Explanation</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html">PyTorch：MultiheadAttention</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+              <a href="/tags/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" rel="tag"># 大语言模型</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+              <a href="/tags/Transformer/" rel="tag"># Transformer</a>
+              <a href="/tags/Attention/" rel="tag"># Attention</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/09/ai/llms/7-llm-hallucination/" rel="prev" title="LLM 幻觉：为什么模型会一本正经地说错？">
+      <i class="fa fa-chevron-left"></i> LLM 幻觉：为什么模型会一本正经地说错？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/11/ai/llms/9-llm-training/" rel="next" title="LLM 如何训练：从预训练到后训练">
+      LLM 如何训练：从预训练到后训练 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Transformer-%E6%9E%B6%E6%9E%84%EF%BC%9ALLM-%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3-Token-%E4%B9%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">Transformer 架构：LLM 如何理解 Token 之间的关系？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%88%E7%9C%8B%E5%AE%8C%E6%95%B4%E6%95%B0%E6%8D%AE%E6%B5%81"><span class="nav-number">2.</span> <span class="nav-text">先看完整数据流</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Transformer-%E8%A7%A3%E5%86%B3%E4%BA%86%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">Transformer 解决了什么问题？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Transformer-%E5%87%BA%E7%8E%B0%E4%B9%8B%E5%89%8D"><span class="nav-number">4.</span> <span class="nav-text">Transformer 出现之前</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E-Token-ID-%E5%88%B0-Token-Embedding"><span class="nav-number">5.</span> <span class="nav-text">从 Token ID 到 Token Embedding</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Embedding-%E6%98%AF%E4%B8%8A%E4%B8%8B%E6%96%87%E6%97%A0%E5%85%B3%E7%9A%84%E8%B5%B7%E7%82%B9"><span class="nav-number">5.1.</span> <span class="nav-text">Embedding 是上下文无关的起点</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E4%BD%8D%E7%BD%AE%E4%BF%A1%E6%81%AF%EF%BC%9F"><span class="nav-number">6.</span> <span class="nav-text">为什么需要位置信息？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA-Transformer-Block-%E9%87%8C%E6%9C%89%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">7.</span> <span class="nav-text">一个 Transformer Block 里有什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Self-Attention-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">8.</span> <span class="nav-text">Self-Attention 是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Q%E3%80%81K%E3%80%81V-%E5%88%86%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">9.</span> <span class="nav-text">Q、K、V 分别是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Scaled-Dot-Product-Attention"><span class="nav-number">10.</span> <span class="nav-text">Scaled Dot-Product Attention</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%9A%E8%AE%A1%E7%AE%97%E7%9B%B8%E4%BC%BC%E5%BA%A6"><span class="nav-number">10.1.</span> <span class="nav-text">第一步：计算相似度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%9A%E9%99%A4%E4%BB%A5%E7%BC%A9%E6%94%BE%E5%9B%A0%E5%AD%90"><span class="nav-number">10.2.</span> <span class="nav-text">第二步：除以缩放因子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%EF%BC%9A%E5%8A%A0%E5%85%A5-Mask"><span class="nav-number">10.3.</span> <span class="nav-text">第三步：加入 Mask</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E6%AD%A5%EF%BC%9A%E8%BD%AC%E6%8D%A2%E4%B8%BA%E6%9D%83%E9%87%8D"><span class="nav-number">10.4.</span> <span class="nav-text">第四步：转换为权重</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%BA%94%E6%AD%A5%EF%BC%9A%E8%81%9A%E5%90%88-Value"><span class="nav-number">10.5.</span> <span class="nav-text">第五步：聚合 Value</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-Causal-Mask%EF%BC%9F"><span class="nav-number">11.</span> <span class="nav-text">什么是 Causal Mask？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Padding-Mask-%E4%B8%8E-Causal-Mask-%E4%B8%8D%E7%9B%B8%E5%90%8C"><span class="nav-number">12.</span> <span class="nav-text">Padding Mask 与 Causal Mask 不相同</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-Multi-Head-Attention%EF%BC%9F"><span class="nav-number">13.</span> <span class="nav-text">为什么需要 Multi-Head Attention？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MHA%E3%80%81MQA-%E4%B8%8E-GQA"><span class="nav-number">14.</span> <span class="nav-text">MHA、MQA 与 GQA</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Attention-%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%98%E9%9C%80%E8%A6%81-FFN%EF%BC%9F"><span class="nav-number">15.</span> <span class="nav-text">Attention 之后为什么还需要 FFN？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Residual-Connection-%E6%9C%89%E4%BB%80%E4%B9%88%E4%BD%9C%E7%94%A8%EF%BC%9F"><span class="nav-number">16.</span> <span class="nav-text">Residual Connection 有什么作用？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LayerNorm-%E4%B8%8E-RMSNorm"><span class="nav-number">17.</span> <span class="nav-text">LayerNorm 与 RMSNorm</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#LayerNorm"><span class="nav-number">17.1.</span> <span class="nav-text">LayerNorm</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RMSNorm"><span class="nav-number">17.2.</span> <span class="nav-text">RMSNorm</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pre-Norm-%E4%B8%8E-Post-Norm"><span class="nav-number">17.3.</span> <span class="nav-text">Pre-Norm 与 Post-Norm</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%A0%86%E5%8F%A0%E5%BE%88%E5%A4%9A%E5%B1%82%EF%BC%9F"><span class="nav-number">18.</span> <span class="nav-text">为什么要堆叠很多层？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E-Hidden-State-%E5%88%B0-Logits"><span class="nav-number">19.</span> <span class="nav-text">从 Hidden State 到 Logits</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%8E%B0%E4%BB%A3%E6%96%87%E6%9C%AC-LLM-%E5%B8%B8%E7%94%A8-Decoder-only%EF%BC%9F"><span class="nav-number">20.</span> <span class="nav-text">为什么现代文本 LLM 常用 Decoder-only？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Encoder-only"><span class="nav-number">20.1.</span> <span class="nav-text">Encoder-only</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Decoder-only"><span class="nav-number">20.2.</span> <span class="nav-text">Decoder-only</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Encoder-Decoder"><span class="nav-number">20.3.</span> <span class="nav-text">Encoder-Decoder</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Self-Attention-%E4%B8%8E-Cross-Attention"><span class="nav-number">21.</span> <span class="nav-text">Self-Attention 与 Cross-Attention</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Transformer-%E4%B8%8E-KV-Cache-%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">22.</span> <span class="nav-text">Transformer 与 KV Cache 的关系</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E4%B8%8E%E6%8E%A8%E7%90%86%E6%97%B6%E6%9C%89%E4%BB%80%E4%B9%88%E4%B8%8D%E5%90%8C%EF%BC%9F"><span class="nav-number">23.</span> <span class="nav-text">训练与推理时有什么不同？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E9%98%B6%E6%AE%B5"><span class="nav-number">23.1.</span> <span class="nav-text">训练阶段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A8%E7%90%86%E9%98%B6%E6%AE%B5"><span class="nav-number">23.2.</span> <span class="nav-text">推理阶段</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Attention-%E7%9A%84%E8%AE%A1%E7%AE%97%E5%A4%8D%E6%9D%82%E5%BA%A6"><span class="nav-number">24.</span> <span class="nav-text">Attention 的计算复杂度</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%B8%80%EF%BC%9A%E6%89%8B%E5%86%99-Scaled-Dot-Product-Attention"><span class="nav-number">25.</span> <span class="nav-text">实战一：手写 Scaled Dot-Product Attention</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E4%BE%9D%E8%B5%96"><span class="nav-number">25.1.</span> <span class="nav-text">安装依赖</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E6%89%A7%E8%A1%8C%E4%BB%A3%E7%A0%81"><span class="nav-number">25.2.</span> <span class="nav-text">可执行代码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%BA%8C%EF%BC%9A%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8C%96-Transformer-Block"><span class="nav-number">26.</span> <span class="nav-text">实战二：实现一个简化 Transformer Block</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%B8%89%EF%BC%9A%E6%9F%A5%E7%9C%8B%E7%9C%9F%E5%AE%9E%E6%A8%A1%E5%9E%8B%E7%9A%84-Transformer-%E9%85%8D%E7%BD%AE"><span class="nav-number">27.</span> <span class="nav-text">实战三：查看真实模型的 Transformer 配置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E5%9B%9B%EF%BC%9A%E8%A7%82%E5%AF%9F-Hidden-States%E3%80%81Attention-%E5%92%8C-KV-Cache"><span class="nav-number">28.</span> <span class="nav-text">实战四：观察 Hidden States、Attention 和 KV Cache</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Attention-%E6%9D%83%E9%87%8D%E8%83%BD%E8%A7%A3%E9%87%8A%E6%A8%A1%E5%9E%8B%E5%90%97%EF%BC%9F"><span class="nav-number">29.</span> <span class="nav-text">Attention 权重能解释模型吗？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Transformer-%E7%9A%84%E7%9F%A5%E8%AF%86%E5%AD%98%E5%9C%A8%E5%93%AA%E9%87%8C%EF%BC%9F"><span class="nav-number">30.</span> <span class="nav-text">Transformer 的知识存在哪里？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%AF%E5%8C%BA"><span class="nav-number">31.</span> <span class="nav-text">常见误区</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%80%EF%BC%9ATransformer-%E5%B0%B1%E6%98%AF-Attention"><span class="nav-number">31.1.</span> <span class="nav-text">误区一：Transformer 就是 Attention</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%8C%EF%BC%9AAttention-%E6%98%AF%E5%9C%A8%E6%90%9C%E7%B4%A2%E6%A8%A1%E5%9E%8B%E8%AE%AD%E7%BB%83%E6%95%B0%E6%8D%AE"><span class="nav-number">31.2.</span> <span class="nav-text">误区二：Attention 是在搜索模型训练数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%89%EF%BC%9AAttention-Weight-%E5%B0%B1%E6%98%AF%E6%A6%82%E7%8E%87%E6%AD%A3%E7%A1%AE%E7%8E%87"><span class="nav-number">31.3.</span> <span class="nav-text">误区三：Attention Weight 就是概率正确率</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%9B%9B%EF%BC%9A%E6%AF%8F%E4%B8%AA-Attention-Head-%E9%83%BD%E6%9C%89%E5%9B%BA%E5%AE%9A%E7%9A%84%E4%BA%BA%E7%B1%BB%E5%8F%AF%E8%AF%BB%E8%81%8C%E8%B4%A3"><span class="nav-number">31.4.</span> <span class="nav-text">误区四：每个 Attention Head 都有固定的人类可读职责</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%94%EF%BC%9ADecoder-only-%E6%A8%A1%E5%9E%8B%E7%9C%8B%E4%B8%8D%E5%88%B0-Prompt"><span class="nav-number">31.5.</span> <span class="nav-text">误区五：Decoder-only 模型看不到 Prompt</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AD%EF%BC%9A%E8%AE%AD%E7%BB%83%E6%97%B6%E6%A8%A1%E5%9E%8B%E9%80%90-Token-%E4%B8%B2%E8%A1%8C%E8%AE%A1%E7%AE%97%E6%89%80%E6%9C%89%E4%BD%8D%E7%BD%AE"><span class="nav-number">31.6.</span> <span class="nav-text">误区六：训练时模型逐 Token 串行计算所有位置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%83%EF%BC%9A%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81%E5%8F%AA%E6%98%AF%E7%BB%99-Token-%E7%BC%96%E5%8F%B7"><span class="nav-number">31.7.</span> <span class="nav-text">误区七：位置编码只是给 Token 编号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AB%EF%BC%9A%E5%B1%82%E6%95%B0%E8%B6%8A%E5%A4%9A%EF%BC%8C%E6%A8%A1%E5%9E%8B%E4%B8%80%E5%AE%9A%E8%B6%8A%E5%A5%BD"><span class="nav-number">31.8.</span> <span class="nav-text">误区八：层数越多，模型一定越好</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B9%9D%EF%BC%9AKV-Cache-%E4%BF%9D%E5%AD%98%E4%BA%86%E5%AE%8C%E6%95%B4-Hidden-States"><span class="nav-number">31.9.</span> <span class="nav-text">误区九：KV Cache 保存了完整 Hidden States</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%8D%81%EF%BC%9AFlashAttention-%E6%94%B9%E5%8F%98%E4%BA%86%E6%A8%A1%E5%9E%8B%E5%90%AB%E4%B9%89"><span class="nav-number">31.10.</span> <span class="nav-text">误区十：FlashAttention 改变了模型含义</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%98%85%E8%AF%BB%E4%B8%80%E4%B8%AA%E7%9C%9F%E5%AE%9E-LLM-%E6%9E%B6%E6%9E%84%EF%BC%9F"><span class="nav-number">32.</span> <span class="nav-text">如何阅读一个真实 LLM 架构？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">33.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">34.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

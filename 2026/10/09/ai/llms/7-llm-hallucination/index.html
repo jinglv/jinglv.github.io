@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从下一个 Token 预测出发，理解 LLM 幻觉的定义、类型、形成原因、检测方法，以及 Prompt、RAG、工具调用和人工审核如何降低幻觉风险。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLM 幻觉：为什么模型会一本正经地说错？">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/09/ai/llms/7-llm-hallucination/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从下一个 Token 预测出发，理解 LLM 幻觉的定义、类型、形成原因、检测方法，以及 Prompt、RAG、工具调用和人工审核如何降低幻觉风险。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012113037992.png">
+<meta property="article:published_time" content="2026-10-09T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-09T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta property="article:tag" content="大语言模型">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="幻觉">
+<meta property="article:tag" content="可靠性">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012113037992.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/09/ai/llms/7-llm-hallucination/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LLM 幻觉：为什么模型会一本正经地说错？ | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/09/ai/llms/7-llm-hallucination/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LLM 幻觉：为什么模型会一本正经地说错？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-09 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-09T10:00:00+08:00">2026-10-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从下一个 Token 预测出发，理解 LLM 幻觉的定义、类型、形成原因、检测方法，以及 Prompt、RAG、工具调用和人工审核如何降低幻觉风险。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="LLM-幻觉：为什么模型会一本正经地说错？"><a href="#LLM-幻觉：为什么模型会一本正经地说错？" class="headerlink" title="LLM 幻觉：为什么模型会一本正经地说错？"></a>LLM 幻觉：为什么模型会一本正经地说错？</h1><p>在前面的文章中，我们已经知道，大语言模型会根据当前上下文计算 Logits，再逐 Token 选择并生成回答。</p>
+<p>这种机制可以产生自然、连贯的文本，但也带来一个非常常见的问题：</p>
+<blockquote>
+<p>模型可能用非常肯定的语气，生成看起来专业、完整，实际上却错误、无依据或无法验证的内容。</p>
+</blockquote>
+<p>这类现象通常被称为 <strong>LLM Hallucination，也就是大语言模型幻觉</strong>。NIST 的生成式 AI 风险管理资料也使用 <strong>Confabulation</strong> 描述这类自信但错误或虚构的输出，以避免与医学意义上的“幻觉”混淆。</p>
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">用户：请介绍 2024 年发表的论文</span><br><span class="line">《Quantum Coffee Networks for Large Language Models》及其作者。</span><br><span class="line"></span><br><span class="line">模型：这篇论文由 Alice Johnson 和 Michael Chen 发表，</span><br><span class="line">主要研究量子计算如何优化咖啡推荐系统……</span><br></pre></td></tr></table></figure>
+<p>如果这篇论文根本不存在，那么作者、发表时间和研究内容都是模型生成出来的幻觉。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012113037992.png" alt="image-20261012113037992"></p>
+<h1 id="先说结论"><a href="#先说结论" class="headerlink" title="先说结论"></a>先说结论</h1><p>LLM 产生幻觉的根本原因，可以概括为：</p>
+<blockquote>
+<p>LLM 的核心目标是根据上下文生成统计上合理的下一个 Token，而不是自动查询现实世界并证明每句话为真。</p>
+</blockquote>
+<p>模型执行的主要过程是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">训练数据中学到的语言与知识模式</span><br><span class="line">                +</span><br><span class="line">当前 Prompt 与 Context</span><br><span class="line">                ↓</span><br><span class="line">预测下一个 Token 的概率分布</span><br><span class="line">                ↓</span><br><span class="line">选择一个 Token</span><br><span class="line">                ↓</span><br><span class="line">将它放回上下文并继续预测</span><br><span class="line">                ↓</span><br><span class="line">得到连贯、自然的完整回答</span><br></pre></td></tr></table></figure>
+<p>但默认过程里并不一定包含：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">查询权威资料</span><br><span class="line">→ 核对事实</span><br><span class="line">→ 验证引用</span><br><span class="line">→ 执行计算</span><br><span class="line">→ 判断证据是否足够</span><br></pre></td></tr></table></figure>
+<p>因此：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">语言上合理</span><br><span class="line">    ≠</span><br><span class="line">事实一定正确</span><br></pre></td></tr></table></figure>
+<h1 id="什么是-LLM-幻觉？"><a href="#什么是-LLM-幻觉？" class="headerlink" title="什么是 LLM 幻觉？"></a>什么是 LLM 幻觉？</h1><p>在本文中，可以把 LLM 幻觉定义为：</p>
+<blockquote>
+<p>模型生成了与现实事实、给定来源或可验证证据不一致，或者缺少依据却被表达为事实的内容。</p>
+</blockquote>
+<p>这个定义里有三个重点：</p>
+<ol>
+<li>输出可能与现实世界的事实不一致；</li>
+<li>输出可能与用户提供的资料不一致；</li>
+<li>输出也可能无法从任何可靠证据中得到支持。</li>
+</ol>
+<h2 id="幻觉不等于所有错误"><a href="#幻觉不等于所有错误" class="headerlink" title="幻觉不等于所有错误"></a>幻觉不等于所有错误</h2><p>“错误”和“幻觉”经常被混用，但两者并不完全相同。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>情况</th>
+<th>是否通常属于幻觉</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>编造不存在的论文</td>
+<td>是</td>
+<td>无可靠依据却作为事实输出</td>
+</tr>
+<tr>
+<td>错误引用给定文档</td>
+<td>是</td>
+<td>与明确来源冲突</td>
+</tr>
+<tr>
+<td>算术计算失误</td>
+<td>可能属于广义幻觉</td>
+<td>也可以单独称为推理或计算错误</td>
+</tr>
+<tr>
+<td>没遵守 JSON 格式</td>
+<td>通常不是事实幻觉</td>
+<td>更接近指令遵循失败</td>
+</tr>
+<tr>
+<td>写了一篇虚构小说</td>
+<td>不是</td>
+<td>用户明确要求创造虚构内容</td>
+</tr>
+<tr>
+<td>对未来进行明确标注的预测</td>
+<td>不一定是</td>
+<td>关键在于是否把预测冒充为已知事实</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>幻觉通常强调的是：<strong>输出呈现出事实性，但缺乏事实支撑。</strong></p>
+<h2 id="幻觉不等于撒谎"><a href="#幻觉不等于撒谎" class="headerlink" title="幻觉不等于撒谎"></a>幻觉不等于撒谎</h2><p>撒谎通常意味着知道真相，却有意说出错误信息。LLM 是否具有这种主观意图不能从一次错误输出中推出。</p>
+<p>大多数情况下，更准确的说法是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">模型根据概率生成了错误内容</span><br></pre></td></tr></table></figure>
+<p>而不是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">模型知道答案，但故意欺骗用户</span><br></pre></td></tr></table></figure>
+<p>因此在工程讨论中，应该优先分析数据、上下文、检索、解码和验证流程，而不是给模型赋予未经证明的主观动机。</p>
+<h1 id="两个判断维度：Factuality-与-Faithfulness"><a href="#两个判断维度：Factuality-与-Faithfulness" class="headerlink" title="两个判断维度：Factuality 与 Faithfulness"></a>两个判断维度：Factuality 与 Faithfulness</h1><p>分析幻觉时，最好区分两个容易混淆的概念。</p>
+<h2 id="Factuality：事实性"><a href="#Factuality：事实性" class="headerlink" title="Factuality：事实性"></a>Factuality：事实性</h2><p>事实性关注输出是否与现实世界中的可验证事实一致。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">问题：法国的首都是哪里？</span><br><span class="line">回答：巴黎。</span><br></pre></td></tr></table></figure>
+<p>这句话可以通过可靠外部知识验证。</p>
+<h2 id="Faithfulness：忠实性"><a href="#Faithfulness：忠实性" class="headerlink" title="Faithfulness：忠实性"></a>Faithfulness：忠实性</h2><p>忠实性关注输出是否忠于当前提供的来源、文档或结构化数据。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">来源：报告显示，本季度收入增长 8%。</span><br><span class="line">回答：报告显示，本季度收入增长 18%。</span><br></pre></td></tr></table></figure>
+<p>即使现实中企业收入碰巧增长了 18%，这个回答仍然不忠于给定报告。</p>
+<p>两者的关系可以表示为：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>输出情况</th>
+<th>事实性</th>
+<th>忠实性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>与现实和来源都一致</td>
+<td>正确</td>
+<td>忠实</td>
+</tr>
+<tr>
+<td>与现实一致，但来源没有提到</td>
+<td>可能正确</td>
+<td>不一定忠实</td>
+</tr>
+<tr>
+<td>与来源一致，但来源本身错误</td>
+<td>可能错误</td>
+<td>忠实</td>
+</tr>
+<tr>
+<td>与现实和来源都冲突</td>
+<td>错误</td>
+<td>不忠实</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>对于 RAG、文档问答和摘要任务，Faithfulness 尤其重要：模型应该根据当前证据回答，而不是擅自补充参数中的“印象”。</p>
+<h1 id="幻觉有哪些常见类型？"><a href="#幻觉有哪些常见类型？" class="headerlink" title="幻觉有哪些常见类型？"></a>幻觉有哪些常见类型？</h1><h2 id="1-事实捏造"><a href="#1-事实捏造" class="headerlink" title="1. 事实捏造"></a>1. 事实捏造</h2><p>模型编造不存在的人物、事件、组织、产品或数据：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">“某公司在 2019 年获得了图灵奖。”</span><br></pre></td></tr></table></figure>
+<p>公司不可能获得授予个人的图灵奖，这类内容可能语法正确，却事实错误。</p>
+<h2 id="2-属性与关系错误"><a href="#2-属性与关系错误" class="headerlink" title="2. 属性与关系错误"></a>2. 属性与关系错误</h2><p>实体本身存在，但模型把属性或关系拼错：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">把一篇论文的作者张冠李戴；</span><br><span class="line">把产品 A 的功能写到产品 B；</span><br><span class="line">把事件发生年份与另一个事件混合。</span><br></pre></td></tr></table></figure>
+<p>这类幻觉常来自相似概念之间的错误关联。</p>
+<h2 id="3-引用与来源伪造"><a href="#3-引用与来源伪造" class="headerlink" title="3. 引用与来源伪造"></a>3. 引用与来源伪造</h2><p>模型生成看似规范的：</p>
+<ul>
+<li>论文标题；</li>
+<li>DOI；</li>
+<li>法律条文；</li>
+<li>新闻链接；</li>
+<li>作者和期刊名称；</li>
+<li>API 文档地址。</li>
+</ul>
+<p>这些引用格式可能很像真的，但实际不存在，或者链接指向完全不同的内容。</p>
+<h2 id="4-与来源冲突"><a href="#4-与来源冲突" class="headerlink" title="4. 与来源冲突"></a>4. 与来源冲突</h2><p>用户已经提供明确资料，但模型仍然改变其中的数字、条件或结论：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">来源：退款申请需在 7 天内提交。</span><br><span class="line">模型：退款申请可在 30 天内提交。</span><br></pre></td></tr></table></figure>
+<p>这是一种典型的内在幻觉（Intrinsic Hallucination）：输出与给定来源发生矛盾。</p>
+<h2 id="5-无来源扩展"><a href="#5-无来源扩展" class="headerlink" title="5. 无来源扩展"></a>5. 无来源扩展</h2><p>模型添加了来源中没有出现、外部也未验证的内容：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">来源：张三于周一参加会议。</span><br><span class="line">模型：张三于周一参加会议，并在会上提出了三项改革建议。</span><br></pre></td></tr></table></figure>
+<p>后半句没有证据支持，属于外在幻觉（Extrinsic Hallucination）的常见形式。</p>
+<p>需要注意，来源外信息不一定事实错误，但如果任务要求“只根据资料回答”，未经支持的补充仍然是不忠实输出。</p>
+<h2 id="6-推理过程幻觉"><a href="#6-推理过程幻觉" class="headerlink" title="6. 推理过程幻觉"></a>6. 推理过程幻觉</h2><p>模型可能给出形式完整但实际不成立的推导：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">错误前提</span><br><span class="line">→ 看似合理的中间步骤</span><br><span class="line">→ 错误结论</span><br></pre></td></tr></table></figure>
+<p>有时最终答案碰巧正确，中间解释却是编出来的；有时中间一个错误会让后续整条推理链偏离。</p>
+<h2 id="7-工具与代码幻觉"><a href="#7-工具与代码幻觉" class="headerlink" title="7. 工具与代码幻觉"></a>7. 工具与代码幻觉</h2><p>在编程和 Agent 场景中，常见表现包括：</p>
+<ul>
+<li>调用不存在的函数；</li>
+<li>编造第三方库 API；</li>
+<li>使用已经废弃的参数；</li>
+<li>声称执行了实际没有执行的工具；</li>
+<li>把工具返回的失败结果描述成成功；</li>
+<li>构造不存在的文件路径或数据库字段。</li>
+</ul>
+<p>这类问题不能只靠回答写得更谨慎解决，还需要真实执行、类型检查、测试和工具结果验证。</p>
+<h1 id="LLM-为什么会产生幻觉？"><a href="#LLM-为什么会产生幻觉？" class="headerlink" title="LLM 为什么会产生幻觉？"></a>LLM 为什么会产生幻觉？</h1><p>幻觉通常不是单一原因造成的，而是数据、训练目标、模型容量、上下文、检索和解码共同作用的结果。</p>
+<h1 id="原因一：训练目标是预测-Token，不是验证事实"><a href="#原因一：训练目标是预测-Token，不是验证事实" class="headerlink" title="原因一：训练目标是预测 Token，不是验证事实"></a>原因一：训练目标是预测 Token，不是验证事实</h1><p>预训练的典型目标是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">给定前面的 Token，预测下一个 Token</span><br></pre></td></tr></table></figure>
+<p>数学上可以写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P(x_t | x_1, x_2, ..., x_(t-1))</span><br></pre></td></tr></table></figure>
+<p>损失函数会奖励模型给训练文本中的下一个 Token 更高概率，却不会自动要求模型为每个陈述提供外部证据。</p>
+<p>如果训练数据中经常出现：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">“这项研究由……提出，并发表于……”</span><br></pre></td></tr></table></figure>
+<p>模型就会学会这种论文介绍模式。面对一个不存在的论文标题，它仍可能继续生成常见作者名、年份和研究结论，因为这些 Token 在语言结构上非常合理。</p>
+<p>这解释了一个关键现象：</p>
+<blockquote>
+<p>模型可以非常擅长生成“答案的样子”，但这不等于它拥有答案的证据。</p>
+</blockquote>
+<h1 id="原因二：训练数据包含错误、冲突与过时内容"><a href="#原因二：训练数据包含错误、冲突与过时内容" class="headerlink" title="原因二：训练数据包含错误、冲突与过时内容"></a>原因二：训练数据包含错误、冲突与过时内容</h1><p>LLM 的训练数据通常来自大量文本，其中可能同时存在：</p>
+<ul>
+<li>真实事实与网络谣言；</li>
+<li>新版本文档与旧版本文档；</li>
+<li>权威来源与低质量转载；</li>
+<li>不同时间点的冲突信息；</li>
+<li>讽刺、虚构作品与真实报道；</li>
+<li>人类普遍相信但实际错误的说法。</li>
+</ul>
+<p>模型学习的是这些文本的统计分布，不会天然知道哪一份来源最权威。</p>
+<p>TruthfulQA 的研究也表明，模型可能复现训练文本中常见的人类误解。单纯扩大参数量，并不自动保证模型在所有问题上更加真实。</p>
+<h1 id="原因三：模型参数不是精确数据库"><a href="#原因三：模型参数不是精确数据库" class="headerlink" title="原因三：模型参数不是精确数据库"></a>原因三：模型参数不是精确数据库</h1><p>模型不会把每条知识保存成简单的键值对：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">key = &quot;某论文作者&quot;</span><br><span class="line">value = &quot;某个人&quot;</span><br></pre></td></tr></table></figure>
+<p>知识以分布式方式编码在大量参数中。多个概念、名称和语言模式共享参数表示，因此可能出现：</p>
+<ul>
+<li>相似实体相互混淆；</li>
+<li>两段真实信息被错误拼接；</li>
+<li>记住大致结论，却记错数字；</li>
+<li>记住某个 API 的旧版本；</li>
+<li>用常见模式填补具体细节。</li>
+</ul>
+<p>参数化知识适合进行语言理解和模式泛化，却不是具有事务一致性和实时更新能力的数据库。</p>
+<h1 id="原因四：模型存在知识边界，但仍能继续生成"><a href="#原因四：模型存在知识边界，但仍能继续生成" class="headerlink" title="原因四：模型存在知识边界，但仍能继续生成"></a>原因四：模型存在知识边界，但仍能继续生成</h1><p>当模型不知道答案时，词表中的每个候选 Token 仍然会得到一个 Logit：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">不知道事实</span><br><span class="line">    ≠</span><br><span class="line">无法计算下一个 Token</span><br></pre></td></tr></table></figure>
+<p>Softmax 仍然可以产生总和为 1 的概率分布，解码器仍然可以选出一个 Token。除非模型学会在证据不足时拒答，否则它可能继续补全一个听起来合理的答案。</p>
+<p>可以把它理解为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">知识置信不足</span><br><span class="line">        ↓</span><br><span class="line">语言生成机制仍然正常工作</span><br><span class="line">        ↓</span><br><span class="line">使用相似模式填补缺失信息</span><br><span class="line">        ↓</span><br><span class="line">形成流畅但无依据的内容</span><br></pre></td></tr></table></figure>
+<h1 id="原因五：对“有帮助”的训练可能鼓励猜测"><a href="#原因五：对“有帮助”的训练可能鼓励猜测" class="headerlink" title="原因五：对“有帮助”的训练可能鼓励猜测"></a>原因五：对“有帮助”的训练可能鼓励猜测</h1><p>经过 SFT 或偏好对齐后，模型通常更愿意直接、完整地回答用户。如果训练数据持续奖励“给出一个答案”，却没有充分奖励：</p>
+<ul>
+<li>承认不知道；</li>
+<li>请求更多信息；</li>
+<li>区分事实与推测；</li>
+<li>引用可验证证据；</li>
+<li>拒绝错误前提；</li>
+</ul>
+<p>模型就可能在“有帮助”和“真实可靠”之间偏向前者。</p>
+<p>这不是说对齐训练必然增加幻觉，而是训练目标需要同时平衡 Helpful、Honest 和 Harmless。只奖励语言质量和用户满意度是不够的。</p>
+<h1 id="原因六：Prompt-可能包含错误前提"><a href="#原因六：Prompt-可能包含错误前提" class="headerlink" title="原因六：Prompt 可能包含错误前提"></a>原因六：Prompt 可能包含错误前提</h1><p>考虑这个问题：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">请解释爱因斯坦在 1969 年登月任务中的贡献。</span><br></pre></td></tr></table></figure>
+<p>问题已经包含错误前提。模型可能有两种行为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">行为 A：指出爱因斯坦于 1955 年去世，无法参与 1969 年任务</span><br><span class="line">行为 B：接受错误前提，并编造他的贡献</span><br></pre></td></tr></table></figure>
+<p>如果模型过度迎合用户，就可能沿错误前提继续生成。这类行为也与 Sycophancy，也就是迎合倾向有关。</p>
+<p>因此，可靠 Prompt 应明确允许模型纠正用户：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">如果问题包含错误前提，请先指出错误，不要沿错误前提继续推测。</span><br></pre></td></tr></table></figure>
+<h1 id="原因七：上下文过长、缺失或互相冲突"><a href="#原因七：上下文过长、缺失或互相冲突" class="headerlink" title="原因七：上下文过长、缺失或互相冲突"></a>原因七：上下文过长、缺失或互相冲突</h1><p>即使正确答案已经写在 Context 中，模型仍可能回答错误，原因包括：</p>
+<ul>
+<li>关键内容被截断；</li>
+<li>信息位于很长上下文的中间，未被有效关注；</li>
+<li>大量无关内容产生干扰；</li>
+<li>多份资料给出冲突结论；</li>
+<li>Chat Template 没有清晰标识资料边界；</li>
+<li>System、User 和检索资料的优先级不清楚；</li>
+<li>历史对话中的旧信息没有更新。</li>
+</ul>
+<p>更长的上下文窗口只能让模型接收更多 Token，不保证模型一定能正确使用每个 Token。</p>
+<h1 id="原因八：逐-Token-生成会累积错误"><a href="#原因八：逐-Token-生成会累积错误" class="headerlink" title="原因八：逐 Token 生成会累积错误"></a>原因八：逐 Token 生成会累积错误</h1><p>自回归生成会把刚刚生成的 Token 重新加入上下文：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">错误的第一个实体</span><br><span class="line">        ↓</span><br><span class="line">后续 Token 把它当作已有上下文</span><br><span class="line">        ↓</span><br><span class="line">继续补充日期、身份和事件</span><br><span class="line">        ↓</span><br><span class="line">形成内部连贯的错误叙述</span><br></pre></td></tr></table></figure>
+<p>例如模型一开始误选了某个作者名，后续就可能根据这个作者的真实研究领域继续编造，使整段回答看起来更加可信。</p>
+<p>这类错误具有路径依赖：越早发生，影响的后续 Token 通常越多。</p>
+<h1 id="原因九：检索和工具也可能出错"><a href="#原因九：检索和工具也可能出错" class="headerlink" title="原因九：检索和工具也可能出错"></a>原因九：检索和工具也可能出错</h1><p>引入 RAG、搜索和工具并不意味着幻觉自动消失。外部系统可能出现：</p>
+<ul>
+<li>检索到不相关文档；</li>
+<li>权威资料没有进入 Top-k；</li>
+<li>搜索结果已经过时；</li>
+<li>文档解析丢失表格或单位；</li>
+<li>工具调用失败；</li>
+<li>模型误读工具返回值；</li>
+<li>引用编号与正文证据错位；</li>
+<li>模型在证据之外继续扩写。</li>
+</ul>
+<p>因此系统可能形成新的错误链路：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">错误检索</span><br><span class="line">→ 错误上下文</span><br><span class="line">→ 忠实总结错误资料</span><br><span class="line">→ 得到事实错误的答案</span><br></pre></td></tr></table></figure>
+<p>在这种情况下，模型可能对来源是忠实的，但来源本身不真实。</p>
+<h1 id="Temperature-会导致幻觉吗？"><a href="#Temperature-会导致幻觉吗？" class="headerlink" title="Temperature 会导致幻觉吗？"></a>Temperature 会导致幻觉吗？</h1><p>Temperature 会改变 Token 概率分布的集中程度：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">较低 Temperature → 更偏向高概率 Token</span><br><span class="line">较高 Temperature → 更多低概率候选有机会被选中</span><br></pre></td></tr></table></figure>
+<p>较高 Temperature 往往增加输出多样性，也可能增加不稳定细节和无依据内容出现的机会。但不能简单写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Temperature 高 = 一定幻觉</span><br><span class="line">Temperature 低 = 一定真实</span><br></pre></td></tr></table></figure>
+<p>原因是：</p>
+<ol>
+<li>最高概率 Token 本身也可能对应错误事实；</li>
+<li>Greedy Decoding 可以每次稳定地产生同一个错误答案；</li>
+<li>某些推理模型对过低 Temperature 也可能出现重复或性能下降；</li>
+<li>事实正确性主要取决于知识、上下文、证据和验证，而不是单个采样参数。</li>
+</ol>
+<p>更准确的说法是：</p>
+<blockquote>
+<p>解码参数会影响幻觉的表现形式和发生概率，但无法从根本上保证事实正确。</p>
+</blockquote>
+<h1 id="为什么高概率不等于事实正确？"><a href="#为什么高概率不等于事实正确？" class="headerlink" title="为什么高概率不等于事实正确？"></a>为什么高概率不等于事实正确？</h1><p>假设模型对三个候选 Token 给出：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">候选 A：90%</span><br><span class="line">候选 B：8%</span><br><span class="line">候选 C：2%</span><br></pre></td></tr></table></figure>
+<p>这组概率表达的是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">在当前模型和当前上下文中，A 最符合模型学到的生成分布</span><br></pre></td></tr></table></figure>
+<p>它不是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A 经过外部事实核验后有 90% 的概率为真</span><br></pre></td></tr></table></figure>
+<p>如果训练数据错误、问题前提错误，或者模型把两个实体混淆，那么错误 Token 也可能获得最高概率。</p>
+<p>所以：</p>
+<ul>
+<li>Token Probability 是语言模型内部的生成偏好；</li>
+<li>Factual Confidence 应建立在证据、校准和外部验证上；</li>
+<li>两者有关联，但不能直接画等号。</li>
+</ul>
+<h1 id="RAG-能消除幻觉吗？"><a href="#RAG-能消除幻觉吗？" class="headerlink" title="RAG 能消除幻觉吗？"></a>RAG 能消除幻觉吗？</h1><p>不能。RAG 的作用是给模型提供与当前问题相关的外部证据，从而减少模型完全依赖参数记忆：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">用户问题</span><br><span class="line">   ↓</span><br><span class="line">检索相关资料</span><br><span class="line">   ↓</span><br><span class="line">把资料放入 Context</span><br><span class="line">   ↓</span><br><span class="line">要求模型根据资料回答</span><br></pre></td></tr></table></figure>
+<p>它能显著改善以下问题：</p>
+<ul>
+<li>模型缺少私有领域知识；</li>
+<li>模型知识已经过时；</li>
+<li>回答需要引用具体文档；</li>
+<li>需要追溯答案来源。</li>
+</ul>
+<p>但 RAG 仍可能失败：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>可能的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>文档采集</td>
+<td>来源本身不可靠或已过时</td>
+</tr>
+<tr>
+<td>文档切分</td>
+<td>关键条件被切到另一个 Chunk</td>
+</tr>
+<tr>
+<td>Embedding</td>
+<td>语义表示没有捕捉关键差异</td>
+</tr>
+<tr>
+<td>Retrieval</td>
+<td>正确文档未进入候选集合</td>
+</tr>
+<tr>
+<td>Rerank</td>
+<td>不相关片段被排到前面</td>
+</tr>
+<tr>
+<td>Generation</td>
+<td>模型忽略证据或在证据外扩写</td>
+</tr>
+<tr>
+<td>Citation</td>
+<td>引用编号与实际结论不对应</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>因此，更准确的表达是：</p>
+<blockquote>
+<p>RAG 可以降低知识缺失和来源不可追溯导致的幻觉，但不能保证答案百分之百正确。</p>
+</blockquote>
+<h1 id="如何检测幻觉？"><a href="#如何检测幻觉？" class="headerlink" title="如何检测幻觉？"></a>如何检测幻觉？</h1><p>没有一种方法可以在所有任务中完美识别幻觉。实际系统通常组合多种手段。</p>
+<h2 id="1-来源核对"><a href="#1-来源核对" class="headerlink" title="1. 来源核对"></a>1. 来源核对</h2><p>对每个可验证陈述检查：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">回答中的 Claim</span><br><span class="line">        ↓</span><br><span class="line">是否能在给定来源中找到支持？</span><br><span class="line">        ↓</span><br><span class="line">支持 / 冲突 / 未提及</span><br></pre></td></tr></table></figure>
+<p>这是文档问答和 RAG 最重要的检测方式之一。</p>
+<h2 id="2-外部事实核验"><a href="#2-外部事实核验" class="headerlink" title="2. 外部事实核验"></a>2. 外部事实核验</h2><p>使用权威数据库、搜索引擎、知识图谱或官方 API 验证：</p>
+<ul>
+<li>人名与机构；</li>
+<li>时间和地点；</li>
+<li>产品版本；</li>
+<li>法律条款；</li>
+<li>医疗与金融信息；</li>
+<li>论文 DOI；</li>
+<li>实时价格和状态。</li>
+</ul>
+<p>关键点是让外部系统提供证据，而不是让同一个模型仅凭参数再次判断自己是否正确。</p>
+<h2 id="3-多次采样检查一致性"><a href="#3-多次采样检查一致性" class="headerlink" title="3. 多次采样检查一致性"></a>3. 多次采样检查一致性</h2><p>对同一问题生成多个回答：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">回答 A：作者是张三</span><br><span class="line">回答 B：作者是李四</span><br><span class="line">回答 C：作者是王五</span><br></pre></td></tr></table></figure>
+<p>如果关键事实高度不一致，说明模型可能处于不稳定或知识不足状态。SelfCheckGPT 就利用了类似思想：事实性较强的内容在多次采样中通常更一致，而幻觉内容可能出现分歧。</p>
+<p>但必须注意：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">多次回答一致 ≠ 一定真实</span><br></pre></td></tr></table></figure>
+<p>模型也可能稳定复现同一个训练数据误解。</p>
+<h2 id="4-使用-NLI-或验证模型"><a href="#4-使用-NLI-或验证模型" class="headerlink" title="4. 使用 NLI 或验证模型"></a>4. 使用 NLI 或验证模型</h2><p>Natural Language Inference 可以判断某个 Claim 与来源之间属于：</p>
+<ul>
+<li>Entailment：来源支持；</li>
+<li>Contradiction：来源冲突；</li>
+<li>Neutral：来源没有足够信息。</li>
+</ul>
+<p>验证模型本身也会出错，所以高风险场景不能只依赖另一个 LLM 给出的单次评分。</p>
+<h2 id="5-确定性程序校验"><a href="#5-确定性程序校验" class="headerlink" title="5. 确定性程序校验"></a>5. 确定性程序校验</h2><p>能用程序确定的问题，优先使用程序：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>内容</th>
+<th>适合的验证方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数学计算</td>
+<td>计算器或代码执行</td>
+</tr>
+<tr>
+<td>JSON 格式</td>
+<td>JSON Schema</td>
+</tr>
+<tr>
+<td>日期关系</td>
+<td>日期库</td>
+</tr>
+<tr>
+<td>SQL 查询</td>
+<td>只读数据库执行</td>
+</tr>
+<tr>
+<td>API 参数</td>
+<td>类型系统和官方 Schema</td>
+</tr>
+<tr>
+<td>引用编号</td>
+<td>程序检查编号是否存在</td>
+</tr>
+<tr>
+<td>代码正确性</td>
+<td>编译、单元测试和静态分析</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>不要让模型用自然语言“保证”代码可以运行，应该真正执行代码。</p>
+<h2 id="6-人工审核"><a href="#6-人工审核" class="headerlink" title="6. 人工审核"></a>6. 人工审核</h2><p>医疗、法律、金融、安全控制等高风险任务，需要领域专家审核关键结论。自动检测只能降低成本，不能把责任完全交给模型。</p>
+<h1 id="如何降低幻觉？"><a href="#如何降低幻觉？" class="headerlink" title="如何降低幻觉？"></a>如何降低幻觉？</h1><p>治理幻觉最好采用分层防御，而不是只改一句 Prompt。</p>
+<h2 id="生成前：改善输入与证据"><a href="#生成前：改善输入与证据" class="headerlink" title="生成前：改善输入与证据"></a>生成前：改善输入与证据</h2><ul>
+<li>使用可靠、及时、去重的数据源；</li>
+<li>通过 RAG 提供与问题相关的证据；</li>
+<li>对检索结果进行 Rerank；</li>
+<li>清晰标注来源边界、时间和版本；</li>
+<li>删除互相冲突或无关的上下文；</li>
+<li>对用户问题中的错误前提进行检查；</li>
+<li>为外部事实提供搜索、数据库和计算工具。</li>
+</ul>
+<h2 id="生成中：限制模型的自由度"><a href="#生成中：限制模型的自由度" class="headerlink" title="生成中：限制模型的自由度"></a>生成中：限制模型的自由度</h2><p>可以在 Prompt 中明确：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">只根据给定资料回答。</span><br><span class="line">如果资料没有提供答案，请回答“根据现有资料无法确定”。</span><br><span class="line">不要补充资料之外的人名、数字、日期或引用。</span><br><span class="line">每个关键结论都需要标明来源编号。</span><br><span class="line">如果问题包含错误前提，请先指出错误。</span><br></pre></td></tr></table></figure>
+<p>还可以使用：</p>
+<ul>
+<li>结构化输出；</li>
+<li>枚举或受限解码；</li>
+<li>合理的 Temperature；</li>
+<li>Function Calling；</li>
+<li>允许 Abstention，也就是拒答；</li>
+<li>先提取证据，再生成结论。</li>
+</ul>
+<h2 id="生成后：验证与拦截"><a href="#生成后：验证与拦截" class="headerlink" title="生成后：验证与拦截"></a>生成后：验证与拦截</h2><ul>
+<li>将回答拆成原子 Claim；</li>
+<li>检查每个 Claim 是否有证据；</li>
+<li>验证引用是否存在且真正支持结论；</li>
+<li>对数字、日期和代码使用确定性工具；</li>
+<li>对高风险内容设置人工审批；</li>
+<li>证据不足时删除结论或降级为不确定表述；</li>
+<li>记录失败案例，加入持续评测集。</li>
+</ul>
+<p>可以形成下面的治理流程：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">用户问题</span><br><span class="line">   ↓</span><br><span class="line">检索与工具获取证据</span><br><span class="line">   ↓</span><br><span class="line">模型生成带引用的候选回答</span><br><span class="line">   ↓</span><br><span class="line">Claim 拆分</span><br><span class="line">   ↓</span><br><span class="line">证据与程序验证</span><br><span class="line">   ↓</span><br><span class="line">通过 → 返回答案</span><br><span class="line">失败 → 重试、拒答或人工审核</span><br></pre></td></tr></table></figure>
+<h1 id="Prompt-应该怎样写？"><a href="#Prompt-应该怎样写？" class="headerlink" title="Prompt 应该怎样写？"></a>Prompt 应该怎样写？</h1><h2 id="不够可靠的写法"><a href="#不够可靠的写法" class="headerlink" title="不够可靠的写法"></a>不够可靠的写法</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">请准确回答下面的问题，不要产生幻觉。</span><br></pre></td></tr></table></figure>
+<p>“不要幻觉”没有告诉模型证据是什么，也没有定义信息不足时应该怎么办。</p>
+<h2 id="更可靠的写法"><a href="#更可靠的写法" class="headerlink" title="更可靠的写法"></a>更可靠的写法</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">你是一个基于资料回答问题的助手。</span><br><span class="line"></span><br><span class="line">规则：</span><br><span class="line">1. 只使用 &lt;sources&gt; 中的信息回答；</span><br><span class="line">2. 每个事实性结论后标注来源编号，例如 [S1]；</span><br><span class="line">3. 如果来源没有提供答案，回答“根据现有资料无法确定”；</span><br><span class="line">4. 如果来源之间冲突，明确列出冲突，不要自行选择；</span><br><span class="line">5. 不要编造人名、数字、日期、链接或引用。</span><br><span class="line"></span><br><span class="line">&lt;sources&gt;</span><br><span class="line">[S1] ……</span><br><span class="line">[S2] ……</span><br><span class="line">&lt;/sources&gt;</span><br><span class="line"></span><br><span class="line">问题：……</span><br></pre></td></tr></table></figure>
+<p>这类 Prompt 不能保证零幻觉，但它给出了：</p>
+<ul>
+<li>允许使用的信息边界；</li>
+<li>证据表达方式；</li>
+<li>信息不足时的行为；</li>
+<li>来源冲突时的处理规则；</li>
+<li>明确禁止编造的字段。</li>
+</ul>
+<h1 id="实战一：观察模型如何面对不存在的事实"><a href="#实战一：观察模型如何面对不存在的事实" class="headerlink" title="实战一：观察模型如何面对不存在的事实"></a>实战一：观察模型如何面对不存在的事实</h1><p>下面使用本地小模型，对一个虚构论文提问，并对比普通 Prompt 与允许拒答的 Prompt。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_ID = <span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)</span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(MODEL_ID)</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">ask</span>(<span class="params">system_prompt: <span class="built_in">str</span>, question: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    messages = [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: system_prompt&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: question&#125;,</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    inputs = tokenizer.apply_chat_template(</span><br><span class="line">        messages,</span><br><span class="line">        tokenize=<span class="literal">True</span>,</span><br><span class="line">        add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">        return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">        return_dict=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">        output_ids = model.generate(</span><br><span class="line">            **inputs,</span><br><span class="line">            max_new_tokens=<span class="number">160</span>,</span><br><span class="line">            do_sample=<span class="literal">False</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    new_tokens = output_ids[<span class="number">0</span>, inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>]:]</span><br><span class="line">    <span class="keyword">return</span> tokenizer.decode(new_tokens, skip_special_tokens=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">question = (</span><br><span class="line">    <span class="string">&quot;请介绍论文《Quantum Coffee Networks for Large Language Models》，&quot;</span></span><br><span class="line">    <span class="string">&quot;包括作者、发表年份和主要贡献。&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">normal_answer = ask(</span><br><span class="line">    <span class="string">&quot;你是一名乐于助人的人工智能助手。&quot;</span>,</span><br><span class="line">    question,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">cautious_answer = ask(</span><br><span class="line">    <span class="string">&quot;&quot;&quot;你是一名事实核查助手。</span></span><br><span class="line"><span class="string">如果无法从可靠资料确认某个实体存在，必须明确回答无法确认。</span></span><br><span class="line"><span class="string">不要根据标题编造作者、年份、期刊或研究内容。</span></span><br><span class="line"><span class="string">请区分已知事实与推测。&quot;&quot;&quot;</span>,</span><br><span class="line">    question,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 普通 Prompt ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(normal_answer)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 允许拒答的 Prompt ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(cautious_answer)</span><br></pre></td></tr></table></figure>
+<p>不同模型可能给出不同结果。这个实验的目的不是证明某个 Prompt 可以彻底消除幻觉，而是观察：</p>
+<ul>
+<li>模型面对不存在或无法确认的实体时是否会补全细节；</li>
+<li>明确允许拒答后，行为是否发生变化；</li>
+<li>小模型的指令遵循能力是否足以执行这些约束。</li>
+</ul>
+<p>即使模型回答“无法确认”，也不能反向证明论文一定不存在。真正验证仍需要查询可信论文数据库。</p>
+<h1 id="实战二：用多次采样观察回答稳定性"><a href="#实战二：用多次采样观察回答稳定性" class="headerlink" title="实战二：用多次采样观察回答稳定性"></a>实战二：用多次采样观察回答稳定性</h1><p>下面对同一个问题采样多次，并用 Python 标准库计算回答之间的文本相似度。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> difflib <span class="keyword">import</span> SequenceMatcher</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_ID = <span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)</span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(MODEL_ID)</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: (</span><br><span class="line">            <span class="string">&quot;请介绍论文《Quantum Coffee Networks for Large Language Models》，&quot;</span></span><br><span class="line">            <span class="string">&quot;包括作者、发表年份和主要贡献。&quot;</span></span><br><span class="line">        ),</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">inputs = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">answers = []</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> seed <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>):</span><br><span class="line">    torch.manual_seed(seed)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">        output_ids = model.generate(</span><br><span class="line">            **inputs,</span><br><span class="line">            max_new_tokens=<span class="number">160</span>,</span><br><span class="line">            do_sample=<span class="literal">True</span>,</span><br><span class="line">            temperature=<span class="number">0.9</span>,</span><br><span class="line">            top_p=<span class="number">0.9</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    new_tokens = output_ids[<span class="number">0</span>, inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>]:]</span><br><span class="line">    answer = tokenizer.decode(new_tokens, skip_special_tokens=<span class="literal">True</span>)</span><br><span class="line">    answers.append(answer)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">similarity</span>(<span class="params">a: <span class="built_in">str</span>, b: <span class="built_in">str</span></span>) -&gt; <span class="built_in">float</span>:</span><br><span class="line">    <span class="keyword">return</span> SequenceMatcher(<span class="literal">None</span>, a, b).ratio()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> index, answer <span class="keyword">in</span> <span class="built_in">enumerate</span>(answers, <span class="number">1</span>):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;\n=== 回答 <span class="subst">&#123;index&#125;</span> ===&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(answer)</span><br><span class="line"></span><br><span class="line">scores = []</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="built_in">len</span>(answers)):</span><br><span class="line">    <span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(i + <span class="number">1</span>, <span class="built_in">len</span>(answers)):</span><br><span class="line">        scores.append(similarity(answers[i], answers[j]))</span><br><span class="line"></span><br><span class="line">average_similarity = <span class="built_in">sum</span>(scores) / <span class="built_in">len</span>(scores)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;\n回答两两平均文本相似度：<span class="subst">&#123;average_similarity:<span class="number">.3</span>f&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>如果作者、年份和内容在多次回答中不断变化，这是一个明显风险信号。但这个简单脚本只比较字符串，不理解语义；即使所有回答完全一致，也不能证明它们是真实的。</p>
+<p>SelfCheckGPT 等方法会使用更强的语义判断，但“自洽”始终不能替代外部证据。</p>
+<h1 id="实战三：验证回答中的引用编号"><a href="#实战三：验证回答中的引用编号" class="headerlink" title="实战三：验证回答中的引用编号"></a>实战三：验证回答中的引用编号</h1><p>对于 RAG，可以要求模型只能引用已有来源编号，再使用程序检查它是否编造编号。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> re</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">validate_citation_ids</span>(<span class="params">answer: <span class="built_in">str</span>, valid_ids: <span class="built_in">set</span>[<span class="built_in">str</span>]</span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    cited_ids = <span class="built_in">set</span>(re.findall(<span class="string">r&quot;\[(S\d+)]&quot;</span>, answer))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;cited_ids&quot;</span>: <span class="built_in">sorted</span>(cited_ids),</span><br><span class="line">        <span class="string">&quot;invalid_ids&quot;</span>: <span class="built_in">sorted</span>(cited_ids - valid_ids),</span><br><span class="line">        <span class="string">&quot;has_invalid_citation&quot;</span>: <span class="built_in">bool</span>(cited_ids - valid_ids),</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">sources = &#123;</span><br><span class="line">    <span class="string">&quot;S1&quot;</span>: <span class="string">&quot;退款申请需要在签收后 7 天内提交。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;S2&quot;</span>: <span class="string">&quot;定制商品不支持无理由退款。&quot;</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">answer = (</span><br><span class="line">    <span class="string">&quot;普通商品应在签收后 7 天内提交退款申请 [S1]。&quot;</span></span><br><span class="line">    <span class="string">&quot;所有商品都可以无理由退款 [S3]。&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = validate_citation_ids(answer, <span class="built_in">set</span>(sources))</span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+<p>输出为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &#x27;cited_ids&#x27;: [&#x27;S1&#x27;, &#x27;S3&#x27;],</span><br><span class="line">    &#x27;invalid_ids&#x27;: [&#x27;S3&#x27;],</span><br><span class="line">    &#x27;has_invalid_citation&#x27;: True</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这能发现不存在的 <code>[S3]</code>，却仍然不能证明 <code>[S1]</code> 真的支持前面的结论。完整验证还需要检查：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">引用是否存在</span><br><span class="line">        +</span><br><span class="line">引用内容是否支持对应 Claim</span><br><span class="line">        +</span><br><span class="line">来源本身是否可信和最新</span><br></pre></td></tr></table></figure>
+<h1 id="实战四：把回答拆成可验证-Claim"><a href="#实战四：把回答拆成可验证-Claim" class="headerlink" title="实战四：把回答拆成可验证 Claim"></a>实战四：把回答拆成可验证 Claim</h1><p>复杂回答如果整段核验，很容易漏掉局部错误。更实用的方法是先要求模型输出原子化 Claim，再逐条验证。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">claims = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;id&quot;</span>: <span class="string">&quot;C1&quot;</span>,</span><br><span class="line">        <span class="string">&quot;text&quot;</span>: <span class="string">&quot;退款申请需要在签收后 7 天内提交。&quot;</span>,</span><br><span class="line">        <span class="string">&quot;source_ids&quot;</span>: [<span class="string">&quot;S1&quot;</span>],</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;id&quot;</span>: <span class="string">&quot;C2&quot;</span>,</span><br><span class="line">        <span class="string">&quot;text&quot;</span>: <span class="string">&quot;定制商品支持无理由退款。&quot;</span>,</span><br><span class="line">        <span class="string">&quot;source_ids&quot;</span>: [<span class="string">&quot;S2&quot;</span>],</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">sources = &#123;</span><br><span class="line">    <span class="string">&quot;S1&quot;</span>: <span class="string">&quot;退款申请需要在签收后 7 天内提交。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;S2&quot;</span>: <span class="string">&quot;定制商品不支持无理由退款。&quot;</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> claim <span class="keyword">in</span> claims:</span><br><span class="line">    evidence = [</span><br><span class="line">        sources[source_id]</span><br><span class="line">        <span class="keyword">for</span> source_id <span class="keyword">in</span> claim[<span class="string">&quot;source_ids&quot;</span>]</span><br><span class="line">        <span class="keyword">if</span> source_id <span class="keyword">in</span> sources</span><br><span class="line">    ]</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Claim：&quot;</span>, claim[<span class="string">&quot;text&quot;</span>])</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Evidence：&quot;</span>, evidence)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;需要进一步判断：支持、冲突还是证据不足&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>()</span><br></pre></td></tr></table></figure>
+<p>在真实系统中，最后一步可以交给：</p>
+<ul>
+<li>规则程序；</li>
+<li>NLI 模型；</li>
+<li>另一个验证模型；</li>
+<li>权威数据库；</li>
+<li>人工审核者。</li>
+</ul>
+<p>不要只让原生成模型在没有证据的情况下回答“我刚才是否产生了幻觉”，因为它可能再次生成一个听起来合理的判断。</p>
+<h1 id="如何评估一个系统的幻觉率？"><a href="#如何评估一个系统的幻觉率？" class="headerlink" title="如何评估一个系统的幻觉率？"></a>如何评估一个系统的幻觉率？</h1><p>一个可靠的评测流程至少需要：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">固定评测问题</span><br><span class="line">   ↓</span><br><span class="line">准备可验证的参考答案或证据</span><br><span class="line">   ↓</span><br><span class="line">运行完整的 Prompt、RAG 和工具链</span><br><span class="line">   ↓</span><br><span class="line">把回答拆成 Claim</span><br><span class="line">   ↓</span><br><span class="line">标注 Supported / Contradicted / Unsupported</span><br><span class="line">   ↓</span><br><span class="line">统计不同错误类型</span><br></pre></td></tr></table></figure>
+<p>可以关注以下指标：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claim Precision</td>
+<td>生成的事实性 Claim 中有多少得到支持</td>
+</tr>
+<tr>
+<td>Citation Precision</td>
+<td>引用有多少真正支持对应结论</td>
+</tr>
+<tr>
+<td>Citation Recall</td>
+<td>应该引用的关键结论有多少提供了引用</td>
+</tr>
+<tr>
+<td>Abstention Accuracy</td>
+<td>证据不足时是否正确拒答</td>
+</tr>
+<tr>
+<td>Contradiction Rate</td>
+<td>回答与来源直接冲突的比例</td>
+</tr>
+<tr>
+<td>Unsupported Rate</td>
+<td>回答中缺少来源支持的比例</td>
+</tr>
+<tr>
+<td>Task Accuracy</td>
+<td>最终任务答案是否正确</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>只评估“回答是否流畅”或“用户是否喜欢”，无法充分衡量幻觉。</p>
+<h2 id="评测集必须包含困难情况"><a href="#评测集必须包含困难情况" class="headerlink" title="评测集必须包含困难情况"></a>评测集必须包含困难情况</h2><p>除了普通问题，还应该主动加入：</p>
+<ul>
+<li>不存在的实体；</li>
+<li>带错误前提的问题；</li>
+<li>来源互相冲突的问题；</li>
+<li>来源没有答案的问题；</li>
+<li>数字和单位非常接近的问题；</li>
+<li>过时信息与新信息混合的问题；</li>
+<li>需要调用工具才能回答的问题；</li>
+<li>长上下文中间位置的信息；</li>
+<li>诱导模型编造引用的问题。</li>
+</ul>
+<p>系统是否可靠，不只看“知道时能否答对”，还要看“不知道时能否承认不知道”。</p>
+<h1 id="不同场景需要不同的风险控制"><a href="#不同场景需要不同的风险控制" class="headerlink" title="不同场景需要不同的风险控制"></a>不同场景需要不同的风险控制</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>幻觉的主要影响</th>
+<th>建议控制方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>创意写作</td>
+<td>通常较低</td>
+<td>明确区分虚构与事实即可</td>
+</tr>
+<tr>
+<td>日常问答</td>
+<td>中等</td>
+<td>引用来源、允许不确定表达</td>
+</tr>
+<tr>
+<td>企业知识库</td>
+<td>中高</td>
+<td>RAG、权限过滤、Claim 验证</td>
+</tr>
+<tr>
+<td>编程助手</td>
+<td>中高</td>
+<td>官方文档、编译、测试、静态分析</td>
+</tr>
+<tr>
+<td>数据分析</td>
+<td>高</td>
+<td>使用真实查询和计算工具</td>
+</tr>
+<tr>
+<td>医疗、法律、金融</td>
+<td>很高</td>
+<td>权威来源、专业审核、明确责任边界</td>
+</tr>
+<tr>
+<td>自动执行 Agent</td>
+<td>很高</td>
+<td>最小权限、参数校验、审批和回滚</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>同一个幻觉，在闲聊中可能只是体验问题，在自动转账、修改生产配置或提供医疗建议时，可能造成严重后果。</p>
+<h1 id="常见误区"><a href="#常见误区" class="headerlink" title="常见误区"></a>常见误区</h1><h2 id="误区一：模型越大就不会幻觉"><a href="#误区一：模型越大就不会幻觉" class="headerlink" title="误区一：模型越大就不会幻觉"></a>误区一：模型越大就不会幻觉</h2><p>更大的模型通常拥有更强知识和推理能力，但仍可能生成错误内容。模型规模不是事实保证机制。</p>
+<h2 id="误区二：Temperature-设置为-0-就没有幻觉"><a href="#误区二：Temperature-设置为-0-就没有幻觉" class="headerlink" title="误区二：Temperature 设置为 0 就没有幻觉"></a>误区二：Temperature 设置为 0 就没有幻觉</h2><p>Greedy Decoding 只是稳定选择当前最高分 Token。如果最高分答案是错误的，模型会稳定地重复同一个错误。</p>
+<h2 id="误区三：回答越详细越可信"><a href="#误区三：回答越详细越可信" class="headerlink" title="误区三：回答越详细越可信"></a>误区三：回答越详细越可信</h2><p>模型可以同时编造人物、日期、论文和链接。细节越多，有时只是可核验的错误点越多。</p>
+<h2 id="误区四：模型说“我很确定”就代表置信度高"><a href="#误区四：模型说“我很确定”就代表置信度高" class="headerlink" title="误区四：模型说“我很确定”就代表置信度高"></a>误区四：模型说“我很确定”就代表置信度高</h2><p>自然语言中的肯定语气也是生成结果，不是经过校准的事实概率。</p>
+<h2 id="误区五：有引用就不是幻觉"><a href="#误区五：有引用就不是幻觉" class="headerlink" title="误区五：有引用就不是幻觉"></a>误区五：有引用就不是幻觉</h2><p>引用可能不存在、指向错误页面，或者根本不支持对应结论。必须验证引用内容。</p>
+<h2 id="误区六：RAG-可以彻底消除幻觉"><a href="#误区六：RAG-可以彻底消除幻觉" class="headerlink" title="误区六：RAG 可以彻底消除幻觉"></a>误区六：RAG 可以彻底消除幻觉</h2><p>RAG 仍可能发生错误检索、来源过时、上下文冲突、证据误读和无来源扩写。</p>
+<h2 id="误区七：同一个问题多问几次，答案一致就是真的"><a href="#误区七：同一个问题多问几次，答案一致就是真的" class="headerlink" title="误区七：同一个问题多问几次，答案一致就是真的"></a>误区七：同一个问题多问几次，答案一致就是真的</h2><p>一致性只能说明模型输出稳定，不能证明答案符合现实。</p>
+<h2 id="误区八：让另一个-LLM-审核就一定可靠"><a href="#误区八：让另一个-LLM-审核就一定可靠" class="headerlink" title="误区八：让另一个 LLM 审核就一定可靠"></a>误区八：让另一个 LLM 审核就一定可靠</h2><p>验证模型也会幻觉、受提示影响或与生成模型共享相同误解。高风险内容需要确定性工具和人工审核。</p>
+<h2 id="误区九：只要-Prompt-写得足够好，就能实现零幻觉"><a href="#误区九：只要-Prompt-写得足够好，就能实现零幻觉" class="headerlink" title="误区九：只要 Prompt 写得足够好，就能实现零幻觉"></a>误区九：只要 Prompt 写得足够好，就能实现零幻觉</h2><p>Prompt 可以明确行为边界，但无法补充模型没有的实时知识，也无法替代外部验证。</p>
+<h2 id="误区十：幻觉只是模型的问题"><a href="#误区十：幻觉只是模型的问题" class="headerlink" title="误区十：幻觉只是模型的问题"></a>误区十：幻觉只是模型的问题</h2><p>完整系统中的数据源、检索、文档解析、工具、缓存、Prompt 和后处理都可能引入错误。治理对象应该是整条应用链路。</p>
+<h1 id="工程实践建议"><a href="#工程实践建议" class="headerlink" title="工程实践建议"></a>工程实践建议</h1><ol>
+<li>先定义哪些输出属于事实性 Claim，哪些允许创造；</li>
+<li>对需要事实的任务提供可靠且及时的外部证据；</li>
+<li>明确要求证据不足时拒答，不要强迫模型必须给结论；</li>
+<li>把复杂回答拆成原子 Claim，逐条验证；</li>
+<li>要求引用来源，同时验证引用是否真实支持结论；</li>
+<li>数学、代码、SQL、日期和结构化数据优先交给工具执行；</li>
+<li>不要把 Token Probability 直接当成事实置信度；</li>
+<li>同时评估事实性、忠实性、引用质量和拒答能力；</li>
+<li>保存线上失败案例，持续加入回归评测；</li>
+<li>根据风险等级设置自动返回、降级、拒答或人工审核；</li>
+<li>给 Agent 设置最小权限、审批点和可回滚机制；</li>
+<li>向最终用户清楚标明生成内容、来源和不确定性。</li>
+</ol>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>本文的核心结论可以总结为：</p>
+<ol>
+<li>LLM 幻觉是指模型生成与事实、来源或可验证证据不一致，或者缺少依据却被表达为事实的内容；</li>
+<li>幻觉不等于所有错误，也不等于模型在有意撒谎；</li>
+<li>Factuality 关注现实正确性，Faithfulness 关注是否忠于给定来源；</li>
+<li>LLM 的核心训练目标是预测下一个 Token，而不是自动完成事实验证；</li>
+<li>数据噪声、参数化知识、知识边界、错误前提、长上下文和逐 Token 累积都可能造成幻觉；</li>
+<li>高概率只代表模型的生成偏好，不等于事实正确率；</li>
+<li>降低 Temperature 不能从根本上消除幻觉；</li>
+<li>RAG 能提供外部证据，但检索、来源和生成阶段仍可能出错；</li>
+<li>多次采样的一致性只能提供风险信号，不能代替外部事实核验；</li>
+<li>可靠系统需要检索、工具、Claim 验证、拒答、评测和人工审核组成分层防御。</li>
+</ol>
+<p>模型生成文本的能力与验证事实的能力不是同一件事。真正可靠的 LLM 应用，不是要求模型“永远不要犯错”，而是让系统能够：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">有证据时给出可追溯答案</span><br><span class="line">证据冲突时明确说明冲突</span><br><span class="line">证据不足时承认无法确定</span><br><span class="line">高风险时交给工具或人类审核</span><br></pre></td></tr></table></figure>
+<p>下一篇文章将进入模型内部，介绍 Transformer 如何通过 Self-Attention、残差连接和前馈网络处理上下文，并最终产生下一个 Token 的 Logits。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf">NIST：Artificial Intelligence Risk Management Framework — Generative AI Profile</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2202.03629">Survey of Hallucination in Natural Language Generation</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2311.05232">A Survey on Hallucination in Large Language Models</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2109.07958">TruthfulQA：Measuring How Models Mimic Human Falsehoods</a></li>
+<li><a target="_blank" rel="noopener" href="https://aclanthology.org/2023.emnlp-main.557/">SelfCheckGPT：Zero-Resource Black-Box Hallucination Detection</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2005.11401">Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+              <a href="/tags/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" rel="tag"># 大语言模型</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+              <a href="/tags/%E5%B9%BB%E8%A7%89/" rel="tag"># 幻觉</a>
+              <a href="/tags/%E5%8F%AF%E9%9D%A0%E6%80%A7/" rel="tag"># 可靠性</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/08/ai/llms/6-context-window-kv-cache/" rel="prev" title="上下文窗口与 KV Cache：模型如何记住前文并高效生成？">
+      <i class="fa fa-chevron-left"></i> 上下文窗口与 KV Cache：模型如何记住前文并高效生成？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/10/ai/llms/8-transformer-architecture/" rel="next" title="Transformer 架构：LLM 如何理解 Token 之间的关系？">
+      Transformer 架构：LLM 如何理解 Token 之间的关系？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#LLM-%E5%B9%BB%E8%A7%89%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88%E6%A8%A1%E5%9E%8B%E4%BC%9A%E4%B8%80%E6%9C%AC%E6%AD%A3%E7%BB%8F%E5%9C%B0%E8%AF%B4%E9%94%99%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">LLM 幻觉：为什么模型会一本正经地说错？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%88%E8%AF%B4%E7%BB%93%E8%AE%BA"><span class="nav-number">2.</span> <span class="nav-text">先说结论</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-LLM-%E5%B9%BB%E8%A7%89%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">什么是 LLM 幻觉？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%BB%E8%A7%89%E4%B8%8D%E7%AD%89%E4%BA%8E%E6%89%80%E6%9C%89%E9%94%99%E8%AF%AF"><span class="nav-number">3.1.</span> <span class="nav-text">幻觉不等于所有错误</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%BB%E8%A7%89%E4%B8%8D%E7%AD%89%E4%BA%8E%E6%92%92%E8%B0%8E"><span class="nav-number">3.2.</span> <span class="nav-text">幻觉不等于撒谎</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%A4%E4%B8%AA%E5%88%A4%E6%96%AD%E7%BB%B4%E5%BA%A6%EF%BC%9AFactuality-%E4%B8%8E-Faithfulness"><span class="nav-number">4.</span> <span class="nav-text">两个判断维度：Factuality 与 Faithfulness</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Factuality%EF%BC%9A%E4%BA%8B%E5%AE%9E%E6%80%A7"><span class="nav-number">4.1.</span> <span class="nav-text">Factuality：事实性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Faithfulness%EF%BC%9A%E5%BF%A0%E5%AE%9E%E6%80%A7"><span class="nav-number">4.2.</span> <span class="nav-text">Faithfulness：忠实性</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B9%BB%E8%A7%89%E6%9C%89%E5%93%AA%E4%BA%9B%E5%B8%B8%E8%A7%81%E7%B1%BB%E5%9E%8B%EF%BC%9F"><span class="nav-number">5.</span> <span class="nav-text">幻觉有哪些常见类型？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BA%8B%E5%AE%9E%E6%8D%8F%E9%80%A0"><span class="nav-number">5.1.</span> <span class="nav-text">1. 事实捏造</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%B1%9E%E6%80%A7%E4%B8%8E%E5%85%B3%E7%B3%BB%E9%94%99%E8%AF%AF"><span class="nav-number">5.2.</span> <span class="nav-text">2. 属性与关系错误</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%BC%95%E7%94%A8%E4%B8%8E%E6%9D%A5%E6%BA%90%E4%BC%AA%E9%80%A0"><span class="nav-number">5.3.</span> <span class="nav-text">3. 引用与来源伪造</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E4%B8%8E%E6%9D%A5%E6%BA%90%E5%86%B2%E7%AA%81"><span class="nav-number">5.4.</span> <span class="nav-text">4. 与来源冲突</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E6%97%A0%E6%9D%A5%E6%BA%90%E6%89%A9%E5%B1%95"><span class="nav-number">5.5.</span> <span class="nav-text">5. 无来源扩展</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E6%8E%A8%E7%90%86%E8%BF%87%E7%A8%8B%E5%B9%BB%E8%A7%89"><span class="nav-number">5.6.</span> <span class="nav-text">6. 推理过程幻觉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E5%B7%A5%E5%85%B7%E4%B8%8E%E4%BB%A3%E7%A0%81%E5%B9%BB%E8%A7%89"><span class="nav-number">5.7.</span> <span class="nav-text">7. 工具与代码幻觉</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LLM-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E4%BA%A7%E7%94%9F%E5%B9%BB%E8%A7%89%EF%BC%9F"><span class="nav-number">6.</span> <span class="nav-text">LLM 为什么会产生幻觉？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0%E4%B8%80%EF%BC%9A%E8%AE%AD%E7%BB%83%E7%9B%AE%E6%A0%87%E6%98%AF%E9%A2%84%E6%B5%8B-Token%EF%BC%8C%E4%B8%8D%E6%98%AF%E9%AA%8C%E8%AF%81%E4%BA%8B%E5%AE%9E"><span class="nav-number">7.</span> <span class="nav-text">原因一：训练目标是预测 Token，不是验证事实</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0%E4%BA%8C%EF%BC%9A%E8%AE%AD%E7%BB%83%E6%95%B0%E6%8D%AE%E5%8C%85%E5%90%AB%E9%94%99%E8%AF%AF%E3%80%81%E5%86%B2%E7%AA%81%E4%B8%8E%E8%BF%87%E6%97%B6%E5%86%85%E5%AE%B9"><span class="nav-number">8.</span> <span class="nav-text">原因二：训练数据包含错误、冲突与过时内容</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0%E4%B8%89%EF%BC%9A%E6%A8%A1%E5%9E%8B%E5%8F%82%E6%95%B0%E4%B8%8D%E6%98%AF%E7%B2%BE%E7%A1%AE%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="nav-number">9.</span> <span class="nav-text">原因三：模型参数不是精确数据库</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0%E5%9B%9B%EF%BC%9A%E6%A8%A1%E5%9E%8B%E5%AD%98%E5%9C%A8%E7%9F%A5%E8%AF%86%E8%BE%B9%E7%95%8C%EF%BC%8C%E4%BD%86%E4%BB%8D%E8%83%BD%E7%BB%A7%E7%BB%AD%E7%94%9F%E6%88%90"><span class="nav-number">10.</span> <span class="nav-text">原因四：模型存在知识边界，但仍能继续生成</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0%E4%BA%94%EF%BC%9A%E5%AF%B9%E2%80%9C%E6%9C%89%E5%B8%AE%E5%8A%A9%E2%80%9D%E7%9A%84%E8%AE%AD%E7%BB%83%E5%8F%AF%E8%83%BD%E9%BC%93%E5%8A%B1%E7%8C%9C%E6%B5%8B"><span class="nav-number">11.</span> <span class="nav-text">原因五：对“有帮助”的训练可能鼓励猜测</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0%E5%85%AD%EF%BC%9APrompt-%E5%8F%AF%E8%83%BD%E5%8C%85%E5%90%AB%E9%94%99%E8%AF%AF%E5%89%8D%E6%8F%90"><span class="nav-number">12.</span> <span class="nav-text">原因六：Prompt 可能包含错误前提</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0%E4%B8%83%EF%BC%9A%E4%B8%8A%E4%B8%8B%E6%96%87%E8%BF%87%E9%95%BF%E3%80%81%E7%BC%BA%E5%A4%B1%E6%88%96%E4%BA%92%E7%9B%B8%E5%86%B2%E7%AA%81"><span class="nav-number">13.</span> <span class="nav-text">原因七：上下文过长、缺失或互相冲突</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0%E5%85%AB%EF%BC%9A%E9%80%90-Token-%E7%94%9F%E6%88%90%E4%BC%9A%E7%B4%AF%E7%A7%AF%E9%94%99%E8%AF%AF"><span class="nav-number">14.</span> <span class="nav-text">原因八：逐 Token 生成会累积错误</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8E%9F%E5%9B%A0%E4%B9%9D%EF%BC%9A%E6%A3%80%E7%B4%A2%E5%92%8C%E5%B7%A5%E5%85%B7%E4%B9%9F%E5%8F%AF%E8%83%BD%E5%87%BA%E9%94%99"><span class="nav-number">15.</span> <span class="nav-text">原因九：检索和工具也可能出错</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Temperature-%E4%BC%9A%E5%AF%BC%E8%87%B4%E5%B9%BB%E8%A7%89%E5%90%97%EF%BC%9F"><span class="nav-number">16.</span> <span class="nav-text">Temperature 会导致幻觉吗？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%AB%98%E6%A6%82%E7%8E%87%E4%B8%8D%E7%AD%89%E4%BA%8E%E4%BA%8B%E5%AE%9E%E6%AD%A3%E7%A1%AE%EF%BC%9F"><span class="nav-number">17.</span> <span class="nav-text">为什么高概率不等于事实正确？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#RAG-%E8%83%BD%E6%B6%88%E9%99%A4%E5%B9%BB%E8%A7%89%E5%90%97%EF%BC%9F"><span class="nav-number">18.</span> <span class="nav-text">RAG 能消除幻觉吗？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%A3%80%E6%B5%8B%E5%B9%BB%E8%A7%89%EF%BC%9F"><span class="nav-number">19.</span> <span class="nav-text">如何检测幻觉？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%9D%A5%E6%BA%90%E6%A0%B8%E5%AF%B9"><span class="nav-number">19.1.</span> <span class="nav-text">1. 来源核对</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%A4%96%E9%83%A8%E4%BA%8B%E5%AE%9E%E6%A0%B8%E9%AA%8C"><span class="nav-number">19.2.</span> <span class="nav-text">2. 外部事实核验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%A4%9A%E6%AC%A1%E9%87%87%E6%A0%B7%E6%A3%80%E6%9F%A5%E4%B8%80%E8%87%B4%E6%80%A7"><span class="nav-number">19.3.</span> <span class="nav-text">3. 多次采样检查一致性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E4%BD%BF%E7%94%A8-NLI-%E6%88%96%E9%AA%8C%E8%AF%81%E6%A8%A1%E5%9E%8B"><span class="nav-number">19.4.</span> <span class="nav-text">4. 使用 NLI 或验证模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E7%A1%AE%E5%AE%9A%E6%80%A7%E7%A8%8B%E5%BA%8F%E6%A0%A1%E9%AA%8C"><span class="nav-number">19.5.</span> <span class="nav-text">5. 确定性程序校验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E4%BA%BA%E5%B7%A5%E5%AE%A1%E6%A0%B8"><span class="nav-number">19.6.</span> <span class="nav-text">6. 人工审核</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E5%B9%BB%E8%A7%89%EF%BC%9F"><span class="nav-number">20.</span> <span class="nav-text">如何降低幻觉？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E5%89%8D%EF%BC%9A%E6%94%B9%E5%96%84%E8%BE%93%E5%85%A5%E4%B8%8E%E8%AF%81%E6%8D%AE"><span class="nav-number">20.1.</span> <span class="nav-text">生成前：改善输入与证据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E4%B8%AD%EF%BC%9A%E9%99%90%E5%88%B6%E6%A8%A1%E5%9E%8B%E7%9A%84%E8%87%AA%E7%94%B1%E5%BA%A6"><span class="nav-number">20.2.</span> <span class="nav-text">生成中：限制模型的自由度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E5%90%8E%EF%BC%9A%E9%AA%8C%E8%AF%81%E4%B8%8E%E6%8B%A6%E6%88%AA"><span class="nav-number">20.3.</span> <span class="nav-text">生成后：验证与拦截</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Prompt-%E5%BA%94%E8%AF%A5%E6%80%8E%E6%A0%B7%E5%86%99%EF%BC%9F"><span class="nav-number">21.</span> <span class="nav-text">Prompt 应该怎样写？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8D%E5%A4%9F%E5%8F%AF%E9%9D%A0%E7%9A%84%E5%86%99%E6%B3%95"><span class="nav-number">21.1.</span> <span class="nav-text">不够可靠的写法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9B%B4%E5%8F%AF%E9%9D%A0%E7%9A%84%E5%86%99%E6%B3%95"><span class="nav-number">21.2.</span> <span class="nav-text">更可靠的写法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%B8%80%EF%BC%9A%E8%A7%82%E5%AF%9F%E6%A8%A1%E5%9E%8B%E5%A6%82%E4%BD%95%E9%9D%A2%E5%AF%B9%E4%B8%8D%E5%AD%98%E5%9C%A8%E7%9A%84%E4%BA%8B%E5%AE%9E"><span class="nav-number">22.</span> <span class="nav-text">实战一：观察模型如何面对不存在的事实</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%BA%8C%EF%BC%9A%E7%94%A8%E5%A4%9A%E6%AC%A1%E9%87%87%E6%A0%B7%E8%A7%82%E5%AF%9F%E5%9B%9E%E7%AD%94%E7%A8%B3%E5%AE%9A%E6%80%A7"><span class="nav-number">23.</span> <span class="nav-text">实战二：用多次采样观察回答稳定性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%B8%89%EF%BC%9A%E9%AA%8C%E8%AF%81%E5%9B%9E%E7%AD%94%E4%B8%AD%E7%9A%84%E5%BC%95%E7%94%A8%E7%BC%96%E5%8F%B7"><span class="nav-number">24.</span> <span class="nav-text">实战三：验证回答中的引用编号</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E5%9B%9B%EF%BC%9A%E6%8A%8A%E5%9B%9E%E7%AD%94%E6%8B%86%E6%88%90%E5%8F%AF%E9%AA%8C%E8%AF%81-Claim"><span class="nav-number">25.</span> <span class="nav-text">实战四：把回答拆成可验证 Claim</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%AF%84%E4%BC%B0%E4%B8%80%E4%B8%AA%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%B9%BB%E8%A7%89%E7%8E%87%EF%BC%9F"><span class="nav-number">26.</span> <span class="nav-text">如何评估一个系统的幻觉率？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%84%E6%B5%8B%E9%9B%86%E5%BF%85%E9%A1%BB%E5%8C%85%E5%90%AB%E5%9B%B0%E9%9A%BE%E6%83%85%E5%86%B5"><span class="nav-number">26.1.</span> <span class="nav-text">评测集必须包含困难情况</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8D%E5%90%8C%E5%9C%BA%E6%99%AF%E9%9C%80%E8%A6%81%E4%B8%8D%E5%90%8C%E7%9A%84%E9%A3%8E%E9%99%A9%E6%8E%A7%E5%88%B6"><span class="nav-number">27.</span> <span class="nav-text">不同场景需要不同的风险控制</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%AF%E5%8C%BA"><span class="nav-number">28.</span> <span class="nav-text">常见误区</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%80%EF%BC%9A%E6%A8%A1%E5%9E%8B%E8%B6%8A%E5%A4%A7%E5%B0%B1%E4%B8%8D%E4%BC%9A%E5%B9%BB%E8%A7%89"><span class="nav-number">28.1.</span> <span class="nav-text">误区一：模型越大就不会幻觉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%8C%EF%BC%9ATemperature-%E8%AE%BE%E7%BD%AE%E4%B8%BA-0-%E5%B0%B1%E6%B2%A1%E6%9C%89%E5%B9%BB%E8%A7%89"><span class="nav-number">28.2.</span> <span class="nav-text">误区二：Temperature 设置为 0 就没有幻觉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%89%EF%BC%9A%E5%9B%9E%E7%AD%94%E8%B6%8A%E8%AF%A6%E7%BB%86%E8%B6%8A%E5%8F%AF%E4%BF%A1"><span class="nav-number">28.3.</span> <span class="nav-text">误区三：回答越详细越可信</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%9B%9B%EF%BC%9A%E6%A8%A1%E5%9E%8B%E8%AF%B4%E2%80%9C%E6%88%91%E5%BE%88%E7%A1%AE%E5%AE%9A%E2%80%9D%E5%B0%B1%E4%BB%A3%E8%A1%A8%E7%BD%AE%E4%BF%A1%E5%BA%A6%E9%AB%98"><span class="nav-number">28.4.</span> <span class="nav-text">误区四：模型说“我很确定”就代表置信度高</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%94%EF%BC%9A%E6%9C%89%E5%BC%95%E7%94%A8%E5%B0%B1%E4%B8%8D%E6%98%AF%E5%B9%BB%E8%A7%89"><span class="nav-number">28.5.</span> <span class="nav-text">误区五：有引用就不是幻觉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AD%EF%BC%9ARAG-%E5%8F%AF%E4%BB%A5%E5%BD%BB%E5%BA%95%E6%B6%88%E9%99%A4%E5%B9%BB%E8%A7%89"><span class="nav-number">28.6.</span> <span class="nav-text">误区六：RAG 可以彻底消除幻觉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%83%EF%BC%9A%E5%90%8C%E4%B8%80%E4%B8%AA%E9%97%AE%E9%A2%98%E5%A4%9A%E9%97%AE%E5%87%A0%E6%AC%A1%EF%BC%8C%E7%AD%94%E6%A1%88%E4%B8%80%E8%87%B4%E5%B0%B1%E6%98%AF%E7%9C%9F%E7%9A%84"><span class="nav-number">28.7.</span> <span class="nav-text">误区七：同一个问题多问几次，答案一致就是真的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AB%EF%BC%9A%E8%AE%A9%E5%8F%A6%E4%B8%80%E4%B8%AA-LLM-%E5%AE%A1%E6%A0%B8%E5%B0%B1%E4%B8%80%E5%AE%9A%E5%8F%AF%E9%9D%A0"><span class="nav-number">28.8.</span> <span class="nav-text">误区八：让另一个 LLM 审核就一定可靠</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B9%9D%EF%BC%9A%E5%8F%AA%E8%A6%81-Prompt-%E5%86%99%E5%BE%97%E8%B6%B3%E5%A4%9F%E5%A5%BD%EF%BC%8C%E5%B0%B1%E8%83%BD%E5%AE%9E%E7%8E%B0%E9%9B%B6%E5%B9%BB%E8%A7%89"><span class="nav-number">28.9.</span> <span class="nav-text">误区九：只要 Prompt 写得足够好，就能实现零幻觉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%8D%81%EF%BC%9A%E5%B9%BB%E8%A7%89%E5%8F%AA%E6%98%AF%E6%A8%A1%E5%9E%8B%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">28.10.</span> <span class="nav-text">误区十：幻觉只是模型的问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5%E5%BB%BA%E8%AE%AE"><span class="nav-number">29.</span> <span class="nav-text">工程实践建议</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">30.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">31.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

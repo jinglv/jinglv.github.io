@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="智能体基础第一讲：理解 LLM API 的职责、Chat Completions 与 Responses 的输入输出，以及厂商兼容边界。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLM API模型调用服务">
+<meta property="og:url" content="https://jinglv.github.io/2026/09/08/ai/agent/1-llm-api/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="智能体基础第一讲：理解 LLM API 的职责、Chat Completions 与 Responses 的输入输出，以及厂商兼容边界。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-09-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-21T01:15:43.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/09/08/ai/agent/1-llm-api/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LLM API模型调用服务 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/09/08/ai/agent/1-llm-api/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LLM API模型调用服务
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-09-08 00:00:00" itemprop="dateCreated datePublished" datetime="2026-09-08T00:00:00+08:00">2026-09-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-09-21 09:15:43" itemprop="dateModified" datetime="2026-09-21T09:15:43+08:00">2026-09-21</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">人工智能学习</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">智能体基础第一讲：理解 LLM API 的职责、Chat Completions 与 Responses 的输入输出，以及厂商兼容边界。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="阅读路线：先调用模型，再构建智能体"><a href="#阅读路线：先调用模型，再构建智能体" class="headerlink" title="阅读路线：先调用模型，再构建智能体"></a>阅读路线：先调用模型，再构建智能体</h2><p>调用模型是 Agent 的基础，但<strong>一次模型调用不等于一个 Agent</strong>。本系列把原来的长文拆成四篇，每篇解决一个问题：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>顺序</th>
+<th>文章</th>
+<th>学习目标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>本篇：LLM API 模型调用服务</td>
+<td>读懂一次请求与响应</td>
+</tr>
+<tr>
+<td>2</td>
+<td><a href="/2026/09/21/ai/agent/2-llm-parameters-context/" title="Agent基础：生成参数、Token与上下文管理">生成参数、Token 与上下文管理</a></td>
+<td>控制随机性和预算，维护上下文</td>
+</tr>
+<tr>
+<td>3</td>
+<td><a href="/2026/09/21/ai/agent/3-llm-structured-output-tools/" title="Agent基础：结构化输出与工具调用">结构化输出与工具调用</a></td>
+<td>把模型建议转换成经过校验的动作</td>
+</tr>
+<tr>
+<td>4</td>
+<td><a href="/2026/09/21/ai/agent/4-llm-reliability-adapter/" title="Agent基础：错误处理与模型适配器">错误处理与模型适配器</a></td>
+<td>处理失败，隔离供应商差异</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>前置知识</strong>：能阅读 Python、JSON，知道 HTTP 请求与响应的基本概念即可。</p>
+<blockquote>
+<p><strong>核对日期：2026-09-21。</strong> 通用概念与厂商实现分开说明。示例使用 OpenAI Python SDK，但连接 DeepSeek 时，服务提供方仍是 DeepSeek。API、模型别名及参数支持会变化，请以对应厂商文档为准。</p>
+<p><strong>示例验证范围</strong>：代码使用 OpenAI Python SDK 3.0.0、Pydantic 2.13.4 做了语法和模拟响应测试，未调用付费模型。实际运行仍需有效密钥、账户权限与兼容模型。</p>
+</blockquote>
+<span id="more"></span>
+<h2 id="1-LLM-API-在-Agent-中负责什么"><a href="#1-LLM-API-在-Agent-中负责什么" class="headerlink" title="1. LLM API 在 Agent 中负责什么"></a>1. LLM API 在 Agent 中负责什么</h2><p>可以把基础 Agent 理解为一个由应用程序控制的循环：整理上下文 → 请求模型 → 检查结果 → 必要时执行工具 → 把观察结果交回模型。</p>
+<pre class="mermaid">graph TD
+    A[用户提出任务] --> B[应用整理指令与上下文]
+    B --> C[调用 LLM API]
+    C --> D{检查模型响应}
+    D -->|最终回答| E[返回用户]
+    D -->|工具调用请求| F[应用校验参数和权限]
+    F -->|允许| G[执行工具]
+    G --> H[记录工具结果]
+    H --> B
+    D -->|拒答或异常| I[停止或按策略处理]
+    F -->|拒绝| I</pre>
+
+<p>图中的 <strong>LLM 负责生成回答或提出工具调用请求；应用负责权限、执行、状态和停止条件</strong>。工具可以是查询数据库、读取文件等函数。自定义函数不会因为出现在模型响应中，就自动在你的电脑上运行。[1]</p>
+<p>本文先把“调用模型”这一格讲清楚，工具闭环放到第三篇。</p>
+<h2 id="2-先分清模型、API-和-SDK"><a href="#2-先分清模型、API-和-SDK" class="headerlink" title="2. 先分清模型、API 和 SDK"></a>2. 先分清模型、API 和 SDK</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>名词</th>
+<th>是什么</th>
+<th>不代表什么</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>模型</td>
+<td>实际执行推理的模型或服务别名</td>
+<td>不等于接口协议</td>
+</tr>
+<tr>
+<td>API</td>
+<td>请求与响应的协议，例如 Chat Completions、Responses</td>
+<td>不等于某个 Python 包</td>
+</tr>
+<tr>
+<td>SDK</td>
+<td>帮助构造请求、解析响应的客户端库</td>
+<td>安装了 SDK，不表示服务端支持 SDK 的全部方法</td>
+</tr>
+<tr>
+<td>兼容接口</td>
+<td>另一家服务实现了某种请求/响应格式</td>
+<td>不表示参数、状态管理、工具能力完全一致</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>例如，<code>OpenAI(base_url=...)</code> 可以连接实现相应协议的其他服务。能调用 <code>client.chat.completions.create()</code>，不能单凭这一点推断它也支持 <code>client.responses.create()</code>。</p>
+<p><strong>本次核对时，DeepSeek 官方已经支持 Responses API</strong>，所以原文用 OpenAI SDK 调 DeepSeek Responses 的方向没有错；需要补充的是兼容范围，而不是把它误判为“不支持”。[2]</p>
+<h2 id="3-Chat-Completions：以消息列表为中心"><a href="#3-Chat-Completions：以消息列表为中心" class="headerlink" title="3. Chat Completions：以消息列表为中心"></a>3. Chat Completions：以消息列表为中心</h2><h3 id="3-1-messages-是本次请求的上下文"><a href="#3-1-messages-是本次请求的上下文" class="headerlink" title="3.1 messages 是本次请求的上下文"></a>3.1 messages 是本次请求的上下文</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">请求：messages[]</span><br><span class="line">      ├─ system / developer：应用指令，具体支持因模型而异</span><br><span class="line">      ├─ user：用户请求或提供的数据</span><br><span class="line">      ├─ assistant：模型先前的回答、工具调用请求</span><br><span class="line">      └─ tool：自定义工具的执行结果</span><br><span class="line"></span><br><span class="line">响应：choices[]</span><br><span class="line">      └─ message</span><br><span class="line">          ├─ content：文本，可能为空</span><br><span class="line">          ├─ tool_calls：工具调用请求，可能有多个</span><br><span class="line">          └─ refusal：拒答标记，是否提供取决于服务</span><br></pre></td></tr></table></figure>
+<p><code>choices[]</code> 表示候选结果。普通单候选请求通常读取第一项，但<strong><code>message.content</code> 不是整个响应的唯一入口</strong>：工具调用可能放在 <code>tool_calls</code> 中，文本也可能为 <code>None</code>。还要读取 <code>finish_reason</code> 和 <code>usage</code>。[3][4]</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>role</th>
+<th>工程含义</th>
+<th>注意事项</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>system</code></td>
+<td>应用设置的全局指令</td>
+<td>不要把外部网页、工具结果提升成系统指令</td>
+</tr>
+<tr>
+<td><code>developer</code></td>
+<td>OpenAI 部分模型使用的开发者指令角色</td>
+<td>不是所有兼容服务都支持相同语义</td>
+</tr>
+<tr>
+<td><code>user</code></td>
+<td>用户请求及相关输入</td>
+<td>不能仅凭 role 判断内容可信</td>
+</tr>
+<tr>
+<td><code>assistant</code></td>
+<td>模型先前的输出</td>
+<td>工具调用也属于模型输出</td>
+</tr>
+<tr>
+<td><code>tool</code></td>
+<td>工具返回的观察结果</td>
+<td>用调用 ID 与相应工具请求关联</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>把消息全部拼成一个字符串并非技术上“无法调用”，但会丢失协议层的来源、角色及工具关联信息，不利于上下文管理。<strong>角色分层是组织信息的手段，不是阻止提示注入的安全沙箱。</strong></p>
+<h3 id="3-2-最小可运行示例：DeepSeek-Chat-Completions"><a href="#3-2-最小可运行示例：DeepSeek-Chat-Completions" class="headerlink" title="3.2 最小可运行示例：DeepSeek Chat Completions"></a>3.2 最小可运行示例：DeepSeek Chat Completions</h3><p>本系列使用 Python 3.10+。在自己的示例项目中安装依赖，不需要安装 Agent 框架：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python -m pip install openai python-dotenv <span class="string">&#x27;pydantic&gt;=2,&lt;3&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>在示例项目目录创建 <code>.env</code>，并把它加入 <code>.gitignore</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DEEPSEEK_API_KEY=替换为你自己的密钥</span><br><span class="line">DEEPSEEK_BASE_URL=https://api.deepseek.com</span><br><span class="line">DEEPSEEK_MODEL_NAME=deepseek-flash</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><strong>模型名说明</strong>：截至 2026-09-21 核对日，官方推荐使用 <code>deepseek-flash</code>。原文中的 <code>deepseek-v4-flash</code> 仍被接受，但已经作为旧别名路由到 DeepSeek-V4.1-Flash；不能再用这个别名声称复现了旧模型实验。[5]</p>
+</blockquote>
+<p>下面代码可独立保存为 Python 文件执行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=os.environ[<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>],</span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>, <span class="string">&quot;https://api.deepseek.com&quot;</span>),</span><br><span class="line">    timeout=<span class="number">30.0</span>,</span><br><span class="line">    max_retries=<span class="number">0</span>,  <span class="comment"># 教学示例先显式暴露失败，第四篇再讨论重试</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response = client.chat.completions.create(</span><br><span class="line">    model=os.environ[<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>],</span><br><span class="line">    messages=[</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名诗人，只输出四句诗。&quot;</span>&#125;,</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请写一首以秋天为主题的七言绝句。&quot;</span>&#125;,</span><br><span class="line">    ],</span><br><span class="line">    max_tokens=<span class="number">600</span>,</span><br><span class="line">    extra_body=&#123;<span class="string">&quot;thinking&quot;</span>: &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;disabled&quot;</span>&#125;&#125;,  <span class="comment"># DeepSeek 专属参数</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> response.choices:</span><br><span class="line">    <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;没有返回候选结果&quot;</span>)</span><br><span class="line"></span><br><span class="line">choice = response.choices[<span class="number">0</span>]</span><br><span class="line">message = choice.message</span><br><span class="line"><span class="keyword">if</span> choice.finish_reason != <span class="string">&quot;stop&quot;</span>:</span><br><span class="line">    <span class="keyword">raise</span> RuntimeError(<span class="string">f&quot;本示例只接受完整文本响应：<span class="subst">&#123;choice.finish_reason&#125;</span>&quot;</span>)</span><br><span class="line"><span class="keyword">if</span> message.refusal:</span><br><span class="line">    <span class="keyword">raise</span> RuntimeError(<span class="string">f&quot;模型拒答：<span class="subst">&#123;message.refusal&#125;</span>&quot;</span>)</span><br><span class="line"><span class="keyword">if</span> message.tool_calls:</span><br><span class="line">    <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;本示例没有提供工具，不应执行工具请求&quot;</span>)</span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> message.content:</span><br><span class="line">    <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;未返回文本，不能当作成功回答&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(message.content)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;finish_reason:&quot;</span>, choice.finish_reason)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;usage:&quot;</span>, response.usage)</span><br></pre></td></tr></table></figure>
+<p>这里使用的是 <strong>OpenAI SDK + DeepSeek API</strong>，不是“DeepSeek 官方 SDK”。<code>max_tokens</code> 和 <code>thinking</code> 按 DeepSeek 文档配置；换供应商时不能无条件照搬。[4]</p>
+<p>真实诗句、token 数和延迟每次可能不同。教学上应观察“文本、结束原因、用量”三个部分，不必把一整段 SDK 对象打印日志当成接口规范。</p>
+<h2 id="4-Responses：以类型化输入项和输出项为中心"><a href="#4-Responses：以类型化输入项和输出项为中心" class="headerlink" title="4. Responses：以类型化输入项和输出项为中心"></a>4. Responses：以类型化输入项和输出项为中心</h2><h3 id="4-1-input-不只是-messages-改名"><a href="#4-1-input-不只是-messages-改名" class="headerlink" title="4.1 input 不只是 messages 改名"></a>4.1 input 不只是 messages 改名</h3><p>Responses 的 <code>input</code> 可以是字符串，也可以是输入项列表。列表既能承载带 role 的消息，也能承载函数调用结果等项目；<code>output[]</code> 则是<strong>一次响应中的输出项序列，不是多个候选答案</strong>。[6]</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">response</span><br><span class="line">├─ status：completed / incomplete / failed 等状态</span><br><span class="line">├─ output[]</span><br><span class="line">│  ├─ type: reasoning       推理相关项，内容因模型而异</span><br><span class="line">│  ├─ type: function_call   请求应用执行函数</span><br><span class="line">│  └─ type: message</span><br><span class="line">│      └─ content[]</span><br><span class="line">│          ├─ type: output_text</span><br><span class="line">│          └─ type: refusal</span><br><span class="line">├─ usage</span><br><span class="line">├─ error</span><br><span class="line">└─ incomplete_details</span><br></pre></td></tr></table></figure>
+<p>这是形状示意，不表示每次都会返回全部项目，也不表示输出项顺序固定。</p>
+<p>需要纠正三个常见误解：</p>
+<ol>
+<li><strong>仍然可以使用 <code>system</code> / <code>developer</code> 消息</strong>，不是只能有 <code>user</code> / <code>assistant</code>。顶层 <code>instructions</code> 是设置指令的便利方式，不意味着 <code>input</code> 禁止系统消息。[2][6]</li>
+<li><strong>拒答通常是 <code>message.content[]</code> 中的 <code>refusal</code> 内容块</strong>，不是与 <code>message</code> 并列的顶层输出项。[7]</li>
+<li><strong>不要固定访问 <code>output[0].content[0].text</code></strong>。首项可能是推理或工具请求；纯文本展示可用 Python SDK 的 <code>response.output_text</code>，调度逻辑则要检查状态和项目类型。[6]</li>
+</ol>
+<p><code>output_text</code> 是 SDK 汇总文本的便利属性，不要假设所有原始 HTTP 响应都包含同名顶层字段。它也不会替你执行工具或处理失败。</p>
+<h3 id="4-2-最小可运行示例：DeepSeek-Responses"><a href="#4-2-最小可运行示例：DeepSeek-Responses" class="headerlink" title="4.2 最小可运行示例：DeepSeek Responses"></a>4.2 最小可运行示例：DeepSeek Responses</h3><p>沿用上面的 <code>.env</code>，下面是另一个可独立运行的脚本：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=os.environ[<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>],</span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>, <span class="string">&quot;https://api.deepseek.com&quot;</span>),</span><br><span class="line">    timeout=<span class="number">30.0</span>,</span><br><span class="line">    max_retries=<span class="number">0</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response = client.responses.create(</span><br><span class="line">    model=os.environ[<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>],</span><br><span class="line">    instructions=<span class="string">&quot;你是一名诗人，只输出四句诗。&quot;</span>,</span><br><span class="line">    <span class="built_in">input</span>=<span class="string">&quot;请写一首以秋天为主题的七言绝句。&quot;</span>,</span><br><span class="line">    max_output_tokens=<span class="number">600</span>,</span><br><span class="line">    reasoning=&#123;<span class="string">&quot;effort&quot;</span>: <span class="string">&quot;none&quot;</span>&#125;,  <span class="comment"># 此处按 DeepSeek 的参数支持配置</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> response.status != <span class="string">&quot;completed&quot;</span>:</span><br><span class="line">    <span class="keyword">raise</span> RuntimeError(</span><br><span class="line">        <span class="string">f&quot;响应未完成：<span class="subst">&#123;response.status&#125;</span>; &quot;</span></span><br><span class="line">        <span class="string">f&quot;error=<span class="subst">&#123;response.error&#125;</span>; details=<span class="subst">&#123;response.incomplete_details&#125;</span>&quot;</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> item <span class="keyword">in</span> response.output:</span><br><span class="line">    <span class="keyword">if</span> item.<span class="built_in">type</span> == <span class="string">&quot;message&quot;</span>:</span><br><span class="line">        <span class="keyword">for</span> part <span class="keyword">in</span> item.content:</span><br><span class="line">            <span class="keyword">if</span> part.<span class="built_in">type</span> == <span class="string">&quot;refusal&quot;</span>:</span><br><span class="line">                <span class="keyword">raise</span> RuntimeError(<span class="string">f&quot;模型拒答：<span class="subst">&#123;part.refusal&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">elif</span> item.<span class="built_in">type</span> != <span class="string">&quot;reasoning&quot;</span>:</span><br><span class="line">        <span class="keyword">raise</span> RuntimeError(<span class="string">f&quot;本纯文本示例不处理输出项：<span class="subst">&#123;item.<span class="built_in">type</span>&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> <span class="keyword">not</span> response.output_text:</span><br><span class="line">    <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;未返回可展示的文本&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(response.output_text)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;status:&quot;</span>, response.status)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;usage:&quot;</span>, response.usage)</span><br></pre></td></tr></table></figure>
+<p>这两个脚本都刻意限定为“非流式、无工具、纯文本”。生产应用应分类处理异常，不是把所有情况永久转换成同一种 <code>RuntimeError</code>。</p>
+<h3 id="4-3-兼容-Responses，不等于拥有全部-OpenAI-功能"><a href="#4-3-兼容-Responses，不等于拥有全部-OpenAI-功能" class="headerlink" title="4.3 兼容 Responses，不等于拥有全部 OpenAI 功能"></a>4.3 兼容 Responses，不等于拥有全部 OpenAI 功能</h3><p>根据 DeepSeek 核对日的兼容说明：[2]</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>DeepSeek Responses 的边界</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>文本输入输出、自定义函数调用</td>
+<td>支持</td>
+</tr>
+<tr>
+<td><code>previous_response_id</code>、<code>conversation</code></td>
+<td>不支持服务端会话续接，需要应用回传上下文</td>
+</tr>
+<tr>
+<td><code>store</code>、<code>background</code></td>
+<td>不支持，不能据此设计持久会话或后台任务</td>
+</tr>
+<tr>
+<td>OpenAI 内置 <code>web_search</code>、<code>file_search</code> 等工具</td>
+<td>不能按 OpenAI 能力使用，兼容表标为忽略</td>
+</tr>
+<tr>
+<td><code>developer</code> 消息角色</td>
+<td>当前按 <code>user</code> 处理，不能假设与 OpenAI 指令优先级相同</td>
+</tr>
+<tr>
+<td>未支持参数</td>
+<td>某些参数被静默忽略，HTTP 成功不代表参数生效</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>因此，多供应商应用除了统一字段，还需要确认<strong>实际能力与语义</strong>。</p>
+<h2 id="5-如何选择-Chat-Completions-与-Responses"><a href="#5-如何选择-Chat-Completions-与-Responses" class="headerlink" title="5. 如何选择 Chat Completions 与 Responses"></a>5. 如何选择 Chat Completions 与 Responses</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Chat Completions</th>
+<th>Responses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>输入组织</td>
+<td><code>messages[]</code></td>
+<td>字符串或输入项列表，可用 <code>instructions</code></td>
+</tr>
+<tr>
+<td>输出组织</td>
+<td><code>choices[]</code> 中的消息</td>
+<td><code>output[]</code> 中的类型化输出项</td>
+</tr>
+<tr>
+<td>读取纯文本</td>
+<td>检查状态后读取 <code>message.content</code></td>
+<td>检查状态后使用 SDK 的 <code>output_text</code></td>
+</tr>
+<tr>
+<td>自定义工具请求</td>
+<td><code>message.tool_calls</code></td>
+<td><code>output[]</code> 中的 <code>function_call</code></td>
+</tr>
+<tr>
+<td>自定义工具执行者</td>
+<td>应用程序</td>
+<td>应用程序</td>
+</tr>
+<tr>
+<td>多轮状态</td>
+<td>通常由应用维护消息</td>
+<td>OpenAI 可使用会话关联；其他供应商要查兼容表</td>
+</tr>
+<tr>
+<td>多模态</td>
+<td>取决于模型与端点能力</td>
+<td>同样取决于模型与端点能力</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>不要按“聊天用 Chat、Agent 必须用 Responses”机械划分。</strong> 两者都可以支持工具循环。对 OpenAI 新项目，官方推荐 Responses；对兼容生态、已有应用或特定供应商，应以所需能力、迁移成本及评测结果选型。[1][6]</p>
+<p>OpenAI Responses 中可通过 <code>previous_response_id</code> 关联前次响应，但这不是无限记忆，也不是历史上下文从此不消耗预算。跨请求的应用指令应按接口约定明确维护。[8]</p>
+<h2 id="6-流式输出：增量不等于完整结果"><a href="#6-流式输出：增量不等于完整结果" class="headerlink" title="6. 流式输出：增量不等于完整结果"></a>6. 流式输出：增量不等于完整结果</h2><p>非流式调用返回完整响应；流式调用逐步收到事件或片段。界面可以边收边展示，但程序不能把任意片段当作完整 JSON 或可执行工具参数。</p>
+<ul>
+<li>Chat Completions 通常读取 <code>choices[].delta</code>，不是每个 chunk 都有完整 <code>message</code>。</li>
+<li>Responses 按事件类型读取，例如 <code>response.output_text.delta</code>。</li>
+<li>需要等到终止状态，确认是否完整、失败或截断；连接断开不代表正常结束。</li>
+<li>工具参数必须收集完整并校验后才能执行；用量是否在最后返回，要看厂商实现。[2][4]</li>
+</ul>
+<h2 id="7-本篇小结"><a href="#7-本篇小结" class="headerlink" title="7. 本篇小结"></a>7. 本篇小结</h2><p>记住三层即可：<strong>SDK 是客户端，API 是协议，模型是能力来源。</strong></p>
+<p>读一次响应时，先问：</p>
+<ol>
+<li>请求有没有成功到达并完成？</li>
+<li>返回的是文本、拒答，还是工具调用？</li>
+<li>有没有截断？消耗了多少 token？</li>
+</ol>
+<p>下一篇：<a href="/2026/09/21/ai/agent/2-llm-parameters-context/" title="Agent基础：生成参数、Token与上下文管理">生成参数、Token 与上下文管理</a>。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p>以下均为官方资料，核对日期为 2026-09-21；兼容矩阵随服务更新而变化。</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/function-calling">OpenAI：Function calling</a></li>
+<li><a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/guides/responses_api/">DeepSeek：Using the Responses API</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create">OpenAI：Chat Completions API</a></li>
+<li><a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/api/create-chat-completion/">DeepSeek：Chat Completions API</a></li>
+<li><a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/quick_start/pricing/">DeepSeek：Models &amp; Pricing</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/migrate-to-responses">OpenAI：Migrate to the Responses API</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/structured-outputs">OpenAI：Structured model outputs</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/conversation-state">OpenAI：Conversation state</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/09/08/ai/knowledge/1-base-knowledge/" rel="prev" title="基于 LLM-Wiki 与 Obsidian 构建个人本地知识库">
+      <i class="fa fa-chevron-left"></i> 基于 LLM-Wiki 与 Obsidian 构建个人本地知识库
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/09/09/ai/knowledge/2-llm-wiki-obsidian-knowledge/" rel="next" title="LLM-Wiki 与 Obsidian 构建个人本地知识库实战">
+      LLM-Wiki 与 Obsidian 构建个人本地知识库实战 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%98%85%E8%AF%BB%E8%B7%AF%E7%BA%BF%EF%BC%9A%E5%85%88%E8%B0%83%E7%94%A8%E6%A8%A1%E5%9E%8B%EF%BC%8C%E5%86%8D%E6%9E%84%E5%BB%BA%E6%99%BA%E8%83%BD%E4%BD%93"><span class="nav-number">1.</span> <span class="nav-text">阅读路线：先调用模型，再构建智能体</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#1-LLM-API-%E5%9C%A8-Agent-%E4%B8%AD%E8%B4%9F%E8%B4%A3%E4%BB%80%E4%B9%88"><span class="nav-number">2.</span> <span class="nav-text">1. LLM API 在 Agent 中负责什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%85%88%E5%88%86%E6%B8%85%E6%A8%A1%E5%9E%8B%E3%80%81API-%E5%92%8C-SDK"><span class="nav-number">3.</span> <span class="nav-text">2. 先分清模型、API 和 SDK</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Chat-Completions%EF%BC%9A%E4%BB%A5%E6%B6%88%E6%81%AF%E5%88%97%E8%A1%A8%E4%B8%BA%E4%B8%AD%E5%BF%83"><span class="nav-number">4.</span> <span class="nav-text">3. Chat Completions：以消息列表为中心</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-messages-%E6%98%AF%E6%9C%AC%E6%AC%A1%E8%AF%B7%E6%B1%82%E7%9A%84%E4%B8%8A%E4%B8%8B%E6%96%87"><span class="nav-number">4.1.</span> <span class="nav-text">3.1 messages 是本次请求的上下文</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C%E7%A4%BA%E4%BE%8B%EF%BC%9ADeepSeek-Chat-Completions"><span class="nav-number">4.2.</span> <span class="nav-text">3.2 最小可运行示例：DeepSeek Chat Completions</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Responses%EF%BC%9A%E4%BB%A5%E7%B1%BB%E5%9E%8B%E5%8C%96%E8%BE%93%E5%85%A5%E9%A1%B9%E5%92%8C%E8%BE%93%E5%87%BA%E9%A1%B9%E4%B8%BA%E4%B8%AD%E5%BF%83"><span class="nav-number">5.</span> <span class="nav-text">4. Responses：以类型化输入项和输出项为中心</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-input-%E4%B8%8D%E5%8F%AA%E6%98%AF-messages-%E6%94%B9%E5%90%8D"><span class="nav-number">5.1.</span> <span class="nav-text">4.1 input 不只是 messages 改名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E6%9C%80%E5%B0%8F%E5%8F%AF%E8%BF%90%E8%A1%8C%E7%A4%BA%E4%BE%8B%EF%BC%9ADeepSeek-Responses"><span class="nav-number">5.2.</span> <span class="nav-text">4.2 最小可运行示例：DeepSeek Responses</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E5%85%BC%E5%AE%B9-Responses%EF%BC%8C%E4%B8%8D%E7%AD%89%E4%BA%8E%E6%8B%A5%E6%9C%89%E5%85%A8%E9%83%A8-OpenAI-%E5%8A%9F%E8%83%BD"><span class="nav-number">5.3.</span> <span class="nav-text">4.3 兼容 Responses，不等于拥有全部 OpenAI 功能</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9-Chat-Completions-%E4%B8%8E-Responses"><span class="nav-number">6.</span> <span class="nav-text">5. 如何选择 Chat Completions 与 Responses</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA%EF%BC%9A%E5%A2%9E%E9%87%8F%E4%B8%8D%E7%AD%89%E4%BA%8E%E5%AE%8C%E6%95%B4%E7%BB%93%E6%9E%9C"><span class="nav-number">7.</span> <span class="nav-text">6. 流式输出：增量不等于完整结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E6%9C%AC%E7%AF%87%E5%B0%8F%E7%BB%93"><span class="nav-number">8.</span> <span class="nav-text">7. 本篇小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">9.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

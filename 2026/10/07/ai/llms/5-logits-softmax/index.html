@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从隐藏状态和语言模型输出层出发，理解 Logits、Softmax、条件概率、Temperature、Top-k、Top-p、交叉熵以及下一个 Token 的选择过程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Logits、Softmax 与概率：模型如何选择下一个 Token？">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/07/ai/llms/5-logits-softmax/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从隐藏状态和语言模型输出层出发，理解 Logits、Softmax、条件概率、Temperature、Top-k、Top-p、交叉熵以及下一个 Token 的选择过程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012102338833.png">
+<meta property="article:published_time" content="2026-10-07T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-07T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta property="article:tag" content="大语言模型">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="Softmax">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012102338833.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/07/ai/llms/5-logits-softmax/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Logits、Softmax 与概率：模型如何选择下一个 Token？ | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/07/ai/llms/5-logits-softmax/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Logits、Softmax 与概率：模型如何选择下一个 Token？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-07 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-07T10:00:00+08:00">2026-10-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从隐藏状态和语言模型输出层出发，理解 Logits、Softmax、条件概率、Temperature、Top-k、Top-p、交叉熵以及下一个 Token 的选择过程。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Logits、Softmax-与概率：模型如何选择下一个-Token？"><a href="#Logits、Softmax-与概率：模型如何选择下一个-Token？" class="headerlink" title="Logits、Softmax 与概率：模型如何选择下一个 Token？"></a>Logits、Softmax 与概率：模型如何选择下一个 Token？</h1><p>在上一篇文章中，我们了解了 Prompt、Context 和 Chat Template 如何共同组成模型真正看到的输入。</p>
+<p>输入经过 Transformer 多层计算后，模型会得到上下文相关的隐藏状态。但隐藏状态还不是文字，也不是 Token ID。模型需要回答一个核心问题：</p>
+<blockquote>
+<p>在当前上下文之后，词表中的哪个 Token 最适合作为下一个输出？</p>
+</blockquote>
+<p>为此，模型会依次完成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">隐藏状态</span><br><span class="line">   ↓</span><br><span class="line">语言模型输出层</span><br><span class="line">   ↓</span><br><span class="line">Logits</span><br><span class="line">   ↓</span><br><span class="line">分数处理</span><br><span class="line">   ↓</span><br><span class="line">Softmax 概率分布</span><br><span class="line">   ↓</span><br><span class="line">Greedy 或 Sampling</span><br><span class="line">   ↓</span><br><span class="line">下一个 Token</span><br></pre></td></tr></table></figure>
+<p>本文将重点介绍 Logits、Softmax 和概率的含义，以及 Temperature、Top-k、Top-p 等生成参数如何改变最终选择。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012102338833.png" alt="image-20261012102338833"></p>
+<h1 id="先理解三个核心概念"><a href="#先理解三个核心概念" class="headerlink" title="先理解三个核心概念"></a>先理解三个核心概念</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>含义</th>
+<th>关键特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Logits</td>
+<td>模型对词表中每个候选 Token 产生的原始分数</td>
+<td>未归一化，可以是任意实数</td>
+</tr>
+<tr>
+<td>Softmax</td>
+<td>将一组分数转换为概率分布的函数</td>
+<td>每项介于 0 和 1，总和为 1</td>
+</tr>
+<tr>
+<td>Probability</td>
+<td>某个 Token 在当前上下文和生成规则下被选择的相对概率</td>
+<td>不是事实正确率</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>三者之间的关系是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Logits 决定候选 Token 的相对偏好</span><br><span class="line">Softmax 将相对偏好归一化</span><br><span class="line">概率分布用于选择下一个 Token</span><br></pre></td></tr></table></figure>
+<h1 id="从隐藏状态到完整词表"><a href="#从隐藏状态到完整词表" class="headerlink" title="从隐藏状态到完整词表"></a>从隐藏状态到完整词表</h1><p>假设模型输入经过 Transformer 后得到隐藏状态：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hidden_states shape = [batch_size, sequence_length, hidden_size]</span><br></pre></td></tr></table></figure>
+<p>对于 Qwen2.5-0.5B-Instruct，隐藏维度是 896，词表大小是 151,936。模型需要把长度为 896 的隐藏向量映射为词表中 151,936 个 Token 的分数。</p>
+<p>这个映射通常由 Language Model Head 完成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">最后位置的 Hidden State</span><br><span class="line">            ↓</span><br><span class="line">      Language Model Head</span><br><span class="line">            ↓</span><br><span class="line">词表中每个 Token 的 Logit</span><br></pre></td></tr></table></figure>
+<p>从数学上看，可以简化理解为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logits = hidden_state × W + b</span><br></pre></td></tr></table></figure>
+<p>其中：</p>
+<ul>
+<li><code>hidden_state</code> 是当前位置的隐藏状态；</li>
+<li><code>W</code> 是把隐藏维度映射到词表维度的权重矩阵；</li>
+<li><code>b</code> 是可选的偏置项；</li>
+<li><code>logits</code> 的长度等于词表大小。</li>
+</ul>
+<p>具体模型可能让输出层权重与输入 Embedding 权重共享，也可能没有单独的偏置项。因此，这里是帮助理解的通用形式，不代表所有模型完全相同。</p>
+<h1 id="Logits-是什么？"><a href="#Logits-是什么？" class="headerlink" title="Logits 是什么？"></a>Logits 是什么？</h1><p>Logits 是模型输出的未归一化分数。</p>
+<p>例如，当前上下文之后有三个候选 Token：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th style="text-align:right">Logit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td style="text-align:right">3.0</td>
+</tr>
+<tr>
+<td>B</td>
+<td style="text-align:right">2.0</td>
+</tr>
+<tr>
+<td>C</td>
+<td style="text-align:right">1.0</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这组数字表达：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">A 比 B 更受模型偏好</span><br><span class="line">B 比 C 更受模型偏好</span><br></pre></td></tr></table></figure>
+<p>但不能直接说：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">A 的概率是 3</span><br><span class="line">B 的概率是 2</span><br><span class="line">C 的概率是 1</span><br></pre></td></tr></table></figure>
+<p>原因是 Logits：</p>
+<ul>
+<li>可以是负数；</li>
+<li>不要求小于 1；</li>
+<li>总和不要求等于 1；</li>
+<li>主要通过相对差值表达模型偏好。</li>
+</ul>
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[3, 2, 1]</span><br></pre></td></tr></table></figure>
+<p>与：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[103, 102, 101]</span><br></pre></td></tr></table></figure>
+<p>经过 Softmax 后会得到相同的概率分布，因为三个分数都增加了相同常数，彼此之间的差值没有改变。</p>
+<h1 id="Softmax：把分数转换为概率"><a href="#Softmax：把分数转换为概率" class="headerlink" title="Softmax：把分数转换为概率"></a>Softmax：把分数转换为概率</h1><p>Softmax 会先对每个 Logit 取指数，再除以所有指数值之和：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">softmax(zᵢ) = exp(zᵢ) / Σ exp(zⱼ)</span><br></pre></td></tr></table></figure>
+<p>对于：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logits = [3, 2, 1]</span><br></pre></td></tr></table></figure>
+<p>计算结果约为：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th style="text-align:right">Logit</th>
+<th style="text-align:right">exp(Logit)</th>
+<th style="text-align:right">Softmax 概率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td style="text-align:right">3</td>
+<td style="text-align:right">20.09</td>
+<td style="text-align:right">66.5%</td>
+</tr>
+<tr>
+<td>B</td>
+<td style="text-align:right">2</td>
+<td style="text-align:right">7.39</td>
+<td style="text-align:right">24.5%</td>
+</tr>
+<tr>
+<td>C</td>
+<td style="text-align:right">1</td>
+<td style="text-align:right">2.72</td>
+<td style="text-align:right">9.0%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Softmax 结果具有以下特点：</p>
+<ol>
+<li>每个值都在 0 和 1 之间；</li>
+<li>所有候选概率之和为 1；</li>
+<li>Logit 越大，概率通常越高；</li>
+<li>Logit 之间的差值会被指数运算放大；</li>
+<li>保持 Logit 差值不变并整体平移，不会改变概率分布。</li>
+</ol>
+<h1 id="为什么要减去最大-Logit？"><a href="#为什么要减去最大-Logit？" class="headerlink" title="为什么要减去最大 Logit？"></a>为什么要减去最大 Logit？</h1><p>直接计算 <code>exp(logit)</code> 可能发生数值溢出。例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logits = [1000, 999, 998]</span><br></pre></td></tr></table></figure>
+<p><code>exp(1000)</code> 已经远远超出普通浮点数能够安全表示的范围。</p>
+<p>由于 Softmax 对整体平移不敏感，可以先减去最大值：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[1000, 999, 998] - 1000</span><br><span class="line">= [0, -1, -2]</span><br></pre></td></tr></table></figure>
+<p>然后计算：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">softmax([0, -1, -2])</span><br></pre></td></tr></table></figure>
+<p>即可得到相同概率，同时避免指数值过大。</p>
+<p>成熟框架中的 <code>torch.softmax()</code>、<code>log_softmax()</code> 和交叉熵实现已经处理了数值稳定性。实际代码中应优先使用框架函数，而不是手写朴素指数计算。</p>
+<h1 id="这是一个条件概率分布"><a href="#这是一个条件概率分布" class="headerlink" title="这是一个条件概率分布"></a>这是一个条件概率分布</h1><p>语言模型预测的并不是 Token 的固定概率，而是给定当前上下文后的条件概率：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P(next_token | context)</span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">中国的首都是</span><br></pre></td></tr></table></figure>
+<p>与：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">日本的首都是</span><br></pre></td></tr></table></figure>
+<p>最后一个位置的隐藏状态不同，Logits 和概率分布也会不同。</p>
+<p>同一个 Token 在不同 Context 下的概率可能有巨大差异。因此，“某个词的概率是多少”这个问题缺少完整上下文时通常没有确定答案。</p>
+<h1 id="概率不是事实正确率"><a href="#概率不是事实正确率" class="headerlink" title="概率不是事实正确率"></a>概率不是事实正确率</h1><p>假设模型给某个 Token 80% 的概率，它表达的是：</p>
+<blockquote>
+<p>在模型参数、当前 Context 和生成配置下，该 Token 在候选分布中占据较大概率质量。</p>
+</blockquote>
+<p>它不表示：</p>
+<blockquote>
+<p>这个 Token 所表达的事实有 80% 的概率正确。</p>
+</blockquote>
+<p>模型可能因为以下原因高概率地产生错误内容：</p>
+<ul>
+<li>训练数据包含错误或过时信息；</li>
+<li>问题超出模型知识范围；</li>
+<li>Context 提供了错误前提；</li>
+<li>多个事实在语言形式上容易混淆；</li>
+<li>模型学会了流畅表达，但没有可靠的事实验证机制；</li>
+<li>解码过程早期选择了错误 Token，后续继续沿错误方向生成。</li>
+</ul>
+<p>因此，Token 概率不应直接解释为事实置信度、答案可靠性或模型是否“确定”。</p>
+<h1 id="Temperature-如何改变概率分布？"><a href="#Temperature-如何改变概率分布？" class="headerlink" title="Temperature 如何改变概率分布？"></a>Temperature 如何改变概率分布？</h1><p>Temperature 会在 Softmax 前缩放 Logits：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P(tokenᵢ) = softmax(logitᵢ / T)</span><br></pre></td></tr></table></figure>
+<p>其中 <code>T</code> 是大于 0 的温度参数。</p>
+<h2 id="Temperature-小于-1"><a href="#Temperature-小于-1" class="headerlink" title="Temperature 小于 1"></a>Temperature 小于 1</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logits / 0.5</span><br></pre></td></tr></table></figure>
+<p>会放大 Logit 之间的差异，使概率分布更加集中。高分 Token 更占优势，输出通常更加稳定。</p>
+<h2 id="Temperature-等于-1"><a href="#Temperature-等于-1" class="headerlink" title="Temperature 等于 1"></a>Temperature 等于 1</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logits / 1</span><br></pre></td></tr></table></figure>
+<p>保持原始 Softmax 分布。</p>
+<h2 id="Temperature-大于-1"><a href="#Temperature-大于-1" class="headerlink" title="Temperature 大于 1"></a>Temperature 大于 1</h2><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logits / 2</span><br></pre></td></tr></table></figure>
+<p>会缩小 Logit 之间的差异，使概率分布更加平缓，低分候选获得更多机会，输出通常更加多样。</p>
+<p>以 <code>[3, 2, 1]</code> 为例：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Temperature</th>
+<th style="text-align:right">A</th>
+<th style="text-align:right">B</th>
+<th style="text-align:right">C</th>
+<th>分布特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0.5</td>
+<td style="text-align:right">86.7%</td>
+<td style="text-align:right">11.7%</td>
+<td style="text-align:right">1.6%</td>
+<td>更集中</td>
+</tr>
+<tr>
+<td style="text-align:right">1.0</td>
+<td style="text-align:right">66.5%</td>
+<td style="text-align:right">24.5%</td>
+<td style="text-align:right">9.0%</td>
+<td>原始分布</td>
+</tr>
+<tr>
+<td style="text-align:right">2.0</td>
+<td style="text-align:right">50.6%</td>
+<td style="text-align:right">30.7%</td>
+<td style="text-align:right">18.6%</td>
+<td>更平缓</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Temperature 并不会向模型添加新知识，也不会自动提高事实准确率。它只改变候选概率之间的相对差异。</p>
+<h2 id="Temperature-为-0-吗？"><a href="#Temperature-为-0-吗？" class="headerlink" title="Temperature 为 0 吗？"></a>Temperature 为 0 吗？</h2><p>数学公式中的 <code>logits / T</code> 不能令 <code>T = 0</code>。</p>
+<p>一些产品界面会把“Temperature 0”理解为尽可能确定的生成，但具体行为由服务实现决定。在 Transformers 中需要确定性输出时，通常使用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">do_sample=<span class="literal">False</span></span><br></pre></td></tr></table></figure>
+<p>也就是 Greedy Decoding，而不是实际计算 <code>logits / 0</code>。</p>
+<h1 id="Top-k-和-Top-p-发生在哪里？"><a href="#Top-k-和-Top-p-发生在哪里？" class="headerlink" title="Top-k 和 Top-p 发生在哪里？"></a>Top-k 和 Top-p 发生在哪里？</h1><p>生成时，原始 Logits 可能先经过一系列处理，再用于 Softmax 和采样：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">原始 Logits</span><br><span class="line">   ↓</span><br><span class="line">重复惩罚、最小长度、禁用 Token 等规则</span><br><span class="line">   ↓</span><br><span class="line">Temperature 缩放</span><br><span class="line">   ↓</span><br><span class="line">Top-k / Top-p 过滤</span><br><span class="line">   ↓</span><br><span class="line">归一化后的候选概率</span><br><span class="line">   ↓</span><br><span class="line">Sampling</span><br></pre></td></tr></table></figure>
+<p>具体处理顺序和实现细节取决于推理框架，不能假设所有系统都完全相同。</p>
+<h2 id="Top-k"><a href="#Top-k" class="headerlink" title="Top-k"></a>Top-k</h2><p>Top-k 只保留分数最高的 <code>k</code> 个候选 Token，其余候选被过滤。</p>
+<p>例如 <code>top_k=3</code>：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">完整词表 151,936 个候选</span><br><span class="line">        ↓</span><br><span class="line">只保留分数最高的 3 个</span><br><span class="line">        ↓</span><br><span class="line">重新归一化并采样</span><br></pre></td></tr></table></figure>
+<h2 id="Top-p"><a href="#Top-p" class="headerlink" title="Top-p"></a>Top-p</h2><p>Top-p，也称 Nucleus Sampling，会从概率最高的候选开始累加，保留累计概率达到阈值 <code>p</code> 所需的最小候选集合。</p>
+<p>例如候选概率为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">A: 0.50</span><br><span class="line">B: 0.25</span><br><span class="line">C: 0.15</span><br><span class="line">D: 0.07</span><br><span class="line">E: 0.03</span><br></pre></td></tr></table></figure>
+<p>当 <code>top_p=0.80</code> 时，可能保留：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A + B + C = 0.90</span><br></pre></td></tr></table></figure>
+<p>候选集合大小会随着当前概率分布变化，并不是固定数量。</p>
+<h1 id="推理模型中，这三个参数不起作用吗？"><a href="#推理模型中，这三个参数不起作用吗？" class="headerlink" title="推理模型中，这三个参数不起作用吗？"></a>推理模型中，这三个参数不起作用吗？</h1><p>先说结论：<strong>这个说法不准确，不能把它当成所有推理模型的共同规律。</strong></p>
+<p>这里的“推理模型”容易产生两种理解：</p>
+<ol>
+<li>如果指所有正在执行推理（Inference）的语言模型，那么说法显然不对。Temperature、Top-k 和 Top-p 本来就是推理阶段的解码参数；</li>
+<li>如果指会进行多步思考的 Reasoning Model，那么也不能一概而论。参数是否可用、是否生效以及是否建议修改，取决于具体模型、推理框架和 API 服务。</li>
+</ol>
+<p>推理模型并没有绕过 Logits。它通常仍然按照自回归方式生成 Token：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">当前上下文</span><br><span class="line">   ↓</span><br><span class="line">推理模型计算 Logits</span><br><span class="line">   ↓</span><br><span class="line">服务端或本地推理框架执行解码策略</span><br><span class="line">   ↓</span><br><span class="line">选出下一个 Token</span><br><span class="line">   ↓</span><br><span class="line">加入上下文，继续生成</span><br></pre></td></tr></table></figure>
+<p>只要解码器启用了随机采样，并实际应用 Temperature、Top-k 或 Top-p，这些参数就会改变候选 Token 的概率分布或候选集合，因而可能同时影响推理过程和最终答案。</p>
+<p>例如，Qwen3 官方文档不仅支持这些参数，还针对思考模式推荐 <code>temperature=0.6</code>、<code>top_p=0.95</code>、<code>top_k=20</code>，并明确不建议使用 Greedy Decoding。这说明“推理模型天然不受采样参数影响”并不成立。</p>
+<h2 id="哪种情况下它们确实不起作用？"><a href="#哪种情况下它们确实不起作用？" class="headerlink" title="哪种情况下它们确实不起作用？"></a>哪种情况下它们确实不起作用？</h2><h3 id="1-使用-Greedy-Decoding"><a href="#1-使用-Greedy-Decoding" class="headerlink" title="1. 使用 Greedy Decoding"></a>1. 使用 Greedy Decoding</h3><p>当本地推理设置为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">do_sample=<span class="literal">False</span></span><br></pre></td></tr></table></figure>
+<p>解码器每一步都直接选择分数最高的 Token。此时这三个参数通常没有实际作用：</p>
+<ul>
+<li>正温度只缩放 Logit 差值，不改变候选 Token 的排名，因此最高分 Token 仍然相同；</li>
+<li>Top-k 和 Top-p 即使执行过滤，最高分 Token 通常仍被保留；</li>
+<li>最终又不进行随机采样，所以候选集合中的其他 Token 没有被选中的机会。</li>
+</ul>
+<p>因此，在 Transformers 等框架中，<code>do_sample=False</code> 时同时设置采样参数，往往会被忽略或产生“采样参数无效”的警告。</p>
+<h3 id="2-托管-API-不支持或忽略参数"><a href="#2-托管-API-不支持或忽略参数" class="headerlink" title="2. 托管 API 不支持或忽略参数"></a>2. 托管 API 不支持或忽略参数</h3><p>有些云端推理服务会：</p>
+<ul>
+<li>不提供某个参数；</li>
+<li>接收到参数后直接报错；</li>
+<li>为特定模型固定解码配置；</li>
+<li>接受参数，但在特定模式下限制其取值或不采用它。</li>
+</ul>
+<p>这属于<strong>产品接口和服务实现的限制</strong>，并不表示推理模型在原理上没有 Logits 或概率采样。</p>
+<p>尤其需要注意：三个参数不一定同时受到支持。例如某个 API 可能开放 Temperature 和 Top-p，却不开放 Top-k。Google 的模型接口会分别声明模型支持哪些采样参数；如果模型的 <code>topK</code> 字段为空，就表示该模型不使用 Top-k，并且请求中也不允许设置它。</p>
+<h3 id="3-产品将主要控制权交给“推理强度”"><a href="#3-产品将主要控制权交给“推理强度”" class="headerlink" title="3. 产品将主要控制权交给“推理强度”"></a>3. 产品将主要控制权交给“推理强度”</h3><p>部分推理模型会提供类似 <code>reasoning_effort</code>、思考预算或 Thinking Mode 的参数。它们控制的是模型在回答前投入多少推理计算，并不等同于 Temperature：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">推理强度 / 思考预算</span><br><span class="line">    控制：思考多久、使用多少推理 Token</span><br><span class="line"></span><br><span class="line">Temperature / Top-k / Top-p</span><br><span class="line">    控制：解码时如何从候选 Token 中选择</span><br></pre></td></tr></table></figure>
+<p>服务提供方可能为了保证复杂推理的稳定性、评测可复现性以及安全策略的一致性，固定采样配置，只让用户调整推理强度。此时用户不能控制采样参数，不代表这些机制在服务内部不存在。</p>
+<h2 id="为什么推理模型通常不建议随意调整？"><a href="#为什么推理模型通常不建议随意调整？" class="headerlink" title="为什么推理模型通常不建议随意调整？"></a>为什么推理模型通常不建议随意调整？</h2><p>多步推理是一条连续的 Token 生成轨迹。早期一个不合适的随机选择，可能让后续推理沿着错误分支继续展开：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">早期候选选择发生变化</span><br><span class="line">        ↓</span><br><span class="line">中间推理路径发生变化</span><br><span class="line">        ↓</span><br><span class="line">后续上下文全部改变</span><br><span class="line">        ↓</span><br><span class="line">最终答案和稳定性发生变化</span><br></pre></td></tr></table></figure>
+<p>因此，推理模型往往对解码配置更敏感。温度过高可能增加不稳定分支，温度过低也不一定更好：它可能放大局部最高概率选项，导致重复、循环或过早锁定错误路径。</p>
+<p>例如，Gemini 官方文档允许配置 Temperature、Top-p 和 Top-k，但建议 Gemini 3 系列保持默认 Temperature；文档指出，将其调低可能导致循环或性能下降，复杂数学和推理任务尤其如此。这里表达的是“<strong>建议不要随意修改</strong>”，而不是“<strong>参数不起作用</strong>”。</p>
+<h2 id="不同场景下的准确结论"><a href="#不同场景下的准确结论" class="headerlink" title="不同场景下的准确结论"></a>不同场景下的准确结论</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>是否生效</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>本地模型，<code>do_sample=True</code></td>
+<td>通常生效</td>
+<td>解码器会执行温度缩放、候选过滤和随机采样</td>
+</tr>
+<tr>
+<td>本地推理模型，<code>do_sample=True</code></td>
+<td>通常生效</td>
+<td>原理相同，但应优先采用模型官方推荐值</td>
+</tr>
+<tr>
+<td>本地模型，<code>do_sample=False</code></td>
+<td>通常没有实际作用</td>
+<td>每一步直接选择最高分 Token，不进行随机采样</td>
+</tr>
+<tr>
+<td>托管 API 明确支持参数</td>
+<td>生效，但可能有取值限制</td>
+<td>具体行为由 API 契约决定</td>
+</tr>
+<tr>
+<td>托管 API 拒绝或忽略参数</td>
+<td>不生效</td>
+<td>服务端固定了解码策略</td>
+</tr>
+<tr>
+<td>API 未提供 Top-k</td>
+<td>用户无法控制 Top-k</td>
+<td>不应由此推断 Temperature 和 Top-p 也无效</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="实际使用时怎么判断？"><a href="#实际使用时怎么判断？" class="headerlink" title="实际使用时怎么判断？"></a>实际使用时怎么判断？</h2><p>不要根据“推理模型”这个名称猜测，可以依次检查：</p>
+<ol>
+<li>查看模型卡或 API 文档是否明确支持这些参数；</li>
+<li>确认当前是否启用了 Sampling，例如 Transformers 中的 <code>do_sample=True</code>；</li>
+<li>区分“不支持”“被忽略”“不建议修改”和“建议使用默认值”；</li>
+<li>优先采用模型官方给出的 Generation Config；</li>
+<li>如果服务提供推理强度或思考预算，先用它控制推理深度；</li>
+<li>做参数实验时固定 Prompt，并使用多组随机种子比较正确率、重复率和稳定性，不要只观察一次输出。</li>
+</ol>
+<p>所以，更准确的表述应该是：</p>
+<blockquote>
+<p>Temperature、Top-k 和 Top-p 对推理模型并非天然无效。启用随机采样且推理框架实际采用这些参数时，它们仍会影响生成；在 Greedy Decoding 或服务端固定解码策略时，它们才可能没有作用。部分推理模型虽然支持这些参数，但为了保证推理质量，官方会建议保持默认配置。</p>
+</blockquote>
+<h1 id="Logits-Processor-与-Logits-Warper"><a href="#Logits-Processor-与-Logits-Warper" class="headerlink" title="Logits Processor 与 Logits Warper"></a>Logits Processor 与 Logits Warper</h1><p>推理框架可能在选择 Token 前修改分数。常见处理包括：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>处理方式</th>
+<th>对分数的影响</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Repetition Penalty</td>
+<td>调整已出现 Token 的分数</td>
+<td>减少重复</td>
+</tr>
+<tr>
+<td>Min Length</td>
+<td>在长度不足时压低或屏蔽 EOS</td>
+<td>避免过早结束</td>
+</tr>
+<tr>
+<td>Bad Words</td>
+<td>将禁止候选设置为不可选</td>
+<td>阻止指定 Token 序列</td>
+</tr>
+<tr>
+<td>Temperature</td>
+<td>缩放 Logits</td>
+<td>调整分布集中程度</td>
+</tr>
+<tr>
+<td>Top-k</td>
+<td>过滤到固定数量候选</td>
+<td>限制候选范围</td>
+</tr>
+<tr>
+<td>Top-p</td>
+<td>过滤到累计概率候选集合</td>
+<td>动态限制候选范围</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>被过滤的 Token 常被设置为负无穷：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logit = -∞</span><br></pre></td></tr></table></figure>
+<p>经过 Softmax 后，它的概率就是 0。</p>
+<p>因此，需要区分：</p>
+<ul>
+<li><strong>Raw Logits</strong>：模型前向计算直接产生的原始分数；</li>
+<li><strong>Processed Scores</strong>：经过生成规则处理后的分数；</li>
+<li><strong>Probabilities</strong>：对当前候选分数归一化后的概率。</li>
+</ul>
+<h1 id="Greedy-与-Sampling"><a href="#Greedy-与-Sampling" class="headerlink" title="Greedy 与 Sampling"></a>Greedy 与 Sampling</h1><h2 id="Greedy-Decoding"><a href="#Greedy-Decoding" class="headerlink" title="Greedy Decoding"></a>Greedy Decoding</h2><p>Greedy Decoding 通常翻译为<strong>贪心解码</strong>。它是最简单的 Token 选择策略：模型每生成一步，都选择当前 Logit 最大、也就是当前概率最高的 Token。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">计算下一个 Token 的 Logits</span><br><span class="line">          ↓</span><br><span class="line">找到当前分数最高的 Token</span><br><span class="line">          ↓</span><br><span class="line">把它追加到已有序列</span><br><span class="line">          ↓</span><br><span class="line">重新计算下一步，直到生成 EOS 或达到长度限制</span><br></pre></td></tr></table></figure>
+<p>假设模型在某一步给出以下概率：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>候选 Token</th>
+<th style="text-align:right">概率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>北京</code></td>
+<td style="text-align:right">65%</td>
+</tr>
+<tr>
+<td><code>上海</code></td>
+<td style="text-align:right">25%</td>
+</tr>
+<tr>
+<td><code>深圳</code></td>
+<td style="text-align:right">10%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Greedy 不会按照这组概率抽签，而是直接选择概率最高的 <code>北京</code>。下一步，模型会在加入 <code>北京</code> 的新上下文上重新计算 Logits，再选择新的最高分 Token。</p>
+<p>因为 Softmax 不改变候选的大小顺序，所以不必先计算完整概率，也可以直接对 Logits 使用 <code>argmax</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">next_token_id = torch.argmax(logits, dim=-<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>在 Hugging Face Transformers 中，通常这样启用 Greedy Decoding：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">output_ids = model.generate(</span><br><span class="line">    **inputs,</span><br><span class="line">    do_sample=<span class="literal">False</span>,</span><br><span class="line">    max_new_tokens=<span class="number">100</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>这里的 <code>do_sample=False</code> 表示不进行随机采样。输入、模型和其他生成条件相同时，Greedy 的输出通常相同，因此适合需要结果稳定、便于复现的场景。</p>
+<h3 id="为什么叫“贪心”？"><a href="#为什么叫“贪心”？" class="headerlink" title="为什么叫“贪心”？"></a>为什么叫“贪心”？</h3><p>因为它只关心<strong>当前这一步最好的选择</strong>，不会提前搜索这个选择对后续完整句子的影响。</p>
+<p>假设第一步有两条路径：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">第一步选择 A：P(A) = 0.60</span><br><span class="line">后续最佳选择：P(x | A) = 0.60</span><br><span class="line">完整路径概率：0.60 × 0.60 = 0.36</span><br><span class="line"></span><br><span class="line">第一步选择 B：P(B) = 0.40</span><br><span class="line">后续最佳选择：P(y | B) = 0.99</span><br><span class="line">完整路径概率：0.40 × 0.99 = 0.396</span><br></pre></td></tr></table></figure>
+<p>Greedy 会在第一步选择概率更高的 A，最终得到概率为 <code>0.36</code> 的路径。但如果选择第一步概率稍低的 B，完整路径概率反而是 <code>0.396</code>。</p>
+<p>这就是<strong>局部最优不一定等于全局最优</strong>。Greedy 只选择当前最优 Token，不保证找到概率最高的完整序列，也不保证答案在事实性、逻辑性或表达质量上最好。</p>
+<h3 id="Greedy-与三个采样参数的关系"><a href="#Greedy-与三个采样参数的关系" class="headerlink" title="Greedy 与三个采样参数的关系"></a>Greedy 与三个采样参数的关系</h3><p>Greedy 的核心是“选最大值”，而不是“按概率抽样”：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>Greedy 下通常是否影响结果</th>
+<th>原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Temperature</td>
+<td>不影响</td>
+<td>正温度缩放不会改变 Logit 排名</td>
+</tr>
+<tr>
+<td>Top-k</td>
+<td>不影响</td>
+<td>最高分 Token 一定在保留的前 k 个候选中</td>
+</tr>
+<tr>
+<td>Top-p</td>
+<td>不影响</td>
+<td>最高分 Token 会被保留，最终仍由 <code>argmax</code> 选中</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>因此，使用 <code>do_sample=False</code> 时，不应该再依靠 Temperature、Top-k 或 Top-p 控制生成风格；很多推理框架会直接忽略这些参数或给出警告。</p>
+<h3 id="Greedy-的优点与局限"><a href="#Greedy-的优点与局限" class="headerlink" title="Greedy 的优点与局限"></a>Greedy 的优点与局限</h3><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>优点</th>
+<th>局限</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>算法简单，生成速度快</td>
+<td>容易产生机械或重复的表达</td>
+</tr>
+<tr>
+<td>通常可以稳定复现</td>
+<td>缺少多样性</td>
+</tr>
+<tr>
+<td>不需要维护多个候选序列</td>
+<td>可能过早选中错误的推理路径</td>
+</tr>
+<tr>
+<td>适合结构化输出和确定性任务</td>
+<td>不保证完整序列的整体概率最高</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>需要稳定输出时，Greedy 是很自然的基线；需要创意、多样性或希望探索不同推理路径时，通常会考虑 Sampling 或 Beam Search。</p>
+<h2 id="Sampling"><a href="#Sampling" class="headerlink" title="Sampling"></a>Sampling</h2><p>Sampling 按概率分布随机选择 Token：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">next_token_id = torch.multinomial(probabilities, num_samples=<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>高概率候选更容易被选中，但低概率候选也可能出现。Temperature、Top-k 和 Top-p 通常用于控制采样范围和随机程度。</p>
+<h1 id="一个回答的概率如何计算？"><a href="#一个回答的概率如何计算？" class="headerlink" title="一个回答的概率如何计算？"></a>一个回答的概率如何计算？</h1><p>自回归模型把完整回答分解成一系列条件概率：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">P(y₁, y₂, ..., yₙ | context)</span><br><span class="line">= P(y₁ | context)</span><br><span class="line">× P(y₂ | context, y₁)</span><br><span class="line">× ...</span><br><span class="line">× P(yₙ | context, y₁, ..., yₙ₋₁)</span><br></pre></td></tr></table></figure>
+<p>因为许多小于 1 的概率连续相乘会快速接近 0，工程中通常使用 Log Probability：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">log P(sequence)</span><br><span class="line">= Σ log P(tokenᵢ | previous tokens)</span><br></pre></td></tr></table></figure>
+<p>直接累加 Log Probability 更稳定，也更便于比较。</p>
+<p>但不同长度序列的总 Log Probability 不宜直接简单比较，因为更长序列包含更多负的 Log Probability 项。Beam Search 等算法通常还会使用长度惩罚或归一化策略。</p>
+<h1 id="Softmax-与训练损失的关系"><a href="#Softmax-与训练损失的关系" class="headerlink" title="Softmax 与训练损失的关系"></a>Softmax 与训练损失的关系</h1><p>语言模型训练时，目标是提高真实下一个 Token 的概率。</p>
+<p>假设正确 Token 是 B：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P(B) = 0.245</span><br></pre></td></tr></table></figure>
+<p>对应的负对数似然损失为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">loss = -log P(B)</span><br></pre></td></tr></table></figure>
+<p>正确 Token 概率越高，损失越小；概率越低，损失越大。</p>
+<p>PyTorch 的 Cross Entropy 通常直接接收原始 Logits 和目标 Token ID，内部以数值稳定的方式组合 Log Softmax 与负对数似然计算：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">loss = torch.nn.functional.cross_entropy(</span><br><span class="line">    logits,</span><br><span class="line">    target_token_ids,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>训练时不需要先手动调用 Softmax，再把概率传给 <code>cross_entropy()</code>。</p>
+<h1 id="实战一：手动观察-Softmax"><a href="#实战一：手动观察-Softmax" class="headerlink" title="实战一：手动观察 Softmax"></a>实战一：手动观察 Softmax</h1><p>下面先用三个候选分数验证公式、平移不变性和 Temperature 的影响。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line">logits = torch.tensor([<span class="number">3.0</span>, <span class="number">2.0</span>, <span class="number">1.0</span>])</span><br><span class="line"></span><br><span class="line">probabilities = torch.softmax(logits, dim=-<span class="number">1</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Logits:&quot;</span>, logits.tolist())</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;概率:&quot;</span>, probabilities.tolist())</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;概率和:&quot;</span>, probabilities.<span class="built_in">sum</span>().item())</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 整体平移不改变 Softmax ===&quot;</span>)</span><br><span class="line">shifted_logits = logits + <span class="number">100.0</span></span><br><span class="line">shifted_probabilities = torch.softmax(shifted_logits, dim=-<span class="number">1</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;平移后概率:&quot;</span>, shifted_probabilities.tolist())</span><br><span class="line"><span class="built_in">print</span>(</span><br><span class="line">    <span class="string">&quot;是否相同:&quot;</span>,</span><br><span class="line">    torch.allclose(probabilities, shifted_probabilities),</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== Temperature ===&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> temperature <span class="keyword">in</span> [<span class="number">0.5</span>, <span class="number">1.0</span>, <span class="number">2.0</span>]:</span><br><span class="line">    scaled_probabilities = torch.softmax(</span><br><span class="line">        logits / temperature,</span><br><span class="line">        dim=-<span class="number">1</span>,</span><br><span class="line">    )</span><br><span class="line">    <span class="built_in">print</span>(</span><br><span class="line">        <span class="string">f&quot;T=<span class="subst">&#123;temperature&#125;</span>: &quot;</span>,</span><br><span class="line">        [<span class="string">f&quot;<span class="subst">&#123;value:<span class="number">.2</span>%&#125;</span>&quot;</span> <span class="keyword">for</span> value <span class="keyword">in</span> scaled_probabilities.tolist()],</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== Greedy 与 Sampling ===&quot;</span>)</span><br><span class="line">greedy_id = torch.argmax(logits).item()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Greedy 选择:&quot;</span>, greedy_id)</span><br><span class="line"></span><br><span class="line">torch.manual_seed(<span class="number">42</span>)</span><br><span class="line">samples = torch.multinomial(</span><br><span class="line">    probabilities,</span><br><span class="line">    num_samples=<span class="number">10</span>,</span><br><span class="line">    replacement=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Sampling 结果:&quot;</span>, samples.tolist())</span><br></pre></td></tr></table></figure>
+<h1 id="实战二：查看-Qwen-的真实-Logits"><a href="#实战二：查看-Qwen-的真实-Logits" class="headerlink" title="实战二：查看 Qwen 的真实 Logits"></a>实战二：查看 Qwen 的真实 Logits</h1><p>下面继续使用前几篇文章中的本地模型：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./models/Qwen2.5-0.5B-Instruct</span><br></pre></td></tr></table></figure>
+<p>程序会展示：</p>
+<ul>
+<li>原始 Logits 的形状和取值范围；</li>
+<li>第一个待生成位置的 Top-10 Token；</li>
+<li>不同 Temperature 下的概率变化；</li>
+<li>不同 Context 如何改变候选分布；</li>
+<li>Greedy 生成过程中每个 Token 的 Log Probability。</li>
+</ul>
+<p>示例代码：将下面代码保存为 <code>qwen_logits_walkthrough.py</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_PATH = <span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">select_device_and_dtype</span>():</span><br><span class="line">    <span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;cuda&quot;</span>, torch.float16</span><br><span class="line">    <span class="keyword">if</span> torch.backends.mps.is_available():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;mps&quot;</span>, torch.float32</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;cpu&quot;</span>, torch.float32</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">device, dtype = select_device_and_dtype()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;运行设备: <span class="subst">&#123;device&#125;</span>，数据类型: <span class="subst">&#123;dtype&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">    dtype=dtype,</span><br><span class="line">).to(device)</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">prepare_inputs</span>(<span class="params">messages: <span class="built_in">list</span>[<span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]]</span>):</span><br><span class="line">    <span class="keyword">return</span> tokenizer.apply_chat_template(</span><br><span class="line">        messages,</span><br><span class="line">        tokenize=<span class="literal">True</span>,</span><br><span class="line">        add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">        return_dict=<span class="literal">True</span>,</span><br><span class="line">        return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">    ).to(device)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_next_token_logits</span>(<span class="params">messages: <span class="built_in">list</span>[<span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]]</span>):</span><br><span class="line">    model_inputs = prepare_inputs(messages)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">        outputs = model(**model_inputs)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># Decoder-only 模型使用最后一个输入位置预测下一个 Token。</span></span><br><span class="line">    logits = outputs.logits[:, -<span class="number">1</span>, :].<span class="built_in">float</span>()</span><br><span class="line">    <span class="keyword">return</span> model_inputs, logits</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">print_top_candidates</span>(<span class="params"></span></span><br><span class="line"><span class="params">    title: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    logits: torch.Tensor,</span></span><br><span class="line"><span class="params">    *,</span></span><br><span class="line"><span class="params">    temperature: <span class="built_in">float</span> = <span class="number">1.0</span>,</span></span><br><span class="line"><span class="params">    top_k: <span class="built_in">int</span> = <span class="number">10</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="keyword">if</span> temperature &lt;= <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;temperature 必须大于 0&quot;</span>)</span><br><span class="line"></span><br><span class="line">    probabilities = torch.softmax(logits / temperature, dim=-<span class="number">1</span>)</span><br><span class="line">    top_probabilities, top_token_ids = torch.topk(</span><br><span class="line">        probabilities,</span><br><span class="line">        k=top_k,</span><br><span class="line">        dim=-<span class="number">1</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n&quot;</span> + <span class="string">&quot;=&quot;</span> * <span class="number">88</span>)</span><br><span class="line">    <span class="built_in">print</span>(title)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Temperature:&quot;</span>, temperature)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;概率和:&quot;</span>, probabilities.<span class="built_in">sum</span>().item())</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> rank, (probability, token_id) <span class="keyword">in</span> <span class="built_in">enumerate</span>(</span><br><span class="line">        <span class="built_in">zip</span>(</span><br><span class="line">            top_probabilities[<span class="number">0</span>].tolist(),</span><br><span class="line">            top_token_ids[<span class="number">0</span>].tolist(),</span><br><span class="line">        ),</span><br><span class="line">        start=<span class="number">1</span>,</span><br><span class="line">    ):</span><br><span class="line">        token_text = tokenizer.decode(</span><br><span class="line">            [token_id],</span><br><span class="line">            skip_special_tokens=<span class="literal">False</span>,</span><br><span class="line">        )</span><br><span class="line">        raw_logit = logits[<span class="number">0</span>, token_id].item()</span><br><span class="line">        <span class="built_in">print</span>(</span><br><span class="line">            <span class="string">f&quot;<span class="subst">&#123;rank:&gt;<span class="number">2</span>&#125;</span>. &quot;</span></span><br><span class="line">            <span class="string">f&quot;id=<span class="subst">&#123;token_id:&lt;<span class="number">7</span>&#125;</span> &quot;</span></span><br><span class="line">            <span class="string">f&quot;logit=<span class="subst">&#123;raw_logit:&gt;<span class="number">9.4</span>f&#125;</span> &quot;</span></span><br><span class="line">            <span class="string">f&quot;probability=<span class="subst">&#123;probability:&gt;<span class="number">9.4</span>%&#125;</span> &quot;</span></span><br><span class="line">            <span class="string">f&quot;text=<span class="subst">&#123;token_text!r&#125;</span>&quot;</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名人工智能老师，请使用简体中文回答。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;中国的首都是&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">model_inputs, next_token_logits = get_next_token_logits(messages)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 原始 Logits ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;输入 Token 数:&quot;</span>, model_inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>])</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Logits shape:&quot;</span>, <span class="built_in">tuple</span>(next_token_logits.shape))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;最小 Logit:&quot;</span>, next_token_logits.<span class="built_in">min</span>().item())</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;最大 Logit:&quot;</span>, next_token_logits.<span class="built_in">max</span>().item())</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> temperature <span class="keyword">in</span> [<span class="number">0.5</span>, <span class="number">1.0</span>, <span class="number">2.0</span>]:</span><br><span class="line">    print_top_candidates(</span><br><span class="line">        <span class="string">&quot;中国的首都是……&quot;</span>,</span><br><span class="line">        next_token_logits,</span><br><span class="line">        temperature=temperature,</span><br><span class="line">        top_k=<span class="number">10</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 不同 Context 的候选分布 ===&quot;</span>)</span><br><span class="line">contexts = [</span><br><span class="line">    <span class="string">&quot;中国的首都是&quot;</span>,</span><br><span class="line">    <span class="string">&quot;日本的首都是&quot;</span>,</span><br><span class="line">    <span class="string">&quot;法国的首都是&quot;</span>,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> user_content <span class="keyword">in</span> contexts:</span><br><span class="line">    context_messages = [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: user_content,</span><br><span class="line">        &#125;,</span><br><span class="line">    ]</span><br><span class="line">    _, context_logits = get_next_token_logits(context_messages)</span><br><span class="line">    print_top_candidates(</span><br><span class="line">        user_content,</span><br><span class="line">        context_logits,</span><br><span class="line">        temperature=<span class="number">1.0</span>,</span><br><span class="line">        top_k=<span class="number">5</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== Greedy 生成与每步概率 ===&quot;</span>)</span><br><span class="line"><span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">    generation_output = model.generate(</span><br><span class="line">        **model_inputs,</span><br><span class="line">        max_new_tokens=<span class="number">16</span>,</span><br><span class="line">        do_sample=<span class="literal">False</span>,</span><br><span class="line">        return_dict_in_generate=<span class="literal">True</span>,</span><br><span class="line">        output_scores=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">input_length = model_inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>]</span><br><span class="line">generated_token_ids = generation_output.sequences[:, input_length:]</span><br><span class="line"></span><br><span class="line"><span class="comment"># normalize_logits=True 返回所选 Token 的 Log Probability。</span></span><br><span class="line">transition_scores = model.compute_transition_scores(</span><br><span class="line">    generation_output.sequences,</span><br><span class="line">    generation_output.scores,</span><br><span class="line">    normalize_logits=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">total_log_probability = <span class="number">0.0</span></span><br><span class="line"><span class="keyword">for</span> step, (token_id, log_probability) <span class="keyword">in</span> <span class="built_in">enumerate</span>(</span><br><span class="line">    <span class="built_in">zip</span>(generated_token_ids[<span class="number">0</span>], transition_scores[<span class="number">0</span>]),</span><br><span class="line">    start=<span class="number">1</span>,</span><br><span class="line">):</span><br><span class="line">    token_id_value = token_id.item()</span><br><span class="line">    log_probability_value = log_probability.item()</span><br><span class="line">    probability = math.exp(log_probability_value)</span><br><span class="line">    token_text = tokenizer.decode(</span><br><span class="line">        [token_id_value],</span><br><span class="line">        skip_special_tokens=<span class="literal">False</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    total_log_probability += log_probability_value</span><br><span class="line">    <span class="built_in">print</span>(</span><br><span class="line">        <span class="string">f&quot;step=<span class="subst">&#123;step:&gt;<span class="number">2</span>&#125;</span> &quot;</span></span><br><span class="line">        <span class="string">f&quot;id=<span class="subst">&#123;token_id_value:&lt;<span class="number">7</span>&#125;</span> &quot;</span></span><br><span class="line">        <span class="string">f&quot;log_p=<span class="subst">&#123;log_probability_value:&gt;<span class="number">9.4</span>f&#125;</span> &quot;</span></span><br><span class="line">        <span class="string">f&quot;p=<span class="subst">&#123;probability:&gt;<span class="number">9.4</span>%&#125;</span> &quot;</span></span><br><span class="line">        <span class="string">f&quot;text=<span class="subst">&#123;token_text!r&#125;</span>&quot;</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">response = tokenizer.decode(</span><br><span class="line">    generated_token_ids[<span class="number">0</span>],</span><br><span class="line">    skip_special_tokens=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n最终回答:&quot;</span>, response)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;序列总 Log Probability:&quot;</span>, total_log_probability)</span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line">/Users/jean/.pyenv/shims/uv run /Users/jean/PycharmProjects/llm-base/.venv/bin/python /Users/jean/PycharmProjects/llm-base/qwen_logits_walkthrough.py </span><br><span class="line">运行设备: mps，数据类型: torch.float32</span><br><span class="line">Loading weights: 100%|██████████| 290/290 [00:01&lt;00:00, 205.76it/s]</span><br><span class="line"></span><br><span class="line">=== 原始 Logits ===</span><br><span class="line">输入 Token 数: 27</span><br><span class="line">Logits shape: (1, 151936)</span><br><span class="line">最小 Logit: -16.22979164123535</span><br><span class="line">最大 Logit: 23.633970260620117</span><br><span class="line"></span><br><span class="line">========================================================================================</span><br><span class="line">中国的首都是……</span><br><span class="line">Temperature: 0.5</span><br><span class="line">概率和: 1.0</span><br><span class="line"> 1. id=68990   logit=  23.6340 probability= 71.9608% text=&#x27;北京&#x27;</span><br><span class="line"> 2. id=105538  logit=  23.0424 probability= 22.0437% text=&#x27;中国的&#x27;</span><br><span class="line"> 3. id=104554  logit=  22.1932 probability=  4.0336% text=&#x27;北京市&#x27;</span><br><span class="line"> 4. id=58695   logit=  21.7417 probability=  1.6348% text=&#x27;中国&#x27;</span><br><span class="line"> 5. id=105492  logit=  20.9330 probability=  0.3244% text=&#x27;中华人民&#x27;</span><br><span class="line"> 6. id=106114  logit=  18.3575 probability=  0.0019% text=&#x27;首都&#x27;</span><br><span class="line"> 7. id=100633  logit=  17.3411 probability=  0.0002% text=&#x27;上海&#x27;</span><br><span class="line"> 8. id=115315  logit=  17.1895 probability=  0.0002% text=&#x27;中国政府&#x27;</span><br><span class="line"> 9. id=105081  logit=  17.1761 probability=  0.0002% text=&#x27;在北京&#x27;</span><br><span class="line">10. id=107087  logit=  16.8140 probability=  0.0001% text=&#x27;中国人民&#x27;</span><br><span class="line"></span><br><span class="line">========================================================================================</span><br><span class="line">中国的首都是……</span><br><span class="line">Temperature: 1.0</span><br><span class="line">概率和: 1.0</span><br><span class="line"> 1. id=68990   logit=  23.6340 probability= 49.3126% text=&#x27;北京&#x27;</span><br><span class="line"> 2. id=105538  logit=  23.0424 probability= 27.2930% text=&#x27;中国的&#x27;</span><br><span class="line"> 3. id=104554  logit=  22.1932 probability= 11.6750% text=&#x27;北京市&#x27;</span><br><span class="line"> 4. id=58695   logit=  21.7417 probability=  7.4327% text=&#x27;中国&#x27;</span><br><span class="line"> 5. id=105492  logit=  20.9330 probability=  3.3108% text=&#x27;中华人民&#x27;</span><br><span class="line"> 6. id=106114  logit=  18.3575 probability=  0.2520% text=&#x27;首都&#x27;</span><br><span class="line"> 7. id=100633  logit=  17.3411 probability=  0.0912% text=&#x27;上海&#x27;</span><br><span class="line"> 8. id=115315  logit=  17.1895 probability=  0.0784% text=&#x27;中国政府&#x27;</span><br><span class="line"> 9. id=105081  logit=  17.1761 probability=  0.0773% text=&#x27;在北京&#x27;</span><br><span class="line">10. id=107087  logit=  16.8140 probability=  0.0538% text=&#x27;中国人民&#x27;</span><br><span class="line"></span><br><span class="line">========================================================================================</span><br><span class="line">中国的首都是……</span><br><span class="line">Temperature: 2.0</span><br><span class="line">概率和: 1.000000238418579</span><br><span class="line"> 1. id=68990   logit=  23.6340 probability= 16.1890% text=&#x27;北京&#x27;</span><br><span class="line"> 2. id=105538  logit=  23.0424 probability= 12.0439% text=&#x27;中国的&#x27;</span><br><span class="line"> 3. id=104554  logit=  22.1932 probability=  7.8771% text=&#x27;北京市&#x27;</span><br><span class="line"> 4. id=58695   logit=  21.7417 probability=  6.2851% text=&#x27;中国&#x27;</span><br><span class="line"> 5. id=105492  logit=  20.9330 probability=  4.1948% text=&#x27;中华人民&#x27;</span><br><span class="line"> 6. id=106114  logit=  18.3575 probability=  1.1573% text=&#x27;首都&#x27;</span><br><span class="line"> 7. id=100633  logit=  17.3411 probability=  0.6962% text=&#x27;上海&#x27;</span><br><span class="line"> 8. id=115315  logit=  17.1895 probability=  0.6454% text=&#x27;中国政府&#x27;</span><br><span class="line"> 9. id=105081  logit=  17.1761 probability=  0.6411% text=&#x27;在北京&#x27;</span><br><span class="line">10. id=107087  logit=  16.8140 probability=  0.5349% text=&#x27;中国人民&#x27;</span><br><span class="line"></span><br><span class="line">=== 不同 Context 的候选分布 ===</span><br><span class="line"></span><br><span class="line">========================================================================================</span><br><span class="line">中国的首都是</span><br><span class="line">Temperature: 1.0</span><br><span class="line">概率和: 1.0000001192092896</span><br><span class="line"> 1. id=105538  logit=  21.8123 probability= 77.8970% text=&#x27;中国的&#x27;</span><br><span class="line"> 2. id=58695   logit=  20.0483 probability= 13.3485% text=&#x27;中国&#x27;</span><br><span class="line"> 3. id=105492  logit=  18.4545 probability=  2.7119% text=&#x27;中华人民&#x27;</span><br><span class="line"> 4. id=68990   logit=  18.3862 probability=  2.5327% text=&#x27;北京&#x27;</span><br><span class="line"> 5. id=104554  logit=  17.3065 probability=  0.8604% text=&#x27;北京市&#x27;</span><br><span class="line"></span><br><span class="line">========================================================================================</span><br><span class="line">日本的首都是</span><br><span class="line">Temperature: 1.0</span><br><span class="line">概率和: 1.0</span><br><span class="line"> 1. id=101059  logit=  19.6823 probability= 80.6934% text=&#x27;日本&#x27;</span><br><span class="line"> 2. id=107513  logit=  17.1226 probability=  6.2399% text=&#x27;东京&#x27;</span><br><span class="line"> 3. id=100622  logit=  15.7529 probability=  1.5861% text=&#x27;作为&#x27;</span><br><span class="line"> 4. id=110839  logit=  15.5939 probability=  1.3530% text=&#x27;在日本&#x27;</span><br><span class="line"> 5. id=18493   logit=  14.8552 probability=  0.6464% text=&#x27;在&#x27;</span><br><span class="line"></span><br><span class="line">========================================================================================</span><br><span class="line">法国的首都是</span><br><span class="line">Temperature: 1.0</span><br><span class="line">概率和: 1.0</span><br><span class="line"> 1. id=104328  logit=  19.9621 probability= 50.5009% text=&#x27;法国&#x27;</span><br><span class="line"> 2. id=106004  logit=  19.7202 probability= 39.6491% text=&#x27;巴黎&#x27;</span><br><span class="line"> 3. id=116876  logit=  16.7841 probability=  2.1043% text=&#x27;法兰&#x27;</span><br><span class="line"> 4. id=103987  logit=  16.1982 probability=  1.1712% text=&#x27;位于&#x27;</span><br><span class="line"> 5. id=100622  logit=  15.7952 probability=  0.7828% text=&#x27;作为&#x27;</span><br><span class="line"></span><br><span class="line">=== Greedy 生成与每步概率 ===</span><br><span class="line">step= 1 id=68990   log_p=  -0.4331 p= 64.8509% text=&#x27;北京&#x27;</span><br><span class="line">step= 2 id=151645  log_p=  -0.1529 p= 85.8246% text=&#x27;&lt;|im_end|&gt;&#x27;</span><br><span class="line"></span><br><span class="line">最终回答: 北京</span><br><span class="line">序列总 Log Probability: -0.5859438180923462</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="如何阅读输出"><a href="#如何阅读输出" class="headerlink" title="如何阅读输出"></a>如何阅读输出</h2><h3 id="Logits-Shape"><a href="#Logits-Shape" class="headerlink" title="Logits Shape"></a>Logits Shape</h3><p>如果输出类似：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Logits shape: (1, 151936)</span><br></pre></td></tr></table></figure>
+<p>表示当前 Batch Size 为 1，模型为词表中的 151,936 个 Token 分别生成了一个分数。</p>
+<p>模型完整前向输出通常是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[batch_size, sequence_length, vocabulary_size]</span><br></pre></td></tr></table></figure>
+<p>示例只取最后一个位置：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">outputs.logits[:, -<span class="number">1</span>, :]</span><br></pre></td></tr></table></figure>
+<p>因为这个位置负责预测下一个 Token。</p>
+<h3 id="Top-10-概率之和通常小于-1"><a href="#Top-10-概率之和通常小于-1" class="headerlink" title="Top-10 概率之和通常小于 1"></a>Top-10 概率之和通常小于 1</h3><p>打印出的只是概率最高的 10 个 Token。剩余概率分布在词表中的其他候选上，因此 Top-10 概率之和不一定等于 1。</p>
+<p>代码中打印的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">probabilities.<span class="built_in">sum</span>()</span><br></pre></td></tr></table></figure>
+<p>才是完整词表概率之和，应接近 1。</p>
+<h3 id="outputs-logits-与-generation-output-scores"><a href="#outputs-logits-与-generation-output-scores" class="headerlink" title="outputs.logits 与 generation_output.scores"></a><code>outputs.logits</code> 与 <code>generation_output.scores</code></h3><p>直接调用模型前向传播得到的 <code>outputs.logits</code> 是原始模型 Logits。</p>
+<p><code>generate()</code> 返回的 <code>scores</code> 是生成过程每一步使用的预测分数，可能已经经过部分 Logits Processor 或生成规则处理。两者不能在所有配置下视为完全相同。</p>
+<h3 id="Transition-Score"><a href="#Transition-Score" class="headerlink" title="Transition Score"></a>Transition Score</h3><p><code>compute_transition_scores(..., normalize_logits=True)</code> 可以计算实际选中 Token 的 Log Probability。</p>
+<p>通过：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">math.exp(log_probability)</span><br></pre></td></tr></table></figure>
+<p>可以得到该 Token 在对应生成步骤中的概率。</p>
+<h1 id="概率分布还能告诉我们什么？"><a href="#概率分布还能告诉我们什么？" class="headerlink" title="概率分布还能告诉我们什么？"></a>概率分布还能告诉我们什么？</h1><h2 id="分布集中程度"><a href="#分布集中程度" class="headerlink" title="分布集中程度"></a>分布集中程度</h2><p>如果一个 Token 占据绝大部分概率，说明模型在当前分布下明显偏向该候选。</p>
+<p>如果许多 Token 概率接近，说明当前生成位置存在多种语言上合理的延续方式。</p>
+<p>可以使用熵衡量概率分布的不确定程度：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">H(P) = -Σ pᵢ log pᵢ</span><br></pre></td></tr></table></figure>
+<p>一般来说：</p>
+<ul>
+<li>分布越集中，熵越低；</li>
+<li>分布越平缓，熵越高。</li>
+</ul>
+<p>但熵较低仍不表示事实一定正确，只表示概率质量更加集中。</p>
+<h2 id="候选-Token-的边界"><a href="#候选-Token-的边界" class="headerlink" title="候选 Token 的边界"></a>候选 Token 的边界</h2><p>一个人类可读词语可能由多个 Token 组成。因此，查看下一 Token 概率只能分析当前一步，不能直接等同于完整词语或完整答案的概率。</p>
+<p>例如“北京”可能被表示为一个 Token，也可能被拆成多个 Token，具体取决于 Tokenizer。</p>
+<h1 id="常见误区"><a href="#常见误区" class="headerlink" title="常见误区"></a>常见误区</h1><h2 id="误区一：Logits-就是概率"><a href="#误区一：Logits-就是概率" class="headerlink" title="误区一：Logits 就是概率"></a>误区一：Logits 就是概率</h2><p>Logits 是未归一化分数，可以为负数或大于 1。只有经过适当归一化后才得到概率分布。</p>
+<h2 id="误区二：最高概率等于事实正确"><a href="#误区二：最高概率等于事实正确" class="headerlink" title="误区二：最高概率等于事实正确"></a>误区二：最高概率等于事实正确</h2><p>Token 概率反映模型的条件生成分布，不是事实验证结果。</p>
+<h2 id="误区三：Softmax-前必须先让-Logits-变成正数"><a href="#误区三：Softmax-前必须先让-Logits-变成正数" class="headerlink" title="误区三：Softmax 前必须先让 Logits 变成正数"></a>误区三：Softmax 前必须先让 Logits 变成正数</h2><p>Softmax 可以直接处理负 Logits。指数值为正，归一化后自然得到合法概率。</p>
+<h2 id="误区四：Temperature-越低，答案一定越准确"><a href="#误区四：Temperature-越低，答案一定越准确" class="headerlink" title="误区四：Temperature 越低，答案一定越准确"></a>误区四：Temperature 越低，答案一定越准确</h2><p>低 Temperature 让分布更集中，减少随机性，但不会修复模型知识错误或错误 Context。</p>
+<h2 id="误区五：Temperature-越高，模型越聪明"><a href="#误区五：Temperature-越高，模型越聪明" class="headerlink" title="误区五：Temperature 越高，模型越聪明"></a>误区五：Temperature 越高，模型越聪明</h2><p>高 Temperature 只是增加低概率候选被选中的机会，可能提升多样性，也可能增加不连贯和错误。</p>
+<h2 id="误区六：Temperature-为-0-就是执行-Softmax-logits-0"><a href="#误区六：Temperature-为-0-就是执行-Softmax-logits-0" class="headerlink" title="误区六：Temperature 为 0 就是执行 Softmax(logits / 0)"></a>误区六：Temperature 为 0 就是执行 Softmax(logits / 0)</h2><p>数学上不能除以 0。框架通常通过关闭采样、使用 Greedy 等方式提供确定性行为。</p>
+<h2 id="误区七：Top-k-与-Top-p-会增加模型知识"><a href="#误区七：Top-k-与-Top-p-会增加模型知识" class="headerlink" title="误区七：Top-k 与 Top-p 会增加模型知识"></a>误区七：Top-k 与 Top-p 会增加模型知识</h2><p>它们只过滤或调整现有候选分布，不能让模型获得训练时没有学到的信息。</p>
+<h2 id="误区八：Greedy-能找到概率最高的完整回答"><a href="#误区八：Greedy-能找到概率最高的完整回答" class="headerlink" title="误区八：Greedy 能找到概率最高的完整回答"></a>误区八：Greedy 能找到概率最高的完整回答</h2><p>Greedy 只在每一步选择当前最高分 Token，不会回头比较完整序列的全局得分。</p>
+<h2 id="误区九：逐-Token-概率可以直接相加"><a href="#误区九：逐-Token-概率可以直接相加" class="headerlink" title="误区九：逐 Token 概率可以直接相加"></a>误区九：逐 Token 概率可以直接相加</h2><p>序列概率需要相乘；工程上通常累加 Log Probability。直接把普通概率相加没有对应的序列概率含义。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>Logits、Softmax 与概率之间的关系可以总结为：</p>
+<ol>
+<li>Transformer 为每个输入位置计算上下文相关的隐藏状态；</li>
+<li>Language Model Head 将最后位置的隐藏状态映射到完整词表；</li>
+<li>每个候选 Token 得到一个原始 Logit；</li>
+<li>Logits 是未归一化分数，主要通过相对差值表达偏好；</li>
+<li>Softmax 将分数转换为总和为 1 的条件概率分布；</li>
+<li>Temperature 改变分布的集中程度，但不增加模型知识；</li>
+<li>Top-k、Top-p 和其他处理器会过滤或修改候选分数；</li>
+<li>Greedy 选择当前最高分 Token，Sampling 按概率随机选择；</li>
+<li>完整序列概率由一系列条件概率相乘得到，通常使用 Log Probability 计算；</li>
+<li>Token 概率不是事实正确率，也不是模型可靠性的直接证明。</li>
+<li>推理模型仍然会产生 Logits；采样参数是否生效，要看解码模式和服务接口，不能仅凭“推理模型”这个名称判断。</li>
+</ol>
+<p>理解概率分布之后，下一篇将介绍上下文窗口与 KV Cache，解释模型能够处理多少 Token，以及逐 Token 生成时如何避免重复计算全部历史内容。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.softmax.html">PyTorch：Softmax</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.log_softmax.html">PyTorch：Log Softmax</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.cross_entropy.html">PyTorch：Cross Entropy</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/main_classes/text_generation">Hugging Face Transformers：Generation</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/internal/generation_utils">Hugging Face Transformers：Generation Utilities</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B-Instruct 模型页面</a></li>
+<li><a target="_blank" rel="noopener" href="https://qwen.readthedocs.io/en/stable/getting_started/quickstart.html">Qwen3：Quickstart 与推荐生成参数</a></li>
+<li><a target="_blank" rel="noopener" href="https://ai.google.dev/gemini-api/docs/prompting-strategies">Google Gemini：Prompting Strategies</a></li>
+<li><a target="_blank" rel="noopener" href="https://ai.google.dev/api/models">Google Gemini：Models API</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+              <a href="/tags/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" rel="tag"># 大语言模型</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+              <a href="/tags/Softmax/" rel="tag"># Softmax</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/06/ai/llms/4-prompt-context-chat-template/" rel="prev" title="Prompt、Context 与 Chat Template：模型真正看到了什么？">
+      <i class="fa fa-chevron-left"></i> Prompt、Context 与 Chat Template：模型真正看到了什么？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/08/ai/llms/6-context-window-kv-cache/" rel="next" title="上下文窗口与 KV Cache：模型如何记住前文并高效生成？">
+      上下文窗口与 KV Cache：模型如何记住前文并高效生成？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Logits%E3%80%81Softmax-%E4%B8%8E%E6%A6%82%E7%8E%87%EF%BC%9A%E6%A8%A1%E5%9E%8B%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%E4%B8%8B%E4%B8%80%E4%B8%AA-Token%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">Logits、Softmax 与概率：模型如何选择下一个 Token？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%88%E7%90%86%E8%A7%A3%E4%B8%89%E4%B8%AA%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">先理解三个核心概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E%E9%9A%90%E8%97%8F%E7%8A%B6%E6%80%81%E5%88%B0%E5%AE%8C%E6%95%B4%E8%AF%8D%E8%A1%A8"><span class="nav-number">3.</span> <span class="nav-text">从隐藏状态到完整词表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Logits-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">4.</span> <span class="nav-text">Logits 是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Softmax%EF%BC%9A%E6%8A%8A%E5%88%86%E6%95%B0%E8%BD%AC%E6%8D%A2%E4%B8%BA%E6%A6%82%E7%8E%87"><span class="nav-number">5.</span> <span class="nav-text">Softmax：把分数转换为概率</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%87%8F%E5%8E%BB%E6%9C%80%E5%A4%A7-Logit%EF%BC%9F"><span class="nav-number">6.</span> <span class="nav-text">为什么要减去最大 Logit？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%99%E6%98%AF%E4%B8%80%E4%B8%AA%E6%9D%A1%E4%BB%B6%E6%A6%82%E7%8E%87%E5%88%86%E5%B8%83"><span class="nav-number">7.</span> <span class="nav-text">这是一个条件概率分布</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E7%8E%87%E4%B8%8D%E6%98%AF%E4%BA%8B%E5%AE%9E%E6%AD%A3%E7%A1%AE%E7%8E%87"><span class="nav-number">8.</span> <span class="nav-text">概率不是事实正确率</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Temperature-%E5%A6%82%E4%BD%95%E6%94%B9%E5%8F%98%E6%A6%82%E7%8E%87%E5%88%86%E5%B8%83%EF%BC%9F"><span class="nav-number">9.</span> <span class="nav-text">Temperature 如何改变概率分布？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Temperature-%E5%B0%8F%E4%BA%8E-1"><span class="nav-number">9.1.</span> <span class="nav-text">Temperature 小于 1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Temperature-%E7%AD%89%E4%BA%8E-1"><span class="nav-number">9.2.</span> <span class="nav-text">Temperature 等于 1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Temperature-%E5%A4%A7%E4%BA%8E-1"><span class="nav-number">9.3.</span> <span class="nav-text">Temperature 大于 1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Temperature-%E4%B8%BA-0-%E5%90%97%EF%BC%9F"><span class="nav-number">9.4.</span> <span class="nav-text">Temperature 为 0 吗？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Top-k-%E5%92%8C-Top-p-%E5%8F%91%E7%94%9F%E5%9C%A8%E5%93%AA%E9%87%8C%EF%BC%9F"><span class="nav-number">10.</span> <span class="nav-text">Top-k 和 Top-p 发生在哪里？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Top-k"><span class="nav-number">10.1.</span> <span class="nav-text">Top-k</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Top-p"><span class="nav-number">10.2.</span> <span class="nav-text">Top-p</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8E%A8%E7%90%86%E6%A8%A1%E5%9E%8B%E4%B8%AD%EF%BC%8C%E8%BF%99%E4%B8%89%E4%B8%AA%E5%8F%82%E6%95%B0%E4%B8%8D%E8%B5%B7%E4%BD%9C%E7%94%A8%E5%90%97%EF%BC%9F"><span class="nav-number">11.</span> <span class="nav-text">推理模型中，这三个参数不起作用吗？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%93%AA%E7%A7%8D%E6%83%85%E5%86%B5%E4%B8%8B%E5%AE%83%E4%BB%AC%E7%A1%AE%E5%AE%9E%E4%B8%8D%E8%B5%B7%E4%BD%9C%E7%94%A8%EF%BC%9F"><span class="nav-number">11.1.</span> <span class="nav-text">哪种情况下它们确实不起作用？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E4%BD%BF%E7%94%A8-Greedy-Decoding"><span class="nav-number">11.1.1.</span> <span class="nav-text">1. 使用 Greedy Decoding</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E6%89%98%E7%AE%A1-API-%E4%B8%8D%E6%94%AF%E6%8C%81%E6%88%96%E5%BF%BD%E7%95%A5%E5%8F%82%E6%95%B0"><span class="nav-number">11.1.2.</span> <span class="nav-text">2. 托管 API 不支持或忽略参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E4%BA%A7%E5%93%81%E5%B0%86%E4%B8%BB%E8%A6%81%E6%8E%A7%E5%88%B6%E6%9D%83%E4%BA%A4%E7%BB%99%E2%80%9C%E6%8E%A8%E7%90%86%E5%BC%BA%E5%BA%A6%E2%80%9D"><span class="nav-number">11.1.3.</span> <span class="nav-text">3. 产品将主要控制权交给“推理强度”</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%8E%A8%E7%90%86%E6%A8%A1%E5%9E%8B%E9%80%9A%E5%B8%B8%E4%B8%8D%E5%BB%BA%E8%AE%AE%E9%9A%8F%E6%84%8F%E8%B0%83%E6%95%B4%EF%BC%9F"><span class="nav-number">11.2.</span> <span class="nav-text">为什么推理模型通常不建议随意调整？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8D%E5%90%8C%E5%9C%BA%E6%99%AF%E4%B8%8B%E7%9A%84%E5%87%86%E7%A1%AE%E7%BB%93%E8%AE%BA"><span class="nav-number">11.3.</span> <span class="nav-text">不同场景下的准确结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%99%85%E4%BD%BF%E7%94%A8%E6%97%B6%E6%80%8E%E4%B9%88%E5%88%A4%E6%96%AD%EF%BC%9F"><span class="nav-number">11.4.</span> <span class="nav-text">实际使用时怎么判断？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Logits-Processor-%E4%B8%8E-Logits-Warper"><span class="nav-number">12.</span> <span class="nav-text">Logits Processor 与 Logits Warper</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Greedy-%E4%B8%8E-Sampling"><span class="nav-number">13.</span> <span class="nav-text">Greedy 与 Sampling</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Greedy-Decoding"><span class="nav-number">13.1.</span> <span class="nav-text">Greedy Decoding</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8F%AB%E2%80%9C%E8%B4%AA%E5%BF%83%E2%80%9D%EF%BC%9F"><span class="nav-number">13.1.1.</span> <span class="nav-text">为什么叫“贪心”？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Greedy-%E4%B8%8E%E4%B8%89%E4%B8%AA%E9%87%87%E6%A0%B7%E5%8F%82%E6%95%B0%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">13.1.2.</span> <span class="nav-text">Greedy 与三个采样参数的关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Greedy-%E7%9A%84%E4%BC%98%E7%82%B9%E4%B8%8E%E5%B1%80%E9%99%90"><span class="nav-number">13.1.3.</span> <span class="nav-text">Greedy 的优点与局限</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sampling"><span class="nav-number">13.2.</span> <span class="nav-text">Sampling</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%9B%9E%E7%AD%94%E7%9A%84%E6%A6%82%E7%8E%87%E5%A6%82%E4%BD%95%E8%AE%A1%E7%AE%97%EF%BC%9F"><span class="nav-number">14.</span> <span class="nav-text">一个回答的概率如何计算？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Softmax-%E4%B8%8E%E8%AE%AD%E7%BB%83%E6%8D%9F%E5%A4%B1%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">15.</span> <span class="nav-text">Softmax 与训练损失的关系</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%B8%80%EF%BC%9A%E6%89%8B%E5%8A%A8%E8%A7%82%E5%AF%9F-Softmax"><span class="nav-number">16.</span> <span class="nav-text">实战一：手动观察 Softmax</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%E4%BA%8C%EF%BC%9A%E6%9F%A5%E7%9C%8B-Qwen-%E7%9A%84%E7%9C%9F%E5%AE%9E-Logits"><span class="nav-number">17.</span> <span class="nav-text">实战二：查看 Qwen 的真实 Logits</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%98%85%E8%AF%BB%E8%BE%93%E5%87%BA"><span class="nav-number">17.1.</span> <span class="nav-text">如何阅读输出</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Logits-Shape"><span class="nav-number">17.1.1.</span> <span class="nav-text">Logits Shape</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Top-10-%E6%A6%82%E7%8E%87%E4%B9%8B%E5%92%8C%E9%80%9A%E5%B8%B8%E5%B0%8F%E4%BA%8E-1"><span class="nav-number">17.1.2.</span> <span class="nav-text">Top-10 概率之和通常小于 1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#outputs-logits-%E4%B8%8E-generation-output-scores"><span class="nav-number">17.1.3.</span> <span class="nav-text">outputs.logits 与 generation_output.scores</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Transition-Score"><span class="nav-number">17.1.4.</span> <span class="nav-text">Transition Score</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E7%8E%87%E5%88%86%E5%B8%83%E8%BF%98%E8%83%BD%E5%91%8A%E8%AF%89%E6%88%91%E4%BB%AC%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">18.</span> <span class="nav-text">概率分布还能告诉我们什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E9%9B%86%E4%B8%AD%E7%A8%8B%E5%BA%A6"><span class="nav-number">18.1.</span> <span class="nav-text">分布集中程度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%80%99%E9%80%89-Token-%E7%9A%84%E8%BE%B9%E7%95%8C"><span class="nav-number">18.2.</span> <span class="nav-text">候选 Token 的边界</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%AF%E5%8C%BA"><span class="nav-number">19.</span> <span class="nav-text">常见误区</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%80%EF%BC%9ALogits-%E5%B0%B1%E6%98%AF%E6%A6%82%E7%8E%87"><span class="nav-number">19.1.</span> <span class="nav-text">误区一：Logits 就是概率</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%8C%EF%BC%9A%E6%9C%80%E9%AB%98%E6%A6%82%E7%8E%87%E7%AD%89%E4%BA%8E%E4%BA%8B%E5%AE%9E%E6%AD%A3%E7%A1%AE"><span class="nav-number">19.2.</span> <span class="nav-text">误区二：最高概率等于事实正确</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%89%EF%BC%9ASoftmax-%E5%89%8D%E5%BF%85%E9%A1%BB%E5%85%88%E8%AE%A9-Logits-%E5%8F%98%E6%88%90%E6%AD%A3%E6%95%B0"><span class="nav-number">19.3.</span> <span class="nav-text">误区三：Softmax 前必须先让 Logits 变成正数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%9B%9B%EF%BC%9ATemperature-%E8%B6%8A%E4%BD%8E%EF%BC%8C%E7%AD%94%E6%A1%88%E4%B8%80%E5%AE%9A%E8%B6%8A%E5%87%86%E7%A1%AE"><span class="nav-number">19.4.</span> <span class="nav-text">误区四：Temperature 越低，答案一定越准确</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%94%EF%BC%9ATemperature-%E8%B6%8A%E9%AB%98%EF%BC%8C%E6%A8%A1%E5%9E%8B%E8%B6%8A%E8%81%AA%E6%98%8E"><span class="nav-number">19.5.</span> <span class="nav-text">误区五：Temperature 越高，模型越聪明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AD%EF%BC%9ATemperature-%E4%B8%BA-0-%E5%B0%B1%E6%98%AF%E6%89%A7%E8%A1%8C-Softmax-logits-0"><span class="nav-number">19.6.</span> <span class="nav-text">误区六：Temperature 为 0 就是执行 Softmax(logits &#x2F; 0)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%83%EF%BC%9ATop-k-%E4%B8%8E-Top-p-%E4%BC%9A%E5%A2%9E%E5%8A%A0%E6%A8%A1%E5%9E%8B%E7%9F%A5%E8%AF%86"><span class="nav-number">19.7.</span> <span class="nav-text">误区七：Top-k 与 Top-p 会增加模型知识</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AB%EF%BC%9AGreedy-%E8%83%BD%E6%89%BE%E5%88%B0%E6%A6%82%E7%8E%87%E6%9C%80%E9%AB%98%E7%9A%84%E5%AE%8C%E6%95%B4%E5%9B%9E%E7%AD%94"><span class="nav-number">19.8.</span> <span class="nav-text">误区八：Greedy 能找到概率最高的完整回答</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B9%9D%EF%BC%9A%E9%80%90-Token-%E6%A6%82%E7%8E%87%E5%8F%AF%E4%BB%A5%E7%9B%B4%E6%8E%A5%E7%9B%B8%E5%8A%A0"><span class="nav-number">19.9.</span> <span class="nav-text">误区九：逐 Token 概率可以直接相加</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">20.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">21.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

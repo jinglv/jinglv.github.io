@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="区分采样随机性、输出预算与上下文容量，避免参数实验的错误归因，并按完整轮次管理历史消息。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Agent基础：生成参数、Token与上下文管理">
+<meta property="og:url" content="https://jinglv.github.io/2026/09/21/ai/agent/2-llm-parameters-context/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="区分采样随机性、输出预算与上下文容量，避免参数实验的错误归因，并按完整轮次管理历史消息。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-09-21T01:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-21T01:15:43.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/09/21/ai/agent/2-llm-parameters-context/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Agent基础：生成参数、Token与上下文管理 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/09/21/ai/agent/2-llm-parameters-context/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Agent基础：生成参数、Token与上下文管理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-09-21 09:00:00 / 修改时间：09:15:43" itemprop="dateCreated datePublished" datetime="2026-09-21T09:00:00+08:00">2026-09-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">人工智能学习</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">区分采样随机性、输出预算与上下文容量，避免参数实验的错误归因，并按完整轮次管理历史消息。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>本文是 LLM API 基础系列第二篇。上一篇：<a href="/2026/09/08/ai/agent/1-llm-api/" title="LLM API模型调用服务">LLM API 模型调用服务</a>；下一篇：<a href="/2026/09/21/ai/agent/3-llm-structured-output-tools/" title="Agent基础：结构化输出与工具调用">结构化输出与工具调用</a>。</p>
+<p>厂商参数支持核对于 <strong>2026-09-21</strong>。本文区分一般采样原理与具体服务行为，不把某家实现当成通用协议。</p>
+</blockquote>
+<h2 id="1-三件容易混淆的事"><a href="#1-三件容易混淆的事" class="headerlink" title="1. 三件容易混淆的事"></a>1. 三件容易混淆的事</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>要控制什么</th>
+<th>常见参数或机制</th>
+<th>不能误解为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>生成的随机性</td>
+<td><code>temperature</code>、<code>top_p</code></td>
+<td>事实正确性的保证</td>
+</tr>
+<tr>
+<td>单次生成的预算</td>
+<td><code>max_tokens</code>、<code>max_completion_tokens</code>、<code>max_output_tokens</code></td>
+<td>必须生成到这个长度</td>
+</tr>
+<tr>
+<td>请求能容纳多少信息</td>
+<td>Context Window、输入裁剪、摘要、检索</td>
+<td>永久保存全部聊天历史</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>调参会影响任务表现，但<strong>不能把参数当成万能质量旋钮</strong>。回答不符合要求时，先检查任务是否明确、证据是否充分、模型是否具备所需能力，再设计对照实验。</p>
+<span id="more"></span>
+<h2 id="2-temperature-与-top-p：原理不等于接口承诺"><a href="#2-temperature-与-top-p：原理不等于接口承诺" class="headerlink" title="2. temperature 与 top_p：原理不等于接口承诺"></a>2. temperature 与 top_p：原理不等于接口承诺</h2><h3 id="2-1-temperature-控制采样分布的集中程度"><a href="#2-1-temperature-控制采样分布的集中程度" class="headerlink" title="2.1 temperature 控制采样分布的集中程度"></a>2.1 temperature 控制采样分布的集中程度</h3><p>在常见采样实现中，温度作用于 token 候选的分数：低温更偏向高概率候选，高温让分布更平缓。它改变的是生成策略，不是给模型增加知识。[1]</p>
+<ul>
+<li>需要一致性时，可以从服务默认值或较低温度开始评测。</li>
+<li>需要探索时，可以比较更高温度下的多样性与有效率。</li>
+<li><code>temperature=0</code> <strong>不等于 API 承诺逐字复现</strong>。服务版本、执行环境等因素仍可能影响结果；不能只凭一次差异就确定原因。[2]</li>
+</ul>
+<p><code>0.2</code> 可以是某次实验的候选值，不是“所有 Agent 的最佳默认值”。高温也不意味着无法输出合法 JSON，格式保证要看结构化输出机制，而不是只看温度。</p>
+<h3 id="2-2-top-p-限制候选概率质量"><a href="#2-2-top-p-限制候选概率质量" class="headerlink" title="2.2 top_p 限制候选概率质量"></a>2.2 top_p 限制候选概率质量</h3><p>核采样通常按概率从高到低保留累计概率达到阈值的候选集合，再从中采样。<code>top_p=1</code> 表示不通过这个阈值缩减候选集，<strong>不表示均匀随机抽取整个词表</strong>。[1]</p>
+<p>为了方便解释实验结果，一般一次主要调整一个采样参数。不是说同时设置两者一定错误，更不是说同时调整两者才会导致“不确定性”。</p>
+<h3 id="2-3-先确认参数是否真的生效"><a href="#2-3-先确认参数是否真的生效" class="headerlink" title="2.3 先确认参数是否真的生效"></a>2.3 先确认参数是否真的生效</h3><p><strong>这是原文采样实验最需要修正的地方。</strong> DeepSeek 在核对日的文档中明确规定：[3]</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>DeepSeek 模式</th>
+<th><code>temperature</code></th>
+<th><code>top_p</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>非思考模式</td>
+<td>可配置</td>
+<td>固定为 <code>1.0</code>，传入值被忽略</td>
+</tr>
+<tr>
+<td>思考模式</td>
+<td>不生效</td>
+<td>有效范围为 <code>0.95–1.0</code>，低于 <code>0.95</code> 按 <code>0.95</code> 处理</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>原脚本关闭 thinking 后扫描 <code>top_p=1.0/0.7/0.3/0.1</code>，<strong>按当前接口约定并没有改变有效的 <code>top_p</code></strong>。不同组出现不同答案，不能据此归因于 <code>top_p</code>。</p>
+<p>原运行记录没有固定的底层模型版本和足够元数据，不能仅凭当前文档反推当时服务的所有行为；但它不应继续作为当前接口上的有效参数对照实验。</p>
+<p>OpenAI 推理模型的参数支持也随模型变化。不要套用“所有推理模型都会忽略参数且不报错”的规则；有的组合会直接被拒绝。[4]</p>
+<h2 id="3-如何做一个不误导自己的小实验"><a href="#3-如何做一个不误导自己的小实验" class="headerlink" title="3. 如何做一个不误导自己的小实验"></a>3. 如何做一个不误导自己的小实验</h2><p>本节保留原文“给函数起名”的任务，只观察当前 DeepSeek 非思考模式下的温度差异。不是模型质量排行榜。</p>
+<p>沿用第一篇 <code>.env</code>。以下脚本可独立运行，<strong>默认调用 15 次付费 API</strong>；先确认账户预算。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> Counter</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=os.environ[<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>],</span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>, <span class="string">&quot;https://api.deepseek.com&quot;</span>),</span><br><span class="line">    timeout=<span class="number">30.0</span>,</span><br><span class="line">    max_retries=<span class="number">0</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">TRIALS = <span class="number">5</span>  <span class="comment"># 只做冒烟观察，不足以形成统计结论</span></span><br><span class="line">PROMPT = <span class="string">&quot;为一个统一归一化模型错误的 Python 函数起名，只输出一个 snake_case 名称。&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> temperature <span class="keyword">in</span> (<span class="number">0.0</span>, <span class="number">0.5</span>, <span class="number">1.0</span>):</span><br><span class="line">    values = []</span><br><span class="line">    <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(TRIALS):</span><br><span class="line">        response = client.chat.completions.create(</span><br><span class="line">            model=os.environ[<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>],</span><br><span class="line">            messages=[&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: PROMPT&#125;],</span><br><span class="line">            temperature=temperature,</span><br><span class="line">            max_tokens=<span class="number">128</span>,</span><br><span class="line">            extra_body=&#123;<span class="string">&quot;thinking&quot;</span>: &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;disabled&quot;</span>&#125;&#125;,</span><br><span class="line">        )</span><br><span class="line">        choice = response.choices[<span class="number">0</span>]</span><br><span class="line">        <span class="keyword">if</span> choice.finish_reason != <span class="string">&quot;stop&quot;</span> <span class="keyword">or</span> <span class="keyword">not</span> choice.message.content:</span><br><span class="line">            <span class="keyword">raise</span> RuntimeError(<span class="string">f&quot;样本无效：<span class="subst">&#123;choice.finish_reason&#125;</span>&quot;</span>)</span><br><span class="line">        values.append(choice.message.content.strip())</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;model:&quot;</span>, response.model, <span class="string">&quot;usage:&quot;</span>, response.usage)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;temperature:&quot;</span>, temperature, <span class="string">&quot;counts:&quot;</span>, Counter(values))</span><br></pre></td></tr></table></figure>
+<p>观察结果时，把<strong>事实、假设和结论</strong>分开：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>能直接观察到的事实</th>
+<th>不能直接推出的结论</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5 次采样里出现 2 个不同名称</td>
+<td>候选答案总共只有 2 个</td>
+</tr>
+<tr>
+<td>几组的去重数刚好相同</td>
+<td>参数无效，或存在明确的温度“阈值”</td>
+</tr>
+<tr>
+<td>温度为 0 时仍有不同回答</td>
+<td>一定是 MoE 路由或浮点误差造成的</td>
+</tr>
+<tr>
+<td>某组答案种类更多</td>
+<td>该组更准确、更适合生产</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>如果要做可信评测，应扩大样本、覆盖多个任务、重复运行，并记录模型标识、日期、提示词、实际参数、失败率和成本。具体样本量由目标差异和容许误差决定，<strong>30 次或 50 次也不是可信结论的自动通行证</strong>。</p>
+<p>多样性指标可以辅助分析，但结构化任务还要看 schema 通过率和任务成功率。原文长篇运行日志及对后端机制的猜测不再作为教程结论保留。</p>
+<h2 id="4-输出预算：上限不是实际花费"><a href="#4-输出预算：上限不是实际花费" class="headerlink" title="4. 输出预算：上限不是实际花费"></a>4. 输出预算：上限不是实际花费</h2><h3 id="4-1-参数名称因端点而异"><a href="#4-1-参数名称因端点而异" class="headerlink" title="4.1 参数名称因端点而异"></a>4.1 参数名称因端点而异</h3><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>端点</th>
+<th>常用预算字段</th>
+<th>注意</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek Chat Completions</td>
+<td><code>max_tokens</code></td>
+<td>按 DeepSeek 的输出限制配置</td>
+</tr>
+<tr>
+<td>OpenAI Chat Completions</td>
+<td><code>max_completion_tokens</code></td>
+<td>当前文档推荐字段；旧 <code>max_tokens</code> 不适用于所有模型</td>
+</tr>
+<tr>
+<td>Responses</td>
+<td><code>max_output_tokens</code></td>
+<td>推理模型可能把推理 token 计入预算</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这些字段都是上限，不是“要求模型必须写够”。计费通常依据实际处理的输入与输出 token，以及缓存等计费规则；提高上限<strong>不必然</strong>增加实际费用，也不会本身导致更容易截断。[1][4][5]</p>
+<p>更准确的关系是：</p>
+<ul>
+<li>在其他条件相同且请求被接受时，提高输出上限通常降低因该上限而截断的风险。</li>
+<li>更大的上限允许产生更长输出，因此可能增加最坏情况下的成本和等待时间。</li>
+<li>预算过小，推理模型甚至可能在产生可见答案前就用完额度。</li>
+<li>给模型更大输出预算，不会自动扩大上下文窗口，也不会保证答案正确。</li>
+</ul>
+<h3 id="4-2-截断要与正常结束分开"><a href="#4-2-截断要与正常结束分开" class="headerlink" title="4.2 截断要与正常结束分开"></a>4.2 截断要与正常结束分开</h3><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>应检查的信号</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chat Completions</td>
+<td><code>finish_reason == &quot;length&quot;</code></td>
+<td>检查输出额度及上下文限制</td>
+</tr>
+<tr>
+<td>Responses</td>
+<td><code>status == &quot;incomplete&quot;</code> 和 <code>incomplete_details.reason</code></td>
+<td>按具体原因处理，例如 <code>max_output_tokens</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>不要一看到 <code>incomplete</code> 就假定都是预算不足；也不要只靠文本“看起来完整”判断成功。[1][4]</p>
+<p>对于文章生成，可向用户展示明确标记为不完整的结果；对于工具参数、JSON 或代码修改，<strong>不要执行截断结果</strong>。应调整预算、缩小任务或重新生成完整结构。</p>
+<h2 id="5-Token-与-Context-Window"><a href="#5-Token-与-Context-Window" class="headerlink" title="5. Token 与 Context Window"></a>5. Token 与 Context Window</h2><p>Token 是模型处理文本或其他输入时使用的单位，不等于一个汉字、一个英文单词或一个字符。不同模型和输入类型的计数方式可能不同。[5]</p>
+<p>做容量规划时，可以先使用下面这个教学模型：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">输入估算 + 计划输出预算 + 安全余量 ≤ 上下文容量</span><br><span class="line"></span><br><span class="line">输入估算包含：</span><br><span class="line">应用指令 + 当前问题 + 保留的历史 + 工具定义 + 工具结果 + 消息封装开销</span><br></pre></td></tr></table></figure>
+<p>还要单独满足模型的<strong>最大输入/最大输出限制</strong>；推理 token、多模态和缓存的具体核算依服务而定。缓存可能降低成本，但不等于这部分信息不占上下文。[4][5]</p>
+<pre class="mermaid">graph TD
+    A[整理输入并预留输出预算] --> B{容量是否足够}
+    B -->|是| C[发起请求]
+    B -->|否| D[筛选材料或压缩历史]
+    D --> E{关键内容能否保留}
+    E -->|能| A
+    E -->|仍放不下| F[拆分任务或报告超预算]</pre>
+
+<p>“历史太长会挤掉系统指令”不是所有 API 的自动行为。超窗后可能报错；只有应用或服务启用了某种截断策略时，内容才会被移除。例如 DeepSeek Responses 不支持 <code>truncation</code>，超窗会返回错误。[6]</p>
+<h3 id="5-1-计数是工程估算，不要承诺绝对精确"><a href="#5-1-计数是工程估算，不要承诺绝对精确" class="headerlink" title="5.1 计数是工程估算，不要承诺绝对精确"></a>5.1 计数是工程估算，不要承诺绝对精确</h3><ul>
+<li>使用目标模型适用的 tokenizer 或厂商计数接口。</li>
+<li>文本编码结果之外，还要考虑消息封装、工具定义等开销。</li>
+<li>不要把 <code>len(text)</code> 当 token 数，也不要把 OpenAI 的 tokenizer 当所有模型的通用精确计数器。</li>
+<li>用实际响应的 <code>usage</code> 校准估算，同时保留安全余量。[7]</li>
+</ul>
+<p>服务返回的 <code>usage</code> 用来统计实际用量；请求前的计数用来规划预算。二者解决的是不同问题。</p>
+<h3 id="5-2-裁剪应保留完整的工具交互"><a href="#5-2-裁剪应保留完整的工具交互" class="headerlink" title="5.2 裁剪应保留完整的工具交互"></a>5.2 裁剪应保留完整的工具交互</h3><p>下面只演示<strong>预算选择算法</strong>，不声称实现某个模型的精确计数。调用者必须提供适配目标端点的 <code>estimate_tokens</code>，其输入是完整消息列表。</p>
+<p>历史按完整轮次组织：一轮包含用户请求、相关 assistant 输出，以及全部配对的工具调用与结果。先在应用中完成分组，不能直接把任意单条消息当成一轮。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> collections.abc <span class="keyword">import</span> <span class="type">Callable</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">build_messages</span>(<span class="params"></span></span><br><span class="line"><span class="params">    history_turns: <span class="built_in">list</span>[<span class="built_in">list</span>[<span class="built_in">dict</span>]],</span></span><br><span class="line"><span class="params">    task: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    *,</span></span><br><span class="line"><span class="params">    instructions: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    context_limit: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    output_budget: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    safety_margin: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    estimate_tokens: <span class="type">Callable</span>[[<span class="built_in">list</span>[<span class="built_in">dict</span>]], <span class="built_in">int</span>],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">list</span>[<span class="built_in">dict</span>]:</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">min</span>(context_limit, output_budget) &lt;= <span class="number">0</span> <span class="keyword">or</span> safety_margin &lt; <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;预算参数非法&quot;</span>)</span><br><span class="line"></span><br><span class="line">    input_budget = context_limit - output_budget - safety_margin</span><br><span class="line">    fixed = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: instructions&#125;]</span><br><span class="line">    current = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: task&#125;]</span><br><span class="line">    <span class="keyword">if</span> estimate_tokens(fixed + current) &gt; input_budget:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;仅固定指令与当前任务就超出输入预算&quot;</span>)</span><br><span class="line"></span><br><span class="line">    recent = []</span><br><span class="line">    <span class="keyword">for</span> turn <span class="keyword">in</span> <span class="built_in">reversed</span>(history_turns):</span><br><span class="line">        candidate = <span class="built_in">list</span>(turn) + recent</span><br><span class="line">        <span class="keyword">if</span> estimate_tokens(fixed + candidate + current) &gt; input_budget:</span><br><span class="line">            <span class="keyword">break</span>  <span class="comment"># 只保留连续的最近完整轮次</span></span><br><span class="line">        recent = candidate</span><br><span class="line">    <span class="keyword">return</span> fixed + recent + current</span><br></pre></td></tr></table></figure>
+<p><code>estimate_tokens</code> 应把本次固定工具定义等额外开销也计入估算。这段代码不处理多模态，也不验证原历史的协议合法性。</p>
+<p><strong>它修正了按单条消息裁剪的风险</strong>：不能只留下 <code>tool</code> 结果，却删除对应的 <code>assistant.tool_calls</code>。对尚未完成的工具交互，不应当作可随意丢弃的历史轮次。[8]</p>
+<p>长期运行时，可以结合摘要和检索，但摘要本身也可能丢信息。关键任务约束和工具证据应保留可追溯来源，不能靠“模型应该记得”维持状态。</p>
+<h2 id="6-本篇小结"><a href="#6-本篇小结" class="headerlink" title="6. 本篇小结"></a>6. 本篇小结</h2><ul>
+<li>先检查服务是否支持参数，再做实验；<strong>传入成功不等于生效</strong>。</li>
+<li>输出上限、实际输出、上下文容量是三个不同概念。</li>
+<li>低温不保证完全确定；少量样本不足以解释模型后端机制。</li>
+<li>裁剪历史时，保留任务约束和完整工具交互，不能只按字符数删消息。</li>
+</ul>
+<p>下一篇：<a href="/2026/09/21/ai/agent/3-llm-structured-output-tools/" title="Agent基础：结构化输出与工具调用">结构化输出与工具调用</a>。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li><a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/api/create-chat-completion/">DeepSeek：Chat Completions API</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create">OpenAI：Chat Completions API — seed 与确定性说明</a></li>
+<li><a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/guides/thinking_mode/">DeepSeek：Thinking Mode</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/reasoning">OpenAI：Reasoning models</a></li>
+<li><a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/quick_start/pricing/">DeepSeek：Models &amp; Pricing</a></li>
+<li><a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/guides/responses_api/">DeepSeek：Using the Responses API</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken">OpenAI Cookbook：How to count tokens with tiktoken</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/function-calling">OpenAI：Function calling</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/09/09/ai/knowledge/2-llm-wiki-obsidian-knowledge/" rel="prev" title="LLM-Wiki 与 Obsidian 构建个人本地知识库实战">
+      <i class="fa fa-chevron-left"></i> LLM-Wiki 与 Obsidian 构建个人本地知识库实战
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/09/21/ai/agent/3-llm-structured-output-tools/" rel="next" title="Agent基础：结构化输出与工具调用">
+      Agent基础：结构化输出与工具调用 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%B8%89%E4%BB%B6%E5%AE%B9%E6%98%93%E6%B7%B7%E6%B7%86%E7%9A%84%E4%BA%8B"><span class="nav-number">1.</span> <span class="nav-text">1. 三件容易混淆的事</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-temperature-%E4%B8%8E-top-p%EF%BC%9A%E5%8E%9F%E7%90%86%E4%B8%8D%E7%AD%89%E4%BA%8E%E6%8E%A5%E5%8F%A3%E6%89%BF%E8%AF%BA"><span class="nav-number">2.</span> <span class="nav-text">2. temperature 与 top_p：原理不等于接口承诺</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-temperature-%E6%8E%A7%E5%88%B6%E9%87%87%E6%A0%B7%E5%88%86%E5%B8%83%E7%9A%84%E9%9B%86%E4%B8%AD%E7%A8%8B%E5%BA%A6"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 temperature 控制采样分布的集中程度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-top-p-%E9%99%90%E5%88%B6%E5%80%99%E9%80%89%E6%A6%82%E7%8E%87%E8%B4%A8%E9%87%8F"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 top_p 限制候选概率质量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E5%85%88%E7%A1%AE%E8%AE%A4%E5%8F%82%E6%95%B0%E6%98%AF%E5%90%A6%E7%9C%9F%E7%9A%84%E7%94%9F%E6%95%88"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 先确认参数是否真的生效</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%A6%82%E4%BD%95%E5%81%9A%E4%B8%80%E4%B8%AA%E4%B8%8D%E8%AF%AF%E5%AF%BC%E8%87%AA%E5%B7%B1%E7%9A%84%E5%B0%8F%E5%AE%9E%E9%AA%8C"><span class="nav-number">3.</span> <span class="nav-text">3. 如何做一个不误导自己的小实验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E8%BE%93%E5%87%BA%E9%A2%84%E7%AE%97%EF%BC%9A%E4%B8%8A%E9%99%90%E4%B8%8D%E6%98%AF%E5%AE%9E%E9%99%85%E8%8A%B1%E8%B4%B9"><span class="nav-number">4.</span> <span class="nav-text">4. 输出预算：上限不是实际花费</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E5%8F%82%E6%95%B0%E5%90%8D%E7%A7%B0%E5%9B%A0%E7%AB%AF%E7%82%B9%E8%80%8C%E5%BC%82"><span class="nav-number">4.1.</span> <span class="nav-text">4.1 参数名称因端点而异</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E6%88%AA%E6%96%AD%E8%A6%81%E4%B8%8E%E6%AD%A3%E5%B8%B8%E7%BB%93%E6%9D%9F%E5%88%86%E5%BC%80"><span class="nav-number">4.2.</span> <span class="nav-text">4.2 截断要与正常结束分开</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-Token-%E4%B8%8E-Context-Window"><span class="nav-number">5.</span> <span class="nav-text">5. Token 与 Context Window</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E8%AE%A1%E6%95%B0%E6%98%AF%E5%B7%A5%E7%A8%8B%E4%BC%B0%E7%AE%97%EF%BC%8C%E4%B8%8D%E8%A6%81%E6%89%BF%E8%AF%BA%E7%BB%9D%E5%AF%B9%E7%B2%BE%E7%A1%AE"><span class="nav-number">5.1.</span> <span class="nav-text">5.1 计数是工程估算，不要承诺绝对精确</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E8%A3%81%E5%89%AA%E5%BA%94%E4%BF%9D%E7%95%99%E5%AE%8C%E6%95%B4%E7%9A%84%E5%B7%A5%E5%85%B7%E4%BA%A4%E4%BA%92"><span class="nav-number">5.2.</span> <span class="nav-text">5.2 裁剪应保留完整的工具交互</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E6%9C%AC%E7%AF%87%E5%B0%8F%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">6. 本篇小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">7.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

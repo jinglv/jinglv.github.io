@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从 Token、Vocabulary 和 Token ID 出发，理解 BPE、WordPiece、Unigram、特殊 Token、编码与解码，并使用 Qwen Tokenizer 完成可执行实验。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Token 与 Tokenizer：文字如何变成模型能够计算的数字？">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/05/ai/llms/3-tokenizer/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从 Token、Vocabulary 和 Token ID 出发，理解 BPE、WordPiece、Unigram、特殊 Token、编码与解码，并使用 Qwen Tokenizer 完成可执行实验。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012102037915.png">
+<meta property="article:published_time" content="2026-10-05T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-05T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta property="article:tag" content="大语言模型">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="Tokenizer">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012102037915.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/05/ai/llms/3-tokenizer/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Token 与 Tokenizer：文字如何变成模型能够计算的数字？ | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/05/ai/llms/3-tokenizer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Token 与 Tokenizer：文字如何变成模型能够计算的数字？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-05 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-05T10:00:00+08:00">2026-10-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从 Token、Vocabulary 和 Token ID 出发，理解 BPE、WordPiece、Unigram、特殊 Token、编码与解码，并使用 Qwen Tokenizer 完成可执行实验。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Token-与-Tokenizer：文字如何变成模型能够计算的数字？"><a href="#Token-与-Tokenizer：文字如何变成模型能够计算的数字？" class="headerlink" title="Token 与 Tokenizer：文字如何变成模型能够计算的数字？"></a>Token 与 Tokenizer：文字如何变成模型能够计算的数字？</h1><p>在上一篇文章中，我们完整走读了一次 LLM 请求：消息经过 Chat Template 和 Tokenizer 转换为 Token ID，再由模型执行 Prefill 和 Decode，逐步生成回答。</p>
+<p>其中，Tokenizer 位于自然语言与神经网络之间：</p>
+<blockquote>
+<p>人类输入文字，模型处理数字，而 Tokenizer 负责在两者之间进行转换。</p>
+</blockquote>
+<p>Tokenizer 看似只是一个文本切分工具，实际上它会直接影响：</p>
+<ul>
+<li>模型如何观察文字；</li>
+<li>一段文本占用多少上下文；</li>
+<li>API 按 Token 计费时的用量；</li>
+<li>文本是否会被截断；</li>
+<li>模型与输入格式是否兼容；</li>
+<li>多语言、代码和特殊字符的处理效率。</li>
+</ul>
+<p>本文将从 Token、Vocabulary 和 Token ID 开始，逐步介绍 Tokenizer 的编码流程、常见子词算法、特殊 Token、Padding、Truncation 和 Chat Template，并通过本地 Qwen Tokenizer 查看真实的切分结果。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012102037915.png" alt="image-20261012102037915"></p>
+<h1 id="Token-是什么？"><a href="#Token-是什么？" class="headerlink" title="Token 是什么？"></a>Token 是什么？</h1><p>Token 是模型处理序列时使用的基本离散单元，也可以翻译为“词元”。</p>
+<p>Token 不一定是一个完整单词，也不一定是一个汉字。根据具体 Tokenizer 和输入文本，一个 Token 可能是：</p>
+<ul>
+<li>一个完整单词；</li>
+<li>一个子词；</li>
+<li>一个汉字或多个汉字；</li>
+<li>标点符号；</li>
+<li>空格与单词的组合；</li>
+<li>一个或多个字节；</li>
+<li>控制消息结构的特殊标记。</li>
+</ul>
+<p>例如，下面只是用于理解概念的示意，并不是所有模型的真实切分结果：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>原始文本</th>
+<th>可能的 Token 切分示意</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hello</code></td>
+<td><code>hello</code></td>
+</tr>
+<tr>
+<td><code>unbelievable</code></td>
+<td><code>un</code>、<code>believ</code>、<code>able</code></td>
+</tr>
+<tr>
+<td><code>人工智能</code></td>
+<td><code>人工</code>、<code>智能</code></td>
+</tr>
+<tr>
+<td><code>print(&quot;你好&quot;)</code></td>
+<td><code>print</code>、<code>(</code>、<code>&quot;</code>、<code>你好</code>、<code>&quot;</code>、<code>)</code></td>
+</tr>
+<tr>
+<td><code>😊</code></td>
+<td>一个 Token，或者多个字节相关 Token</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>同一段文字交给不同 Tokenizer，得到的切分结果和 Token 数量可能完全不同。因此不能脱离具体模型说“一句话固定等于多少个 Token”。</p>
+<h1 id="为什么不直接按字或单词切分？"><a href="#为什么不直接按字或单词切分？" class="headerlink" title="为什么不直接按字或单词切分？"></a>为什么不直接按字或单词切分？</h1><p>如果把每个完整单词都作为 Token，会遇到几个问题：</p>
+<ol>
+<li>自然语言中的单词数量非常庞大；</li>
+<li>新词、人名、拼写变化和专业术语不断出现；</li>
+<li>中文等语言并不依靠空格分隔所有词语；</li>
+<li>代码、URL、Emoji 和混合语言很难用统一的“单词”定义处理；</li>
+<li>词表过大会增大 Embedding 和输出层的参数量。</li>
+</ol>
+<p>如果完全按字符或字节切分，虽然几乎可以覆盖所有输入，但序列会变得很长，增加上下文占用和推理成本。</p>
+<p>子词 Tokenization 在两者之间折中：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">常见内容 → 尽量使用较长 Token</span><br><span class="line">少见内容 → 拆成更小的子词、字符或字节单元</span><br></pre></td></tr></table></figure>
+<p>这样既能控制词表大小，又能表示训练时没有完整出现过的新词。</p>
+<h1 id="Token、Vocabulary-与-Token-ID"><a href="#Token、Vocabulary-与-Token-ID" class="headerlink" title="Token、Vocabulary 与 Token ID"></a>Token、Vocabulary 与 Token ID</h1><p>理解 Tokenizer，需要区分三个概念：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>含义</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Token</td>
+<td>文本被切分后的离散单元</td>
+<td><code>hello</code>、<code>ing</code>、<code>。</code></td>
+</tr>
+<tr>
+<td>Vocabulary</td>
+<td>Tokenizer 可以使用的 Token 集合</td>
+<td>模型对应的完整词表</td>
+</tr>
+<tr>
+<td>Token ID</td>
+<td>Token 在词表中的整数编号</td>
+<td><code>hello → 15339</code>（仅为示意）</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Tokenizer 会维护 Token 与 Token ID 的映射关系：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Token             Token ID</span><br><span class="line">--------------------------</span><br><span class="line">&quot;hello&quot;      ↔      15339</span><br><span class="line">&quot; world&quot;     ↔       1917</span><br><span class="line">&quot;。&quot;         ↔        1773</span><br></pre></td></tr></table></figure>
+<p>需要注意：Token ID 没有跨模型的统一含义。</p>
+<p>在一个 Tokenizer 中，ID <code>1000</code> 可能表示某个英文子词；在另一个 Tokenizer 中，它可能表示汉字、标点或特殊 Token。模型的 Embedding 矩阵按照自己的词表顺序训练，因此不能随意把一个 Tokenizer 生成的 ID 交给另一个模型。</p>
+<blockquote>
+<p>模型权重与 Tokenizer 是配套的。更换 Tokenizer 不只是更换文本预处理方式，还会改变每个 ID 所代表的内容。</p>
+</blockquote>
+<h1 id="Tokenizer-的完整编码流程"><a href="#Tokenizer-的完整编码流程" class="headerlink" title="Tokenizer 的完整编码流程"></a>Tokenizer 的完整编码流程</h1><p>一个 Tokenizer 的实现可以包含多个组件。典型流程如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">原始文本</span><br><span class="line">   ↓</span><br><span class="line">Normalization（可选）</span><br><span class="line">   ↓</span><br><span class="line">Pre-Tokenization</span><br><span class="line">   ↓</span><br><span class="line">Subword Model</span><br><span class="line">   ↓</span><br><span class="line">Post-Processing（可选）</span><br><span class="line">   ↓</span><br><span class="line">Token 与 Token ID</span><br></pre></td></tr></table></figure>
+<p>不同模型会采用不同组件和规则，并不是每个 Tokenizer 都会执行完全相同的步骤。</p>
+<h2 id="1-Normalization：文本规范化"><a href="#1-Normalization：文本规范化" class="headerlink" title="1. Normalization：文本规范化"></a>1. Normalization：文本规范化</h2><p>Normalization 会按照既定规则对输入文本进行规范化，例如：</p>
+<ul>
+<li>Unicode 规范化；</li>
+<li>大小写转换；</li>
+<li>重音符号处理；</li>
+<li>空白字符处理；</li>
+<li>模型定义的字符替换。</li>
+</ul>
+<p>例如，某些 Tokenizer 可能把：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">HELLO → hello</span><br></pre></td></tr></table></figure>
+<p>但大小写是否保留取决于具体 Tokenizer。现代生成模型通常需要严格使用模型原有的规范化规则，不能在应用层想当然地先把文本全部转为小写或删除标点。</p>
+<p>规范化还可能是有损的。如果两个不同输入经过规范化后变成相同形式，解码时就不一定能够恢复最初的原始文本。</p>
+<h2 id="2-Pre-Tokenization：预切分"><a href="#2-Pre-Tokenization：预切分" class="headerlink" title="2. Pre-Tokenization：预切分"></a>2. Pre-Tokenization：预切分</h2><p>预切分根据空格、标点、数字、字节等规则，把文本拆成较小的候选片段。</p>
+<p>例如，一个简单的空格与标点预切分器可能把：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Hello, world!</span><br></pre></td></tr></table></figure>
+<p>拆成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Hello | , | world | !</span><br></pre></td></tr></table></figure>
+<p>有些 Byte-Level Tokenizer 会先把文本映射到字节表示，因此可以覆盖任意 Unicode 输入，但内部 Token 字符串可能不再适合直接阅读。</p>
+<p>预切分只是中间步骤，最终 Token 还要由后续子词模型决定。</p>
+<h2 id="3-Subword-Model：子词切分"><a href="#3-Subword-Model：子词切分" class="headerlink" title="3. Subword Model：子词切分"></a>3. Subword Model：子词切分</h2><p>子词模型根据训练好的词表或统计规则决定最终如何切分片段。常见方法包括 BPE、WordPiece 和 Unigram。</p>
+<h2 id="4-Post-Processing：添加结构信息"><a href="#4-Post-Processing：添加结构信息" class="headerlink" title="4. Post-Processing：添加结构信息"></a>4. Post-Processing：添加结构信息</h2><p>后处理可以在序列中添加模型需要的特殊 Token，例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[CLS] sentence [SEP]</span><br></pre></td></tr></table></figure>
+<p>对于聊天模型，System、User、Assistant 等消息结构通常由 Chat Template 组织。Chat Template 可能插入角色边界和消息结束 Token，因此要避免随后再次错误添加重复的特殊 Token。</p>
+<h1 id="常见子词算法"><a href="#常见子词算法" class="headerlink" title="常见子词算法"></a>常见子词算法</h1><h2 id="BPE：Byte-Pair-Encoding"><a href="#BPE：Byte-Pair-Encoding" class="headerlink" title="BPE：Byte Pair Encoding"></a>BPE：Byte Pair Encoding</h2><p>BPE 的基本思想是：从较小的基础单元开始，反复合并语料中高频出现的相邻单元。</p>
+<p>假设训练语料经过初始拆分后包含：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">l o w</span><br><span class="line">l o w e r</span><br><span class="line">n e w e s t</span><br></pre></td></tr></table></figure>
+<p>如果 <code>l + o</code> 经常一起出现，就可以学习合并为 <code>lo</code>；随后 <code>lo + w</code> 又可能合并为 <code>low</code>。</p>
+<p>最终效果是：</p>
+<ul>
+<li>高频词或片段更可能形成较长 Token；</li>
+<li>低频词可以拆成多个较小 Token；</li>
+<li>词表大小可以控制在指定范围内。</li>
+</ul>
+<p>实际模型可能使用字符级 BPE、Byte-Level BPE 或其他变体，不能仅凭“使用 BPE”推断所有预处理细节。</p>
+<h2 id="WordPiece"><a href="#WordPiece" class="headerlink" title="WordPiece"></a>WordPiece</h2><p>WordPiece 同样使用子词词表，但其训练目标与 BPE 的简单高频相邻合并并不相同。编码时通常使用从当前位置开始、词表中能够匹配的较长子词。</p>
+<p>在一些 WordPiece 词表中，<code>##</code> 表示 Token 是一个单词的后续部分。例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">playing → play + ##ing</span><br></pre></td></tr></table></figure>
+<p><code>##</code> 是特定实现中的内部标记，不是原始文本的一部分。</p>
+<h2 id="Unigram"><a href="#Unigram" class="headerlink" title="Unigram"></a>Unigram</h2><p>Unigram 从一个较大的候选子词集合开始，为每个子词建立概率模型，再逐步移除影响较小的候选。</p>
+<p>同一段文本可能存在多种切分方式，Unigram 会根据训练得到的概率选择整体上更合适的 Token 序列。</p>
+<h2 id="SentencePiece-是什么？"><a href="#SentencePiece-是什么？" class="headerlink" title="SentencePiece 是什么？"></a>SentencePiece 是什么？</h2><p>SentencePiece 是一个 Tokenization 工具与训练框架，而不是与 BPE、Unigram 完全同层级的单一算法。它可以训练 BPE 或 Unigram 模型，并且通常可以直接在原始 Unicode 文本上工作。</p>
+<p>部分 SentencePiece Tokenizer 使用类似 <code>▁</code> 的符号表示空格或词边界。这是内部表示，Decoder 会在解码时将其恢复为正常文本。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>核心特点</th>
+<th>常见内部表现</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BPE</td>
+<td>逐步合并高频相邻单元</td>
+<td>高频片段形成较长 Token</td>
+</tr>
+<tr>
+<td>WordPiece</td>
+<td>基于词表与目标函数建立子词</td>
+<td>某些实现使用 <code>##</code> 标记续接子词</td>
+</tr>
+<tr>
+<td>Unigram</td>
+<td>从多个候选切分中选择高概率组合</td>
+<td>基于子词概率模型</td>
+</tr>
+<tr>
+<td>SentencePiece</td>
+<td>Tokenizer 训练与执行框架</td>
+<td>可支持 BPE、Unigram 等模型</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="Encode：从文本到-Token-ID"><a href="#Encode：从文本到-Token-ID" class="headerlink" title="Encode：从文本到 Token ID"></a>Encode：从文本到 Token ID</h1><p>编码过程通常包含两步：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">文本 → Token 序列 → Token ID 序列</span><br></pre></td></tr></table></figure>
+<p>在 Transformers 中，可以使用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">token_ids = tokenizer.encode(</span><br><span class="line">    <span class="string">&quot;Token 是模型处理文本的基本单位。&quot;</span>,</span><br><span class="line">    add_special_tokens=<span class="literal">False</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>也可以直接调用 Tokenizer，获得更完整的输出：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">encoding = tokenizer(</span><br><span class="line">    <span class="string">&quot;Token 是模型处理文本的基本单位。&quot;</span>,</span><br><span class="line">    add_special_tokens=<span class="literal">False</span>,</span><br><span class="line">    return_attention_mask=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(encoding[<span class="string">&quot;input_ids&quot;</span>])</span><br><span class="line"><span class="built_in">print</span>(encoding[<span class="string">&quot;attention_mask&quot;</span>])</span><br></pre></td></tr></table></figure>
+<p><code>encode()</code> 适合只需要 ID 列表的场景；直接调用 Tokenizer 则可以同时获得 Attention Mask、Offset Mapping 等信息。</p>
+<h1 id="Decode：从-Token-ID-回到文本"><a href="#Decode：从-Token-ID-回到文本" class="headerlink" title="Decode：从 Token ID 回到文本"></a>Decode：从 Token ID 回到文本</h1><p>解码是编码的反向过程：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">text = tokenizer.decode(</span><br><span class="line">    token_ids,</span><br><span class="line">    skip_special_tokens=<span class="literal">True</span>,</span><br><span class="line">    clean_up_tokenization_spaces=<span class="literal">False</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>其中：</p>
+<ul>
+<li><code>skip_special_tokens=True</code>：不在结果中显示特殊 Token；</li>
+<li><code>clean_up_tokenization_spaces=False</code>：尽量避免额外调整空格。</li>
+</ul>
+<p>需要注意，Encode 与 Decode 不一定永远严格还原为逐字符完全相同的原始输入，原因可能包括：</p>
+<ul>
+<li>Tokenizer 执行了有损规范化；</li>
+<li>解码时跳过了特殊 Token；</li>
+<li>Decoder 进行了空格清理；</li>
+<li>输入中包含不同但规范化后等价的 Unicode 表示。</li>
+</ul>
+<p>对于多数现代生成模型的普通文本，整体编码后再整体解码通常可以得到预期内容。但逐个 Token 分别解码再拼接，不一定等价于对整个 Token 序列统一解码，特别是使用字节级编码时。</p>
+<h1 id="特殊-Token"><a href="#特殊-Token" class="headerlink" title="特殊 Token"></a>特殊 Token</h1><p>特殊 Token 不一定对应用户可见的普通文字，而是用于表示结构、控制边界或填充位置。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>特殊 Token</th>
+<th>常见作用</th>
+<th>是否所有模型都有</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BOS</td>
+<td>表示序列开始</td>
+<td>否</td>
+</tr>
+<tr>
+<td>EOS</td>
+<td>表示序列结束</td>
+<td>否，但生成模型中很常见</td>
+</tr>
+<tr>
+<td>PAD</td>
+<td>将批次中的序列补齐到相同长度</td>
+<td>否，有些模型会复用其他 Token</td>
+</tr>
+<tr>
+<td>UNK</td>
+<td>表示词表无法覆盖的内容</td>
+<td>否，字节级方案可能不需要</td>
+</tr>
+<tr>
+<td>MASK</td>
+<td>掩码语言模型的训练标记</td>
+<td>否，自回归模型通常不依赖它</td>
+</tr>
+<tr>
+<td>角色 Token</td>
+<td>表示 System、User、Assistant 等消息边界</td>
+<td>取决于聊天模板</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>可以通过下面的代码查看具体 Tokenizer 的特殊 Token：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(tokenizer.special_tokens_map)</span><br><span class="line"><span class="built_in">print</span>(tokenizer.all_special_tokens)</span><br><span class="line"><span class="built_in">print</span>(tokenizer.all_special_ids)</span><br></pre></td></tr></table></figure>
+<p>不要根据 Token 的名称猜测用途，应以模型配置、Tokenizer 配置和 Chat Template 为准。</p>
+<h1 id="Chat-Template-为什么会增加-Token-数？"><a href="#Chat-Template-为什么会增加-Token-数？" class="headerlink" title="Chat Template 为什么会增加 Token 数？"></a>Chat Template 为什么会增加 Token 数？</h1><p>用户看到的可能只有一句话：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">请介绍一下你自己。</span><br></pre></td></tr></table></figure>
+<p>但聊天模型实际接收的内容还可能包含：</p>
+<ul>
+<li>System Message；</li>
+<li>User 角色起始标记；</li>
+<li>消息结束标记；</li>
+<li>Assistant 角色起始标记；</li>
+<li>历史对话中的全部角色和内容。</li>
+</ul>
+<p>因此，下面两个结果通常不同：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">raw_ids = tokenizer.encode(</span><br><span class="line">    <span class="string">&quot;请介绍一下你自己。&quot;</span>,</span><br><span class="line">    add_special_tokens=<span class="literal">False</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">chat_ids = tokenizer.apply_chat_template(</span><br><span class="line">    [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请介绍一下你自己。&quot;</span>&#125;],</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;裸文本 Token 数:&quot;</span>, <span class="built_in">len</span>(raw_ids))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;聊天模板 Token 数:&quot;</span>, <span class="built_in">len</span>(chat_ids))</span><br></pre></td></tr></table></figure>
+<p>在估算上下文长度或 API 使用量时，应统计实际发送给模型的完整序列，而不是只统计用户可见的问题文本。</p>
+<h1 id="Padding-与-Truncation"><a href="#Padding-与-Truncation" class="headerlink" title="Padding 与 Truncation"></a>Padding 与 Truncation</h1><h2 id="Padding：补齐批次长度"><a href="#Padding：补齐批次长度" class="headerlink" title="Padding：补齐批次长度"></a>Padding：补齐批次长度</h2><p>批量推理时，不同文本包含的 Token 数可能不同。为了组成形状规则的张量，通常需要把较短序列补齐：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">序列 A: [11, 25, 90, 36]</span><br><span class="line">序列 B: [52, 18]</span><br><span class="line"></span><br><span class="line">Padding 后：</span><br><span class="line">序列 A: [11, 25, 90, 36]</span><br><span class="line">序列 B: [52, 18, PAD, PAD]</span><br></pre></td></tr></table></figure>
+<p>Attention Mask 用来标识有效 Token 与 Padding：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">序列 A: [1, 1, 1, 1]</span><br><span class="line">序列 B: [1, 1, 0, 0]</span><br></pre></td></tr></table></figure>
+<p>Padding 在左侧还是右侧取决于 Tokenizer 配置和任务要求。对生成模型进行批量推理时，Padding Side 可能影响结果，应该遵循模型文档和推理框架的要求。</p>
+<h2 id="Truncation：截断过长输入"><a href="#Truncation：截断过长输入" class="headerlink" title="Truncation：截断过长输入"></a>Truncation：截断过长输入</h2><p>当输入超过指定长度时，可以启用截断：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">encoding = tokenizer(</span><br><span class="line">    long_text,</span><br><span class="line">    truncation=<span class="literal">True</span>,</span><br><span class="line">    max_length=<span class="number">128</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>截断不是无损操作。被删除的 Token 不会被模型看到，而且不一定总是从读者认为“不重要”的位置删除。</p>
+<p>因此，真实应用需要明确：</p>
+<ul>
+<li>最大允许输入长度；</li>
+<li>输入和输出如何共享上下文预算；</li>
+<li>从左侧还是右侧截断；</li>
+<li>System Prompt、用户问题和检索资料谁应该优先保留。</li>
+</ul>
+<h1 id="Token-数为什么重要？"><a href="#Token-数为什么重要？" class="headerlink" title="Token 数为什么重要？"></a>Token 数为什么重要？</h1><h2 id="1-决定上下文占用"><a href="#1-决定上下文占用" class="headerlink" title="1. 决定上下文占用"></a>1. 决定上下文占用</h2><p>模型限制的是 Token 数量，不是字符数或字数。一篇字符数相同的中文、英文或代码文本，Token 数可能不同。</p>
+<h2 id="2-影响推理延迟"><a href="#2-影响推理延迟" class="headerlink" title="2. 影响推理延迟"></a>2. 影响推理延迟</h2><p>输入 Token 越多，Prefill 需要处理的内容越多；输出 Token 越多，Decode 循环次数越多。</p>
+<h2 id="3-影响内存占用"><a href="#3-影响内存占用" class="headerlink" title="3. 影响内存占用"></a>3. 影响内存占用</h2><p>在自回归生成中，KV Cache 通常会随已缓存 Token 数增长。长上下文可能显著增加显存或内存占用。</p>
+<h2 id="4-影响-API-费用"><a href="#4-影响-API-费用" class="headerlink" title="4. 影响 API 费用"></a>4. 影响 API 费用</h2><p>许多模型服务按照输入 Token 和输出 Token 分别计费。具体计费规则和 Tokenizer 由服务提供方决定，应以对应模型的最新文档为准。</p>
+<h2 id="5-影响多语言效率"><a href="#5-影响多语言效率" class="headerlink" title="5. 影响多语言效率"></a>5. 影响多语言效率</h2><p>如果某种语言在 Tokenizer 的训练语料中覆盖不足，常见文字可能被切成更多、更小的 Token，导致相同信息需要更长的序列。</p>
+<h1 id="实战：走读-Qwen-Tokenizer"><a href="#实战：走读-Qwen-Tokenizer" class="headerlink" title="实战：走读 Qwen Tokenizer"></a>实战：走读 Qwen Tokenizer</h1><p>下面继续使用前两篇文章中的本地模型目录：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./models/Qwen2.5-0.5B-Instruct</span><br></pre></td></tr></table></figure>
+<p>本章只加载 Tokenizer，不加载模型权重，因此运行速度更快，也不需要 GPU。</p>
+<p>示例代码：将下面代码保存为 <code>qwen_tokenizer_walkthrough.py</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_PATH = <span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">    use_fast=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">inspect_text</span>(<span class="params">text: <span class="built_in">str</span></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;打印一段文本的 Token、Token ID、字符区间及解码结果。&quot;&quot;&quot;</span></span><br><span class="line">    kwargs = &#123;</span><br><span class="line">        <span class="string">&quot;add_special_tokens&quot;</span>: <span class="literal">False</span>,</span><br><span class="line">        <span class="string">&quot;return_attention_mask&quot;</span>: <span class="literal">False</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> tokenizer.is_fast:</span><br><span class="line">        kwargs[<span class="string">&quot;return_offsets_mapping&quot;</span>] = <span class="literal">True</span></span><br><span class="line"></span><br><span class="line">    encoding = tokenizer(text, **kwargs)</span><br><span class="line">    token_ids = encoding[<span class="string">&quot;input_ids&quot;</span>]</span><br><span class="line">    tokens = tokenizer.convert_ids_to_tokens(token_ids)</span><br><span class="line">    offsets = encoding.get(<span class="string">&quot;offset_mapping&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n&quot;</span> + <span class="string">&quot;=&quot;</span> * <span class="number">72</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;原始文本:&quot;</span>, <span class="built_in">repr</span>(text))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;字符数量:&quot;</span>, <span class="built_in">len</span>(text))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Token 数量:&quot;</span>, <span class="built_in">len</span>(token_ids))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Token ID:&quot;</span>, token_ids)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Token 列表:&quot;</span>, tokens)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;-&quot;</span> * <span class="number">72</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> index, (token_id, token) <span class="keyword">in</span> <span class="built_in">enumerate</span>(<span class="built_in">zip</span>(token_ids, tokens)):</span><br><span class="line">        <span class="comment"># 单个 Token 可能只是某个 UTF-8 字节片段，因此这里仅用于观察。</span></span><br><span class="line">        piece = tokenizer.decode(</span><br><span class="line">            [token_id],</span><br><span class="line">            skip_special_tokens=<span class="literal">False</span>,</span><br><span class="line">            clean_up_tokenization_spaces=<span class="literal">False</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        offset_text = <span class="string">&quot;&quot;</span></span><br><span class="line">        <span class="keyword">if</span> offsets <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            start, end = offsets[index]</span><br><span class="line">            offset_text = <span class="string">f&quot; offset=(<span class="subst">&#123;start&#125;</span>, <span class="subst">&#123;end&#125;</span>) source=<span class="subst">&#123;text[start:end]!r&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>(</span><br><span class="line">            <span class="string">f&quot;<span class="subst">&#123;index:&gt;<span class="number">2</span>&#125;</span>: &quot;</span></span><br><span class="line">            <span class="string">f&quot;id=<span class="subst">&#123;token_id:&lt;<span class="number">7</span>&#125;</span> &quot;</span></span><br><span class="line">            <span class="string">f&quot;token=<span class="subst">&#123;token!r:&lt;<span class="number">18</span>&#125;</span> &quot;</span></span><br><span class="line">            <span class="string">f&quot;decoded_piece=<span class="subst">&#123;piece!r&#125;</span>&quot;</span></span><br><span class="line">            <span class="string">f&quot;<span class="subst">&#123;offset_text&#125;</span>&quot;</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    decoded_text = tokenizer.decode(</span><br><span class="line">        token_ids,</span><br><span class="line">        skip_special_tokens=<span class="literal">False</span>,</span><br><span class="line">        clean_up_tokenization_spaces=<span class="literal">False</span>,</span><br><span class="line">    )</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;整体解码:&quot;</span>, <span class="built_in">repr</span>(decoded_text))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;是否还原:&quot;</span>, decoded_text == text)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== Tokenizer 基本信息 ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Tokenizer 类型:&quot;</span>, <span class="built_in">type</span>(tokenizer).__name__)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;是否为 Fast Tokenizer:&quot;</span>, tokenizer.is_fast)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;词表大小:&quot;</span>, <span class="built_in">len</span>(tokenizer))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Padding Side:&quot;</span>, tokenizer.padding_side)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Truncation Side:&quot;</span>, tokenizer.truncation_side)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 特殊 Token ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;special_tokens_map:&quot;</span>, tokenizer.special_tokens_map)</span><br><span class="line"><span class="keyword">for</span> token, token_id <span class="keyword">in</span> <span class="built_in">zip</span>(</span><br><span class="line">    tokenizer.all_special_tokens,</span><br><span class="line">    tokenizer.all_special_ids,</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;token!r:&lt;<span class="number">24</span>&#125;</span> -&gt; <span class="subst">&#123;token_id&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 比较中文、英文、代码、数字和 Emoji。</span></span><br><span class="line">samples = [</span><br><span class="line">    <span class="string">&quot;大语言模型正在改变软件开发。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;Large language models are changing software development.&quot;</span>,</span><br><span class="line">    <span class="string">&#x27;def greet(name):\n    return f&quot;你好，&#123;name&#125;&quot;&#x27;</span>,</span><br><span class="line">    <span class="string">&quot;订单编号是 20261012，价格为 ¥99.50。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;今天天气真好 😊🚀&quot;</span>,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> sample <span class="keyword">in</span> samples:</span><br><span class="line">    inspect_text(sample)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 裸文本与 Chat Template 对比 ===&quot;</span>)</span><br><span class="line">question = <span class="string">&quot;请介绍一下你自己。&quot;</span></span><br><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名耐心的人工智能老师。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: question,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">raw_token_ids = tokenizer.encode(</span><br><span class="line">    question,</span><br><span class="line">    add_special_tokens=<span class="literal">False</span>,</span><br><span class="line">)</span><br><span class="line">chat_token_ids = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line">formatted_chat = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">False</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;裸文本 Token 数:&quot;</span>, <span class="built_in">len</span>(raw_token_ids))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;聊天模板 Token 数:&quot;</span>, <span class="built_in">len</span>(chat_token_ids))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n模型实际接收的模板化文本:&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(formatted_chat)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 批量 Padding ===&quot;</span>)</span><br><span class="line">batch = tokenizer(</span><br><span class="line">    [<span class="string">&quot;你好&quot;</span>, <span class="string">&quot;你好，请介绍一下大语言模型。&quot;</span>],</span><br><span class="line">    padding=<span class="literal">True</span>,</span><br><span class="line">    add_special_tokens=<span class="literal">False</span>,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;input_ids:&quot;</span>, batch[<span class="string">&quot;input_ids&quot;</span>])</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;attention_mask:&quot;</span>, batch[<span class="string">&quot;attention_mask&quot;</span>])</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== Truncation ===&quot;</span>)</span><br><span class="line">long_text = <span class="string">&quot;Token 是模型处理文本的基本单位。&quot;</span> * <span class="number">30</span></span><br><span class="line">full_token_ids = tokenizer.encode(</span><br><span class="line">    long_text,</span><br><span class="line">    add_special_tokens=<span class="literal">False</span>,</span><br><span class="line">)</span><br><span class="line">truncated = tokenizer(</span><br><span class="line">    long_text,</span><br><span class="line">    add_special_tokens=<span class="literal">False</span>,</span><br><span class="line">    truncation=<span class="literal">True</span>,</span><br><span class="line">    max_length=<span class="number">32</span>,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;截断前 Token 数:&quot;</span>, <span class="built_in">len</span>(full_token_ids))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;截断后 Token 数:&quot;</span>, <span class="built_in">len</span>(truncated[<span class="string">&quot;input_ids&quot;</span>]))</span><br><span class="line"><span class="built_in">print</span>(</span><br><span class="line">    <span class="string">&quot;截断后文本:&quot;</span>,</span><br><span class="line">    tokenizer.decode(</span><br><span class="line">        truncated[<span class="string">&quot;input_ids&quot;</span>],</span><br><span class="line">        clean_up_tokenization_spaces=<span class="literal">False</span>,</span><br><span class="line">    ),</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br></pre></td><td class="code"><pre><span class="line">/Users/jean/.pyenv/shims/uv run /Users/jean/PycharmProjects/llm-base/.venv/bin/python /Users/jean/PycharmProjects/llm-base/qwen_tokenizer_walkthrough.py </span><br><span class="line">=== Tokenizer 基本信息 ===</span><br><span class="line">Tokenizer 类型: Qwen2Tokenizer</span><br><span class="line">是否为 Fast Tokenizer: True</span><br><span class="line">词表大小: 151665</span><br><span class="line">Padding Side: right</span><br><span class="line">Truncation Side: right</span><br><span class="line"></span><br><span class="line">=== 特殊 Token ===</span><br><span class="line">special_tokens_map: &#123;&#x27;eos_token&#x27;: &#x27;&lt;|im_end|&gt;&#x27;, &#x27;pad_token&#x27;: &#x27;&lt;|endoftext|&gt;&#x27;&#125;</span><br><span class="line">&#x27;&lt;|im_end|&gt;&#x27;             -&gt; 151645</span><br><span class="line">&#x27;&lt;|endoftext|&gt;&#x27;          -&gt; 151643</span><br><span class="line">&#x27;&lt;|im_start|&gt;&#x27;           -&gt; 151644</span><br><span class="line">&#x27;&lt;|object_ref_start|&gt;&#x27;   -&gt; 151646</span><br><span class="line">&#x27;&lt;|object_ref_end|&gt;&#x27;     -&gt; 151647</span><br><span class="line">&#x27;&lt;|box_start|&gt;&#x27;          -&gt; 151648</span><br><span class="line">&#x27;&lt;|box_end|&gt;&#x27;            -&gt; 151649</span><br><span class="line">&#x27;&lt;|quad_start|&gt;&#x27;         -&gt; 151650</span><br><span class="line">&#x27;&lt;|quad_end|&gt;&#x27;           -&gt; 151651</span><br><span class="line">&#x27;&lt;|vision_start|&gt;&#x27;       -&gt; 151652</span><br><span class="line">&#x27;&lt;|vision_end|&gt;&#x27;         -&gt; 151653</span><br><span class="line">&#x27;&lt;|vision_pad|&gt;&#x27;         -&gt; 151654</span><br><span class="line">&#x27;&lt;|image_pad|&gt;&#x27;          -&gt; 151655</span><br><span class="line">&#x27;&lt;|video_pad|&gt;&#x27;          -&gt; 151656</span><br><span class="line"></span><br><span class="line">========================================================================</span><br><span class="line">原始文本: &#x27;大语言模型正在改变软件开发。&#x27;</span><br><span class="line">字符数量: 14</span><br><span class="line">Token 数量: 8</span><br><span class="line">Token ID: [26288, 102064, 104949, 96555, 101933, 103951, 100013, 1773]</span><br><span class="line">Token 列表: [&#x27;å¤§&#x27;, &#x27;è¯Ńè¨Ģ&#x27;, &#x27;æ¨¡åŀĭ&#x27;, &#x27;æŃ£åľ¨&#x27;, &#x27;æĶ¹åıĺ&#x27;, &#x27;è½¯ä»¶&#x27;, &#x27;å¼Ģåıĳ&#x27;, &#x27;ãĢĤ&#x27;]</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line"> 0: id=26288   token=&#x27;å¤§&#x27;              decoded_piece=&#x27;大&#x27; offset=(0, 1) source=&#x27;大&#x27;</span><br><span class="line"> 1: id=102064  token=&#x27;è¯Ńè¨Ģ&#x27;           decoded_piece=&#x27;语言&#x27; offset=(1, 3) source=&#x27;语言&#x27;</span><br><span class="line"> 2: id=104949  token=&#x27;æ¨¡åŀĭ&#x27;           decoded_piece=&#x27;模型&#x27; offset=(3, 5) source=&#x27;模型&#x27;</span><br><span class="line"> 3: id=96555   token=&#x27;æŃ£åľ¨&#x27;           decoded_piece=&#x27;正在&#x27; offset=(5, 7) source=&#x27;正在&#x27;</span><br><span class="line"> 4: id=101933  token=&#x27;æĶ¹åıĺ&#x27;           decoded_piece=&#x27;改变&#x27; offset=(7, 9) source=&#x27;改变&#x27;</span><br><span class="line"> 5: id=103951  token=&#x27;è½¯ä»¶&#x27;           decoded_piece=&#x27;软件&#x27; offset=(9, 11) source=&#x27;软件&#x27;</span><br><span class="line"> 6: id=100013  token=&#x27;å¼Ģåıĳ&#x27;           decoded_piece=&#x27;开发&#x27; offset=(11, 13) source=&#x27;开发&#x27;</span><br><span class="line"> 7: id=1773    token=&#x27;ãĢĤ&#x27;              decoded_piece=&#x27;。&#x27; offset=(13, 14) source=&#x27;。&#x27;</span><br><span class="line">整体解码: &#x27;大语言模型正在改变软件开发。&#x27;</span><br><span class="line">是否还原: True</span><br><span class="line"></span><br><span class="line">========================================================================</span><br><span class="line">原始文本: &#x27;Large language models are changing software development.&#x27;</span><br><span class="line">字符数量: 56</span><br><span class="line">Token 数量: 8</span><br><span class="line">Token ID: [34253, 4128, 4119, 525, 10018, 3162, 4401, 13]</span><br><span class="line">Token 列表: [&#x27;Large&#x27;, &#x27;Ġlanguage&#x27;, &#x27;Ġmodels&#x27;, &#x27;Ġare&#x27;, &#x27;Ġchanging&#x27;, &#x27;Ġsoftware&#x27;, &#x27;Ġdevelopment&#x27;, &#x27;.&#x27;]</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line"> 0: id=34253   token=&#x27;Large&#x27;            decoded_piece=&#x27;Large&#x27; offset=(0, 5) source=&#x27;Large&#x27;</span><br><span class="line"> 1: id=4128    token=&#x27;Ġlanguage&#x27;        decoded_piece=&#x27; language&#x27; offset=(5, 14) source=&#x27; language&#x27;</span><br><span class="line"> 2: id=4119    token=&#x27;Ġmodels&#x27;          decoded_piece=&#x27; models&#x27; offset=(14, 21) source=&#x27; models&#x27;</span><br><span class="line"> 3: id=525     token=&#x27;Ġare&#x27;             decoded_piece=&#x27; are&#x27; offset=(21, 25) source=&#x27; are&#x27;</span><br><span class="line"> 4: id=10018   token=&#x27;Ġchanging&#x27;        decoded_piece=&#x27; changing&#x27; offset=(25, 34) source=&#x27; changing&#x27;</span><br><span class="line"> 5: id=3162    token=&#x27;Ġsoftware&#x27;        decoded_piece=&#x27; software&#x27; offset=(34, 43) source=&#x27; software&#x27;</span><br><span class="line"> 6: id=4401    token=&#x27;Ġdevelopment&#x27;     decoded_piece=&#x27; development&#x27; offset=(43, 55) source=&#x27; development&#x27;</span><br><span class="line"> 7: id=13      token=&#x27;.&#x27;                decoded_piece=&#x27;.&#x27; offset=(55, 56) source=&#x27;.&#x27;</span><br><span class="line">整体解码: &#x27;Large language models are changing software development.&#x27;</span><br><span class="line">是否还原: True</span><br><span class="line"></span><br><span class="line">========================================================================</span><br><span class="line">原始文本: &#x27;def greet(name):\n    return f&quot;你好，&#123;name&#125;&quot;&#x27;</span><br><span class="line">字符数量: 40</span><br><span class="line">Token 数量: 13</span><br><span class="line">Token ID: [750, 40786, 3153, 982, 262, 470, 282, 1, 108386, 3837, 90, 606, 9863]</span><br><span class="line">Token 列表: [&#x27;def&#x27;, &#x27;Ġgreet&#x27;, &#x27;(name&#x27;, &#x27;):Ċ&#x27;, &#x27;ĠĠĠ&#x27;, &#x27;Ġreturn&#x27;, &#x27;Ġf&#x27;, &#x27;&quot;&#x27;, &#x27;ä½łå¥½&#x27;, &#x27;ï¼Į&#x27;, &#x27;&#123;&#x27;, &#x27;name&#x27;, &#x27;&#125;&quot;&#x27;]</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line"> 0: id=750     token=&#x27;def&#x27;              decoded_piece=&#x27;def&#x27; offset=(0, 3) source=&#x27;def&#x27;</span><br><span class="line"> 1: id=40786   token=&#x27;Ġgreet&#x27;           decoded_piece=&#x27; greet&#x27; offset=(3, 9) source=&#x27; greet&#x27;</span><br><span class="line"> 2: id=3153    token=&#x27;(name&#x27;            decoded_piece=&#x27;(name&#x27; offset=(9, 14) source=&#x27;(name&#x27;</span><br><span class="line"> 3: id=982     token=&#x27;):Ċ&#x27;              decoded_piece=&#x27;):\n&#x27; offset=(14, 17) source=&#x27;):\n&#x27;</span><br><span class="line"> 4: id=262     token=&#x27;ĠĠĠ&#x27;              decoded_piece=&#x27;   &#x27; offset=(17, 20) source=&#x27;   &#x27;</span><br><span class="line"> 5: id=470     token=&#x27;Ġreturn&#x27;          decoded_piece=&#x27; return&#x27; offset=(20, 27) source=&#x27; return&#x27;</span><br><span class="line"> 6: id=282     token=&#x27;Ġf&#x27;               decoded_piece=&#x27; f&#x27; offset=(27, 29) source=&#x27; f&#x27;</span><br><span class="line"> 7: id=1       token=&#x27;&quot;&#x27;                decoded_piece=&#x27;&quot;&#x27; offset=(29, 30) source=&#x27;&quot;&#x27;</span><br><span class="line"> 8: id=108386  token=&#x27;ä½łå¥½&#x27;           decoded_piece=&#x27;你好&#x27; offset=(30, 32) source=&#x27;你好&#x27;</span><br><span class="line"> 9: id=3837    token=&#x27;ï¼Į&#x27;              decoded_piece=&#x27;，&#x27; offset=(32, 33) source=&#x27;，&#x27;</span><br><span class="line">10: id=90      token=&#x27;&#123;&#x27;                decoded_piece=&#x27;&#123;&#x27; offset=(33, 34) source=&#x27;&#123;&#x27;</span><br><span class="line">11: id=606     token=&#x27;name&#x27;             decoded_piece=&#x27;name&#x27; offset=(34, 38) source=&#x27;name&#x27;</span><br><span class="line">12: id=9863    token=&#x27;&#125;&quot;&#x27;               decoded_piece=&#x27;&#125;&quot;&#x27; offset=(38, 40) source=&#x27;&#125;&quot;&#x27;</span><br><span class="line">整体解码: &#x27;def greet(name):\n    return f&quot;你好，&#123;name&#125;&quot;&#x27;</span><br><span class="line">是否还原: True</span><br><span class="line"></span><br><span class="line">========================================================================</span><br><span class="line">原始文本: &#x27;订单编号是 20261012，价格为 ¥99.50。&#x27;</span><br><span class="line">字符数量: 26</span><br><span class="line">Token 数量: 22</span><br><span class="line">Token ID: [50410, 72640, 20412, 220, 17, 15, 17, 21, 16, 15, 16, 17, 3837, 97480, 17714, 71488, 24, 24, 13, 20, 15, 1773]</span><br><span class="line">Token 列表: [&#x27;è®¢åįķ&#x27;, &#x27;ç¼ĸåı·&#x27;, &#x27;æĺ¯&#x27;, &#x27;Ġ&#x27;, &#x27;2&#x27;, &#x27;0&#x27;, &#x27;2&#x27;, &#x27;6&#x27;, &#x27;1&#x27;, &#x27;0&#x27;, &#x27;1&#x27;, &#x27;2&#x27;, &#x27;ï¼Į&#x27;, &#x27;ä»·æł¼&#x27;, &#x27;ä¸º&#x27;, &#x27;ĠÂ¥&#x27;, &#x27;9&#x27;, &#x27;9&#x27;, &#x27;.&#x27;, &#x27;5&#x27;, &#x27;0&#x27;, &#x27;ãĢĤ&#x27;]</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line"> 0: id=50410   token=&#x27;è®¢åįķ&#x27;           decoded_piece=&#x27;订单&#x27; offset=(0, 2) source=&#x27;订单&#x27;</span><br><span class="line"> 1: id=72640   token=&#x27;ç¼ĸåı·&#x27;           decoded_piece=&#x27;编号&#x27; offset=(2, 4) source=&#x27;编号&#x27;</span><br><span class="line"> 2: id=20412   token=&#x27;æĺ¯&#x27;              decoded_piece=&#x27;是&#x27; offset=(4, 5) source=&#x27;是&#x27;</span><br><span class="line"> 3: id=220     token=&#x27;Ġ&#x27;                decoded_piece=&#x27; &#x27; offset=(5, 6) source=&#x27; &#x27;</span><br><span class="line"> 4: id=17      token=&#x27;2&#x27;                decoded_piece=&#x27;2&#x27; offset=(6, 7) source=&#x27;2&#x27;</span><br><span class="line"> 5: id=15      token=&#x27;0&#x27;                decoded_piece=&#x27;0&#x27; offset=(7, 8) source=&#x27;0&#x27;</span><br><span class="line"> 6: id=17      token=&#x27;2&#x27;                decoded_piece=&#x27;2&#x27; offset=(8, 9) source=&#x27;2&#x27;</span><br><span class="line"> 7: id=21      token=&#x27;6&#x27;                decoded_piece=&#x27;6&#x27; offset=(9, 10) source=&#x27;6&#x27;</span><br><span class="line"> 8: id=16      token=&#x27;1&#x27;                decoded_piece=&#x27;1&#x27; offset=(10, 11) source=&#x27;1&#x27;</span><br><span class="line"> 9: id=15      token=&#x27;0&#x27;                decoded_piece=&#x27;0&#x27; offset=(11, 12) source=&#x27;0&#x27;</span><br><span class="line">10: id=16      token=&#x27;1&#x27;                decoded_piece=&#x27;1&#x27; offset=(12, 13) source=&#x27;1&#x27;</span><br><span class="line">11: id=17      token=&#x27;2&#x27;                decoded_piece=&#x27;2&#x27; offset=(13, 14) source=&#x27;2&#x27;</span><br><span class="line">12: id=3837    token=&#x27;ï¼Į&#x27;              decoded_piece=&#x27;，&#x27; offset=(14, 15) source=&#x27;，&#x27;</span><br><span class="line">13: id=97480   token=&#x27;ä»·æł¼&#x27;           decoded_piece=&#x27;价格&#x27; offset=(15, 17) source=&#x27;价格&#x27;</span><br><span class="line">14: id=17714   token=&#x27;ä¸º&#x27;              decoded_piece=&#x27;为&#x27; offset=(17, 18) source=&#x27;为&#x27;</span><br><span class="line">15: id=71488   token=&#x27;ĠÂ¥&#x27;              decoded_piece=&#x27; ¥&#x27; offset=(18, 20) source=&#x27; ¥&#x27;</span><br><span class="line">16: id=24      token=&#x27;9&#x27;                decoded_piece=&#x27;9&#x27; offset=(20, 21) source=&#x27;9&#x27;</span><br><span class="line">17: id=24      token=&#x27;9&#x27;                decoded_piece=&#x27;9&#x27; offset=(21, 22) source=&#x27;9&#x27;</span><br><span class="line">18: id=13      token=&#x27;.&#x27;                decoded_piece=&#x27;.&#x27; offset=(22, 23) source=&#x27;.&#x27;</span><br><span class="line">19: id=20      token=&#x27;5&#x27;                decoded_piece=&#x27;5&#x27; offset=(23, 24) source=&#x27;5&#x27;</span><br><span class="line">20: id=15      token=&#x27;0&#x27;                decoded_piece=&#x27;0&#x27; offset=(24, 25) source=&#x27;0&#x27;</span><br><span class="line">21: id=1773    token=&#x27;ãĢĤ&#x27;              decoded_piece=&#x27;。&#x27; offset=(25, 26) source=&#x27;。&#x27;</span><br><span class="line">整体解码: &#x27;订单编号是 20261012，价格为 ¥99.50。&#x27;</span><br><span class="line">是否还原: True</span><br><span class="line"></span><br><span class="line">========================================================================</span><br><span class="line">原始文本: &#x27;今天天气真好 😊🚀&#x27;</span><br><span class="line">字符数量: 9</span><br><span class="line">Token 数量: 7</span><br><span class="line">Token ID: [100644, 104307, 88051, 52801, 26525, 232, 145836]</span><br><span class="line">Token 列表: [&#x27;ä»Ĭå¤©&#x27;, &#x27;å¤©æ°Ķ&#x27;, &#x27;çľŁ&#x27;, &#x27;å¥½&#x27;, &#x27;ĠðŁĺ&#x27;, &#x27;Ĭ&#x27;, &#x27;ðŁļĢ&#x27;]</span><br><span class="line">------------------------------------------------------------------------</span><br><span class="line"> 0: id=100644  token=&#x27;ä»Ĭå¤©&#x27;           decoded_piece=&#x27;今天&#x27; offset=(0, 2) source=&#x27;今天&#x27;</span><br><span class="line"> 1: id=104307  token=&#x27;å¤©æ°Ķ&#x27;           decoded_piece=&#x27;天气&#x27; offset=(2, 4) source=&#x27;天气&#x27;</span><br><span class="line"> 2: id=88051   token=&#x27;çľŁ&#x27;              decoded_piece=&#x27;真&#x27; offset=(4, 5) source=&#x27;真&#x27;</span><br><span class="line"> 3: id=52801   token=&#x27;å¥½&#x27;              decoded_piece=&#x27;好&#x27; offset=(5, 6) source=&#x27;好&#x27;</span><br><span class="line"> 4: id=26525   token=&#x27;ĠðŁĺ&#x27;             decoded_piece=&#x27; �&#x27; offset=(6, 8) source=&#x27; 😊&#x27;</span><br><span class="line"> 5: id=232     token=&#x27;Ĭ&#x27;                decoded_piece=&#x27;�&#x27; offset=(7, 8) source=&#x27;😊&#x27;</span><br><span class="line"> 6: id=145836  token=&#x27;ðŁļĢ&#x27;             decoded_piece=&#x27;🚀&#x27; offset=(8, 9) source=&#x27;🚀&#x27;</span><br><span class="line">整体解码: &#x27;今天天气真好 😊🚀&#x27;</span><br><span class="line">是否还原: True</span><br><span class="line"></span><br><span class="line">=== 裸文本与 Chat Template 对比 ===</span><br><span class="line">裸文本 Token 数: 4</span><br><span class="line">聊天模板 Token 数: 2</span><br><span class="line"></span><br><span class="line">模型实际接收的模板化文本:</span><br><span class="line">&lt;|im_start|&gt;system</span><br><span class="line">你是一名耐心的人工智能老师。&lt;|im_end|&gt;</span><br><span class="line">&lt;|im_start|&gt;user</span><br><span class="line">请介绍一下你自己。&lt;|im_end|&gt;</span><br><span class="line">&lt;|im_start|&gt;assistant</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">=== 批量 Padding ===</span><br><span class="line">input_ids: [[108386, 151643, 151643, 151643, 151643, 151643, 151643], [108386, 37945, 109432, 26288, 102064, 104949, 1773]]</span><br><span class="line">attention_mask: [[1, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1]]</span><br><span class="line"></span><br><span class="line">=== Truncation ===</span><br><span class="line">截断前 Token 数: 240</span><br><span class="line">截断后 Token 数: 32</span><br><span class="line">截断后文本: Token 是模型处理文本的基本单位。Token 是模型处理文本的基本单位。Token 是模型处理文本的基本单位。Token 是模型处理文本的基本单位。</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><strong>如何阅读输出</strong></p>
+<h3 id="convert-ids-to-tokens-与-decode-不同"><a href="#convert-ids-to-tokens-与-decode-不同" class="headerlink" title="convert_ids_to_tokens() 与 decode() 不同"></a><code>convert_ids_to_tokens()</code> 与 <code>decode()</code> 不同</h3><p><code>convert_ids_to_tokens()</code> 返回 Tokenizer 的内部 Token 字符串。对于 Byte-Level Tokenizer，结果可能包含看起来奇怪的字符。</p>
+<p><code>decode()</code> 会经过对应 Decoder，把 Token ID 序列恢复为人类可读文本。因此，判断最终输出时应该观察完整序列的 <code>decode()</code> 结果，而不是把内部 Token 字符串直接拼接起来。</p>
+<h3 id="Offset-Mapping"><a href="#Offset-Mapping" class="headerlink" title="Offset Mapping"></a>Offset Mapping</h3><p>Fast Tokenizer 可以返回每个 Token 对应原始文本中的字符区间：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">offset=(start, end)</span><br></pre></td></tr></table></figure>
+<p>这对于以下任务很有用：</p>
+<ul>
+<li>命名实体识别；</li>
+<li>文本高亮；</li>
+<li>将模型预测位置映射回原文；</li>
+<li>检查 Token 切分边界。</li>
+</ul>
+<p>特殊 Token 的 Offset 可能是 <code>(0, 0)</code>，因为它们不是直接来自原始文本。</p>
+<h3 id="为什么单个-Token-解码可能出现异常字符？"><a href="#为什么单个-Token-解码可能出现异常字符？" class="headerlink" title="为什么单个 Token 解码可能出现异常字符？"></a>为什么单个 Token 解码可能出现异常字符？</h3><p>如果一个 Unicode 字符的 UTF-8 字节被分布在多个 Token 中，单独解码其中一个 Token 可能出现替代字符或空内容；把相关 Token 放在一起整体解码后，才能恢复正确文字。</p>
+<p>这也是为什么流式输出实现不能总是假设“生成一个 Token 就一定得到一个完整可显示字符”。</p>
+<h1 id="如何统计真实请求的-Token-数？"><a href="#如何统计真实请求的-Token-数？" class="headerlink" title="如何统计真实请求的 Token 数？"></a>如何统计真实请求的 Token 数？</h1><p>对于普通文本，可以直接统计：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">count_text_tokens</span>(<span class="params">text: <span class="built_in">str</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(</span><br><span class="line">        tokenizer.encode(</span><br><span class="line">            text,</span><br><span class="line">            add_special_tokens=<span class="literal">False</span>,</span><br><span class="line">        )</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+<p>对于聊天请求，应应用相同的 Chat Template：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">count_chat_tokens</span>(<span class="params">messages: <span class="built_in">list</span>[<span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]]</span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    token_ids = tokenizer.apply_chat_template(</span><br><span class="line">        messages,</span><br><span class="line">        tokenize=<span class="literal">True</span>,</span><br><span class="line">        add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(token_ids)</span><br></pre></td></tr></table></figure>
+<p>这种方式可以统计发送到本地模型的输入序列。对于远程 API，服务端可能使用不同版本的 Tokenizer、隐藏的系统消息或额外工具定义，因此客户端估算结果可能与最终账单存在差异，应以服务端返回的 Usage 数据为准。</p>
+<h1 id="常见误区"><a href="#常见误区" class="headerlink" title="常见误区"></a>常见误区</h1><h2 id="误区一：一个汉字等于一个-Token"><a href="#误区一：一个汉字等于一个-Token" class="headerlink" title="误区一：一个汉字等于一个 Token"></a>误区一：一个汉字等于一个 Token</h2><p>有些常见汉字可能单独成为 Token，有些词语可能合并为一个 Token，少见字符也可能被拆成多个字节相关 Token。只有实际运行对应 Tokenizer 才能确定。</p>
+<h2 id="误区二：一个英文单词等于一个-Token"><a href="#误区二：一个英文单词等于一个-Token" class="headerlink" title="误区二：一个英文单词等于一个 Token"></a>误区二：一个英文单词等于一个 Token</h2><p>常见单词可能是一个 Token，少见单词、复合词和词形变化可能被拆成多个子词。单词前的空格也可能属于 Token 表示的一部分。</p>
+<h2 id="误区三：Tokenizer-在理解文本语义"><a href="#误区三：Tokenizer-在理解文本语义" class="headerlink" title="误区三：Tokenizer 在理解文本语义"></a>误区三：Tokenizer 在理解文本语义</h2><p>Tokenizer 主要按照词表和算法规则编码文本。语境相关的表示和复杂模式计算发生在后续神经网络中。</p>
+<h2 id="误区四：不同模型可以共用-Token-ID"><a href="#误区四：不同模型可以共用-Token-ID" class="headerlink" title="误区四：不同模型可以共用 Token ID"></a>误区四：不同模型可以共用 Token ID</h2><p>Token ID 只在对应词表中有意义。即使两个模型都采用 BPE，也不代表它们具有相同词表、合并规则或特殊 Token。</p>
+<h2 id="误区五：Token-越长越好"><a href="#误区五：Token-越长越好" class="headerlink" title="误区五：Token 越长越好"></a>误区五：Token 越长越好</h2><p>较长 Token 可以缩短序列，但需要更大的词表，也可能降低对新词的组合能力。Tokenizer 设计是在词表大小、序列长度、多语言覆盖和模型能力之间进行权衡。</p>
+<h2 id="误区六：Decode-一定逐字符还原原文"><a href="#误区六：Decode-一定逐字符还原原文" class="headerlink" title="误区六：Decode 一定逐字符还原原文"></a>误区六：Decode 一定逐字符还原原文</h2><p>规范化、特殊 Token 跳过和空格清理都可能改变结果。需要严格保留原文的系统不应只依赖“编码后再解码”保存文本。</p>
+<h2 id="误区七：字符数量可以代替-Token-数量"><a href="#误区七：字符数量可以代替-Token-数量" class="headerlink" title="误区七：字符数量可以代替 Token 数量"></a>误区七：字符数量可以代替 Token 数量</h2><p>不同语言、代码、数字、空格和特殊符号的切分效率不同。字符数量只能用于非常粗略的估计，不能替代真实 Tokenizer 统计。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>Token 与 Tokenizer 的核心关系可以概括为：</p>
+<ol>
+<li>Token 是模型处理序列时使用的离散单元，不固定等于字、词或字符；</li>
+<li>Tokenizer 按照自己的规范化、预切分和子词规则生成 Token；</li>
+<li>Vocabulary 保存 Token 集合以及 Token 与 ID 的映射关系；</li>
+<li>Token ID 只对配套模型有意义，不能在不同模型之间随意复用；</li>
+<li>Encode 把文本转换为 Token ID，Decode 把 Token ID 序列恢复为文本；</li>
+<li>特殊 Token 用于表示序列、消息角色、Padding 等结构；</li>
+<li>Token 数会影响上下文、推理延迟、内存占用、截断和 API 费用；</li>
+<li>统计聊天请求时，需要计算 Chat Template 处理后的完整序列。</li>
+</ol>
+<p>理解 Tokenizer 后，我们就能进一步回答一个重要问题：System、User、Assistant 和历史消息是如何共同组成模型上下文的。下一篇将继续介绍 Prompt、Context 与 Chat Template。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/main_classes/tokenizer">Hugging Face Transformers：Tokenizer</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/fast_tokenizers">Hugging Face Transformers：Fast Tokenizers</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/tokenizers/pipeline">Hugging Face Tokenizers：Tokenization Pipeline</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/tokenizers/components">Hugging Face Tokenizers：Components</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/chat_templating">Hugging Face Transformers：Chat Templates</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B-Instruct 模型页面</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+              <a href="/tags/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" rel="tag"># 大语言模型</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+              <a href="/tags/Tokenizer/" rel="tag"># Tokenizer</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/04/ai/llms/2-inference-process/" rel="prev" title="从 Prompt 到回答：一次 LLM 请求经历了什么？">
+      <i class="fa fa-chevron-left"></i> 从 Prompt 到回答：一次 LLM 请求经历了什么？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/06/ai/llms/4-prompt-context-chat-template/" rel="next" title="Prompt、Context 与 Chat Template：模型真正看到了什么？">
+      Prompt、Context 与 Chat Template：模型真正看到了什么？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Token-%E4%B8%8E-Tokenizer%EF%BC%9A%E6%96%87%E5%AD%97%E5%A6%82%E4%BD%95%E5%8F%98%E6%88%90%E6%A8%A1%E5%9E%8B%E8%83%BD%E5%A4%9F%E8%AE%A1%E7%AE%97%E7%9A%84%E6%95%B0%E5%AD%97%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">Token 与 Tokenizer：文字如何变成模型能够计算的数字？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Token-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">Token 是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E7%9B%B4%E6%8E%A5%E6%8C%89%E5%AD%97%E6%88%96%E5%8D%95%E8%AF%8D%E5%88%87%E5%88%86%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">为什么不直接按字或单词切分？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Token%E3%80%81Vocabulary-%E4%B8%8E-Token-ID"><span class="nav-number">4.</span> <span class="nav-text">Token、Vocabulary 与 Token ID</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Tokenizer-%E7%9A%84%E5%AE%8C%E6%95%B4%E7%BC%96%E7%A0%81%E6%B5%81%E7%A8%8B"><span class="nav-number">5.</span> <span class="nav-text">Tokenizer 的完整编码流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Normalization%EF%BC%9A%E6%96%87%E6%9C%AC%E8%A7%84%E8%8C%83%E5%8C%96"><span class="nav-number">5.1.</span> <span class="nav-text">1. Normalization：文本规范化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Pre-Tokenization%EF%BC%9A%E9%A2%84%E5%88%87%E5%88%86"><span class="nav-number">5.2.</span> <span class="nav-text">2. Pre-Tokenization：预切分</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Subword-Model%EF%BC%9A%E5%AD%90%E8%AF%8D%E5%88%87%E5%88%86"><span class="nav-number">5.3.</span> <span class="nav-text">3. Subword Model：子词切分</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Post-Processing%EF%BC%9A%E6%B7%BB%E5%8A%A0%E7%BB%93%E6%9E%84%E4%BF%A1%E6%81%AF"><span class="nav-number">5.4.</span> <span class="nav-text">4. Post-Processing：添加结构信息</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E5%AD%90%E8%AF%8D%E7%AE%97%E6%B3%95"><span class="nav-number">6.</span> <span class="nav-text">常见子词算法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#BPE%EF%BC%9AByte-Pair-Encoding"><span class="nav-number">6.1.</span> <span class="nav-text">BPE：Byte Pair Encoding</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#WordPiece"><span class="nav-number">6.2.</span> <span class="nav-text">WordPiece</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Unigram"><span class="nav-number">6.3.</span> <span class="nav-text">Unigram</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SentencePiece-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">6.4.</span> <span class="nav-text">SentencePiece 是什么？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Encode%EF%BC%9A%E4%BB%8E%E6%96%87%E6%9C%AC%E5%88%B0-Token-ID"><span class="nav-number">7.</span> <span class="nav-text">Encode：从文本到 Token ID</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Decode%EF%BC%9A%E4%BB%8E-Token-ID-%E5%9B%9E%E5%88%B0%E6%96%87%E6%9C%AC"><span class="nav-number">8.</span> <span class="nav-text">Decode：从 Token ID 回到文本</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%89%B9%E6%AE%8A-Token"><span class="nav-number">9.</span> <span class="nav-text">特殊 Token</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Chat-Template-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E5%A2%9E%E5%8A%A0-Token-%E6%95%B0%EF%BC%9F"><span class="nav-number">10.</span> <span class="nav-text">Chat Template 为什么会增加 Token 数？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Padding-%E4%B8%8E-Truncation"><span class="nav-number">11.</span> <span class="nav-text">Padding 与 Truncation</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Padding%EF%BC%9A%E8%A1%A5%E9%BD%90%E6%89%B9%E6%AC%A1%E9%95%BF%E5%BA%A6"><span class="nav-number">11.1.</span> <span class="nav-text">Padding：补齐批次长度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Truncation%EF%BC%9A%E6%88%AA%E6%96%AD%E8%BF%87%E9%95%BF%E8%BE%93%E5%85%A5"><span class="nav-number">11.2.</span> <span class="nav-text">Truncation：截断过长输入</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Token-%E6%95%B0%E4%B8%BA%E4%BB%80%E4%B9%88%E9%87%8D%E8%A6%81%EF%BC%9F"><span class="nav-number">12.</span> <span class="nav-text">Token 数为什么重要？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%86%B3%E5%AE%9A%E4%B8%8A%E4%B8%8B%E6%96%87%E5%8D%A0%E7%94%A8"><span class="nav-number">12.1.</span> <span class="nav-text">1. 决定上下文占用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%BD%B1%E5%93%8D%E6%8E%A8%E7%90%86%E5%BB%B6%E8%BF%9F"><span class="nav-number">12.2.</span> <span class="nav-text">2. 影响推理延迟</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%BD%B1%E5%93%8D%E5%86%85%E5%AD%98%E5%8D%A0%E7%94%A8"><span class="nav-number">12.3.</span> <span class="nav-text">3. 影响内存占用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%BD%B1%E5%93%8D-API-%E8%B4%B9%E7%94%A8"><span class="nav-number">12.4.</span> <span class="nav-text">4. 影响 API 费用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%BD%B1%E5%93%8D%E5%A4%9A%E8%AF%AD%E8%A8%80%E6%95%88%E7%8E%87"><span class="nav-number">12.5.</span> <span class="nav-text">5. 影响多语言效率</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%EF%BC%9A%E8%B5%B0%E8%AF%BB-Qwen-Tokenizer"><span class="nav-number">13.</span> <span class="nav-text">实战：走读 Qwen Tokenizer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#convert-ids-to-tokens-%E4%B8%8E-decode-%E4%B8%8D%E5%90%8C"><span class="nav-number">13.0.1.</span> <span class="nav-text">convert_ids_to_tokens() 与 decode() 不同</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Offset-Mapping"><span class="nav-number">13.0.2.</span> <span class="nav-text">Offset Mapping</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8D%95%E4%B8%AA-Token-%E8%A7%A3%E7%A0%81%E5%8F%AF%E8%83%BD%E5%87%BA%E7%8E%B0%E5%BC%82%E5%B8%B8%E5%AD%97%E7%AC%A6%EF%BC%9F"><span class="nav-number">13.0.3.</span> <span class="nav-text">为什么单个 Token 解码可能出现异常字符？</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E7%BB%9F%E8%AE%A1%E7%9C%9F%E5%AE%9E%E8%AF%B7%E6%B1%82%E7%9A%84-Token-%E6%95%B0%EF%BC%9F"><span class="nav-number">14.</span> <span class="nav-text">如何统计真实请求的 Token 数？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%AF%E5%8C%BA"><span class="nav-number">15.</span> <span class="nav-text">常见误区</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%80%EF%BC%9A%E4%B8%80%E4%B8%AA%E6%B1%89%E5%AD%97%E7%AD%89%E4%BA%8E%E4%B8%80%E4%B8%AA-Token"><span class="nav-number">15.1.</span> <span class="nav-text">误区一：一个汉字等于一个 Token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%8C%EF%BC%9A%E4%B8%80%E4%B8%AA%E8%8B%B1%E6%96%87%E5%8D%95%E8%AF%8D%E7%AD%89%E4%BA%8E%E4%B8%80%E4%B8%AA-Token"><span class="nav-number">15.2.</span> <span class="nav-text">误区二：一个英文单词等于一个 Token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%89%EF%BC%9ATokenizer-%E5%9C%A8%E7%90%86%E8%A7%A3%E6%96%87%E6%9C%AC%E8%AF%AD%E4%B9%89"><span class="nav-number">15.3.</span> <span class="nav-text">误区三：Tokenizer 在理解文本语义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%9B%9B%EF%BC%9A%E4%B8%8D%E5%90%8C%E6%A8%A1%E5%9E%8B%E5%8F%AF%E4%BB%A5%E5%85%B1%E7%94%A8-Token-ID"><span class="nav-number">15.4.</span> <span class="nav-text">误区四：不同模型可以共用 Token ID</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%94%EF%BC%9AToken-%E8%B6%8A%E9%95%BF%E8%B6%8A%E5%A5%BD"><span class="nav-number">15.5.</span> <span class="nav-text">误区五：Token 越长越好</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AD%EF%BC%9ADecode-%E4%B8%80%E5%AE%9A%E9%80%90%E5%AD%97%E7%AC%A6%E8%BF%98%E5%8E%9F%E5%8E%9F%E6%96%87"><span class="nav-number">15.6.</span> <span class="nav-text">误区六：Decode 一定逐字符还原原文</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%83%EF%BC%9A%E5%AD%97%E7%AC%A6%E6%95%B0%E9%87%8F%E5%8F%AF%E4%BB%A5%E4%BB%A3%E6%9B%BF-Token-%E6%95%B0%E9%87%8F"><span class="nav-number">15.7.</span> <span class="nav-text">误区七：字符数量可以代替 Token 数量</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">16.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">17.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

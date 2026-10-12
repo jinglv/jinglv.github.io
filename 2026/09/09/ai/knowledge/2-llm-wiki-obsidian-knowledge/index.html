@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="使用 LLM-Wiki、Obsidian 和 AI Agent 搭建本地知识库：项目创建、模型配置、文档解析、知识检索与 MCP 调用。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLM-Wiki 与 Obsidian 构建个人本地知识库实战">
+<meta property="og:url" content="https://jinglv.github.io/2026/09/09/ai/knowledge/2-llm-wiki-obsidian-knowledge/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="使用 LLM-Wiki、Obsidian 和 AI Agent 搭建本地知识库：项目创建、模型配置、文档解析、知识检索与 MCP 调用。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909134512158.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909134625720.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909134742725.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909135220302.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909140138812.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909140258391.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909140721977.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909140814012.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909141105797.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909141248657.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909141412366.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142115693.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142143640.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142247127.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142325663.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142432013.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142503125.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142600116.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142637139.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142757685.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909143049516.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909143326589.png">
+<meta property="article:published_time" content="2026-09-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-09T06:47:01.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LLM-Wiki">
+<meta property="article:tag" content="Obsidian">
+<meta property="article:tag" content="AI Agent">
+<meta property="article:tag" content="知识库">
+<meta property="article:tag" content="MCP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909134512158.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/09/09/ai/knowledge/2-llm-wiki-obsidian-knowledge/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LLM-Wiki 与 Obsidian 构建个人本地知识库实战 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/09/09/ai/knowledge/2-llm-wiki-obsidian-knowledge/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LLM-Wiki 与 Obsidian 构建个人本地知识库实战
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-09-09 00:00:00 / 修改时间：14:47:01" itemprop="dateCreated datePublished" datetime="2026-09-09T00:00:00+08:00">2026-09-09</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Knowledge/" itemprop="url" rel="index"><span itemprop="name">Knowledge</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">使用 LLM-Wiki、Obsidian 和 AI Agent 搭建本地知识库：项目创建、模型配置、文档解析、知识检索与 MCP 调用。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>上一篇文章介绍了 <a href="/2026/09/08/ai/knowledge/1-base-knowledge/">LLM-Wiki 与 Obsidian 的定位和整体架构</a>。本文进入实际操作，使用一份工作文档演示从项目创建、模型配置、资料导入，到 Obsidian 阅读和 AI Agent 检索的完整流程。</p>
+<p>本文的目标不是把所有功能一次讲完，而是先跑通一条最小可用链路：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">创建 LLM-Wiki 项目</span><br><span class="line">        ↓</span><br><span class="line">配置 Chat / Ingest / Embedding 模型</span><br><span class="line">        ↓</span><br><span class="line">导入并解析原始文档</span><br><span class="line">        ↓</span><br><span class="line">生成结构化 Markdown Wiki</span><br><span class="line">        ↓</span><br><span class="line">使用 Obsidian 阅读和维护</span><br><span class="line">        ↓</span><br><span class="line">通过 AI Agent / MCP 检索知识</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><strong>开始前的建议</strong>：先准备一份内容边界清晰、篇幅适中的 PDF、DOCX 或 Markdown 文档。首次测试不建议直接导入整个文件夹，这样更容易判断解析、生成和检索分别是否正常。</p>
+</blockquote>
+<h1 id="一、准备工作"><a href="#一、准备工作" class="headerlink" title="一、准备工作"></a>一、准备工作</h1><p>开始之前，请确认已经完成以下准备：</p>
+<ul>
+<li>安装 LLM-Wiki 和 Obsidian；</li>
+<li>准备可用的 Chat 模型和 Ingest 模型；</li>
+<li>如果需要语义检索，准备 Embedding 模型或兼容 OpenAI API 的 Embedding 服务；</li>
+<li>如果需要提升 PDF 解析质量，准备可访问的 MinerU 服务或对应调用资源；</li>
+<li>如果需要让外部 Agent 访问知识库，准备 Claude Code、Codex CLI 或其他支持 MCP 的 Agent 工具。</li>
+</ul>
+<p>本文中的配置项和界面名称可能会随 LLM-Wiki、Obsidian 插件版本变化，实际操作时以当前版本界面和项目文档为准。</p>
+<h1 id="二、LLM-Wiki：创建项目并完成配置"><a href="#二、LLM-Wiki：创建项目并完成配置" class="headerlink" title="二、LLM-Wiki：创建项目并完成配置"></a>二、LLM-Wiki：创建项目并完成配置</h1><p>LLM-Wiki 负责导入原始资料、调用模型完成内容分析、生成结构化 Wiki，并提供后续检索接口。</p>
+<h2 id="1-创建项目"><a href="#1-创建项目" class="headerlink" title="1. 创建项目"></a>1. 创建项目</h2><p>打开 LLM-Wiki 后，先创建一个新的知识库项目。创建时建议使用一个独立、稳定的本地目录，例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~/Documents/knowledge/my-wiki/</span><br></pre></td></tr></table></figure>
+<p>目录不要放在临时下载目录中，也不要随意移动。后续 LLM-Wiki、Obsidian 和 Agent 都需要指向这一个项目目录。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909134512158.png" alt="LLM-Wiki 新建项目入口"></p>
+<p><em>图 1：进入 LLM-Wiki 的项目创建入口。</em></p>
+<p>根据界面提示填写项目名称，并选择项目目录。项目名称最好能够体现知识库的主题，例如“测试知识库”“团队业务知识库”，避免使用过于宽泛的名称。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909134625720.png" alt="LLM-Wiki 创建项目"></p>
+<p><em>图 2：填写项目名称并选择本地存储位置。</em></p>
+<p>创建完成后，先不要急着导入文档。建议先检查项目目录和界面中的文件树，确认项目已经建立成功，并记住项目的实际路径。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909134742725.png" alt="LLM-Wiki 项目文件结构"></p>
+<p><em>图 3：项目创建完成后查看项目文件结构。原始资料、Wiki 页面和应用配置通常会分别存放。</em></p>
+<blockquote>
+<p><strong>目录建议</strong>：原始资料和生成的 Wiki 页面最好保留在同一个项目目录中，但不要把 API Key、Token 等敏感配置直接写进 Markdown 文件或提交到公开仓库。</p>
+</blockquote>
+<h2 id="2-配置模型和解析能力"><a href="#2-配置模型和解析能力" class="headerlink" title="2. 配置模型和解析能力"></a>2. 配置模型和解析能力</h2><p>进入设置页面，先完成模型配置。建议区分以下几类能力：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>配置项</th>
+<th>主要作用</th>
+<th>是否必须</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chat 模型</td>
+<td>对话问答、总结和交互式处理</td>
+<td>是</td>
+</tr>
+<tr>
+<td>Ingest 模型</td>
+<td>分析导入文档并生成 Wiki 内容</td>
+<td>是</td>
+</tr>
+<tr>
+<td>Embedding 模型</td>
+<td>将文本转换为向量，支持语义检索</td>
+<td>可选</td>
+</tr>
+<tr>
+<td>MinerU</td>
+<td>提升复杂 PDF、版面和表格的解析效果</td>
+<td>可选</td>
+</tr>
+<tr>
+<td>Web Search</td>
+<td>补充外部网页搜索能力</td>
+<td>按需</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909135220302.png" alt="LLM-Wiki 模型与功能配置"></p>
+<p><em>图 4：在设置中配置模型、解析器和检索相关能力。</em></p>
+<h3 id="MinerU-PDF-解析"><a href="#MinerU-PDF-解析" class="headerlink" title="MinerU PDF 解析"></a>MinerU PDF 解析</h3><p>对于包含多栏排版、表格、图片或复杂版面的 PDF，普通文本提取可能会出现顺序错乱、表格丢失和图片信息缺失等问题。如果已经具备 MinerU 的本地服务或调用资源，可以在这里启用 MinerU，并先用一份复杂 PDF 做验证。</p>
+<p>需要注意：启用 MinerU 不代表所有 PDF 都能完美解析，最终效果仍然取决于 PDF 本身、解析服务版本和文档版式。对于扫描版 PDF，还需要确认是否支持 OCR，以及 OCR 结果是否需要人工校对。</p>
+<h3 id="向量检索"><a href="#向量检索" class="headerlink" title="向量检索"></a>向量检索</h3><p>LLM-Wiki 不是只能依赖向量检索的系统。开启向量搜索后，可以将关键词匹配、向量语义检索以及 Wiki 页面之间的关联结合起来；关闭向量搜索时，仍可以使用关键词或页面关系进行检索，但对同义表达、自然语言问题的召回能力可能会受到影响。</p>
+<blockquote>
+<p>项目文档中的召回率数据属于特定版本、数据集和配置下的测试结果，不能直接当作所有场景的固定提升。实际效果还会受到 Embedding 模型、文档切分、查询内容和召回参数影响。</p>
+</blockquote>
+<p>配置 Embedding 时，重点检查以下内容：</p>
+<ol>
+<li>Embedding 服务地址和鉴权信息是否正确；</li>
+<li>模型是否真的支持 Embedding，而不是只能进行文本生成；</li>
+<li>向量维度是否与已有索引匹配；</li>
+<li>更换 Embedding 模型后，是否需要重新建立索引；</li>
+<li>测试文档和提问语言是否与 Embedding 模型匹配。</li>
+</ol>
+<h2 id="3-导入并解析文档"><a href="#3-导入并解析文档" class="headerlink" title="3. 导入并解析文档"></a>3. 导入并解析文档</h2><p>配置完成后，进入文件导入页面，选择一份测试文档。可以从 PDF、DOCX、Markdown 等格式开始，先观察单份文档的处理结果，再逐步增加资料数量。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909140138812.png" alt="LLM-Wiki 选择待导入文档"></p>
+<p><em>图 5：选择需要导入知识库的原始文档。</em></p>
+<p>确认文件后，LLM-Wiki 会执行文档解析、内容分析和 Wiki 生成等步骤。处理时间会受到文档页数、图片数量、模型响应速度和是否启用外部解析服务等因素影响。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909140258391.png" alt="LLM-Wiki 文档解析过程"></p>
+<p><em>图 6：观察文档导入和解析任务的执行状态。</em></p>
+<p>导入过程中建议注意以下几点：</p>
+<ul>
+<li>不要在任务进行中移动或重命名原始文件；</li>
+<li>不要同时修改正在生成的 Wiki 页面；</li>
+<li>如果任务失败，先查看错误信息，再决定是否重试；</li>
+<li>首次导入建议记录模型、解析器和向量配置，便于复现问题；</li>
+<li>对重要文档，保留原始文件，不要只保留模型生成的摘要。</li>
+</ul>
+<h2 id="4-查看解析结果和知识图谱"><a href="#4-查看解析结果和知识图谱" class="headerlink" title="4. 查看解析结果和知识图谱"></a>4. 查看解析结果和知识图谱</h2><p>处理完成后，先查看生成的 Wiki 页面，而不是直接把结果当作最终事实。重点检查：</p>
+<ul>
+<li>标题和层级是否正确；</li>
+<li>表格、代码块和图片是否完整；</li>
+<li>实体名称、业务术语和专有名词是否被正确识别；</li>
+<li>生成内容是否能够回溯到原始来源；</li>
+<li>是否出现模型补写、张冠李戴或把推测当成事实的情况。</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909140721977.png" alt="LLM-Wiki 文档解析完成"></p>
+<p><em>图 7：文档解析和 Wiki 生成完成后查看结果。</em></p>
+<p>如果项目提供知识图谱视图，可以继续查看实体、概念和文档之间的关系。首次只导入少量文档时，图谱节点较少、结构比较简单是正常现象；只有当知识库中存在足够多的实体和交叉引用时，图谱才更容易体现出关联价值。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909140814012.png" alt="LLM-Wiki 知识图谱视图"></p>
+<p><em>图 8：查看解析结果及当前知识库中的关联关系。</em></p>
+<blockquote>
+<p><strong>人工审核建议</strong>：先抽查原文中的关键结论、数字、日期和规则，再确认 Wiki 页面中的表述。知识图谱能够帮助发现关联，但不能替代事实核查。</p>
+</blockquote>
+<h2 id="5-使用文本检索验证知识库"><a href="#5-使用文本检索验证知识库" class="headerlink" title="5. 使用文本检索验证知识库"></a>5. 使用文本检索验证知识库</h2><p>导入完成后，至少设计三类问题进行验证：</p>
+<ol>
+<li><strong>精确问题</strong>：原文中明确出现过的名称、编号或关键词；</li>
+<li><strong>语义问题</strong>：换一种说法询问原文中的同一概念；</li>
+<li><strong>跨文档问题</strong>：需要综合两份或多份资料才能回答的问题。</li>
+</ol>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909141105797.png" alt="LLM-Wiki 文本检索"></p>
+<p><em>图 9：通过文本检索验证导入内容是否能够被找到。</em></p>
+<p>验证时不要只看“有没有返回结果”，还要看结果是否真正支持答案。可以记录以下指标：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>需要观察的内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>召回</td>
+<td>相关页面是否出现在结果中</td>
+</tr>
+<tr>
+<td>准确性</td>
+<td>返回内容是否真的回答了问题</td>
+</tr>
+<tr>
+<td>来源</td>
+<td>是否能够定位到原始文档或 Wiki 页面</td>
+</tr>
+<tr>
+<td>版本</td>
+<td>新旧规则是否被正确区分</td>
+</tr>
+<tr>
+<td>延迟</td>
+<td>检索和生成是否能够接受</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="三、Obsidian：打开项目并进行日常管理"><a href="#三、Obsidian：打开项目并进行日常管理" class="headerlink" title="三、Obsidian：打开项目并进行日常管理"></a>三、Obsidian：打开项目并进行日常管理</h1><p>LLM-Wiki 负责知识摄入和生成，Obsidian 更适合进行人工阅读、编辑、链接、检索和可视化。两者配合使用时，最重要的是确认它们指向同一份本地 Markdown 知识。</p>
+<h2 id="1-使用同一个-Vault"><a href="#1-使用同一个-Vault" class="headerlink" title="1. 使用同一个 Vault"></a>1. 使用同一个 Vault</h2><p>在 Obsidian 中选择“打开已有 Vault”，定位到 LLM-Wiki 实际生成 Markdown 内容的目录。通常应打开项目根目录；如果项目将 Wiki 单独放在某个目录，则以实际生成页面所在目录和项目配置为准。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909141248657.png" alt="在 Obsidian 中打开 LLM-Wiki 项目"></p>
+<p><em>图 10：在 Obsidian 中选择 LLM-Wiki 项目目录。</em></p>
+<p>打开后，先确认左侧文件树中能够看到生成的 Markdown 页面，并随机打开一篇页面检查内容和内部链接。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909141412366.png" alt="Obsidian 文件树与知识页面"></p>
+<p><em>图 11：在 Obsidian 中查看 LLM-Wiki 生成的知识页面。</em></p>
+<blockquote>
+<p>如果 Obsidian 中看不到新生成的文件，可以先刷新文件列表，确认 Vault 路径是否正确，再检查 LLM-Wiki 是否把内容写入了另一个项目目录。</p>
+</blockquote>
+<h2 id="2-安装-Terminal-插件"><a href="#2-安装-Terminal-插件" class="headerlink" title="2. 安装 Terminal 插件"></a>2. 安装 Terminal 插件</h2><p>如果希望直接在 Obsidian 中调用本机的 AI Agent CLI，可以安装 Terminal 插件。常见流程是：</p>
+<ol>
+<li>打开 Obsidian 设置；</li>
+<li>进入“社区插件”；</li>
+<li>关闭“受限模式”后搜索 Terminal 插件；</li>
+<li>安装并启用插件；</li>
+<li>按插件说明选择 Shell，或配置需要执行的终端命令。</li>
+</ol>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142115693.png" alt="Obsidian 社区插件设置"></p>
+<p><em>图 12：进入 Obsidian 社区插件设置。</em></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142143640.png" alt="Obsidian 搜索 Terminal 插件"></p>
+<p><em>图 13：搜索并安装 Terminal 插件。</em></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142247127.png" alt="Obsidian Terminal 插件详情"></p>
+<p><em>图 14：查看 Terminal 插件的安装和启用状态。</em></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142325663.png" alt="Obsidian Terminal 插件配置"></p>
+<p><em>图 15：根据插件说明配置终端和命令执行方式。</em></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142432013.png" alt="Obsidian Terminal 命令设置"></p>
+<p><em>图 16：确认 Terminal 插件能够调用本机 Shell。</em></p>
+<blockquote>
+<p><strong>安全提醒</strong>：社区插件和终端命令都具有较高权限。只安装自己信任的插件，不要把未知命令直接复制到终端执行；对包含工作资料的 Vault，建议先做好备份。</p>
+</blockquote>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142503125.png" alt="Obsidian Terminal 插件启用完成"></p>
+<p><em>图 17：完成插件安装和启用后，返回 Obsidian 主界面。</em></p>
+<h2 id="3-安装并使用-Agent-CLI"><a href="#3-安装并使用-Agent-CLI" class="headerlink" title="3. 安装并使用 Agent CLI"></a>3. 安装并使用 Agent CLI</h2><p>在本机安装自己熟悉的 Agent CLI，例如 Claude Code、Codex CLI 或 Hermes Agent。安装方式和登录流程请以各工具的官方文档为准，不建议在文章中固定某一个版本的命令。</p>
+<p>完成安装后，先在系统终端验证 CLI 是否可用，再通过 Obsidian Terminal 插件打开终端。建议先执行只读操作，例如查看当前目录、列出 Markdown 文件或读取单篇笔记，确认 Agent 访问的是正确的 Vault。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142600116.png" alt="在 Obsidian 中打开 Terminal"></p>
+<p><em>图 18：从 Obsidian 中打开 Terminal 面板。</em></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142637139.png" alt="在 Terminal 中运行 Agent CLI"></p>
+<p><em>图 19：在 Vault 对应目录中启动 Agent CLI。</em></p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909142757685.png" alt="Agent CLI 访问本地知识库"></p>
+<p><em>图 20：确认 Agent 能够读取当前 Vault 中的 Markdown 内容。</em></p>
+<p>建议给 Agent 明确以下约束：</p>
+<ul>
+<li>默认只读，不要未经确认直接修改 Wiki 页面；</li>
+<li>所有结论尽量附带来源文件和章节；</li>
+<li>遇到冲突信息时列出不同版本，不要自行选择并覆盖；</li>
+<li>批量修改前先给出计划和待修改文件清单；</li>
+<li>不要读取与任务无关的隐私文件、密钥文件或系统目录。</li>
+</ul>
+<h1 id="四、通过-MCP-让-Agent-检索-LLM-Wiki"><a href="#四、通过-MCP-让-Agent-检索-LLM-Wiki" class="headerlink" title="四、通过 MCP 让 Agent 检索 LLM-Wiki"></a>四、通过 MCP 让 Agent 检索 LLM-Wiki</h1><p>如果只使用 Terminal，Agent 看到的是文件系统中的 Markdown 文件；如果通过 LLM-Wiki 提供的 MCP 或 HTTP 接口，Agent 还可以调用知识库的检索、文件读取和关联分析能力。两种方式可以互补：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th>更适合的场景</th>
+<th>注意事项</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>直接读取文件</td>
+<td>查看、编辑和批量整理 Markdown</td>
+<td>需要 Agent 自己定位文件</td>
+</tr>
+<tr>
+<td>LLM-Wiki MCP</td>
+<td>混合检索、按语义查找、调用知识库能力</td>
+<td>需要服务运行、鉴权和正确配置</td>
+</tr>
+<tr>
+<td>HTTP API</td>
+<td>自定义脚本或其他客户端接入</td>
+<td>需要确认端口、Token 和访问范围</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="1-配置-MCP-服务"><a href="#1-配置-MCP-服务" class="headerlink" title="1. 配置 MCP 服务"></a>1. 配置 MCP 服务</h2><p>在 LLM-Wiki 中找到 MCP 或外部服务相关设置，按照当前版本的项目文档生成或复制 Agent 所需的配置。不要直接套用其他版本的端口、字段名或配置格式。</p>
+<p>配置时重点确认：</p>
+<ol>
+<li>LLM-Wiki 应用或对应服务已经启动；</li>
+<li>MCP 服务地址、端口和 Token 与 Agent 配置一致；</li>
+<li>Agent 使用的是当前知识库项目，而不是另一个 Vault；</li>
+<li>服务默认只监听本机地址，除非明确配置了安全的远程访问；</li>
+<li>修改 MCP 配置后，重启 Agent CLI，使配置生效。</li>
+</ol>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909143049516.png" alt="LLM-Wiki MCP 或外部服务配置"></p>
+<p><em>图 21：查看 LLM-Wiki 提供的 MCP 或外部调用配置。</em></p>
+<h2 id="2-使用-Claude-Code-进行知识检索"><a href="#2-使用-Claude-Code-进行知识检索" class="headerlink" title="2. 使用 Claude Code 进行知识检索"></a>2. 使用 Claude Code 进行知识检索</h2><p>完成 MCP 配置后，可以从一个简单的只读问题开始，例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">请在当前知识库中检索与“接口性能测试”相关的内容，列出最相关的 3 个页面，并为每个页面说明匹配原因和来源路径。</span><br></pre></td></tr></table></figure>
+<p>如果需要跨文档分析，可以进一步要求 Agent 对比多个来源，但要明确要求它列出引用页面，并区分“原文事实”和“模型推断”。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909143326589.png" alt="Claude Code 检索本地知识库"></p>
+<p><em>图 22：通过 Claude Code 调用知识库进行内容检索。</em></p>
+<p>一次完整的检索链路通常可以理解为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">用户提出问题</span><br><span class="line">    ↓</span><br><span class="line">Agent 选择文件读取或 MCP 检索工具</span><br><span class="line">    ↓</span><br><span class="line">LLM-Wiki 返回相关 Wiki 页面和来源</span><br><span class="line">    ↓</span><br><span class="line">Agent 汇总、比较并生成答案</span><br><span class="line">    ↓</span><br><span class="line">用户回到 Obsidian 查看原文并人工确认</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><strong>不要把 Agent 的回答直接当作最终结论。</strong> 最可靠的使用方式是让 Agent 负责缩小查找范围和整理线索，再回到原始文档或 Wiki 页面核对关键事实。</p>
+</blockquote>
+<h1 id="五、常见问题与排查方法"><a href="#五、常见问题与排查方法" class="headerlink" title="五、常见问题与排查方法"></a>五、常见问题与排查方法</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>现象</th>
+<th>可能原因</th>
+<th>排查建议</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>文档导入失败</td>
+<td>模型、解析器或文件权限配置错误</td>
+<td>先查看任务错误信息，用小文件重新测试</td>
+</tr>
+<tr>
+<td>PDF 内容顺序错乱</td>
+<td>复杂排版、扫描版或 OCR 效果不佳</td>
+<td>尝试 MinerU，检查 OCR 结果，并人工校对</td>
+</tr>
+<tr>
+<td>搜索不到同义表达</td>
+<td>未启用向量搜索或 Embedding 未生效</td>
+<td>检查 Embedding 配置和索引是否已重新生成</td>
+</tr>
+<tr>
+<td>更换模型后检索异常</td>
+<td>新旧向量维度或索引不一致</td>
+<td>清理或重建对应索引，避免混用不同模型的向量</td>
+</tr>
+<tr>
+<td>Obsidian 看不到新页面</td>
+<td>打开的 Vault 路径不对或文件列表未刷新</td>
+<td>对照 LLM-Wiki 项目路径，刷新并重新打开 Vault</td>
+</tr>
+<tr>
+<td>WikiLink 显示为普通文本</td>
+<td>链接格式或文件名不符合 Obsidian 识别规则</td>
+<td>检查 <code>[[页面名]]</code>、文件名和目录路径</td>
+</tr>
+<tr>
+<td>MCP 无法连接</td>
+<td>服务未启动、端口/Token 不一致或配置未加载</td>
+<td>启动服务、核对配置并重启 Agent CLI</td>
+</tr>
+<tr>
+<td>Agent 修改了不该修改的内容</td>
+<td>权限范围过大，缺少只读约束</td>
+<td>先备份，缩小工作目录和权限，修改前要求确认</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="六、隐私、安全与备份"><a href="#六、隐私、安全与备份" class="headerlink" title="六、隐私、安全与备份"></a>六、隐私、安全与备份</h1><p>本地知识库的“本地”主要指 Markdown 文件和项目目录保存在本机，并不代表所有处理都在本机完成。如果使用云端 Chat、Ingest、Embedding、重排或 Web Search 服务，文档内容或查询内容可能会发送到第三方服务。</p>
+<p>建议至少落实以下措施：</p>
+<ul>
+<li>导入敏感资料前，确认模型 Provider 的数据使用政策和日志策略；</li>
+<li>不要在公开仓库中提交 API Key、Token 和包含敏感信息的原始资料；</li>
+<li>MCP 或 HTTP 服务默认只开放给本机，确需远程访问时再配置鉴权和网络隔离；</li>
+<li>对原始资料、Wiki 页面和配置目录分别制定备份策略；</li>
+<li>使用 Git、Time Machine 或其他备份工具保留重要变更记录；</li>
+<li>生成 Wiki 时尽量避免 Obsidian、LLM-Wiki 和 Agent 同时编辑同一文件。</li>
+</ul>
+<h1 id="七、总结"><a href="#七、总结" class="headerlink" title="七、总结"></a>七、总结</h1><p>跑通这套方案后，三个工具的职责可以归纳为：</p>
+<ul>
+<li><strong>LLM-Wiki</strong>：负责原始资料摄入、内容分析、Wiki 生成和知识检索；</li>
+<li><strong>Obsidian</strong>：负责人工阅读、编辑、链接、检索和可视化；</li>
+<li><strong>AI Agent</strong>：负责跨文档分析、批量整理和自动化操作；</li>
+<li><strong>MCP</strong>：负责把 LLM-Wiki 的检索和文件能力暴露给外部 Agent。</li>
+</ul>
+<p>这套方案的价值不在于让 AI 代替人类维护所有知识，而在于把“收集资料、整理知识、查找内容和人工审核”串成一条可重复的工作流。建议先从少量非敏感资料开始验证，再逐步扩展到团队规范、项目文档和长期经验沉淀。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LLM-Wiki/" rel="tag"># LLM-Wiki</a>
+              <a href="/tags/Obsidian/" rel="tag"># Obsidian</a>
+              <a href="/tags/AI-Agent/" rel="tag"># AI Agent</a>
+              <a href="/tags/%E7%9F%A5%E8%AF%86%E5%BA%93/" rel="tag"># 知识库</a>
+              <a href="/tags/MCP/" rel="tag"># MCP</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/09/08/ai/agent/1-llm-api/" rel="prev" title="LLM API模型调用服务">
+      <i class="fa fa-chevron-left"></i> LLM API模型调用服务
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/09/21/ai/agent/2-llm-parameters-context/" rel="next" title="Agent基础：生成参数、Token与上下文管理">
+      Agent基础：生成参数、Token与上下文管理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="nav-number">1.</span> <span class="nav-text">一、准备工作</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C%E3%80%81LLM-Wiki%EF%BC%9A%E5%88%9B%E5%BB%BA%E9%A1%B9%E7%9B%AE%E5%B9%B6%E5%AE%8C%E6%88%90%E9%85%8D%E7%BD%AE"><span class="nav-number">2.</span> <span class="nav-text">二、LLM-Wiki：创建项目并完成配置</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%88%9B%E5%BB%BA%E9%A1%B9%E7%9B%AE"><span class="nav-number">2.1.</span> <span class="nav-text">1. 创建项目</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E9%85%8D%E7%BD%AE%E6%A8%A1%E5%9E%8B%E5%92%8C%E8%A7%A3%E6%9E%90%E8%83%BD%E5%8A%9B"><span class="nav-number">2.2.</span> <span class="nav-text">2. 配置模型和解析能力</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MinerU-PDF-%E8%A7%A3%E6%9E%90"><span class="nav-number">2.2.1.</span> <span class="nav-text">MinerU PDF 解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E6%A3%80%E7%B4%A2"><span class="nav-number">2.2.2.</span> <span class="nav-text">向量检索</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%AF%BC%E5%85%A5%E5%B9%B6%E8%A7%A3%E6%9E%90%E6%96%87%E6%A1%A3"><span class="nav-number">2.3.</span> <span class="nav-text">3. 导入并解析文档</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%9F%A5%E7%9C%8B%E8%A7%A3%E6%9E%90%E7%BB%93%E6%9E%9C%E5%92%8C%E7%9F%A5%E8%AF%86%E5%9B%BE%E8%B0%B1"><span class="nav-number">2.4.</span> <span class="nav-text">4. 查看解析结果和知识图谱</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E4%BD%BF%E7%94%A8%E6%96%87%E6%9C%AC%E6%A3%80%E7%B4%A2%E9%AA%8C%E8%AF%81%E7%9F%A5%E8%AF%86%E5%BA%93"><span class="nav-number">2.5.</span> <span class="nav-text">5. 使用文本检索验证知识库</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89%E3%80%81Obsidian%EF%BC%9A%E6%89%93%E5%BC%80%E9%A1%B9%E7%9B%AE%E5%B9%B6%E8%BF%9B%E8%A1%8C%E6%97%A5%E5%B8%B8%E7%AE%A1%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">三、Obsidian：打开项目并进行日常管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BD%BF%E7%94%A8%E5%90%8C%E4%B8%80%E4%B8%AA-Vault"><span class="nav-number">3.1.</span> <span class="nav-text">1. 使用同一个 Vault</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%AE%89%E8%A3%85-Terminal-%E6%8F%92%E4%BB%B6"><span class="nav-number">3.2.</span> <span class="nav-text">2. 安装 Terminal 插件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%AE%89%E8%A3%85%E5%B9%B6%E4%BD%BF%E7%94%A8-Agent-CLI"><span class="nav-number">3.3.</span> <span class="nav-text">3. 安装并使用 Agent CLI</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E9%80%9A%E8%BF%87-MCP-%E8%AE%A9-Agent-%E6%A3%80%E7%B4%A2-LLM-Wiki"><span class="nav-number">4.</span> <span class="nav-text">四、通过 MCP 让 Agent 检索 LLM-Wiki</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%85%8D%E7%BD%AE-MCP-%E6%9C%8D%E5%8A%A1"><span class="nav-number">4.1.</span> <span class="nav-text">1. 配置 MCP 服务</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%BD%BF%E7%94%A8-Claude-Code-%E8%BF%9B%E8%A1%8C%E7%9F%A5%E8%AF%86%E6%A3%80%E7%B4%A2"><span class="nav-number">4.2.</span> <span class="nav-text">2. 使用 Claude Code 进行知识检索</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98%E4%B8%8E%E6%8E%92%E6%9F%A5%E6%96%B9%E6%B3%95"><span class="nav-number">5.</span> <span class="nav-text">五、常见问题与排查方法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E9%9A%90%E7%A7%81%E3%80%81%E5%AE%89%E5%85%A8%E4%B8%8E%E5%A4%87%E4%BB%BD"><span class="nav-number">6.</span> <span class="nav-text">六、隐私、安全与备份</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">七、总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

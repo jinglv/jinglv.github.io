@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从消息输入、Chat Template 和 Token 化开始，逐步理解 Prefill、Logits、解码策略、KV Cache、Decode 循环以及最终文本输出。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从 Prompt 到回答：一次 LLM 请求经历了什么？">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/04/ai/llms/2-inference-process/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从消息输入、Chat Template 和 Token 化开始，逐步理解 Prefill、Logits、解码策略、KV Cache、Decode 循环以及最终文本输出。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012101109408.png">
+<meta property="article:published_time" content="2026-10-04T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-04T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta property="article:tag" content="大语言模型">
+<meta property="article:tag" content="LLM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012101109408.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/04/ai/llms/2-inference-process/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>从 Prompt 到回答：一次 LLM 请求经历了什么？ | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/04/ai/llms/2-inference-process/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从 Prompt 到回答：一次 LLM 请求经历了什么？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-04 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-04T10:00:00+08:00">2026-10-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从消息输入、Chat Template 和 Token 化开始，逐步理解 Prefill、Logits、解码策略、KV Cache、Decode 循环以及最终文本输出。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="从-Prompt-到回答：一次-LLM-请求经历了什么？"><a href="#从-Prompt-到回答：一次-LLM-请求经历了什么？" class="headerlink" title="从 Prompt 到回答：一次 LLM 请求经历了什么？"></a>从 Prompt 到回答：一次 LLM 请求经历了什么？</h1><p>在上一篇文章中，我们已经知道：大语言模型会根据已有上下文不断预测下一个 Token。</p>
+<p>但当我们在聊天框中输入一句话，或者调用一次模型 API 时，这句话并不会直接进入 Transformer，模型也不会一次性在内部“写出”整段回答。</p>
+<p>一次典型的 LLM 请求，需要依次经历：</p>
+<blockquote>
+<p>消息输入 → 聊天模板 → Token 化 → Prefill → Logits → 解码策略 → Decode 循环 → 停止与文本输出</p>
+</blockquote>
+<p>本文将沿着这条链路，完整走读一次请求从自然语言输入到模型回答的过程，并使用 <code>Qwen/Qwen2.5-0.5B-Instruct</code> 编写一个可以本地执行的示例。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012101109408.png" alt="image-20261012101109408"></p>
+<h1 id="从两个层次理解一次-LLM-请求"><a href="#从两个层次理解一次-LLM-请求" class="headerlink" title="从两个层次理解一次 LLM 请求"></a>从两个层次理解一次 LLM 请求</h1><p>“LLM 请求”通常包含两个不同层次：</p>
+<ol>
+<li><strong>应用层请求</strong>：客户端将消息、生成参数等内容发送给本地程序或远程推理服务；</li>
+<li><strong>模型推理过程</strong>：推理服务把消息转换成 Token，调用模型计算，并逐个生成输出 Token。</li>
+</ol>
+<p>以常见的聊天接口为例，应用层提交的内容可能类似：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;model&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;messages&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;role&quot;</span><span class="punctuation">:</span> <span class="string">&quot;system&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="string">&quot;你是一名耐心的人工智能老师。&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="punctuation">&#123;</span></span><br><span class="line">      <span class="attr">&quot;role&quot;</span><span class="punctuation">:</span> <span class="string">&quot;user&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="attr">&quot;content&quot;</span><span class="punctuation">:</span> <span class="string">&quot;请用一句话解释什么是 Token。&quot;</span></span><br><span class="line">    <span class="punctuation">&#125;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;temperature&quot;</span><span class="punctuation">:</span> <span class="number">0.7</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;max_tokens&quot;</span><span class="punctuation">:</span> <span class="number">128</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>这些字段本身不是 Transformer 可以直接处理的输入。推理服务还需要完成消息模板化、Token 化、张量构造、模型计算和结果解码。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>处理内容</th>
+<th>常见工作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>客户端</td>
+<td>用户问题与调用参数</td>
+<td>构造请求、身份验证、发送请求、接收流式结果</td>
+</tr>
+<tr>
+<td>推理服务</td>
+<td>请求调度与预处理</td>
+<td>校验参数、选择模型、批处理、应用聊天模板</td>
+</tr>
+<tr>
+<td>Tokenizer</td>
+<td>文本与 Token ID 转换</td>
+<td>编码输入、插入特殊 Token、解码输出</td>
+</tr>
+<tr>
+<td>模型</td>
+<td>数值张量</td>
+<td>Prefill、计算隐藏状态、输出 Logits</td>
+</tr>
+<tr>
+<td>解码器</td>
+<td>Logits 与生成参数</td>
+<td>Greedy、Sampling、Top-k、Top-p、停止判断</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>下面重点介绍推理服务接收到消息之后，模型内部发生的过程。</p>
+<h1 id="第一步：接收消息与生成参数"><a href="#第一步：接收消息与生成参数" class="headerlink" title="第一步：接收消息与生成参数"></a>第一步：接收消息与生成参数</h1><p>一次对话请求通常不只有当前问题，还可能包括：</p>
+<ul>
+<li>System Message：规定模型角色、行为边界和输出要求；</li>
+<li>历史对话：此前的 User 与 Assistant 消息；</li>
+<li>当前问题：用户本轮输入；</li>
+<li>Tool Message：工具调用返回的结果；</li>
+<li>生成参数：最大输出长度、Temperature、Top-k、Top-p 等。</li>
+</ul>
+<p>例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名耐心的人工智能老师。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请用一句话解释什么是 Token。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>这里的 <code>role</code> 和 <code>content</code> 是应用层的数据结构。模型本身接收的是 Token ID 张量，并不会直接读取 Python 字典或 JSON。</p>
+<h1 id="第二步：Chat-Template-将消息组织成模型格式"><a href="#第二步：Chat-Template-将消息组织成模型格式" class="headerlink" title="第二步：Chat Template 将消息组织成模型格式"></a>第二步：Chat Template 将消息组织成模型格式</h1><p>不同聊天模型使用的消息格式可能不同。Chat Template（聊天模板）负责把结构化消息转换成模型训练时熟悉的文本序列。</p>
+<p>以 ChatML 风格为例，转换结果可能类似：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;|im_start|&gt;system</span><br><span class="line">你是一名耐心的人工智能老师。&lt;|im_end|&gt;</span><br><span class="line">&lt;|im_start|&gt;user</span><br><span class="line">请用一句话解释什么是 Token。&lt;|im_end|&gt;</span><br><span class="line">&lt;|im_start|&gt;assistant</span><br></pre></td></tr></table></figure>
+<p>最后的 Assistant 起始标记非常重要，它相当于告诉模型：</p>
+<blockquote>
+<p>前面的消息已经结束，接下来应该继续生成 Assistant 的回答。</p>
+</blockquote>
+<p>在 Transformers 中，可以通过以下代码查看格式化结果：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">formatted_prompt = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">False</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(formatted_prompt)</span><br></pre></td></tr></table></figure>
+<p>其中：</p>
+<ul>
+<li><code>tokenize=False</code>：先返回格式化后的文本，方便观察；</li>
+<li><code>add_generation_prompt=True</code>：在末尾添加开始生成 Assistant 消息所需的标记。</li>
+</ul>
+<p>需要注意：不是所有模型都使用相同的角色标记，也不是所有模板都会因为 <code>add_generation_prompt=True</code> 而添加相同内容。因此，不应该手动假设某个模型一定使用 <code>&lt;|im_start|&gt;</code>。</p>
+<h1 id="第三步：Tokenizer-将文本转换为-Token-ID"><a href="#第三步：Tokenizer-将文本转换为-Token-ID" class="headerlink" title="第三步：Tokenizer 将文本转换为 Token ID"></a>第三步：Tokenizer 将文本转换为 Token ID</h1><p>Transformer 不能直接处理文字，需要先由 Tokenizer 将文本编码成一串整数：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">文本</span><br><span class="line">  ↓ Tokenizer</span><br><span class="line">[151644, 8948, 198, 56568, ..., 151645, 198, 151644, 77091, 198]</span><br></pre></td></tr></table></figure>
+<p>这里的每一个整数都是词表中某个 Token 的编号。</p>
+<p>Tokenizer 还会返回 <code>attention_mask</code>：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>input_ids</code></td>
+<td>输入 Token 对应的整数编号</td>
+</tr>
+<tr>
+<td><code>attention_mask</code></td>
+<td>标识哪些位置是有效输入、哪些位置是 Padding</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>推荐直接让 Chat Template 完成 Token 化：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">model_inputs = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>这样可以避免格式化文本中已经包含特殊 Token，后续再次 Token 化时又重复添加特殊 Token。</p>
+<p>此时，<code>input_ids</code> 的形状通常是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[batch_size, sequence_length]</span><br></pre></td></tr></table></figure>
+<p>如果当前只有一条请求，并且模板化后的输入包含 35 个 Token，那么形状就是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[1, 35]</span><br></pre></td></tr></table></figure>
+<h1 id="第四步：Embedding-与位置信息"><a href="#第四步：Embedding-与位置信息" class="headerlink" title="第四步：Embedding 与位置信息"></a>第四步：Embedding 与位置信息</h1><p>Token ID 只是词表编号，不能直接表达语义。模型首先通过 Embedding 层把每个 Token ID 映射为高维向量。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Token ID: 8948</span><br><span class="line">    ↓ Embedding</span><br><span class="line">[0.12, -0.08, 0.31, ..., 0.04]</span><br></pre></td></tr></table></figure>
+<p>模型还需要知道每个 Token 在序列中的位置。现代 LLM 通常会使用 RoPE 等位置机制，将位置信息引入注意力计算。</p>
+<p>经过这一步，模型处理的已经不再是文字或整数编号，而是多维数值张量。</p>
+<h1 id="第五步：Prefill-处理全部输入"><a href="#第五步：Prefill-处理全部输入" class="headerlink" title="第五步：Prefill 处理全部输入"></a>第五步：Prefill 处理全部输入</h1><p>Prefill（预填充）阶段会一次处理输入上下文中的全部 Token。</p>
+<p>假设输入长度为 35 个 Token，模型会对这 35 个位置进行 Transformer 计算，得到每个位置的隐藏状态，并根据最后一个位置的隐藏状态计算第一个待生成 Token 的 Logits。</p>
+<p>Prefill 同时会建立 KV Cache，缓存每一层注意力中已经计算出的 Key 和 Value。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">35 个输入 Token</span><br><span class="line">      ↓</span><br><span class="line">Transformer 多层计算</span><br><span class="line">      ├── 最后位置的隐藏状态 → Logits</span><br><span class="line">      └── 历史 Key / Value → KV Cache</span><br></pre></td></tr></table></figure>
+<p>需要区分：</p>
+<ul>
+<li>Prefill 可以并行处理输入中的多个 Token；</li>
+<li>后续 Decode 具有自回归依赖，通常需要逐个生成 Token。</li>
+</ul>
+<p>输入越长，Prefill 需要处理的 Token 越多，首个输出 Token 出现前的等待时间通常也越长。这段时间常用 <strong>TTFT（Time To First Token，首 Token 延迟）</strong>衡量。</p>
+<h1 id="第六步：模型输出-Logits"><a href="#第六步：模型输出-Logits" class="headerlink" title="第六步：模型输出 Logits"></a>第六步：模型输出 Logits</h1><p>模型最后一层的隐藏状态会经过 Language Model Head，映射成与词表大小相同的一组分数。</p>
+<p>假设模型词表有 151,936 个 Token，那么每次预测都会产生 151,936 个 Logits：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">隐藏状态</span><br><span class="line">   ↓ Language Model Head</span><br><span class="line">[2.31, -0.82, 1.47, ..., 0.36]</span><br></pre></td></tr></table></figure>
+<p>Logits 是未经归一化的原始分数，不是概率。对 Logits 应用 Softmax 后，才能得到总和为 1 的概率分布：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P(token_i) = softmax(logits)_i</span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>候选 Token</th>
+<th style="text-align:right">Logit</th>
+<th style="text-align:right">概率示意</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>“Token”</td>
+<td style="text-align:right">4.8</td>
+<td style="text-align:right">52%</td>
+</tr>
+<tr>
+<td>“词元”</td>
+<td style="text-align:right">4.1</td>
+<td style="text-align:right">26%</td>
+</tr>
+<tr>
+<td>“模型”</td>
+<td style="text-align:right">3.2</td>
+<td style="text-align:right">11%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这些数字只用于说明概念。真实结果会受到完整上下文、模型参数以及生成配置的影响。</p>
+<p>还要再次强调：某个 Token 的生成概率更高，只代表它更符合模型学到的语言分布，不代表它表达的事实一定正确。</p>
+<h1 id="第七步：解码策略选择下一个-Token"><a href="#第七步：解码策略选择下一个-Token" class="headerlink" title="第七步：解码策略选择下一个 Token"></a>第七步：解码策略选择下一个 Token</h1><p>模型产生概率分布之后，还要由解码策略决定实际输出哪个 Token。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>解码方法</th>
+<th>工作方式</th>
+<th>结果特点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Greedy</td>
+<td>始终选择分数最高的 Token</td>
+<td>确定性强，但可能缺乏多样性</td>
+</tr>
+<tr>
+<td>Sampling</td>
+<td>按概率随机选择 Token</td>
+<td>结果更加多样</td>
+</tr>
+<tr>
+<td>Temperature</td>
+<td>调整概率分布的集中程度</td>
+<td>越高通常越随机</td>
+</tr>
+<tr>
+<td>Top-k</td>
+<td>只在概率最高的 k 个候选中采样</td>
+<td>限制候选数量</td>
+</tr>
+<tr>
+<td>Top-p</td>
+<td>在累计概率达到 p 的候选集合中采样</td>
+<td>候选规模随分布变化</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>如果使用 Greedy Decoding，可以直接选择 Logits 最大的位置：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">next_token_id = torch.argmax(next_token_logits, dim=-<span class="number">1</span>, keepdim=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+<p>如果启用采样，则通常还需要进行 Temperature 缩放、Top-k 或 Top-p 过滤，然后从处理后的概率分布中抽样。</p>
+<h1 id="第八步：Decode-循环与-KV-Cache"><a href="#第八步：Decode-循环与-KV-Cache" class="headerlink" title="第八步：Decode 循环与 KV Cache"></a>第八步：Decode 循环与 KV Cache</h1><p>选择出第一个输出 Token 后，生成还没有结束。这个 Token 会被追加到已有序列中，模型继续预测下一个 Token：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">已有上下文</span><br><span class="line">    ↓</span><br><span class="line">预测 Token A</span><br><span class="line">    ↓ 追加</span><br><span class="line">已有上下文 + Token A</span><br><span class="line">    ↓</span><br><span class="line">预测 Token B</span><br><span class="line">    ↓ 追加</span><br><span class="line">已有上下文 + Token A + Token B</span><br><span class="line">    ↓</span><br><span class="line">继续循环</span><br></pre></td></tr></table></figure>
+<p>如果没有 KV Cache，模型每生成一个新 Token，都需要重新计算整个历史序列。KV Cache 保存了历史 Token 在各注意力层中的 Key 和 Value，使后续步骤可以复用这些结果。</p>
+<p>典型 Decode 步骤如下：</p>
+<ol>
+<li>输入上一轮选出的新 Token；</li>
+<li>读取历史 KV Cache；</li>
+<li>计算新 Token 对应的 Query、Key 和 Value；</li>
+<li>将新的 Key、Value 追加到缓存；</li>
+<li>得到下一 Token 的 Logits；</li>
+<li>使用解码策略选择 Token；</li>
+<li>重复以上过程。</li>
+</ol>
+<p>KV Cache 减少了重复计算，但会随着上下文增长占用更多内存。因此，长上下文不仅受到上下文窗口限制，也会带来更高的显存或内存消耗。</p>
+<h1 id="第九步：判断是否停止生成"><a href="#第九步：判断是否停止生成" class="headerlink" title="第九步：判断是否停止生成"></a>第九步：判断是否停止生成</h1><p>生成循环不会无限进行。常见停止条件包括：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>停止条件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EOS Token</td>
+<td>模型生成了序列结束标记</td>
+</tr>
+<tr>
+<td>Stop Sequence</td>
+<td>输出命中了应用配置的停止字符串或 Token 序列</td>
+</tr>
+<tr>
+<td><code>max_new_tokens</code></td>
+<td>达到允许新增的最大 Token 数</td>
+</tr>
+<tr>
+<td>自定义规则</td>
+<td>业务代码定义的停止条件</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>需要注意，<code>max_new_tokens</code> 限制的是新生成 Token 的数量，不包含原始输入长度。</p>
+<p>生成结束后，Tokenizer 会把输出 Token ID 解码为文本：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[104165, 100158, 1773, ...]</span><br><span class="line">        ↓ tokenizer.decode()</span><br><span class="line">“Token 是模型处理文本时使用的基本单位。”</span><br></pre></td></tr></table></figure>
+<p>如果接口启用了流式输出，服务端通常会在生成过程中逐步将新内容发送给客户端，而不是等待完整回答生成后一次性返回。</p>
+<h1 id="完整流程总结"><a href="#完整流程总结" class="headerlink" title="完整流程总结"></a>完整流程总结</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>输入</th>
+<th>输出</th>
+<th>核心作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>消息输入</td>
+<td>System、User、历史消息</td>
+<td>消息列表</td>
+<td>提供任务和上下文</td>
+</tr>
+<tr>
+<td>Chat Template</td>
+<td>消息列表</td>
+<td>格式化序列</td>
+<td>添加角色和消息边界</td>
+</tr>
+<tr>
+<td>Tokenizer</td>
+<td>格式化序列</td>
+<td>Token ID、Attention Mask</td>
+<td>转换为模型输入</td>
+</tr>
+<tr>
+<td>Embedding</td>
+<td>Token ID</td>
+<td>高维向量</td>
+<td>提供数值表示</td>
+</tr>
+<tr>
+<td>Prefill</td>
+<td>全部输入向量</td>
+<td>首次 Logits、KV Cache</td>
+<td>理解输入并建立缓存</td>
+</tr>
+<tr>
+<td>解码策略</td>
+<td>Logits</td>
+<td>下一个 Token</td>
+<td>决定本轮实际输出</td>
+</tr>
+<tr>
+<td>Decode</td>
+<td>新 Token、KV Cache</td>
+<td>新 Logits、更新后的缓存</td>
+<td>逐 Token 生成</td>
+</tr>
+<tr>
+<td>停止与解码</td>
+<td>生成 Token 序列</td>
+<td>文本回答</td>
+<td>结束生成并返回结果</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h1 id="实战：完整走读一次本地推理"><a href="#实战：完整走读一次本地推理" class="headerlink" title="实战：完整走读一次本地推理"></a>实战：完整走读一次本地推理</h1><p>下面继续使用上一篇文章下载的 <code>Qwen/Qwen2.5-0.5B-Instruct</code>。示例会展示：</p>
+<ul>
+<li>Chat Template 转换结果；</li>
+<li>输入 Token 与 Token ID；</li>
+<li>Prefill 输出的张量形状；</li>
+<li>第一个待生成位置的 Top-5 候选；</li>
+<li>使用 KV Cache 手动执行 Greedy Decode；</li>
+<li>EOS 与最大长度停止条件；</li>
+<li>最终文本解码。</li>
+</ul>
+<p>将下面代码保存为 <code>qwen_inference_walkthrough.py</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_PATH = <span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line">MAX_NEW_TOKENS = <span class="number">64</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">select_device_and_dtype</span>():</span><br><span class="line">    <span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;cuda&quot;</span>, torch.float16</span><br><span class="line">    <span class="keyword">if</span> torch.backends.mps.is_available():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;mps&quot;</span>, torch.float32</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;cpu&quot;</span>, torch.float32</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">device, dtype = select_device_and_dtype()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;运行设备: <span class="subst">&#123;device&#125;</span>，数据类型: <span class="subst">&#123;dtype&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">    dtype=dtype,</span><br><span class="line">).to(device)</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名耐心的人工智能老师。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请用一句话解释什么是 Token。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line"><span class="comment"># 第一步：查看 Chat Template 转换后的文本</span></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line">formatted_prompt = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">False</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 1. Chat Template ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(formatted_prompt)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line"><span class="comment"># 第二步：直接应用模板并完成 Token 化</span></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line">model_inputs = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">).to(device)</span><br><span class="line"></span><br><span class="line">input_ids = model_inputs[<span class="string">&quot;input_ids&quot;</span>]</span><br><span class="line">attention_mask = model_inputs[<span class="string">&quot;attention_mask&quot;</span>]</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 2. Token 化结果 ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;input_ids shape:&quot;</span>, <span class="built_in">tuple</span>(input_ids.shape))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;attention_mask shape:&quot;</span>, <span class="built_in">tuple</span>(attention_mask.shape))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;输入 Token 数:&quot;</span>, input_ids.shape[<span class="number">1</span>])</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n前 20 个 Token:&quot;</span>)</span><br><span class="line">tokens = tokenizer.convert_ids_to_tokens(input_ids[<span class="number">0</span>])</span><br><span class="line"><span class="keyword">for</span> index, (token_id, token) <span class="keyword">in</span> <span class="built_in">enumerate</span>(</span><br><span class="line">    <span class="built_in">zip</span>(input_ids[<span class="number">0</span>].tolist(), tokens)</span><br><span class="line">):</span><br><span class="line">    <span class="keyword">if</span> index &gt;= <span class="number">20</span>:</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;index:&gt;<span class="number">2</span>&#125;</span>: id=<span class="subst">&#123;token_id:&lt;<span class="number">6</span>&#125;</span> token=<span class="subst">&#123;token!r&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line"><span class="comment"># 第三步：Prefill</span></span><br><span class="line"><span class="comment"># 一次性处理全部输入，得到首轮 Logits 和 KV Cache。</span></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line"><span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">    outputs = model(</span><br><span class="line">        input_ids=input_ids,</span><br><span class="line">        attention_mask=attention_mask,</span><br><span class="line">        use_cache=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">next_token_logits = outputs.logits[:, -<span class="number">1</span>, :]</span><br><span class="line">past_key_values = outputs.past_key_values</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 3. Prefill ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;全部 Logits shape:&quot;</span>, <span class="built_in">tuple</span>(outputs.logits.shape))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;下一 Token Logits shape:&quot;</span>, <span class="built_in">tuple</span>(next_token_logits.shape))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;KV Cache 层数:&quot;</span>, <span class="built_in">len</span>(past_key_values))</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line"><span class="comment"># 第四步：查看第一个待生成位置的 Top-5 候选</span></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line">probabilities = torch.softmax(next_token_logits.<span class="built_in">float</span>(), dim=-<span class="number">1</span>)</span><br><span class="line">top_probabilities, top_token_ids = torch.topk(probabilities, k=<span class="number">5</span>, dim=-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 4. 第一个待生成 Token 的 Top-5 候选 ===&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> probability, token_id <span class="keyword">in</span> <span class="built_in">zip</span>(</span><br><span class="line">    top_probabilities[<span class="number">0</span>].tolist(),</span><br><span class="line">    top_token_ids[<span class="number">0</span>].tolist(),</span><br><span class="line">):</span><br><span class="line">    token_text = tokenizer.decode([token_id])</span><br><span class="line">    <span class="built_in">print</span>(</span><br><span class="line">        <span class="string">f&quot;id=<span class="subst">&#123;token_id:&lt;<span class="number">6</span>&#125;</span> &quot;</span></span><br><span class="line">        <span class="string">f&quot;probability=<span class="subst">&#123;probability:<span class="number">.4</span>%&#125;</span> &quot;</span></span><br><span class="line">        <span class="string">f&quot;text=<span class="subst">&#123;token_text!r&#125;</span>&quot;</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line"><span class="comment"># 第五步：使用 Greedy Decoding 手动逐 Token 生成</span></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line">eos_token_ids = model.generation_config.eos_token_id</span><br><span class="line"><span class="keyword">if</span> <span class="built_in">isinstance</span>(eos_token_ids, <span class="built_in">int</span>):</span><br><span class="line">    eos_token_ids = &#123;eos_token_ids&#125;</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    eos_token_ids = <span class="built_in">set</span>(eos_token_ids <span class="keyword">or</span> [])</span><br><span class="line"></span><br><span class="line">generated_token_ids = []</span><br><span class="line">next_token_id = torch.argmax(next_token_logits, dim=-<span class="number">1</span>, keepdim=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 5. Decode 循环 ===&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> step <span class="keyword">in</span> <span class="built_in">range</span>(MAX_NEW_TOKENS):</span><br><span class="line">    token_id = next_token_id.item()</span><br><span class="line">    generated_token_ids.append(token_id)</span><br><span class="line"></span><br><span class="line">    token_piece = tokenizer.decode(</span><br><span class="line">        [token_id],</span><br><span class="line">        skip_special_tokens=<span class="literal">False</span>,</span><br><span class="line">    )</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;step=<span class="subst">&#123;step + <span class="number">1</span>:&gt;<span class="number">2</span>&#125;</span> id=<span class="subst">&#123;token_id:&lt;<span class="number">6</span>&#125;</span> piece=<span class="subst">&#123;token_piece!r&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> token_id <span class="keyword">in</span> eos_token_ids:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;停止原因: 生成 EOS Token&quot;</span>)</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 输入增加了一个 Token，因此 Attention Mask 也增加一个有效位置。</span></span><br><span class="line">    attention_mask = torch.cat(</span><br><span class="line">        [</span><br><span class="line">            attention_mask,</span><br><span class="line">            torch.ones(</span><br><span class="line">                (attention_mask.shape[<span class="number">0</span>], <span class="number">1</span>),</span><br><span class="line">                dtype=attention_mask.dtype,</span><br><span class="line">                device=device,</span><br><span class="line">            ),</span><br><span class="line">        ],</span><br><span class="line">        dim=<span class="number">1</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">        outputs = model(</span><br><span class="line">            input_ids=next_token_id,</span><br><span class="line">            attention_mask=attention_mask,</span><br><span class="line">            past_key_values=past_key_values,</span><br><span class="line">            use_cache=<span class="literal">True</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    past_key_values = outputs.past_key_values</span><br><span class="line">    next_token_logits = outputs.logits[:, -<span class="number">1</span>, :]</span><br><span class="line">    next_token_id = torch.argmax(</span><br><span class="line">        next_token_logits,</span><br><span class="line">        dim=-<span class="number">1</span>,</span><br><span class="line">        keepdim=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;停止原因: 达到 MAX_NEW_TOKENS&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line"><span class="comment"># 第六步：将生成的 Token ID 解码为最终文本</span></span><br><span class="line"><span class="comment"># ------------------------------------------------------------</span></span><br><span class="line">response = tokenizer.decode(</span><br><span class="line">    generated_token_ids,</span><br><span class="line">    skip_special_tokens=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 6. 最终回答 ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(response)</span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line">/Users/jean/.pyenv/shims/uv run /Users/jean/PycharmProjects/llm-base/.venv/bin/python /Users/jean/PycharmProjects/llm-base/qwen_inference_walkthrough.py </span><br><span class="line">运行设备: mps，数据类型: torch.float32</span><br><span class="line">Loading weights: 100%|██████████| 290/290 [00:01&lt;00:00, 235.18it/s]</span><br><span class="line"></span><br><span class="line">=== 1. Chat Template ===</span><br><span class="line">&lt;|im_start|&gt;system</span><br><span class="line">你是一名耐心的人工智能老师。&lt;|im_end|&gt;</span><br><span class="line">&lt;|im_start|&gt;user</span><br><span class="line">请用一句话解释什么是 Token。&lt;|im_end|&gt;</span><br><span class="line">&lt;|im_start|&gt;assistant</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">=== 2. Token 化结果 ===</span><br><span class="line">input_ids shape: (1, 28)</span><br><span class="line">attention_mask shape: (1, 28)</span><br><span class="line">输入 Token 数: 28</span><br><span class="line"></span><br><span class="line">前 20 个 Token:</span><br><span class="line"> 0: id=151644 token=&#x27;&lt;|im_start|&gt;&#x27;</span><br><span class="line"> 1: id=8948   token=&#x27;system&#x27;</span><br><span class="line"> 2: id=198    token=&#x27;Ċ&#x27;</span><br><span class="line"> 3: id=56568  token=&#x27;ä½ł&#x27;</span><br><span class="line"> 4: id=110124 token=&#x27;æĺ¯ä¸ĢåĲį&#x27;</span><br><span class="line"> 5: id=105779 token=&#x27;èĢĲå¿ĥ&#x27;</span><br><span class="line"> 6: id=100623 token=&#x27;çļĦäºº&#x27;</span><br><span class="line"> 7: id=48692  token=&#x27;å·¥&#x27;</span><br><span class="line"> 8: id=100168 token=&#x27;æĻºèĥ½&#x27;</span><br><span class="line"> 9: id=101049 token=&#x27;èĢģå¸Ī&#x27;</span><br><span class="line">10: id=1773   token=&#x27;ãĢĤ&#x27;</span><br><span class="line">11: id=151645 token=&#x27;&lt;|im_end|&gt;&#x27;</span><br><span class="line">12: id=198    token=&#x27;Ċ&#x27;</span><br><span class="line">13: id=151644 token=&#x27;&lt;|im_start|&gt;&#x27;</span><br><span class="line">14: id=872    token=&#x27;user&#x27;</span><br><span class="line">15: id=198    token=&#x27;Ċ&#x27;</span><br><span class="line">16: id=14880  token=&#x27;è¯·&#x27;</span><br><span class="line">17: id=11622  token=&#x27;çĶ¨&#x27;</span><br><span class="line">18: id=105321 token=&#x27;ä¸Ģåı¥è¯Ŀ&#x27;</span><br><span class="line">19: id=104136 token=&#x27;è§£éĩĬ&#x27;</span><br><span class="line"></span><br><span class="line">=== 3. Prefill ===</span><br><span class="line">全部 Logits shape: (1, 28, 151936)</span><br><span class="line">下一 Token Logits shape: (1, 151936)</span><br><span class="line">KV Cache 层数: 24</span><br><span class="line"></span><br><span class="line">=== 4. 第一个待生成 Token 的 Top-5 候选 ===</span><br><span class="line">id=3323   probability=90.9217% text=&#x27;Token&#x27;</span><br><span class="line">id=18493  probability=7.5234% text=&#x27;在&#x27;</span><br><span class="line">id=29300  probability=0.2645% text=&#x27;Tokens&#x27;</span><br><span class="line">id=5839   probability=0.2221% text=&#x27;token&#x27;</span><br><span class="line">id=1      probability=0.1813% text=&#x27;&quot;&#x27;</span><br><span class="line"></span><br><span class="line">=== 5. Decode 循环 ===</span><br><span class="line">step= 1 id=3323   piece=&#x27;Token&#x27;</span><br><span class="line">step= 2 id=54851  piece=&#x27; 是&#x27;</span><br><span class="line">step= 3 id=101053 piece=&#x27;一种&#x27;</span><br><span class="line">step= 4 id=18493  piece=&#x27;在&#x27;</span><br><span class="line">step= 5 id=102182 piece=&#x27;机器&#x27;</span><br><span class="line">step= 6 id=100134 piece=&#x27;学习&#x27;</span><br><span class="line">step= 7 id=33108  piece=&#x27;和&#x27;</span><br><span class="line">step= 8 id=99795  piece=&#x27;自然&#x27;</span><br><span class="line">step= 9 id=102064 piece=&#x27;语言&#x27;</span><br><span class="line">step=10 id=54542  piece=&#x27;处理&#x27;</span><br><span class="line">step=11 id=15946  piece=&#x27;中&#x27;</span><br><span class="line">step=12 id=100751 piece=&#x27;用于&#x27;</span><br><span class="line">step=13 id=51463  piece=&#x27;表示&#x27;</span><br><span class="line">step=14 id=108704 piece=&#x27;文本&#x27;</span><br><span class="line">step=15 id=9370   piece=&#x27;的&#x27;</span><br><span class="line">step=16 id=108872 piece=&#x27;符号&#x27;</span><br><span class="line">step=17 id=1773   piece=&#x27;。&#x27;</span><br><span class="line">step=18 id=151645 piece=&#x27;&lt;|im_end|&gt;&#x27;</span><br><span class="line">停止原因: 生成 EOS Token</span><br><span class="line"></span><br><span class="line">=== 6. 最终回答 ===</span><br><span class="line">Token 是一种在机器学习和自然语言处理中用于表示文本的符号。</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h2 id="关键输出如何理解"><a href="#关键输出如何理解" class="headerlink" title="关键输出如何理解"></a>关键输出如何理解</h2><h3 id="Chat-Template"><a href="#Chat-Template" class="headerlink" title="Chat Template"></a>Chat Template</h3><p>程序首先打印模型实际看到的消息格式。你可以观察 System、User 和 Assistant 起始标记是如何进入上下文的。</p>
+<h3 id="Token-化结果"><a href="#Token-化结果" class="headerlink" title="Token 化结果"></a>Token 化结果</h3><p>程序打印前 20 个 Token 的 ID 和词表表示。部分 Token 可能看起来不像完整汉字或单词，这是正常现象，因为 Token 可以是字符、子词、字节片段或特殊标记。</p>
+<h3 id="Logits-形状"><a href="#Logits-形状" class="headerlink" title="Logits 形状"></a>Logits 形状</h3><p>如果输出为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">全部 Logits shape: (1, 35, 151936)</span><br></pre></td></tr></table></figure>
+<p>表示：</p>
+<ul>
+<li>Batch Size 为 1；</li>
+<li>输入序列包含 35 个 Token；</li>
+<li>每个位置都产生了 151,936 个词表候选分数。</li>
+</ul>
+<p>生成下一个 Token 时，只需要使用最后一个位置的 Logits：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">next_token_logits = outputs.logits[:, -<span class="number">1</span>, :]</span><br></pre></td></tr></table></figure>
+<h3 id="KV-Cache"><a href="#KV-Cache" class="headerlink" title="KV Cache"></a>KV Cache</h3><p><code>past_key_values</code> 保存各 Transformer 层已经计算的 Key 和 Value。Decode 时只输入最新生成的 Token，同时传回缓存，从而避免重新处理全部历史 Token。</p>
+<h3 id="手动-Decode"><a href="#手动-Decode" class="headerlink" title="手动 Decode"></a>手动 Decode</h3><p>代码使用 <code>argmax</code> 实现 Greedy Decoding，因此在相同模型、输入和运行环境下，结果通常是确定的。</p>
+<p>这段手动循环主要用于学习模型的生成机制。实际项目通常直接使用经过优化的 <code>model.generate()</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">    output_ids = model.generate(</span><br><span class="line">        **model_inputs,</span><br><span class="line">        max_new_tokens=<span class="number">64</span>,</span><br><span class="line">        do_sample=<span class="literal">False</span>,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">input_length = model_inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>]</span><br><span class="line">generated_ids = output_ids[<span class="number">0</span>, input_length:]</span><br><span class="line"></span><br><span class="line">response = tokenizer.decode(</span><br><span class="line">    generated_ids,</span><br><span class="line">    skip_special_tokens=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(response)</span><br></pre></td></tr></table></figure>
+<p><code>generate()</code> 会帮助处理 KV Cache、停止条件、批处理以及不同解码策略，通常比手写循环更安全。</p>
+<h1 id="流式输出是如何实现的？"><a href="#流式输出是如何实现的？" class="headerlink" title="流式输出是如何实现的？"></a>流式输出是如何实现的？</h1><p>模型内部仍然是逐 Token 生成。所谓流式输出，是推理服务在生成过程中不断把已经解码的新增内容发送给客户端。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">模型生成 Token</span><br><span class="line">      ↓</span><br><span class="line">增量解码</span><br><span class="line">      ↓</span><br><span class="line">服务端发送数据块</span><br><span class="line">      ↓</span><br><span class="line">客户端立即显示</span><br></pre></td></tr></table></figure>
+<p>因此，流式输出通常不会让模型更早完成整段回答，但可以让用户更早看到首个结果，改善交互体验。</p>
+<p>流式输出还需要处理一个细节：单独一个 Token 不一定能立即解码成完整字符。一些实现会暂存尚未形成完整文本的字节片段，再将可显示内容发送给客户端。</p>
+<h1 id="一次请求中的时间都花在哪里？"><a href="#一次请求中的时间都花在哪里？" class="headerlink" title="一次请求中的时间都花在哪里？"></a>一次请求中的时间都花在哪里？</h1><p>一次 LLM 请求的延迟大致来自以下部分：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>可能的耗时来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>网络传输</td>
+<td>请求体大小、网络距离、连接建立</td>
+</tr>
+<tr>
+<td>排队与调度</td>
+<td>并发请求数量、批处理策略、服务负载</td>
+</tr>
+<tr>
+<td>Token 化</td>
+<td>输入长度、Tokenizer 实现</td>
+</tr>
+<tr>
+<td>Prefill</td>
+<td>输入 Token 数、模型规模、计算设备</td>
+</tr>
+<tr>
+<td>Decode</td>
+<td>输出 Token 数、KV Cache、解码策略</td>
+</tr>
+<tr>
+<td>文本后处理</td>
+<td>增量解码、内容检查、格式校验</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>常见性能指标包括：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TTFT</td>
+<td>从请求开始到产生首个输出 Token 的时间</td>
+</tr>
+<tr>
+<td>TPOT</td>
+<td>生成阶段平均每个输出 Token 所需时间</td>
+</tr>
+<tr>
+<td>Tokens/s</td>
+<td>每秒生成的 Token 数量</td>
+</tr>
+<tr>
+<td>End-to-End Latency</td>
+<td>从发送请求到完整响应结束的总时间</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>通常来说：输入越长，Prefill 成本越高；输出越长，Decode 循环次数越多。</p>
+<h1 id="常见误区"><a href="#常见误区" class="headerlink" title="常见误区"></a>常见误区</h1><h2 id="误区一：模型直接读取了用户输入的文字"><a href="#误区一：模型直接读取了用户输入的文字" class="headerlink" title="误区一：模型直接读取了用户输入的文字"></a>误区一：模型直接读取了用户输入的文字</h2><p>模型实际处理的是经过 Chat Template 和 Tokenizer 转换后的 Token ID 与数值向量。角色标记、特殊 Token 和消息边界都会影响最终输入。</p>
+<h2 id="误区二：模型一次生成完整回答"><a href="#误区二：模型一次生成完整回答" class="headerlink" title="误区二：模型一次生成完整回答"></a>误区二：模型一次生成完整回答</h2><p>典型自回归 LLM 每轮只预测一个新 Token。完整回答来自不断“预测—选择—追加—再预测”的循环。</p>
+<h2 id="误区三：概率最高的-Token-就一定正确"><a href="#误区三：概率最高的-Token-就一定正确" class="headerlink" title="误区三：概率最高的 Token 就一定正确"></a>误区三：概率最高的 Token 就一定正确</h2><p>概率描述的是模型认为某个 Token 在当前上下文中有多合适，不是事实正确率。语言流畅与事实可靠是两个不同问题。</p>
+<h2 id="误区四：KV-Cache-是模型的长期记忆"><a href="#误区四：KV-Cache-是模型的长期记忆" class="headerlink" title="误区四：KV Cache 是模型的长期记忆"></a>误区四：KV Cache 是模型的长期记忆</h2><p>KV Cache 只是一次推理过程中复用注意力计算的缓存。请求结束后，它通常会被释放；它不等于用户记忆、知识库或模型参数。</p>
+<h2 id="误区五：上下文越长，模型理解得越好"><a href="#误区五：上下文越长，模型理解得越好" class="headerlink" title="误区五：上下文越长，模型理解得越好"></a>误区五：上下文越长，模型理解得越好</h2><p>加入上下文会增加可用信息，也可能引入噪声、冲突信息和更高延迟。上下文窗口表示容量上限，不代表模型能够同等有效地使用窗口中的所有内容。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>一次 LLM 请求的核心流程可以概括为：</p>
+<ol>
+<li>应用将 System、User 和历史消息组织成消息列表；</li>
+<li>Chat Template 将消息转换成模型约定的序列；</li>
+<li>Tokenizer 将文本编码为 Token ID；</li>
+<li>Prefill 处理全部输入，计算首轮 Logits 并建立 KV Cache；</li>
+<li>解码策略从候选分布中选择下一个 Token；</li>
+<li>Decode 利用 KV Cache 逐 Token 生成后续内容；</li>
+<li>命中 EOS、Stop Sequence 或长度限制后停止；</li>
+<li>Tokenizer 将输出 Token ID 解码为最终文本。</li>
+</ol>
+<p>理解这条链路之后，后续学习 Tokenizer、解码参数、上下文窗口、结构化输出和模型推理优化时，就能知道每个概念位于整条请求链路的什么位置。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/chat_templating">Hugging Face Transformers：Chat Templates</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/main_classes/text_generation">Hugging Face Transformers：Generation</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/kv_cache">Hugging Face Transformers：KV Cache</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B-Instruct 模型页面</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+              <a href="/tags/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" rel="tag"># 大语言模型</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/03/ai/llms/1-introduce/" rel="prev" title="什么是大语言模型（LLM）">
+      <i class="fa fa-chevron-left"></i> 什么是大语言模型（LLM）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/05/ai/llms/3-tokenizer/" rel="next" title="Token 与 Tokenizer：文字如何变成模型能够计算的数字？">
+      Token 与 Tokenizer：文字如何变成模型能够计算的数字？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E-Prompt-%E5%88%B0%E5%9B%9E%E7%AD%94%EF%BC%9A%E4%B8%80%E6%AC%A1-LLM-%E8%AF%B7%E6%B1%82%E7%BB%8F%E5%8E%86%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">从 Prompt 到回答：一次 LLM 请求经历了什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E%E4%B8%A4%E4%B8%AA%E5%B1%82%E6%AC%A1%E7%90%86%E8%A7%A3%E4%B8%80%E6%AC%A1-LLM-%E8%AF%B7%E6%B1%82"><span class="nav-number">2.</span> <span class="nav-text">从两个层次理解一次 LLM 请求</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%9A%E6%8E%A5%E6%94%B6%E6%B6%88%E6%81%AF%E4%B8%8E%E7%94%9F%E6%88%90%E5%8F%82%E6%95%B0"><span class="nav-number">3.</span> <span class="nav-text">第一步：接收消息与生成参数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%9AChat-Template-%E5%B0%86%E6%B6%88%E6%81%AF%E7%BB%84%E7%BB%87%E6%88%90%E6%A8%A1%E5%9E%8B%E6%A0%BC%E5%BC%8F"><span class="nav-number">4.</span> <span class="nav-text">第二步：Chat Template 将消息组织成模型格式</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%EF%BC%9ATokenizer-%E5%B0%86%E6%96%87%E6%9C%AC%E8%BD%AC%E6%8D%A2%E4%B8%BA-Token-ID"><span class="nav-number">5.</span> <span class="nav-text">第三步：Tokenizer 将文本转换为 Token ID</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E5%9B%9B%E6%AD%A5%EF%BC%9AEmbedding-%E4%B8%8E%E4%BD%8D%E7%BD%AE%E4%BF%A1%E6%81%AF"><span class="nav-number">6.</span> <span class="nav-text">第四步：Embedding 与位置信息</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%94%E6%AD%A5%EF%BC%9APrefill-%E5%A4%84%E7%90%86%E5%85%A8%E9%83%A8%E8%BE%93%E5%85%A5"><span class="nav-number">7.</span> <span class="nav-text">第五步：Prefill 处理全部输入</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E5%85%AD%E6%AD%A5%EF%BC%9A%E6%A8%A1%E5%9E%8B%E8%BE%93%E5%87%BA-Logits"><span class="nav-number">8.</span> <span class="nav-text">第六步：模型输出 Logits</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%83%E6%AD%A5%EF%BC%9A%E8%A7%A3%E7%A0%81%E7%AD%96%E7%95%A5%E9%80%89%E6%8B%A9%E4%B8%8B%E4%B8%80%E4%B8%AA-Token"><span class="nav-number">9.</span> <span class="nav-text">第七步：解码策略选择下一个 Token</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E5%85%AB%E6%AD%A5%EF%BC%9ADecode-%E5%BE%AA%E7%8E%AF%E4%B8%8E-KV-Cache"><span class="nav-number">10.</span> <span class="nav-text">第八步：Decode 循环与 KV Cache</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B9%9D%E6%AD%A5%EF%BC%9A%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E5%81%9C%E6%AD%A2%E7%94%9F%E6%88%90"><span class="nav-number">11.</span> <span class="nav-text">第九步：判断是否停止生成</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E6%B5%81%E7%A8%8B%E6%80%BB%E7%BB%93"><span class="nav-number">12.</span> <span class="nav-text">完整流程总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%EF%BC%9A%E5%AE%8C%E6%95%B4%E8%B5%B0%E8%AF%BB%E4%B8%80%E6%AC%A1%E6%9C%AC%E5%9C%B0%E6%8E%A8%E7%90%86"><span class="nav-number">13.</span> <span class="nav-text">实战：完整走读一次本地推理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E8%BE%93%E5%87%BA%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3"><span class="nav-number">13.1.</span> <span class="nav-text">关键输出如何理解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Chat-Template"><span class="nav-number">13.1.1.</span> <span class="nav-text">Chat Template</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Token-%E5%8C%96%E7%BB%93%E6%9E%9C"><span class="nav-number">13.1.2.</span> <span class="nav-text">Token 化结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Logits-%E5%BD%A2%E7%8A%B6"><span class="nav-number">13.1.3.</span> <span class="nav-text">Logits 形状</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#KV-Cache"><span class="nav-number">13.1.4.</span> <span class="nav-text">KV Cache</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%8B%E5%8A%A8-Decode"><span class="nav-number">13.1.5.</span> <span class="nav-text">手动 Decode</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA%E6%98%AF%E5%A6%82%E4%BD%95%E5%AE%9E%E7%8E%B0%E7%9A%84%EF%BC%9F"><span class="nav-number">14.</span> <span class="nav-text">流式输出是如何实现的？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E6%AC%A1%E8%AF%B7%E6%B1%82%E4%B8%AD%E7%9A%84%E6%97%B6%E9%97%B4%E9%83%BD%E8%8A%B1%E5%9C%A8%E5%93%AA%E9%87%8C%EF%BC%9F"><span class="nav-number">15.</span> <span class="nav-text">一次请求中的时间都花在哪里？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%AF%E5%8C%BA"><span class="nav-number">16.</span> <span class="nav-text">常见误区</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%80%EF%BC%9A%E6%A8%A1%E5%9E%8B%E7%9B%B4%E6%8E%A5%E8%AF%BB%E5%8F%96%E4%BA%86%E7%94%A8%E6%88%B7%E8%BE%93%E5%85%A5%E7%9A%84%E6%96%87%E5%AD%97"><span class="nav-number">16.1.</span> <span class="nav-text">误区一：模型直接读取了用户输入的文字</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%8C%EF%BC%9A%E6%A8%A1%E5%9E%8B%E4%B8%80%E6%AC%A1%E7%94%9F%E6%88%90%E5%AE%8C%E6%95%B4%E5%9B%9E%E7%AD%94"><span class="nav-number">16.2.</span> <span class="nav-text">误区二：模型一次生成完整回答</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%89%EF%BC%9A%E6%A6%82%E7%8E%87%E6%9C%80%E9%AB%98%E7%9A%84-Token-%E5%B0%B1%E4%B8%80%E5%AE%9A%E6%AD%A3%E7%A1%AE"><span class="nav-number">16.3.</span> <span class="nav-text">误区三：概率最高的 Token 就一定正确</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%9B%9B%EF%BC%9AKV-Cache-%E6%98%AF%E6%A8%A1%E5%9E%8B%E7%9A%84%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">16.4.</span> <span class="nav-text">误区四：KV Cache 是模型的长期记忆</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%94%EF%BC%9A%E4%B8%8A%E4%B8%8B%E6%96%87%E8%B6%8A%E9%95%BF%EF%BC%8C%E6%A8%A1%E5%9E%8B%E7%90%86%E8%A7%A3%E5%BE%97%E8%B6%8A%E5%A5%BD"><span class="nav-number">16.5.</span> <span class="nav-text">误区五：上下文越长，模型理解得越好</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">17.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">18.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

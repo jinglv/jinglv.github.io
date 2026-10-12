@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从 Token、Embedding、Transformer 和自回归生成出发，理解大语言模型的基本原理，并使用 Qwen2.5 完成本地推理。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="什么是大语言模型（LLM）">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/03/ai/llms/1-introduce/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从 Token、Embedding、Transformer 和自回归生成出发，理解大语言模型的基本原理，并使用 Qwen2.5 完成本地推理。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010152608603.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010154611427.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010154650011.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010155225461.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010160232715.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010161815435.png">
+<meta property="article:published_time" content="2026-10-03T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-03T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010152608603.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/03/ai/llms/1-introduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>什么是大语言模型（LLM） | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/03/ai/llms/1-introduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          什么是大语言模型（LLM）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-03 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-03T10:00:00+08:00">2026-10-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从 Token、Embedding、Transformer 和自回归生成出发，理解大语言模型的基本原理，并使用 Qwen2.5 完成本地推理。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="什么是大语言模型（LLM）？"><a href="#什么是大语言模型（LLM）？" class="headerlink" title="什么是大语言模型（LLM）？"></a>什么是大语言模型（LLM）？</h1><p>大语言模型（Large Language Model，LLM）通常可以理解为一种基于上下文预测下一个 Token 的概率模型：给定一段文本，模型计算词表中各个候选 Token 的分数，再根据解码策略选择下一个 Token。新 Token 被加入序列后，模型继续预测，直到生成结束标记、命中停止条件或达到长度上限。</p>
+<p>这个机制听起来简单，但模型的能力来自多个因素的共同作用：大规模训练数据、模型架构、参数规模、训练方法和推理机制。模型在海量文本、代码等数据中学习语言规律、知识关联和部分推理模式，因此能够完成问答、摘要、翻译、代码生成等任务。</p>
+<p>需要注意，模型能力并不只取决于参数规模，也不是模型一旦变大就必然出现某种能力。训练数据质量、训练目标、后训练方法和评测任务都会影响最终表现。</p>
+<blockquote>
+<p>LLM = Transformer 等模型架构 + 大规模训练与后训练 + 基于上下文的 Token 预测</p>
+</blockquote>
+<p>这里的公式是帮助理解的概念总结，并非严格的数学等式。</p>
+<p>LLM 不等于 AI Agent。LLM 可以充当 Agent 的语言理解、推理和决策核心；而 Agent 通常还需要工具调用、状态管理、记忆、规划、执行循环和结果验证等机制，才能完成更复杂的任务。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010152608603.png" alt="image-20261010152608603"></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>流程阶段</th>
+<th>核心概念</th>
+<th>通俗解释</th>
+<th>主要作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>输入文本</td>
+<td>Prompt / Context</td>
+<td>告诉模型要做什么，以及它可以参考哪些信息</td>
+<td>提供生成依据</td>
+</tr>
+<tr>
+<td>文本分词</td>
+<td>Tokenizer</td>
+<td>把文本切分并转换成模型认识的离散编号</td>
+<td>将文本转化为模型输入</td>
+</tr>
+<tr>
+<td>向量化</td>
+<td>Token Embedding</td>
+<td>把离散编号映射成高维数字向量</td>
+<td>形成神经网络可处理的表示</td>
+</tr>
+<tr>
+<td>上下文计算</td>
+<td>Transformer</td>
+<td>让模型结合上下文理解当前 Token 的含义</td>
+<td>提取上下文关联并计算隐藏状态</td>
+</tr>
+<tr>
+<td>预测打分</td>
+<td>Logits</td>
+<td>给词表里的每个候选 Token 打分</td>
+<td>评估下一步的候选结果</td>
+</tr>
+<tr>
+<td>选择 Token</td>
+<td>解码策略</td>
+<td>根据分数和生成参数决定选哪个 Token</td>
+<td>确定下一个输出单元</td>
+</tr>
+<tr>
+<td>更新序列</td>
+<td>Token 追加 / KV Cache</td>
+<td>把新 Token 加到序列中，并复用历史计算</td>
+<td>为后续生成准备上下文</td>
+</tr>
+<tr>
+<td>循环生成</td>
+<td>自回归生成</td>
+<td>根据已有内容继续预测下一个 Token</td>
+<td>逐步形成完整回答</td>
+</tr>
+<tr>
+<td>输出响应</td>
+<td>停止判断 / 文本解码</td>
+<td>满足结束条件后，把 Token 序列还原为文本</td>
+<td>返回最终回答</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>整体可以概括为：</p>
+<p>输入文本 → Token 化 → 向量表示 → Transformer 计算 → 预测下一个 Token → 追加并循环 → 输出文本。</p>
+<h1 id="核心概念讲解"><a href="#核心概念讲解" class="headerlink" title="核心概念讲解"></a>核心概念讲解</h1><h2 id="输入文本与-Tokenizer：模型如何读取文字？"><a href="#输入文本与-Tokenizer：模型如何读取文字？" class="headerlink" title="输入文本与 Tokenizer：模型如何读取文字？"></a>输入文本与 Tokenizer：模型如何读取文字？</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>专业解释</th>
+<th>通俗理解</th>
+<th>示例 / 说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prompt（提示词）</td>
+<td>提供给模型的指令、问题或输入内容</td>
+<td>给模型布置的任务</td>
+<td>“请解释什么是人工智能”</td>
+</tr>
+<tr>
+<td>Context（上下文）</td>
+<td>模型当前生成时可以利用的输入信息和已有序列</td>
+<td>模型回答问题时能看到的内容</td>
+<td>系统指令、历史对话、当前问题</td>
+</tr>
+<tr>
+<td>Chat Template（聊天模板）</td>
+<td>将多轮消息组织成模型约定格式的规则</td>
+<td>把对话整理成模型能识别的格式</td>
+<td>区分 system、user、assistant 等角色</td>
+</tr>
+<tr>
+<td>Tokenizer（分词器）</td>
+<td>将文本编码为 Token ID 序列的组件</td>
+<td>把文字转换成模型的输入编号</td>
+<td>一句话可能被切分成多个 Token</td>
+</tr>
+<tr>
+<td>Token（词元）</td>
+<td>文本编码中的基本离散单元</td>
+<td>模型处理文字时使用的基本单位</td>
+<td>可能是词、子词、字符片段或特殊标记</td>
+</tr>
+<tr>
+<td>Token ID</td>
+<td>Token 在特定词表中的整数编号</td>
+<td>每个 Token 对应的编号</td>
+<td><code>1012</code> 只是示意编号，并非通用固定编码</td>
+</tr>
+<tr>
+<td>Vocabulary（词表）</td>
+<td>Tokenizer 所使用的全部 Token 集合</td>
+<td>模型可识别的 Token 编号表</td>
+<td>不同模型的词表可能不同</td>
+</tr>
+<tr>
+<td>Special Token（特殊 Token）</td>
+<td>用于标识边界、角色或控制信息的特殊符号</td>
+<td>给模型提供结构和控制信号</td>
+<td>EOS、消息边界标记等</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>关键理解：Tokenizer 并不负责理解文字的语义，而是按照特定规则对文本进行编码。真正的上下文建模主要由后续神经网络完成。</p>
+<h2 id="Embedding：模型如何把文字变成数字？"><a href="#Embedding：模型如何把文字变成数字？" class="headerlink" title="Embedding：模型如何把文字变成数字？"></a>Embedding：模型如何把文字变成数字？</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>专业解释</th>
+<th>通俗理解</th>
+<th>关键作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Token Embedding</td>
+<td>将 Token ID 映射为可训练的稠密向量</td>
+<td>将编号转换成一串数字</td>
+<td>为神经网络提供数值输入</td>
+</tr>
+<tr>
+<td>Embedding Dimension（向量维度）</td>
+<td>每个 Token 向量包含的数值数量</td>
+<td>一串数字有多长</td>
+<td>例如某模型的隐藏维度为 4096</td>
+</tr>
+<tr>
+<td>Position Information（位置信息）</td>
+<td>通过位置编码、旋转位置编码等机制注入序列位置信息</td>
+<td>告诉模型 Token 在序列中的位置</td>
+<td>帮助模型区分先后顺序</td>
+</tr>
+<tr>
+<td>Hidden State（隐藏状态）</td>
+<td>神经网络内部随计算逐层更新的向量表示</td>
+<td>模型当前对某个位置形成的内部表示</td>
+<td>融合 Token 信息和上下文信息</td>
+</tr>
+<tr>
+<td>Contextual Representation（上下文表示）</td>
+<td>经上下文计算后得到的、依赖具体序列的表示</td>
+<td>同一个词在不同句子中可以有不同的内部表示</td>
+<td>支持语境相关的预测与理解</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这里要区分两个容易混淆的概念：</p>
+<ul>
+<li><strong>Embedding</strong>：Token ID 对应的初始向量表示。</li>
+<li><strong>Hidden State</strong>：向量经过 Transformer 等网络层计算后得到的中间表示。</li>
+</ul>
+<p>例如，“苹果”出现在“我吃了一个苹果”和“苹果发布了新手机”中时，输入 Token 的初始 Embedding 可以相同，但经过上下文计算后，模型形成的隐藏状态可以不同。</p>
+<h2 id="Transformer：大模型为什么能够结合上下文？"><a href="#Transformer：大模型为什么能够结合上下文？" class="headerlink" title="Transformer：大模型为什么能够结合上下文？"></a>Transformer：大模型为什么能够结合上下文？</h2><p>Transformer 是现代许多 LLM 的核心架构。它通过注意力机制和神经网络层，逐步计算上下文相关的表示。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>全称 / 含义</th>
+<th>通俗解释</th>
+<th>主要作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transformer</td>
+<td>一种基于注意力机制的神经网络架构</td>
+<td>大模型处理上下文的核心计算框架</td>
+<td>建立序列中不同位置的信息关联</td>
+</tr>
+<tr>
+<td>Self-Attention</td>
+<td>自注意力机制</td>
+<td>判断当前 Token 应参考上下文中的哪些信息</td>
+<td>聚合相关信息</td>
+</tr>
+<tr>
+<td>Query（Q）</td>
+<td>查询向量</td>
+<td>当前 Token 想寻找什么信息</td>
+<td>参与计算注意力权重</td>
+</tr>
+<tr>
+<td>Key（K）</td>
+<td>键向量</td>
+<td>每个位置可以提供什么信息</td>
+<td>与 Query 计算匹配程度</td>
+</tr>
+<tr>
+<td>Value（V）</td>
+<td>值向量</td>
+<td>每个位置实际提供的内容表示</td>
+<td>按注意力权重聚合信息</td>
+</tr>
+<tr>
+<td>Multi-Head Attention</td>
+<td>多头注意力</td>
+<td>多组注意力机制并行提取不同关联</td>
+<td>增强信息建模能力</td>
+</tr>
+<tr>
+<td>Causal Mask</td>
+<td>因果掩码</td>
+<td>禁止当前位置看到不允许访问的未来 Token</td>
+<td>保证自回归预测的因果约束</td>
+</tr>
+<tr>
+<td>FFN / MLP</td>
+<td>前馈网络</td>
+<td>对每个位置的表示进行进一步变换</td>
+<td>增强网络的非线性表达能力</td>
+</tr>
+<tr>
+<td>Residual Connection</td>
+<td>残差连接</td>
+<td>为信息传递提供直接路径</td>
+<td>改善深层网络的训练与信息传播</td>
+</tr>
+<tr>
+<td>Layer Normalization</td>
+<td>层归一化</td>
+<td>对中间表示进行归一化处理</td>
+<td>帮助稳定训练和计算</td>
+</tr>
+<tr>
+<td>Transformer Block</td>
+<td>Transformer 基本层</td>
+<td>注意力、前馈网络等组件组成的计算单元</td>
+<td>逐层更新隐藏状态</td>
+</tr>
+<tr>
+<td>N 层堆叠</td>
+<td>多个 Transformer Block 依次连接</td>
+<td>一层层进行更复杂的计算</td>
+<td>逐步形成更丰富的上下文表示</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>以“苹果发布了新手机”为例，模型可以通过上下文关联，学习“苹果”与“发布”“新手机”等词语之间的关系。这里的注意力权重并不是一份可直接等同于人类思维过程的解释，而是网络内部进行信息计算的机制。</p>
+<p>一个重要区别：Transformer 不等于 LLM。Transformer 是一种架构；LLM 还涉及具体模型参数、训练数据、训练目标和训练方法。现代 LLM 也并非全部采用完全相同的 Transformer 结构。</p>
+<h2 id="Logits、Softmax-与概率：模型如何预测下一个-Token？"><a href="#Logits、Softmax-与概率：模型如何预测下一个-Token？" class="headerlink" title="Logits、Softmax 与概率：模型如何预测下一个 Token？"></a>Logits、Softmax 与概率：模型如何预测下一个 Token？</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>专业解释</th>
+<th>通俗理解</th>
+<th>注意事项</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Language Model Head（语言模型输出头）</td>
+<td>将隐藏状态映射到词表对应的预测分数</td>
+<td>把内部表示转换成候选 Token 的分数</td>
+<td>输出维度通常与词表大小相关</td>
+</tr>
+<tr>
+<td>Logits</td>
+<td>未归一化的预测分数</td>
+<td>每个候选 Token 的原始打分</td>
+<td>不是概率，也不要求介于 0 和 1 之间</td>
+</tr>
+<tr>
+<td>Softmax</td>
+<td>将一组分数转换为概率分布的函数</td>
+<td>把分数转换成总和为 1 的概率</td>
+<td>常见生成流程中的概率转换方式</td>
+</tr>
+<tr>
+<td>Probability Distribution</td>
+<td>概率分布</td>
+<td>每个候选 Token 被选择的相对概率</td>
+<td>不等于事实正确率</td>
+</tr>
+<tr>
+<td>Next-Token Prediction</td>
+<td>下一个 Token 预测</td>
+<td>根据已有上下文计算下一步输出</td>
+<td>是典型自回归 LLM 的核心任务之一</td>
+</tr>
+<tr>
+<td>Decoding（解码）</td>
+<td>根据预测分数及生成规则选择输出 Token</td>
+<td>决定下一步实际输出什么</td>
+<td>可以是贪心选择，也可以是采样等方法</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>例如，假设词表中有 50,000 个 Token，模型对当前预测位置可以产生 50,000 个 Logits。以下只展示三个候选项：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>候选 Token</th>
+<th>Logits</th>
+<th>Softmax 概率（约）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>3</td>
+<td>66.5%</td>
+</tr>
+<tr>
+<td>B</td>
+<td>2</td>
+<td>24.5%</td>
+</tr>
+<tr>
+<td>C</td>
+<td>1</td>
+<td>9.0%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>这组示例说明，Logits 经 Softmax 后可以形成概率分布。模型随后根据所采用的解码策略选择 Token。</p>
+<p>需要牢记：模型认为某个 Token 更可能出现，不代表这个 Token 所表达的事实一定正确。语言生成概率与事实可靠性不是一回事。</p>
+<h2 id="Temperature、Top-k、Top-p：如何控制生成结果？"><a href="#Temperature、Top-k、Top-p：如何控制生成结果？" class="headerlink" title="Temperature、Top-k、Top-p：如何控制生成结果？"></a>Temperature、Top-k、Top-p：如何控制生成结果？</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>工作机制</th>
+<th>对生成结果的影响</th>
+<th>常见用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Temperature（温度）</td>
+<td>对 Logits 进行温度缩放，再进行概率转换</td>
+<td>较低温度通常让分布更集中；较高温度通常让分布更平缓</td>
+<td>控制生成的随机性</td>
+</tr>
+<tr>
+<td>Greedy Decoding（贪心解码）</td>
+<td>每一步选择分数最高的候选 Token</td>
+<td>通常更确定，但可能缺乏多样性</td>
+<td>稳定输出、基线对比</td>
+</tr>
+<tr>
+<td>Sampling（随机采样）</td>
+<td>按处理后的概率分布选择 Token</td>
+<td>允许不同候选项被选中</td>
+<td>开放式文本生成</td>
+</tr>
+<tr>
+<td>Top-k</td>
+<td>只保留排名最高的 k 个候选项</td>
+<td>限制候选范围</td>
+<td>控制候选数量</td>
+</tr>
+<tr>
+<td>Top-p（核采样）</td>
+<td>保留累计概率达到阈值 p 所需的候选集合</td>
+<td>候选集合大小随分布变化</td>
+<td>在多样性与候选质量间折中</td>
+</tr>
+<tr>
+<td>Beam Search（束搜索）</td>
+<td>同时保留多个候选序列并进行搜索</td>
+<td>关注多个序列的整体得分</td>
+<td>部分翻译、结构化生成等任务</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Temperature、Top-k 和 Top-p 并不必然同时启用，具体顺序及行为取决于推理框架。它们主要控制“如何选择输出”，并不会直接增加模型训练时学到的知识。</p>
+<h2 id="自回归生成、Prefill、Decode-与-KV-Cache"><a href="#自回归生成、Prefill、Decode-与-KV-Cache" class="headerlink" title="自回归生成、Prefill、Decode 与 KV Cache"></a>自回归生成、Prefill、Decode 与 KV Cache</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>专业解释</th>
+<th>通俗理解</th>
+<th>为什么重要</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Autoregressive Generation（自回归生成）</td>
+<td>根据已有序列预测下一个 Token，并将结果加入序列</td>
+<td>写一个 Token，再根据已有内容继续写</td>
+<td>形成逐步生成完整回答的循环</td>
+</tr>
+<tr>
+<td>Prefill（预填充）</td>
+<td>并行处理输入提示词中的 Token，建立 KV Cache，并得到下一 Token 的预测分数</td>
+<td>先把题目和上下文读一遍</td>
+<td>建立生成所需的初始状态</td>
+</tr>
+<tr>
+<td>Decode（逐步解码）</td>
+<td>每轮利用已有缓存处理新 Token，并预测下一个 Token</td>
+<td>开始一个 Token 接一个 Token 地回答</td>
+<td>完成后续文本生成</td>
+</tr>
+<tr>
+<td>KV Cache</td>
+<td>缓存注意力层已计算的 Key 和 Value</td>
+<td>保存历史计算结果，避免重复计算</td>
+<td>提升生成效率，尤其适用于较长上下文</td>
+</tr>
+<tr>
+<td>Context Window（上下文窗口）</td>
+<td>模型在一次处理过程中能够利用的 Token 范围</td>
+<td>模型当前能参考的上下文容量</td>
+<td>限制单次可处理的上下文长度</td>
+</tr>
+<tr>
+<td>EOS（End of Sequence）</td>
+<td>序列结束标记</td>
+<td>告诉生成流程可以结束</td>
+<td>是常见的停止条件之一</td>
+</tr>
+<tr>
+<td>Stop Sequence（停止序列）</td>
+<td>服务端配置的触发停止的字符串或 Token 序列</td>
+<td>遇到指定内容就停止</td>
+<td>支持应用层的生成控制</td>
+</tr>
+<tr>
+<td>Max New Tokens</td>
+<td>本次生成允许新增的 Token 数上限</td>
+<td>限制回答最多生成多长</td>
+<td>控制长度、延迟与资源消耗</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>一个典型的推理过程可以这样理解：</p>
+<ol>
+<li><strong>Prefill</strong>：处理输入提示词，建立 KV Cache，并计算第一个待生成 Token 的分数。</li>
+<li><strong>选择</strong>：根据解码策略选择下一个 Token。</li>
+<li><strong>Decode</strong>：将新 Token 加入序列，利用缓存计算下一步的预测分数。</li>
+<li><strong>判断</strong>：检查是否出现 EOS、停止序列或达到长度上限；若没有，则继续生成。</li>
+<li><strong>输出</strong>：满足停止条件后，将生成的 Token ID 序列解码为文本。</li>
+</ol>
+<p>实际系统可能采用分块预填充、投机解码或其他优化方式，因此上述流程是便于理解的典型模式，而不是所有推理引擎唯一的执行实现。</p>
+<h1 id="实战：在本地运行-Qwen2-5-0-5B-Instruct"><a href="#实战：在本地运行-Qwen2-5-0-5B-Instruct" class="headerlink" title="实战：在本地运行 Qwen2.5-0.5B-Instruct"></a>实战：在本地运行 Qwen2.5-0.5B-Instruct</h1><p>理解基本原理后，下面以 <a target="_blank" rel="noopener" href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct">Qwen/Qwen2.5-0.5B-Instruct</a> 为例，演示如何下载模型并在本地完成一次对话。下载前，建议先阅读模型卡，了解模型能力、使用方式、许可证和限制。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010154611427.png" alt="image-20261010154611427"></p>
+<p>模型仓库主要包含以下文件：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010154650011.png" alt="image-20261010154650011"></p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>文件名称</th>
+<th>文件大小</th>
+<th>文件类型</th>
+<th>主要作用</th>
+<th>详细说明</th>
+<th>运行模型是否必需</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.gitattributes</code></td>
+<td>1.52 KB</td>
+<td>Git 配置文件</td>
+<td>管理仓库文件属性</td>
+<td>定义 Git 对不同文件的管理方式，例如通过 Git LFS 管理大型模型权重文件。</td>
+<td>否</td>
+</tr>
+<tr>
+<td><code>LICENSE</code></td>
+<td>11.3 KB</td>
+<td>许可证文件</td>
+<td>规定模型使用权限</td>
+<td>描述模型的使用、修改、分发及商业使用等授权条件。该模型采用 Apache 2.0 许可证。</td>
+<td>否，但需要关注合规</td>
+</tr>
+<tr>
+<td><code>README.md</code></td>
+<td>4.92 KB</td>
+<td>Markdown 文档</td>
+<td>模型介绍与使用说明</td>
+<td>通常包含模型基本信息、参数规模、适用场景、使用示例、运行环境和注意事项。</td>
+<td>否</td>
+</tr>
+<tr>
+<td><code>config.json</code></td>
+<td>659 Bytes</td>
+<td>JSON 配置文件</td>
+<td>定义模型网络结构</td>
+<td>描述模型架构及核心参数，例如 Transformer 层数、隐藏层维度、Attention 头数、词表大小等。Transformers 根据此文件创建对应的神经网络结构。</td>
+<td>是</td>
+</tr>
+<tr>
+<td><code>generation_config.json</code></td>
+<td>242 Bytes</td>
+<td>JSON 配置文件</td>
+<td>控制文本生成行为</td>
+<td>保存模型默认生成配置，例如结束 Token、采样参数等。生成时也可以通过 <code>model.generate()</code> 覆盖相关参数。</td>
+<td>否</td>
+</tr>
+<tr>
+<td><code>merges.txt</code></td>
+<td>1.67 MB</td>
+<td>文本文件</td>
+<td>定义 BPE 分词合并规则</td>
+<td>保存 Byte Pair Encoding（字节对编码）的合并规则，帮助分词器将文本拆分为 Token。</td>
+<td>视分词器加载方式而定</td>
+</tr>
+<tr>
+<td><code>model.safetensors</code></td>
+<td>988 MB</td>
+<td>二进制权重文件</td>
+<td>存储模型训练权重</td>
+<td>保存神经网络训练得到的参数，包括 Embedding、Attention、MLP 等层的权重矩阵。模型推理时通过这些参数执行数学计算，是模型能力的核心载体。</td>
+<td>是</td>
+</tr>
+<tr>
+<td><code>tokenizer.json</code></td>
+<td>7.03 MB</td>
+<td>JSON 文件</td>
+<td>文本分词与编码</td>
+<td>保存分词器的完整配置和相关数据，将输入文本转换成 Token ID，也支持将 Token 转换回文本。</td>
+<td>是（或使用等效分词器文件）</td>
+</tr>
+<tr>
+<td><code>tokenizer_config.json</code></td>
+<td>7.31 KB</td>
+<td>JSON 配置文件</td>
+<td>配置分词器和聊天模板</td>
+<td>包含分词器设置、特殊 Token 和 Chat Template 等信息，用于将 System、User、Assistant 消息转换为模型要求的输入格式。</td>
+<td>聊天场景通常需要</td>
+</tr>
+<tr>
+<td><code>vocab.json</code></td>
+<td>2.78 MB</td>
+<td>JSON 词表文件</td>
+<td>保存 Token 与 ID 的映射</td>
+<td>定义 Token 和数字 ID 的对应关系，是 BPE 分词器的重要组成部分。</td>
+<td>视分词器加载方式而定</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>如果当前网络无法稳定访问 Hugging Face，也可以在<a target="_blank" rel="noopener" href="https://modelscope.cn/models">魔搭社区</a>中搜索相同模型。不同平台的仓库结构和下载方式可能略有差异，请以对应模型页的说明为准。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010155225461.png" alt="image-20261010155225461"></p>
+<p>先安装依赖：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install -U torch transformers huggingface_hub safetensors</span><br></pre></td></tr></table></figure>
+<p>推荐使用 Hugging Face 官方 Python SDK 下载完整仓库，而不是逐个下载文件：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> huggingface_hub <span class="keyword">import</span> snapshot_download</span><br><span class="line"></span><br><span class="line">snapshot_download(</span><br><span class="line">    repo_id=<span class="string">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span>,</span><br><span class="line">    local_dir=<span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;模型下载完成&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010160232715.png" alt="image-20261010160232715"></p>
+<p>然后编写本地推理程序：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Project ：llm-base</span></span><br><span class="line"><span class="comment"># File    ：qwen_chat_demo.py</span></span><br><span class="line"><span class="comment"># Author  ：jinglv</span></span><br><span class="line"><span class="comment"># Date    ：2026/10/10 16:03</span></span><br><span class="line"><span class="comment"># Software：PyCharm</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_PATH = <span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 优先使用 NVIDIA GPU，其次是 Apple Silicon GPU，否则回退到 CPU。</span></span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    device = <span class="string">&quot;cuda&quot;</span></span><br><span class="line"><span class="keyword">elif</span> torch.backends.mps.is_available():</span><br><span class="line">    device = <span class="string">&quot;mps&quot;</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    device = <span class="string">&quot;cpu&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;运行设备:&quot;</span>, device)</span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用 float32 保持 CPU 和 MPS 的兼容性；对这个小模型而言，内存占用通常仍可接受。</span></span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">    dtype=torch.float32</span><br><span class="line">).to(device)</span><br><span class="line"></span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请解释 Transformer 的工作原理。&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 按模型自带的聊天模板添加角色和生成标记，并直接转换为张量。</span></span><br><span class="line">model_inputs = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">).to(device)</span><br><span class="line"></span><br><span class="line">input_token_count = model_inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>]</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;输入 Token 数:&quot;</span>, input_token_count)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 推理阶段无需计算梯度，可减少内存占用。</span></span><br><span class="line"><span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">    output_token_ids = model.generate(</span><br><span class="line">        **model_inputs,</span><br><span class="line">        max_new_tokens=<span class="number">512</span>,</span><br><span class="line">        do_sample=<span class="literal">False</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="comment"># generate 的结果包含原始输入，因此只保留输入长度之后的新 Token。</span></span><br><span class="line">generated_token_ids = output_token_ids[<span class="number">0</span>][input_token_count:]</span><br><span class="line"></span><br><span class="line">response = tokenizer.decode(</span><br><span class="line">    generated_token_ids,</span><br><span class="line">    skip_special_tokens=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n模型回答:&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(response)</span><br></pre></td></tr></table></figure>
+<p>执行结果如下：</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261010161815435.png" alt="image-20261010161815435"></p>
+<p>至此，我们已经完成了从消息格式化、Token 化、模型生成到文本解码的完整流程。这个示例只有一轮对话；如果要支持多轮对话，需要把此前的 <code>user</code> 和 <code>assistant</code> 消息依次加入 <code>messages</code>，并注意上下文窗口、生成延迟和内存占用。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>大语言模型的生成过程可以概括为：将文本编码为 Token，通过 Transformer 计算上下文表示，得到下一个 Token 的预测分数，再使用解码策略反复选择 Token。模型虽然表现出问答、写作、编程和一定的推理能力，但生成概率不等于事实正确率；在真实应用中，仍需配合检索、工具调用、结果验证和安全控制等机制。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/09/29/ai/knowledge/3-obsidian-knowledge/" rel="prev" title="Obsidian 构建个人本地知识库实战">
+      <i class="fa fa-chevron-left"></i> Obsidian 构建个人本地知识库实战
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/04/ai/llms/2-inference-process/" rel="next" title="从 Prompt 到回答：一次 LLM 请求经历了什么？">
+      从 Prompt 到回答：一次 LLM 请求经历了什么？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B%EF%BC%88LLM%EF%BC%89%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">什么是大语言模型（LLM）？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5%E8%AE%B2%E8%A7%A3"><span class="nav-number">2.</span> <span class="nav-text">核心概念讲解</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E6%96%87%E6%9C%AC%E4%B8%8E-Tokenizer%EF%BC%9A%E6%A8%A1%E5%9E%8B%E5%A6%82%E4%BD%95%E8%AF%BB%E5%8F%96%E6%96%87%E5%AD%97%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">输入文本与 Tokenizer：模型如何读取文字？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Embedding%EF%BC%9A%E6%A8%A1%E5%9E%8B%E5%A6%82%E4%BD%95%E6%8A%8A%E6%96%87%E5%AD%97%E5%8F%98%E6%88%90%E6%95%B0%E5%AD%97%EF%BC%9F"><span class="nav-number">2.2.</span> <span class="nav-text">Embedding：模型如何把文字变成数字？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Transformer%EF%BC%9A%E5%A4%A7%E6%A8%A1%E5%9E%8B%E4%B8%BA%E4%BB%80%E4%B9%88%E8%83%BD%E5%A4%9F%E7%BB%93%E5%90%88%E4%B8%8A%E4%B8%8B%E6%96%87%EF%BC%9F"><span class="nav-number">2.3.</span> <span class="nav-text">Transformer：大模型为什么能够结合上下文？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Logits%E3%80%81Softmax-%E4%B8%8E%E6%A6%82%E7%8E%87%EF%BC%9A%E6%A8%A1%E5%9E%8B%E5%A6%82%E4%BD%95%E9%A2%84%E6%B5%8B%E4%B8%8B%E4%B8%80%E4%B8%AA-Token%EF%BC%9F"><span class="nav-number">2.4.</span> <span class="nav-text">Logits、Softmax 与概率：模型如何预测下一个 Token？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Temperature%E3%80%81Top-k%E3%80%81Top-p%EF%BC%9A%E5%A6%82%E4%BD%95%E6%8E%A7%E5%88%B6%E7%94%9F%E6%88%90%E7%BB%93%E6%9E%9C%EF%BC%9F"><span class="nav-number">2.5.</span> <span class="nav-text">Temperature、Top-k、Top-p：如何控制生成结果？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%9B%9E%E5%BD%92%E7%94%9F%E6%88%90%E3%80%81Prefill%E3%80%81Decode-%E4%B8%8E-KV-Cache"><span class="nav-number">2.6.</span> <span class="nav-text">自回归生成、Prefill、Decode 与 KV Cache</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%EF%BC%9A%E5%9C%A8%E6%9C%AC%E5%9C%B0%E8%BF%90%E8%A1%8C-Qwen2-5-0-5B-Instruct"><span class="nav-number">3.</span> <span class="nav-text">实战：在本地运行 Qwen2.5-0.5B-Instruct</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">3.1.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

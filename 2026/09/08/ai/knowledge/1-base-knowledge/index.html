@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="LLM-Wiki、Obsidian 与 AI Agent 本地知识库方案：架构、安装、目录结构与协作流程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于 LLM-Wiki 与 Obsidian 构建个人本地知识库">
+<meta property="og:url" content="https://jinglv.github.io/2026/09/08/ai/knowledge/1-base-knowledge/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="LLM-Wiki、Obsidian 与 AI Agent 本地知识库方案：架构、安装、目录结构与协作流程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908140404113.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908141209501.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908142848781.png">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909094701649.png">
+<meta property="article:published_time" content="2026-09-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-09T02:01:28.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="LLM-Wiki">
+<meta property="article:tag" content="Obsidian">
+<meta property="article:tag" content="RAG">
+<meta property="article:tag" content="AI Agent">
+<meta property="article:tag" content="知识库">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908140404113.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/09/08/ai/knowledge/1-base-knowledge/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>基于 LLM-Wiki 与 Obsidian 构建个人本地知识库 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/09/08/ai/knowledge/1-base-knowledge/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          基于 LLM-Wiki 与 Obsidian 构建个人本地知识库
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-09-08 00:00:00" itemprop="dateCreated datePublished" datetime="2026-09-08T00:00:00+08:00">2026-09-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-09-09 10:01:28" itemprop="dateModified" datetime="2026-09-09T10:01:28+08:00">2026-09-09</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Knowledge/" itemprop="url" rel="index"><span itemprop="name">Knowledge</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">LLM-Wiki、Obsidian 与 AI Agent 本地知识库方案：架构、安装、目录结构与协作流程。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="为什么需要-AI-本地知识库"><a href="#为什么需要-AI-本地知识库" class="headerlink" title="为什么需要 AI 本地知识库"></a>为什么需要 AI 本地知识库</h1><p>在日常办公与团队协作中，大量工作信息分散在不同渠道：项目文档和业务规范保存在本地文件夹或网盘中，会议记录散落在各类文档里，临时需求、沟通结论和实践经验则沉淀在聊天软件、邮件与浏览器收藏中。由于缺少统一的归集和管理方式，资料越积越多，信息查找、经验传承和内容维护也会变得越来越困难。</p>
+<p>常见问题主要体现在以下四个方面。</p>
+<h3 id="1-信息零散混乱，查找效率低"><a href="#1-信息零散混乱，查找效率低" class="headerlink" title="1. 信息零散混乱，查找效率低"></a>1. 信息零散混乱，查找效率低</h3><p>大量工作资料缺少统一的命名、分类和关联规则。当需要查阅历史方案、业务流程或过往经验时，往往要在多个平台之间切换，再逐层翻找文件夹和聊天记录。信息明明存在，却很难快速定位，最终导致大量时间消耗在“找资料”上。</p>
+<h3 id="2-信息留存不完整，关键经验持续流失"><a href="#2-信息留存不完整，关键经验持续流失" class="headerlink" title="2. 信息留存不完整，关键经验持续流失"></a>2. 信息留存不完整，关键经验持续流失</h3><p>日常工作中的临时沟通结论、操作技巧和踩坑经验，通常没有及时整理成正式文档。随着时间推移或人员流动，这些隐性知识容易出现断层，团队不得不重复踩坑、重复验证，宝贵经验也难以持续复用。</p>
+<h3 id="3-内容迭代缺少追溯，新旧信息容易混淆"><a href="#3-内容迭代缺少追溯，新旧信息容易混淆" class="headerlink" title="3. 内容迭代缺少追溯，新旧信息容易混淆"></a>3. 内容迭代缺少追溯，新旧信息容易混淆</h3><p>业务规则、项目方案和流程规范会持续更新，但传统归档方式往往只能保留多个名称相近的文件，无法清晰说明内容为什么修改、修改了什么，以及当前应该使用哪个版本。新旧资料混杂后，容易造成旧规则误用、理解不一致和协作对接错误。</p>
+<h3 id="4-传统归档偏重文件存储，缺少知识组织能力"><a href="#4-传统归档偏重文件存储，缺少知识组织能力" class="headerlink" title="4. 传统归档偏重文件存储，缺少知识组织能力"></a>4. 传统归档偏重文件存储，缺少知识组织能力</h3><p>文件夹分类和手动归档解决的是“文件放在哪里”，却很难进一步回答“哪些内容彼此相关”“某项结论来自哪里”“当前资料与历史方案有什么变化”。它可以保存原始文件，但通常不具备自动整理、内容关联、语义检索和知识更新能力，因此很难应对高频、复杂的现代办公场景。</p>
+<p>大模型为这些问题提供了一种新的处理方式。借助文档解析、语义理解、智能检索和知识提炼等能力，本地知识库可以统一收纳分散的工作资料，并将碎片化内容逐步整理成<strong>可留存、可检索、可追溯、可迭代、可复用</strong>的知识体系。它不仅帮助个人减少查找和重复整理的时间，也有助于团队积累业务知识、保留实践经验并提高协作效率。</p>
+<p>需要注意的是，AI 知识库并不会自动保证资料正确或版本有效。要让这套体系长期可靠，仍然需要明确资料来源、访问权限、写入边界和人工审核流程。</p>
+<p>围绕这些目标，RAG 几乎已经成为 AI Agent 构建私有知识库时的常见方案，但真正上手后会发现，一套完整 RAG 的搭建远没有 Demo 看起来那么轻松。</p>
+<p>如果要搭建包含多模态解析、重排和图谱扩展的完整链路，通常需要配置文本大模型、多模态模型、Embedding 模型和重排模型，并维护向量索引、业务数据甚至图数据库。同时还要处理文档解析、文本分块、向量化和多路检索调优等细节。组件越多，调试与后期维护成本通常越高。</p>
+<p>更关键的一点是，朴素 RAG 通常在“提问时找资料”：每次提问时，从文档切分得到的文本块中检索片段，再交给模型生成答案。它擅长按需查找资料，但不会天然形成结构化知识，也不会自动维护实体、概念和文档之间的关系。新增资料、冲突信息和过时内容，通常还需要额外的更新与审核机制。</p>
+<p>有没有更轻量化、更偏向“知识积累”的方案？</p>
+<p>Andrej Karpathy 提出的 LLM Wiki pattern 带来新的启发：不再只把大模型当作“问答工具”，而是让它参与知识的预处理和组织。在导入资料时，系统可以先完成信息提炼，尝试整理词条、建立文档之间的关联，再生成一套互相链接、可以持续更新的 Markdown 维基知识库。知识在导入阶段就开始沉淀，更贴合个人日常资料管理的诉求。</p>
+<p>开源项目 <code>llm_wiki</code> 借鉴并扩展了这套设计，用于构建本地知识库，并支持多种文档格式、图片描述生成和向量检索等能力。本文先介绍它与 Obsidian 的定位、架构和基本安装方式；具体实操放在后续文章中。</p>
+<h1 id="LLM-Wiki"><a href="#LLM-Wiki" class="headerlink" title="LLM-Wiki"></a>LLM-Wiki</h1><h2 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>详情</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GitHub</strong></td>
+<td><a target="_blank" rel="noopener" href="https://github.com/nashsu/llm_wiki">nashsu/llm_wiki</a></td>
+</tr>
+<tr>
+<td><strong>Stars</strong></td>
+<td>17,334</td>
+</tr>
+<tr>
+<td><strong>Forks</strong></td>
+<td>2,047</td>
+</tr>
+<tr>
+<td><strong>许可证</strong></td>
+<td>GPL v3.0</td>
+</tr>
+<tr>
+<td><strong>创建时间</strong></td>
+<td>2026-04-08</td>
+</tr>
+<tr>
+<td><strong>创始人</strong></td>
+<td><a target="_blank" rel="noopener" href="https://x.com/nash_su">nash_su</a></td>
+</tr>
+<tr>
+<td><strong>理论基础</strong></td>
+<td><a target="_blank" rel="noopener" href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">Karpathy’s LLM Wiki pattern</a></td>
+</tr>
+<tr>
+<td><strong>语言</strong></td>
+<td>TypeScript（主前端）+ Rust（后端）+ Python（脚本）</td>
+</tr>
+<tr>
+<td><strong>框架</strong></td>
+<td>Tauri v2（桌面壳）+ React + Vite + Tailwind CSS</td>
+</tr>
+<tr>
+<td><strong>定位</strong></td>
+<td>跨平台桌面端个人知识库，面向 Wiki 的自动构建与维护</td>
+</tr>
+<tr>
+<td><strong>主要能力</strong></td>
+<td>两阶段知识摄入（分析→生成）+ 4 信号知识图谱 + Louvain 社区检测</td>
+</tr>
+<tr>
+<td><strong>提交数</strong></td>
+<td>856 commits</td>
+</tr>
+<tr>
+<td><strong>贡献者</strong></td>
+<td>10+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p>项目数据是本文记录时的快照（2026 年 9 月 8 日）；Stars、Forks、提交数及文件结构会随项目发展变化，发布前请以仓库页面和当前 Release 为准。</p>
+</blockquote>
+<h2 id="与-Andrej-Karpathy-原始模式的关系"><a href="#与-Andrej-Karpathy-原始模式的关系" class="headerlink" title="与 Andrej Karpathy 原始模式的关系"></a>与 Andrej Karpathy 原始模式的关系</h2><p>LLM Wiki 是 Karpathy 于 2026 年 4 月提出的一种抽象设计模式，相关说明发布在一个 Gist 文件中。开源项目 <code>llm_wiki</code> 是受该模式启发的实现，并结合桌面应用场景进行了扩展。Karpathy 的原始模式强调：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">三类要素：Raw Sources（原始来源）、Wiki（LLM 生成知识）、Schema（规则与配置）</span><br><span class="line">三个操作：Ingest（摄入）、Query（查询）、Lint（检查）</span><br><span class="line">核心文件：index.md、log.md、CLAUDE.md（schema）</span><br><span class="line">维基链接语法：[[wikilink]]</span><br><span class="line">YAML frontmatter：每个 wiki 页面</span><br><span class="line">角色分工：人类策展，LLM 维护</span><br></pre></td></tr></table></figure>
+<p>nashsu 的 <code>llm_wiki</code> 在此基础上加入了桌面客户端、文档摄入、检索和知识图谱等能力。</p>
+<h2 id="核心架构"><a href="#核心架构" class="headerlink" title="核心架构"></a>核心架构</h2><h3 id="整体架构图"><a href="#整体架构图" class="headerlink" title="整体架构图"></a>整体架构图</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908140404113.png" alt="LLM-Wiki 整体架构图"></p>
+<p>LLM-Wiki 采用<strong>分层、本地优先</strong>的架构设计。整套系统从交互界面、应用逻辑、后端服务、本地存储到外部扩展能力逐层协作，兼顾可视化操作与知识检索、提炼和关联分析。</p>
+<h4 id="1-桌面应用层：可视化交互界面（Tauri-React）"><a href="#1-桌面应用层：可视化交互界面（Tauri-React）" class="headerlink" title="1. 桌面应用层：可视化交互界面（Tauri + React）"></a>1. 桌面应用层：可视化交互界面（Tauri + React）</h4><p>LLM-Wiki 基于 Tauri + React 搭建桌面客户端，无需单独部署 Web 服务即可运行。整体界面采用三栏布局，搭配功能侧边栏，覆盖知识库的常用操作：</p>
+<ul>
+<li><strong>左侧知识树/文件树</strong>：统一管理所有本地文档、知识库词条、资源文件，支持层级查看与快速定位。</li>
+<li><strong>中间对话面板（Chat）</strong>：提供 AI 问答、知识咨询、内容创作、问题推理等核心交互能力。</li>
+<li><strong>右侧预览面板（Preview）</strong>：实时渲染 Wiki 词条、Markdown 文档、解析后的结构化内容。</li>
+<li><strong>多功能侧边栏</strong>：集成 Wiki 主页、资源溯源、全文检索、知识图谱、内容审查、深度研究和系统设置等功能，集中完成知识库的维护与使用。</li>
+</ul>
+<h4 id="2-应用逻辑层：核心能力调度引擎（TypeScript）"><a href="#2-应用逻辑层：核心能力调度引擎（TypeScript）" class="headerlink" title="2. 应用逻辑层：核心能力调度引擎（TypeScript）"></a>2. 应用逻辑层：核心能力调度引擎（TypeScript）</h4><p>应用逻辑层不只是页面展示，还承载文档处理、检索调度、图谱计算和内容审查等核心流程：</p>
+<h5 id="文档摄入引擎"><a href="#文档摄入引擎" class="headerlink" title="文档摄入引擎"></a>文档摄入引擎</h5><p>负责文档导入、预处理与增量更新，包含任务队列、文件 SHA-256 哈希缓存、两阶段知识摄入和原始素材溯源等机制，用于减少重复处理并提高内容可追溯性。这里的两阶段流程可以理解为“内容分析 → Wiki 生成”，不等同于模型输出 Chain-of-Thought。</p>
+<h5 id="智能检索管道"><a href="#智能检索管道" class="headerlink" title="智能检索管道"></a>智能检索管道</h5><p>支持将关键词匹配、向量语义检索和知识图谱关联扩展组合成<strong>混合检索体系</strong>，并通过检索预算控制在召回范围和响应速度之间做取舍。</p>
+<h5 id="知识图谱引擎"><a href="#知识图谱引擎" class="headerlink" title="知识图谱引擎"></a>知识图谱引擎</h5><p>这是 LLM-Wiki 区别于单纯文本块检索的一项重要能力。系统基于 4 信号模型和 Louvain 社区检测算法，尝试挖掘文档间的关联关系、聚合知识社区并生成全局洞察，让零散文档更容易被组织和导航。</p>
+<h5 id="内容-Review-审查系统"><a href="#内容-Review-审查系统" class="headerlink" title="内容 Review 审查系统"></a>内容 Review 审查系统</h5><p>支持异步内容审查、人工复核和预定义修正规则，用于识别疑似冲突、过时信息和结构问题，并生成待复核的修订建议。它可以辅助质量治理，但不能替代人工事实核查。</p>
+<h4 id="3-后端服务层：底层能力支撑（Rust）"><a href="#3-后端服务层：底层能力支撑（Rust）" class="headerlink" title="3. 后端服务层：底层能力支撑（Rust）"></a>3. 后端服务层：底层能力支撑（Rust）</h4><p>后端采用 Rust 语言构建，承担模型调用、文档解析、向量存储和接口服务等底层能力：</p>
+<ul>
+<li><strong>Chat Agent 智能代理</strong>：支持工具调用、流式问答输出、自定义技能加载和 Shell 安全审批，可执行知识查询与自动化处理任务。</li>
+<li><strong>多格式文档解析引擎</strong>：支持 PDF、DOCX、PPTX、EPUB、MOBI、Org mode 等多种格式，并提供图片解析与图文内容提取能力。具体格式支持情况以当前版本文档为准。</li>
+<li><strong>LanceDB 向量存储</strong>：本地轻量化向量数据库，用于保存向量、建立索引并执行相似度检索。向量由配置的 Embedding 模型或兼容 API 生成。</li>
+<li><strong>HTTP API 与 MCP 服务</strong>：提供外部工具和 Agent 程序调用本地知识库的接口，并支持 Token 鉴权。端口和接口以当前版本配置为准。</li>
+</ul>
+<h4 id="4-本地存储层：结构化的文件体系"><a href="#4-本地存储层：结构化的文件体系" class="headerlink" title="4. 本地存储层：结构化的文件体系"></a>4. 本地存储层：结构化的文件体系</h4><p>LLM-Wiki 以本地文件系统作为知识内容的主要存储方式，原始资料和生成的 Wiki 页面都可以直接查看、编辑、迁移和备份。同时，系统仍可能使用 LanceDB 保存向量索引，并使用应用目录保存聊天历史、缓存和审查状态：</p>
+<ul>
+<li><strong>核心配置文件</strong>：purpose.md 定义知识库目标与研究范围，schema.md 统一 Wiki 结构规范，约束知识生成规则。</li>
+<li><strong>raw 原始资源目录</strong>：保存上传的原始文档和本地图片素材，便于知识溯源和后续重新处理。</li>
+<li><strong>wiki 结构化知识目录</strong>：系统自动生成并持续迭代，包含全局目录、操作日志、全局摘要、实体词条、概念词条、来源摘要、问答记录、跨源分析、内容对比等结构化知识体系，实现知识从碎片化到体系化的沉淀。</li>
+<li><strong>配置缓存目录</strong>：兼容 Obsidian 知识库格式，保存应用配置、聊天历史、内容审查记录，支持环境迁移与数据备份。</li>
+</ul>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">my-wiki/</span><br><span class="line"> ├── purpose.md          ← 目标、关键问题、研究范围</span><br><span class="line"> ├── schema.md           ← Wiki 结构规则、页面类型</span><br><span class="line"> ├── raw/</span><br><span class="line"> │   ├── sources/        ← 上传的原始文档（不可变）</span><br><span class="line"> │   └── assets/         ← 本地图片</span><br><span class="line"> ├── wiki/</span><br><span class="line"> │   ├── index.md        ← 内容目录（LLM 入口）</span><br><span class="line"> │   ├── log.md          ← 操作日志（可解析格式）</span><br><span class="line"> │   ├── overview.md     ← 全局摘要（自动更新）</span><br><span class="line"> │   ├── entities/       ← 人物、组织、产品</span><br><span class="line"> │   ├── concepts/       ← 理论、方法、技术</span><br><span class="line"> │   ├── sources/        ← 来源摘要</span><br><span class="line"> │   ├── queries/        ← 保存的问答 + 研究</span><br><span class="line"> │   ├── synthesis/      ← 跨源分析</span><br><span class="line"> │   └── comparisons/    ← 并排比较</span><br><span class="line"> ├── .obsidian/          ← Obsidian vault 配置（自动生成）</span><br><span class="line"> └── .llm-wiki/          ← 应用配置、聊天历史、Review 项</span><br></pre></td></tr></table></figure>
+<h4 id="5-外部扩展能力：扩展知识采集与调用"><a href="#5-外部扩展能力：扩展知识采集与调用" class="headerlink" title="5. 外部扩展能力：扩展知识采集与调用"></a>5. 外部扩展能力：扩展知识采集与调用</h4><p>LLM-Wiki 还可以通过外部工具扩展知识采集和调用能力：</p>
+<ul>
+<li><strong>Chrome 网页剪藏插件</strong>：抓取网页内容，将 HTML 转换为 Markdown 后导入知识库，简化网页资料的收集流程。</li>
+<li><strong>MCP Server 服务</strong>：对外提供混合搜索、文件读取和知识图谱遍历能力，使第三方 AI 程序可以调用本地知识库。</li>
+<li><strong>Agent 技能体系</strong>：适配 Claude Code、Codex 等 AI 编程或推理 Agent，使本地知识库可以作为 Agent 的私有知识来源。</li>
+</ul>
+<h3 id="三层架构详解"><a href="#三层架构详解" class="headerlink" title="三层架构详解"></a>三层架构详解</h3><p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908141209501.png" alt="LLM-Wiki 三层知识架构"></p>
+<p>LLM-Wiki 可以理解为一个由<strong>原始资料、结构化知识和规则配置</strong>组成的知识系统。它的核心思想不是让 LLM 直接修改原始资料，而是<strong>保留原始信息，同时让 LLM 在规则约束下持续构建和维护 Wiki</strong>。</p>
+<p><strong>第一层是 Raw Sources（原始来源层）</strong>。<br>这一层保存未经修改的原始资料，例如用户上传的 PDF、DOCX、Markdown，浏览器通过 Web Clipper 捕获的网页，以及研究过程产生的资料等。它的核心原则是<strong>尽量保持原始来源不变</strong>：原始资料不直接被 LLM 改写，方便后续重新分析和追溯。</p>
+<p><strong>第二层是 Wiki（知识层）</strong>。<br>LLM 根据第一层的原始资料进行理解、提取、总结和关联，并生成结构化的 Markdown 知识。这里包括 <code>entities/</code>、<code>concepts/</code>、<code>sources/</code>、<code>queries/</code>、<code>synthesis/</code>、<code>comparisons/</code> 等内容。其中，<code>index.md</code> 用于描述当前 Wiki 的整体内容，<code>overview.md</code> 提供全局摘要，<code>log.md</code> 记录知识库的演进过程。<strong>这一层主要由 LLM 生成和维护，人类负责最终策展和审核。</strong></p>
+<p><strong>第三层是 Schema（规则与配置层）</strong>。<br>这一层决定 LLM <strong>应该如何构建和维护 Wiki</strong>。其中 <code>purpose.md</code> 定义知识库的目标、研究范围和需要回答的核心问题；<code>schema.md</code> 定义页面类型、命名规范、Frontmatter、目录结构以及知识更新流程。也就是说，<strong>Schema 不是知识本身，而是知识库的规则和操作规范</strong>。人类定义规则，LLM 按照规则执行。</p>
+<p>严格来说，Schema 更像是作用于整个知识处理流程的控制层，而不是位于 Wiki 之后的线性数据层：</p>
+<blockquote>
+<p><strong>Schema 定义规则 → Raw Sources 提供资料 → LLM 进行理解和整理 → 生成或更新 Wiki → 人类策展和审核。</strong></p>
+</blockquote>
+<p>因此，LLM-Wiki 的核心并不是简单地“让 LLM 总结文档”，而是尝试建立一个<strong>原始资料可追溯、知识可以持续演化、结构由规则控制</strong>的本地知识系统。</p>
+<p>可以用一句话概括：</p>
+<blockquote>
+<p><strong>Raw Sources 保留原始资料，Wiki 承载生成的知识，Schema 负责约束知识的组织和更新。</strong></p>
+</blockquote>
+<p>这也是 LLM-Wiki 与单纯“文档 + 文本块检索”方案的一个重要区别：它试图把一次性的文档问答，进一步变成一个<strong>能够持续积累、组织和演化的知识库</strong>。它更适合作为 RAG 的补充，而不是对所有 RAG 方案的替代。</p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macOS</td>
+<td>11.0+ (Apple Silicon / Intel)</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>10/11 (x64)</td>
+</tr>
+<tr>
+<td>Linux</td>
+<td>主流发行版 (x64)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="方式一：下载预编译版本（推荐）"><a href="#方式一：下载预编译版本（推荐）" class="headerlink" title="方式一：下载预编译版本（推荐）"></a>方式一：下载预编译版本（推荐）</h3><p>从 <a target="_blank" rel="noopener" href="https://github.com/nashsu/llm_wiki/releases">GitHub Releases</a> 下载对应平台的安装包：</p>
+<blockquote>
+<p>以下文件名和安装方式可能随版本变化，发布前请以当前 Release 页面和项目 README 为准。</p>
+</blockquote>
+<ul>
+<li>macOS: <code>.dmg</code></li>
+<li>Windows: <code>.msi</code> 或 <code>.exe</code></li>
+<li>Linux: <code>.AppImage</code> 或 <code>.deb</code></li>
+</ul>
+<h3 id="方式二：从源码构建"><a href="#方式二：从源码构建" class="headerlink" title="方式二：从源码构建"></a>方式二：从源码构建</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. 克隆仓库</span></span><br><span class="line">git <span class="built_in">clone</span> https://github.com/nashsu/llm_wiki.git</span><br><span class="line"><span class="built_in">cd</span> llm_wiki</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 安装依赖</span></span><br><span class="line">npm install</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 构建 MCP 服务器</span></span><br><span class="line">npm run mcp:build</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 开发模式运行</span></span><br><span class="line">npm run tauri dev</span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 生产构建</span></span><br><span class="line">npm run tauri build</span><br></pre></td></tr></table></figure>
+<h3 id="初始配置"><a href="#初始配置" class="headerlink" title="初始配置"></a>初始配置</h3><ol>
+<li>启动应用后，创建新项目或选择场景模板</li>
+<li>配置 LLM：<ul>
+<li><strong>Settings → Model</strong> → 配置 Chat 模型和 Ingest 模型</li>
+<li>支持 OpenAI 兼容 API、自定义 Provider、自定义 Headers</li>
+</ul>
+</li>
+<li>（可选）配置向量搜索：<ul>
+<li><strong>Settings → Search</strong> → 启用 Vector Search</li>
+<li>配置 Embedding 端点（支持 OpenAI 兼容）</li>
+</ul>
+</li>
+<li>（可选）配置 Web 搜索：<ul>
+<li><strong>Settings → Web Search</strong> → 配置 Tavily / SerpApi / SearXNG</li>
+</ul>
+</li>
+</ol>
+<h3 id="数据隐私提示"><a href="#数据隐私提示" class="headerlink" title="数据隐私提示"></a>数据隐私提示</h3><p>“本地知识库”主要表示知识库目录和生成的 Markdown 文件保存在本地，并不代表模型推理一定在本机完成。如果配置的是云端 LLM、Embedding、重排或 Web Search 服务，相关文档内容或查询内容可能会发送给第三方服务。导入敏感资料前，应确认模型 Provider 的数据使用政策、日志策略和服务端部署位置。</p>
+<h1 id="Obsidian"><a href="#Obsidian" class="headerlink" title="Obsidian"></a>Obsidian</h1><p><a target="_blank" rel="noopener" href="https://obsidian.md/">Obsidian 官方网站</a></p>
+<p>从官网下载对应平台的安装包，按提示完成安装即可。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260908142848781.png" alt="Obsidian 知识库界面"></p>
+<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p><strong>Obsidian 是一个本地优先的 Markdown 知识工作台。</strong></p>
+<p>Obsidian 的核心功能是以 Markdown 文件的形式保存、组织、连接和可视化知识。它本身不提供完整的 AI 知识库或 RAG 流程，但可以通过社区插件或外部 AI 工具扩展能力。</p>
+<p>核心能力包括：</p>
+<ul>
+<li><strong>Markdown</strong>：本地文件存储</li>
+<li><strong>WikiLink</strong>：建立知识之间的关联</li>
+<li><strong>Backlinks</strong>：查看反向引用</li>
+<li><strong>Graph View</strong>：可视化知识关系</li>
+<li><strong>Properties</strong>：结构化管理知识</li>
+<li><strong>Search</strong>：快速检索知识</li>
+</ul>
+<h2 id="Obsidian-的核心概念"><a href="#Obsidian-的核心概念" class="headerlink" title="Obsidian 的核心概念"></a>Obsidian 的核心概念</h2><p>Obsidian 可以理解为由 <strong>Vault、Note、WikiLink、Properties、Backlinks、Graph</strong> 等几个核心概念组成。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>简单理解</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Vault</strong></td>
+<td>知识库容器</td>
+<td>一个本地文件夹，存放整个知识库</td>
+</tr>
+<tr>
+<td><strong>Note</strong></td>
+<td>知识节点</td>
+<td>一篇 Markdown 文件，就是一个知识单元</td>
+</tr>
+<tr>
+<td><strong>WikiLink</strong></td>
+<td>知识连接</td>
+<td>用 <code>[[xxx]]</code> 把不同 Note 连接起来</td>
+</tr>
+<tr>
+<td><strong>Backlinks</strong></td>
+<td>反向链接</td>
+<td>查看“哪些知识引用了当前知识”</td>
+</tr>
+<tr>
+<td><strong>Properties</strong></td>
+<td>知识属性</td>
+<td>给 Note 增加类型、标签、日期等结构化信息</td>
+</tr>
+<tr>
+<td><strong>Graph View</strong></td>
+<td>知识地图</td>
+<td>将 Note 和 WikiLink 可视化成知识网络</td>
+</tr>
+<tr>
+<td><strong>Canvas</strong></td>
+<td>知识画布</td>
+<td>在无限画布上组织 Note、图片、网页等内容</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id="最核心的关系"><a href="#最核心的关系" class="headerlink" title="最核心的关系"></a>最核心的关系</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Vault</span><br><span class="line">  │</span><br><span class="line">  ├── Note ────── Note</span><br><span class="line">  │    │            │</span><br><span class="line">  │    └── WikiLink ─┘</span><br><span class="line">  │</span><br><span class="line">  ├── Properties</span><br><span class="line">  │</span><br><span class="line">  ├── Backlinks</span><br><span class="line">  │</span><br><span class="line">  └── Graph View</span><br></pre></td></tr></table></figure>
+<p>其中最重要的是：</p>
+<blockquote>
+<p><strong>Note 是知识节点，WikiLink 是知识关系，Vault 是知识空间，Graph View 是知识网络的可视化。</strong></p>
+</blockquote>
+<p>所以 Obsidian 的核心思想并不是简单地“存文件”，而是：</p>
+<p><strong>Markdown 文件 + WikiLink + Backlinks → 构建可连接、可导航、可持续演化的知识网络。</strong></p>
+<h3 id="最重要的一个概念：Vault"><a href="#最重要的一个概念：Vault" class="headerlink" title="最重要的一个概念：Vault"></a>最重要的一个概念：Vault</h3><p>Obsidian 里面最核心的概念叫 <strong>Vault（知识库目录）</strong>。它并不是一个特殊数据库，也不是 Git 仓库。</p>
+<p>实际上就是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">一个本地文件夹</span><br><span class="line">        ↓</span><br><span class="line">Obsidian Vault</span><br><span class="line">        ↓</span><br><span class="line">Markdown + 图片 + PDF + 配置 + 其他文件</span><br></pre></td></tr></table></figure>
+<p>例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">AI-Knowledge/</span><br><span class="line">│</span><br><span class="line">├── .obsidian/</span><br><span class="line">│</span><br><span class="line">├── 00-Inbox/</span><br><span class="line">├── 10-Projects/</span><br><span class="line">├── 20-Knowledge/</span><br><span class="line">├── 30-Sources/</span><br><span class="line">└── 90-Index/</span><br></pre></td></tr></table></figure>
+<p>Vault 本质上是本地文件系统中的文件夹，Obsidian 将笔记以 Markdown 文件保存其中；外部文件管理器和其他编辑器也可以直接操作这些文件。</p>
+<p>对于本文的本地知识库方案，可以简单理解为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">          同一个 Markdown Vault</span><br><span class="line">                  │</span><br><span class="line">    ┌─────────────┼─────────────┐</span><br><span class="line">    ↓             ↓             ↓</span><br><span class="line">Obsidian       LLM-Wiki      Codex</span><br><span class="line">    │             │             │</span><br><span class="line"> 阅读/编辑      AI 生成       AI 处理</span><br><span class="line"> 连接/导航      整理知识      自动化</span><br></pre></td></tr></table></figure>
+<p>前提是将 LLM-Wiki 实际生成 Wiki 的目录作为 Obsidian Vault 打开，并确保 Obsidian、LLM-Wiki 和 Codex 指向同一个本地目录。满足这个前提时，它们不是三个知识库，而是三个不同角色共同操作同一份 Markdown 知识。</p>
+<p>为了避免文件覆盖或内容冲突，批量导入和生成 Wiki 期间，尽量不要同时手工编辑同一批文件；重要目录建议使用 Git、Time Machine 或其他方式定期备份。</p>
+<h2 id="文档处理流程"><a href="#文档处理流程" class="headerlink" title="文档处理流程"></a>文档处理流程</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">原始资料</span><br><span class="line">PDF / DOCX / Web / Markdown</span><br><span class="line">        ↓</span><br><span class="line">原始资料归档</span><br><span class="line">        ↓</span><br><span class="line">AI 知识处理</span><br><span class="line">LLM-Wiki / Claude Code / Codex</span><br><span class="line">        ↓</span><br><span class="line">Markdown 知识库</span><br><span class="line">        ↓</span><br><span class="line">Obsidian</span><br><span class="line">阅读 · 编辑 · 连接 · 可视化</span><br><span class="line">        ↓</span><br><span class="line">人工审核与持续维护</span><br></pre></td></tr></table></figure>
+<p>构建本地知识库时，可以简单理解为：</p>
+<blockquote>
+<p><strong>LLM-Wiki 负责“理解和构建知识”，Obsidian 负责“管理和使用知识”。</strong></p>
+</blockquote>
+<h1 id="组合成一套本地知识库工作流"><a href="#组合成一套本地知识库工作流" class="headerlink" title="组合成一套本地知识库工作流"></a>组合成一套本地知识库工作流</h1><p>综合前面的内容，可以将 LLM-Wiki、Obsidian 与 AI Agent 组合成一套本地知识库工作流。三者并不是互相替代的产品，而是分别承担不同角色：</p>
+<ul>
+<li><strong>LLM-Wiki</strong>：负责摄入原始资料，提取实体、概念和关系，并生成结构化的 Markdown Wiki 页面。</li>
+<li><strong>Obsidian</strong>：负责人工阅读、编辑、链接、检索和可视化，是日常使用知识库的主要界面。</li>
+<li><strong>AI Agent</strong>：负责跨文档分析、批量整理、内容校验和自动化操作，可以按个人习惯选择 Claude Code、Codex、Hermes Agent 等工具。</li>
+</ul>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20260909094701649.png" alt="LLM-Wiki、Obsidian 与 AI Agent 组成的本地知识库工作流"></p>
+<p>这套方案的关键不是绑定某一款 Agent，而是让所有工具在明确的权限和写入边界下使用同一份 Markdown 知识。LLM-Wiki 负责生成和更新，Obsidian 负责人工管理，AI Agent 则按需提供分析与自动化能力。</p>
+<p>为了避免多个工具同时修改同一文件，建议明确各自的工作目录和写入规则，并为重要内容保留版本记录。后续实战文章将基于这套组合，演示从资料导入、Wiki 生成到 Obsidian 管理和 Agent 调用的完整流程。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LLM-Wiki/" rel="tag"># LLM-Wiki</a>
+              <a href="/tags/Obsidian/" rel="tag"># Obsidian</a>
+              <a href="/tags/RAG/" rel="tag"># RAG</a>
+              <a href="/tags/AI-Agent/" rel="tag"># AI Agent</a>
+              <a href="/tags/%E7%9F%A5%E8%AF%86%E5%BA%93/" rel="tag"># 知识库</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/09/07/ai/harness-engineering/5-ai-editor/" rel="prev" title="基于 Agent Harness 的智能体编程工具：Claude Code 与 Codex">
+      <i class="fa fa-chevron-left"></i> 基于 Agent Harness 的智能体编程工具：Claude Code 与 Codex
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/09/08/ai/agent/1-llm-api/" rel="next" title="LLM API模型调用服务">
+      LLM API模型调用服务 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-AI-%E6%9C%AC%E5%9C%B0%E7%9F%A5%E8%AF%86%E5%BA%93"><span class="nav-number">1.</span> <span class="nav-text">为什么需要 AI 本地知识库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E4%BF%A1%E6%81%AF%E9%9B%B6%E6%95%A3%E6%B7%B7%E4%B9%B1%EF%BC%8C%E6%9F%A5%E6%89%BE%E6%95%88%E7%8E%87%E4%BD%8E"><span class="nav-number">1.0.1.</span> <span class="nav-text">1. 信息零散混乱，查找效率低</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E4%BF%A1%E6%81%AF%E7%95%99%E5%AD%98%E4%B8%8D%E5%AE%8C%E6%95%B4%EF%BC%8C%E5%85%B3%E9%94%AE%E7%BB%8F%E9%AA%8C%E6%8C%81%E7%BB%AD%E6%B5%81%E5%A4%B1"><span class="nav-number">1.0.2.</span> <span class="nav-text">2. 信息留存不完整，关键经验持续流失</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E5%86%85%E5%AE%B9%E8%BF%AD%E4%BB%A3%E7%BC%BA%E5%B0%91%E8%BF%BD%E6%BA%AF%EF%BC%8C%E6%96%B0%E6%97%A7%E4%BF%A1%E6%81%AF%E5%AE%B9%E6%98%93%E6%B7%B7%E6%B7%86"><span class="nav-number">1.0.3.</span> <span class="nav-text">3. 内容迭代缺少追溯，新旧信息容易混淆</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E4%BC%A0%E7%BB%9F%E5%BD%92%E6%A1%A3%E5%81%8F%E9%87%8D%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%EF%BC%8C%E7%BC%BA%E5%B0%91%E7%9F%A5%E8%AF%86%E7%BB%84%E7%BB%87%E8%83%BD%E5%8A%9B"><span class="nav-number">1.0.4.</span> <span class="nav-text">4. 传统归档偏重文件存储，缺少知识组织能力</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#LLM-Wiki"><span class="nav-number">2.</span> <span class="nav-text">LLM-Wiki</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.1.</span> <span class="nav-text">项目介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8E-Andrej-Karpathy-%E5%8E%9F%E5%A7%8B%E6%A8%A1%E5%BC%8F%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">2.2.</span> <span class="nav-text">与 Andrej Karpathy 原始模式的关系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%9E%B6%E6%9E%84"><span class="nav-number">2.3.</span> <span class="nav-text">核心架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">2.3.1.</span> <span class="nav-text">整体架构图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E6%A1%8C%E9%9D%A2%E5%BA%94%E7%94%A8%E5%B1%82%EF%BC%9A%E5%8F%AF%E8%A7%86%E5%8C%96%E4%BA%A4%E4%BA%92%E7%95%8C%E9%9D%A2%EF%BC%88Tauri-React%EF%BC%89"><span class="nav-number">2.3.1.1.</span> <span class="nav-text">1. 桌面应用层：可视化交互界面（Tauri + React）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E5%BA%94%E7%94%A8%E9%80%BB%E8%BE%91%E5%B1%82%EF%BC%9A%E6%A0%B8%E5%BF%83%E8%83%BD%E5%8A%9B%E8%B0%83%E5%BA%A6%E5%BC%95%E6%93%8E%EF%BC%88TypeScript%EF%BC%89"><span class="nav-number">2.3.1.2.</span> <span class="nav-text">2. 应用逻辑层：核心能力调度引擎（TypeScript）</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%96%87%E6%A1%A3%E6%91%84%E5%85%A5%E5%BC%95%E6%93%8E"><span class="nav-number">2.3.1.2.1.</span> <span class="nav-text">文档摄入引擎</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E6%A3%80%E7%B4%A2%E7%AE%A1%E9%81%93"><span class="nav-number">2.3.1.2.2.</span> <span class="nav-text">智能检索管道</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%9F%A5%E8%AF%86%E5%9B%BE%E8%B0%B1%E5%BC%95%E6%93%8E"><span class="nav-number">2.3.1.2.3.</span> <span class="nav-text">知识图谱引擎</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%86%85%E5%AE%B9-Review-%E5%AE%A1%E6%9F%A5%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.3.1.2.4.</span> <span class="nav-text">内容 Review 审查系统</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E5%90%8E%E7%AB%AF%E6%9C%8D%E5%8A%A1%E5%B1%82%EF%BC%9A%E5%BA%95%E5%B1%82%E8%83%BD%E5%8A%9B%E6%94%AF%E6%92%91%EF%BC%88Rust%EF%BC%89"><span class="nav-number">2.3.1.3.</span> <span class="nav-text">3. 后端服务层：底层能力支撑（Rust）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-%E6%9C%AC%E5%9C%B0%E5%AD%98%E5%82%A8%E5%B1%82%EF%BC%9A%E7%BB%93%E6%9E%84%E5%8C%96%E7%9A%84%E6%96%87%E4%BB%B6%E4%BD%93%E7%B3%BB"><span class="nav-number">2.3.1.4.</span> <span class="nav-text">4. 本地存储层：结构化的文件体系</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-%E5%A4%96%E9%83%A8%E6%89%A9%E5%B1%95%E8%83%BD%E5%8A%9B%EF%BC%9A%E6%89%A9%E5%B1%95%E7%9F%A5%E8%AF%86%E9%87%87%E9%9B%86%E4%B8%8E%E8%B0%83%E7%94%A8"><span class="nav-number">2.3.1.5.</span> <span class="nav-text">5. 外部扩展能力：扩展知识采集与调用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89%E5%B1%82%E6%9E%B6%E6%9E%84%E8%AF%A6%E8%A7%A3"><span class="nav-number">2.3.2.</span> <span class="nav-text">三层架构详解</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">2.4.</span> <span class="nav-text">安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%B8%80%EF%BC%9A%E4%B8%8B%E8%BD%BD%E9%A2%84%E7%BC%96%E8%AF%91%E7%89%88%E6%9C%AC%EF%BC%88%E6%8E%A8%E8%8D%90%EF%BC%89"><span class="nav-number">2.4.1.</span> <span class="nav-text">方式一：下载预编译版本（推荐）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%BA%8C%EF%BC%9A%E4%BB%8E%E6%BA%90%E7%A0%81%E6%9E%84%E5%BB%BA"><span class="nav-number">2.4.2.</span> <span class="nav-text">方式二：从源码构建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E9%85%8D%E7%BD%AE"><span class="nav-number">2.4.3.</span> <span class="nav-text">初始配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%9A%90%E7%A7%81%E6%8F%90%E7%A4%BA"><span class="nav-number">2.4.4.</span> <span class="nav-text">数据隐私提示</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Obsidian"><span class="nav-number">3.</span> <span class="nav-text">Obsidian</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Obsidian-%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">3.2.</span> <span class="nav-text">Obsidian 的核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E6%A0%B8%E5%BF%83%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">3.2.1.</span> <span class="nav-text">最核心的关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E9%87%8D%E8%A6%81%E7%9A%84%E4%B8%80%E4%B8%AA%E6%A6%82%E5%BF%B5%EF%BC%9AVault"><span class="nav-number">3.2.2.</span> <span class="nav-text">最重要的一个概念：Vault</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E6%A1%A3%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-number">3.3.</span> <span class="nav-text">文档处理流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%84%E5%90%88%E6%88%90%E4%B8%80%E5%A5%97%E6%9C%AC%E5%9C%B0%E7%9F%A5%E8%AF%86%E5%BA%93%E5%B7%A5%E4%BD%9C%E6%B5%81"><span class="nav-number">4.</span> <span class="nav-text">组合成一套本地知识库工作流</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

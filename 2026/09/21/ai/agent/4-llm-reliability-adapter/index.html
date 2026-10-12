@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="区分网络错误与模型输出问题，设置有边界的重试，并用小型文本适配器隔离模型供应商差异。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Agent基础：错误处理与模型适配器">
+<meta property="og:url" content="https://jinglv.github.io/2026/09/21/ai/agent/4-llm-reliability-adapter/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="区分网络错误与模型输出问题，设置有边界的重试，并用小型文本适配器隔离模型供应商差异。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-09-21T01:10:00.000Z">
+<meta property="article:modified_time" content="2026-09-21T01:15:43.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/09/21/ai/agent/4-llm-reliability-adapter/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Agent基础：错误处理与模型适配器 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/09/21/ai/agent/4-llm-reliability-adapter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Agent基础：错误处理与模型适配器
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-09-21 09:10:00 / 修改时间：09:15:43" itemprop="dateCreated datePublished" datetime="2026-09-21T09:10:00+08:00">2026-09-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">人工智能学习</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">区分网络错误与模型输出问题，设置有边界的重试，并用小型文本适配器隔离模型供应商差异。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>本文是 LLM API 基础系列第四篇。上一篇：<a href="/2026/09/21/ai/agent/3-llm-structured-output-tools/" title="Agent基础：结构化输出与工具调用">结构化输出与工具调用</a>；系列入口：<a href="/2026/09/08/ai/agent/1-llm-api/" title="LLM API模型调用服务">LLM API 模型调用服务</a>。</p>
+<p>API 与 SDK 行为核对于 <strong>2026-09-21</strong>。本文不构建完整 Agent 框架，只建立必要的失败边界。</p>
+</blockquote>
+<h2 id="1-请求成功，不等于任务成功"><a href="#1-请求成功，不等于任务成功" class="headerlink" title="1. 请求成功，不等于任务成功"></a>1. 请求成功，不等于任务成功</h2><p>一次模型调用至少有三层判断：</p>
+<ol>
+<li><strong>传输与服务层</strong>：连接是否成功，HTTP 状态是否正常？</li>
+<li><strong>生成层</strong>：响应是否完成，是否拒答、截断或提出工具请求？</li>
+<li><strong>应用层</strong>：内容是否符合 schema、权限与任务要求？</li>
+</ol>
+<p>Chat Completions 和 Responses 都可能返回 HTTP 错误。Responses 还需要检查响应对象中的 <code>status</code>、<code>error</code>、<code>incomplete_details</code>。不能简单理解成“Chat 只看 HTTP，Responses 只看 error”。[1][2]</p>
+<span id="more"></span>
+<pre class="mermaid">graph TD
+    A[发起模型请求] --> B{请求成功}
+    B -->|是| C[检查生成状态和业务契约]
+    C --> D[返回结果或按原因处理]
+    B -->|否| E{临时故障且预算充足}
+    E -->|是| F[按服务建议退避]
+    F --> A
+    E -->|否| G[停止并报告原因]</pre>
+
+<p>“重试同一个请求”和“修改预算/上下文后重新生成”是不同操作，应该分别统计。</p>
+<h2 id="2-失败分类与处置"><a href="#2-失败分类与处置" class="headerlink" title="2. 失败分类与处置"></a>2. 失败分类与处置</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>常见信号</th>
+<th>合理处置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>参数或能力不匹配</td>
+<td>400、非法 schema、不支持的参数</td>
+<td>修复请求，不要原样重复</td>
+</tr>
+<tr>
+<td>身份或权限</td>
+<td>401、403</td>
+<td>检查密钥与授权，避免泄露密钥到日志</td>
+</tr>
+<tr>
+<td>资源/模型不存在</td>
+<td>404 等</td>
+<td>检查端点、模型名称和账户可用性</td>
+</tr>
+<tr>
+<td>网络连接/超时</td>
+<td>SDK 连接或超时异常</td>
+<td>在预算内重试；服务端可能已经处理原请求</td>
+</tr>
+<tr>
+<td>请求速率限制</td>
+<td>429 且错误体表明限流</td>
+<td>降低并发，遵守退避提示</td>
+</tr>
+<tr>
+<td>额度/余额不足</td>
+<td>429 的某些错误码，或厂商自定义状态</td>
+<td>补充额度或处理账户，不应忙等重试</td>
+</tr>
+<tr>
+<td>服务临时异常</td>
+<td>部分 5xx</td>
+<td>有限重试，观察持续时间和服务状态</td>
+</tr>
+<tr>
+<td>模型拒答</td>
+<td>拒答字段、内容过滤信号</td>
+<td>停止或请求用户澄清，不绕过安全限制</td>
+</tr>
+<tr>
+<td>输出不完整</td>
+<td><code>length</code>、<code>incomplete</code> 等</td>
+<td>检查具体原因，调整预算或拆分任务</td>
+</tr>
+<tr>
+<td>结构/业务校验失败</td>
+<td>JSON/Pydantic/权限校验错误</td>
+<td>有限修复；权限拒绝不能靠换模型绕过</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>HTTP 状态码只是起点，<strong>同一个 429 可能意味着限流，也可能意味着额度不足</strong>。要结合供应商错误码和响应体判断；不要把所有 5xx 都当成必定可恢复。[1][3]</p>
+<p>“用户要求不明确”也不必然等于“安全拒答”。业务上可以请求澄清，但不要把不同原因归到一个拒答类别。</p>
+<h2 id="3-重试只保留一个负责层"><a href="#3-重试只保留一个负责层" class="headerlink" title="3. 重试只保留一个负责层"></a>3. 重试只保留一个负责层</h2><h3 id="3-1-最小做法：使用-SDK-的内置重试"><a href="#3-1-最小做法：使用-SDK-的内置重试" class="headerlink" title="3.1 最小做法：使用 SDK 的内置重试"></a>3.1 最小做法：使用 SDK 的内置重试</h3><p>OpenAI Python SDK 对连接问题、408、409、429 和 5xx 等错误提供内置重试；当前文档默认重试 2 次，可通过 <code>max_retries</code> 配置。[4]</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line">client = OpenAI(</span><br><span class="line">    api_key=os.environ[<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>],</span><br><span class="line">    base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>, <span class="string">&quot;https://api.deepseek.com&quot;</span>),</span><br><span class="line">    timeout=<span class="number">30.0</span>,</span><br><span class="line">    max_retries=<span class="number">2</span>,  <span class="comment"># 最多追加 2 次重试，即最多尝试 3 次</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>这是最少代码的起点，但不等于完成了上表的所有业务策略：SDK 的通用重试不理解你全部的账户错误码、任务时限或降级要求。需要精细策略时，设 <code>max_retries=0</code>，由应用统一分类、退避和记录。</p>
+<p><strong>不要同时启用 SDK、应用包装器和任务队列的多层重试，而不计算总尝试次数。</strong> 例如外层尝试 3 次、每次 SDK 又尝试 3 次，最坏可能达到 9 次网络请求。</p>
+<p>捕获异常时应使用 SDK 的 <code>APIConnectionError</code>、<code>APITimeoutError</code>、<code>APIStatusError</code> 等实际类型，不要假定内置 <code>TimeoutError</code>、<code>ConnectionError</code> 一定能捕获 SDK 异常。原文的 <code>RateLimitError</code> 未导入、<code>ServiceOverloaded</code> 未定义，不应当作可运行实现。[4]</p>
+<h3 id="3-2-自己实现退避时，要明确所有预算"><a href="#3-2-自己实现退避时，要明确所有预算" class="headerlink" title="3.2 自己实现退避时，要明确所有预算"></a>3.2 自己实现退避时，要明确所有预算</h3><p>一个常见的 full jitter 计算方式是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">delay = uniform(0, min(cap, base × 2^retry_index))</span><br></pre></td></tr></table></figure>
+<p>先计算上限，再在范围内随机取值，可以让等待时长始终不超过 <code>cap</code>。原文的 <code>min(8, ...) + uniform(0, 0.2)</code> 实际最大为 <strong>8.2 秒</strong>，并不是 8 秒。[5]</p>
+<p>至少需要定义：</p>
+<ul>
+<li>最大总尝试次数，不要混淆“尝试”与“重试”。</li>
+<li>每次请求的连接/读取等超时策略。</li>
+<li>整个任务的总时限、token/费用预算和取消机制。</li>
+<li>服务端 <code>Retry-After</code> 等提示的处理方式；若建议等待超过任务剩余时限，应停止，而不是提前猛烈重试。</li>
+<li>主模型失败后的降级条件，以及哪些失败禁止降级。</li>
+</ul>
+<p><code>timeout=30.0</code> 不等于“整个 Agent 任务最多运行 30 秒”。SDK 超时通常作用于网络阶段，重试和工具执行也会继续消耗时间。[4]</p>
+<h3 id="3-3-重试和幂等是两回事"><a href="#3-3-重试和幂等是两回事" class="headerlink" title="3.3 重试和幂等是两回事"></a>3.3 重试和幂等是两回事</h3><p>连接超时并不证明服务端没处理请求。重新生成可能重复计费，也可能得到不同答案。不能默认所有模型端点都有通用幂等键，更不能把模型调用 ID 当作支付或写文件操作的完整去重方案。</p>
+<p>对于有副作用的工具，由业务系统使用可靠的操作标识、事务或去重记录保证幂等。流式连接中断时，也不要简单把重试生成的文本拼接到旧片段后面。</p>
+<h2 id="4-可观测性：记录足够信息，不记录不该记录的内容"><a href="#4-可观测性：记录足够信息，不记录不该记录的内容" class="headerlink" title="4. 可观测性：记录足够信息，不记录不该记录的内容"></a>4. 可观测性：记录足够信息，不记录不该记录的内容</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>trace_id</code>、业务任务 ID</td>
+<td>关联整条 Agent 执行过程</td>
+</tr>
+<tr>
+<td>provider、endpoint、model</td>
+<td>确认实际供应商、端点和模型/别名</td>
+</tr>
+<tr>
+<td>SDK 版本、参数配置版本</td>
+<td>复现请求配置，识别接口差异</td>
+</tr>
+<tr>
+<td>request/response ID</td>
+<td>与服务端排障信息关联，按供应商暴露方式读取</td>
+</tr>
+<tr>
+<td>latency、attempt_count</td>
+<td>区分慢请求与多次重试</td>
+</tr>
+<tr>
+<td>HTTP 状态、供应商错误码</td>
+<td>分析网络和服务失败</td>
+</tr>
+<tr>
+<td>finish_reason / status</td>
+<td>分析完成、截断和拒答等情况</td>
+</tr>
+<tr>
+<td>token 用量、缓存/推理明细</td>
+<td>估算成本和上下文压力</td>
+</tr>
+<tr>
+<td>schema 错误类型</td>
+<td>区分生成格式与业务规则问题</td>
+</tr>
+<tr>
+<td>tool 名称、结果状态</td>
+<td>审计执行过程，不必记录全部敏感内容</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>不要把完整 prompt、密钥、个人信息和工具原始输出无条件打进日志。</strong> 用量缺失应记录为未知，而不是 0。费用是根据对应模型计价规则计算的估算值，不是所有 API 都会直接返回。</p>
+<h2 id="5-Model-Adapter：只统一目前真正用到的能力"><a href="#5-Model-Adapter：只统一目前真正用到的能力" class="headerlink" title="5. Model Adapter：只统一目前真正用到的能力"></a>5. Model Adapter：只统一目前真正用到的能力</h2><p>适配器用于把供应商字段映射到应用自己的接口。它不能凭空让两个模型具备相同能力，也不能让所有工具、推理状态和多模态内容无损互换。</p>
+<p>如果只有一个简单调用点，先写一个函数即可。<strong>当确实要接入两个供应商，或者需要离线替换模型时，再引入小型接口。</strong></p>
+<pre class="mermaid">graph TD
+    A[文本应用] --> B[TextModel 契约]
+    B --> C[DeepSeek Chat 适配器]
+    B --> D[OpenAI Responses 适配器]
+    B --> E[FakeModel 离线实现]
+    C --> F[DeepSeek API]
+    D --> G[OpenAI API]</pre>
+
+<p>下面只实现<strong>单轮、非流式、纯文本</strong>接口。这不是完整 Agent Loop，也不支持把工具调用悄悄转换为空字符串。</p>
+<h3 id="5-1-完整的文本适配器示例"><a href="#5-1-完整的文本适配器示例" class="headerlink" title="5.1 完整的文本适配器示例"></a>5.1 完整的文本适配器示例</h3><p>以下代码可放在同一个 Python 文件中运行。成功结果只包含应用自己的类型；异常仍由上层统一处理。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Protocol</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass(<span class="params">frozen=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TextResult</span>:</span><br><span class="line">    text: <span class="built_in">str</span></span><br><span class="line">    model: <span class="built_in">str</span></span><br><span class="line">    response_id: <span class="built_in">str</span></span><br><span class="line">    input_tokens: <span class="built_in">int</span> | <span class="literal">None</span></span><br><span class="line">    output_tokens: <span class="built_in">int</span> | <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TextModel</span>(<span class="title class_ inherited__">Protocol</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">generate</span>(<span class="params">self, task: <span class="built_in">str</span>, *, output_budget: <span class="built_in">int</span></span>) -&gt; TextResult:</span><br><span class="line">        ...</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DeepSeekTextAdapter</span>:</span><br><span class="line">    client: OpenAI</span><br><span class="line">    model: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">generate</span>(<span class="params">self, task: <span class="built_in">str</span>, *, output_budget: <span class="built_in">int</span></span>) -&gt; TextResult:</span><br><span class="line">        response = <span class="variable language_">self</span>.client.chat.completions.create(</span><br><span class="line">            model=<span class="variable language_">self</span>.model,</span><br><span class="line">            messages=[&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: task&#125;],</span><br><span class="line">            max_tokens=output_budget,</span><br><span class="line">            extra_body=&#123;<span class="string">&quot;thinking&quot;</span>: &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;disabled&quot;</span>&#125;&#125;,</span><br><span class="line">        )</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> response.choices:</span><br><span class="line">            <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;未返回候选结果&quot;</span>)</span><br><span class="line">        choice = response.choices[<span class="number">0</span>]</span><br><span class="line">        message = choice.message</span><br><span class="line">        <span class="keyword">if</span> choice.finish_reason != <span class="string">&quot;stop&quot;</span> <span class="keyword">or</span> message.refusal <span class="keyword">or</span> message.tool_calls:</span><br><span class="line">            <span class="keyword">raise</span> RuntimeError(<span class="string">f&quot;不是完整的纯文本回答：<span class="subst">&#123;choice.finish_reason&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> message.content:</span><br><span class="line">            <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;文本为空&quot;</span>)</span><br><span class="line">        usage = response.usage</span><br><span class="line">        <span class="keyword">return</span> TextResult(</span><br><span class="line">            message.content, response.model, response.<span class="built_in">id</span>,</span><br><span class="line">            usage.prompt_tokens <span class="keyword">if</span> usage <span class="keyword">else</span> <span class="literal">None</span>,</span><br><span class="line">            usage.completion_tokens <span class="keyword">if</span> usage <span class="keyword">else</span> <span class="literal">None</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">OpenAIResponsesTextAdapter</span>:</span><br><span class="line">    client: OpenAI</span><br><span class="line">    model: <span class="built_in">str</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">generate</span>(<span class="params">self, task: <span class="built_in">str</span>, *, output_budget: <span class="built_in">int</span></span>) -&gt; TextResult:</span><br><span class="line">        response = <span class="variable language_">self</span>.client.responses.create(</span><br><span class="line">            model=<span class="variable language_">self</span>.model,</span><br><span class="line">            <span class="built_in">input</span>=task,</span><br><span class="line">            max_output_tokens=output_budget,</span><br><span class="line">        )</span><br><span class="line">        <span class="keyword">if</span> response.status != <span class="string">&quot;completed&quot;</span>:</span><br><span class="line">            <span class="keyword">raise</span> RuntimeError(<span class="string">f&quot;响应未完成：<span class="subst">&#123;response.status&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">for</span> item <span class="keyword">in</span> response.output:</span><br><span class="line">            <span class="keyword">if</span> item.<span class="built_in">type</span> == <span class="string">&quot;message&quot;</span>:</span><br><span class="line">                <span class="keyword">if</span> <span class="built_in">any</span>(part.<span class="built_in">type</span> == <span class="string">&quot;refusal&quot;</span> <span class="keyword">for</span> part <span class="keyword">in</span> item.content):</span><br><span class="line">                    <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;模型拒答&quot;</span>)</span><br><span class="line">            <span class="keyword">elif</span> item.<span class="built_in">type</span> != <span class="string">&quot;reasoning&quot;</span>:</span><br><span class="line">                <span class="keyword">raise</span> RuntimeError(<span class="string">f&quot;文本接口不处理：<span class="subst">&#123;item.<span class="built_in">type</span>&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> response.output_text:</span><br><span class="line">            <span class="keyword">raise</span> RuntimeError(<span class="string">&quot;没有最终文本&quot;</span>)</span><br><span class="line">        usage = response.usage</span><br><span class="line">        <span class="keyword">return</span> TextResult(</span><br><span class="line">            response.output_text, response.model, response.<span class="built_in">id</span>,</span><br><span class="line">            usage.input_tokens <span class="keyword">if</span> usage <span class="keyword">else</span> <span class="literal">None</span>,</span><br><span class="line">            usage.output_tokens <span class="keyword">if</span> usage <span class="keyword">else</span> <span class="literal">None</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TextApp</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, model: TextModel</span>):</span><br><span class="line">        <span class="variable language_">self</span>.model = model</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, task: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.model.generate(task, output_budget=<span class="number">2000</span>).text</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">load_dotenv()</span><br><span class="line">model = DeepSeekTextAdapter(</span><br><span class="line">    client=OpenAI(</span><br><span class="line">        api_key=os.environ[<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>],</span><br><span class="line">        base_url=os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>, <span class="string">&quot;https://api.deepseek.com&quot;</span>),</span><br><span class="line">        timeout=<span class="number">30.0</span>,</span><br><span class="line">        max_retries=<span class="number">0</span>,</span><br><span class="line">    ),</span><br><span class="line">    model=os.environ[<span class="string">&quot;DEEPSEEK_MODEL_NAME&quot;</span>],</span><br><span class="line">)</span><br><span class="line">app = TextApp(model)</span><br><span class="line"><span class="built_in">print</span>(app.run(<span class="string">&quot;用三句话解释：模型调用为什么不等于完整 Agent？&quot;</span>))</span><br></pre></td></tr></table></figure>
+<p>更换供应商只替换构造代码，<code>TextApp</code> 不变。OpenAI 的模型须支持所用端点；推理模型的预算还要覆盖推理开销：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">model = OpenAIResponsesTextAdapter(</span><br><span class="line">    client=OpenAI(</span><br><span class="line">        api_key=os.environ[<span class="string">&quot;OPENAI_API_KEY&quot;</span>],</span><br><span class="line">        base_url=<span class="string">&quot;https://api.openai.com/v1&quot;</span>,</span><br><span class="line">        timeout=<span class="number">60.0</span>,</span><br><span class="line">        max_retries=<span class="number">0</span>,</span><br><span class="line">    ),</span><br><span class="line">    model=os.environ[<span class="string">&quot;OPENAI_MODEL&quot;</span>],</span><br><span class="line">)</span><br><span class="line">app = TextApp(model)</span><br></pre></td></tr></table></figure>
+<p>上面的适配器在异常场景下使用 <code>RuntimeError</code> 以缩短示例。生产中应按本篇前面的分类定义应用异常，保留原始异常为 cause，并保留供应商诊断信息；不要让重试层把所有 <code>RuntimeError</code> 当作临时故障。</p>
+<h3 id="5-2-离线测试不需要真实模型"><a href="#5-2-离线测试不需要真实模型" class="headerlink" title="5.2 离线测试不需要真实模型"></a>5.2 离线测试不需要真实模型</h3><p>在前面的类定义之后，可用下列代码验证应用依赖的是契约，而不是某个 SDK：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">FakeModel</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">generate</span>(<span class="params">self, task: <span class="built_in">str</span>, *, output_budget: <span class="built_in">int</span></span>) -&gt; TextResult:</span><br><span class="line">        <span class="keyword">return</span> TextResult(<span class="string">&quot;固定回答&quot;</span>, <span class="string">&quot;fake&quot;</span>, <span class="string">&quot;offline-1&quot;</span>, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">assert</span> TextApp(FakeModel()).run(<span class="string">&quot;任意输入&quot;</span>) == <span class="string">&quot;固定回答&quot;</span></span><br></pre></td></tr></table></figure>
+<p>这里只验证了应用连接逻辑，不证明真实模型质量。供应商集成测试与任务回归评测仍然需要单独运行。</p>
+<h3 id="5-3-什么时候扩展为-Agent-的返回契约"><a href="#5-3-什么时候扩展为-Agent-的返回契约" class="headerlink" title="5.3 什么时候扩展为 Agent 的返回契约"></a>5.3 什么时候扩展为 Agent 的返回契约</h3><p>真正需要工具循环或流式处理时，再把接口扩展为能表达下列信息的 <code>ModelResult</code>：</p>
+<ul>
+<li>文本与结构化结果。</li>
+<li>工具调用列表，保留调用 ID、工具名称和参数。</li>
+<li>完成、截断、拒答等结果类别，以及原始结束原因。</li>
+<li>token 用量、响应 ID、模型标识等元数据。</li>
+<li>供应商要求回传的必要状态；必要时使用受控的、不透明状态对象，而不是丢弃。</li>
+</ul>
+<p>“业务层不依赖 SDK 内部类型”不等于“必须删除所有供应商信息”。通用契约要保留运行所必需的语义，并对不支持的能力明确报错，不能假装兼容。</p>
+<h2 id="6-路由与-fallback-不必写进单个适配器"><a href="#6-路由与-fallback-不必写进单个适配器" class="headerlink" title="6. 路由与 fallback 不必写进单个适配器"></a>6. 路由与 fallback 不必写进单个适配器</h2><p><strong>适配器负责协议转换；路由负责选择模型；重试策略负责判断是否再试。</strong> 小项目可以把路由写在调用方，大项目再考虑独立策略层，不必一开始就设计工厂和复杂调度框架。</p>
+<p>切换模型时还应检查：</p>
+<ul>
+<li>目标模型是否支持所需工具、schema、上下文和模态。</li>
+<li>是否满足数据区域、隐私及合规约束。</li>
+<li>多轮状态能否继续，是否需要重建上下文。</li>
+<li>降级后是否仍达到回归集要求，而不仅是返回 HTTP 200。</li>
+</ul>
+<p>拒答、权限限制和数据区域要求不能通过 fallback 绕过；缺少关键上下文时，也不能不加说明地换成较小窗口模型继续执行。</p>
+<h2 id="7-系列总结"><a href="#7-系列总结" class="headerlink" title="7. 系列总结"></a>7. 系列总结</h2><p>到这里可以串起四篇文章：</p>
+<ol>
+<li><strong>API 结构</strong>：读懂请求、响应和兼容边界。</li>
+<li><strong>预算管理</strong>：确认参数生效，维护有限上下文。</li>
+<li><strong>可执行契约</strong>：校验模型建议，再决定是否执行工具。</li>
+<li><strong>可靠性边界</strong>：分类处理失败，以最小接口隔离供应商。</li>
+</ol>
+<p>学习 Agent 时，比“先接入一个庞大框架”更重要的是弄清楚：<strong>谁管理状态、谁批准动作、谁执行工具、谁决定停止。</strong></p>
+<p>返回系列入口：<a href="/2026/09/08/ai/agent/1-llm-api/" title="LLM API模型调用服务">LLM API 模型调用服务</a>。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/error-codes">OpenAI：Error codes</a></li>
+<li><a target="_blank" rel="noopener" href="https://developers.openai.com/api/reference/resources/responses/methods/create">OpenAI：Responses API</a></li>
+<li><a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/quick_start/error_codes/">DeepSeek：Error Codes</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/openai/openai-python#retries">OpenAI Python SDK：Retries、Timeouts 与错误类型</a></li>
+<li><a target="_blank" rel="noopener" href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">AWS Architecture Blog：Exponential Backoff and Jitter</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/09/21/ai/agent/3-llm-structured-output-tools/" rel="prev" title="Agent基础：结构化输出与工具调用">
+      <i class="fa fa-chevron-left"></i> Agent基础：结构化输出与工具调用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/09/29/ai/knowledge/3-obsidian-knowledge/" rel="next" title="Obsidian 构建个人本地知识库实战">
+      Obsidian 构建个人本地知识库实战 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E8%AF%B7%E6%B1%82%E6%88%90%E5%8A%9F%EF%BC%8C%E4%B8%8D%E7%AD%89%E4%BA%8E%E4%BB%BB%E5%8A%A1%E6%88%90%E5%8A%9F"><span class="nav-number">1.</span> <span class="nav-text">1. 请求成功，不等于任务成功</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%A4%B1%E8%B4%A5%E5%88%86%E7%B1%BB%E4%B8%8E%E5%A4%84%E7%BD%AE"><span class="nav-number">2.</span> <span class="nav-text">2. 失败分类与处置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E9%87%8D%E8%AF%95%E5%8F%AA%E4%BF%9D%E7%95%99%E4%B8%80%E4%B8%AA%E8%B4%9F%E8%B4%A3%E5%B1%82"><span class="nav-number">3.</span> <span class="nav-text">3. 重试只保留一个负责层</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E6%9C%80%E5%B0%8F%E5%81%9A%E6%B3%95%EF%BC%9A%E4%BD%BF%E7%94%A8-SDK-%E7%9A%84%E5%86%85%E7%BD%AE%E9%87%8D%E8%AF%95"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 最小做法：使用 SDK 的内置重试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E8%87%AA%E5%B7%B1%E5%AE%9E%E7%8E%B0%E9%80%80%E9%81%BF%E6%97%B6%EF%BC%8C%E8%A6%81%E6%98%8E%E7%A1%AE%E6%89%80%E6%9C%89%E9%A2%84%E7%AE%97"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 自己实现退避时，要明确所有预算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E9%87%8D%E8%AF%95%E5%92%8C%E5%B9%82%E7%AD%89%E6%98%AF%E4%B8%A4%E5%9B%9E%E4%BA%8B"><span class="nav-number">3.3.</span> <span class="nav-text">3.3 重试和幂等是两回事</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%8F%AF%E8%A7%82%E6%B5%8B%E6%80%A7%EF%BC%9A%E8%AE%B0%E5%BD%95%E8%B6%B3%E5%A4%9F%E4%BF%A1%E6%81%AF%EF%BC%8C%E4%B8%8D%E8%AE%B0%E5%BD%95%E4%B8%8D%E8%AF%A5%E8%AE%B0%E5%BD%95%E7%9A%84%E5%86%85%E5%AE%B9"><span class="nav-number">4.</span> <span class="nav-text">4. 可观测性：记录足够信息，不记录不该记录的内容</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-Model-Adapter%EF%BC%9A%E5%8F%AA%E7%BB%9F%E4%B8%80%E7%9B%AE%E5%89%8D%E7%9C%9F%E6%AD%A3%E7%94%A8%E5%88%B0%E7%9A%84%E8%83%BD%E5%8A%9B"><span class="nav-number">5.</span> <span class="nav-text">5. Model Adapter：只统一目前真正用到的能力</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E5%AE%8C%E6%95%B4%E7%9A%84%E6%96%87%E6%9C%AC%E9%80%82%E9%85%8D%E5%99%A8%E7%A4%BA%E4%BE%8B"><span class="nav-number">5.1.</span> <span class="nav-text">5.1 完整的文本适配器示例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E7%A6%BB%E7%BA%BF%E6%B5%8B%E8%AF%95%E4%B8%8D%E9%9C%80%E8%A6%81%E7%9C%9F%E5%AE%9E%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.2.</span> <span class="nav-text">5.2 离线测试不需要真实模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E6%89%A9%E5%B1%95%E4%B8%BA-Agent-%E7%9A%84%E8%BF%94%E5%9B%9E%E5%A5%91%E7%BA%A6"><span class="nav-number">5.3.</span> <span class="nav-text">5.3 什么时候扩展为 Agent 的返回契约</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E8%B7%AF%E7%94%B1%E4%B8%8E-fallback-%E4%B8%8D%E5%BF%85%E5%86%99%E8%BF%9B%E5%8D%95%E4%B8%AA%E9%80%82%E9%85%8D%E5%99%A8"><span class="nav-number">6.</span> <span class="nav-text">6. 路由与 fallback 不必写进单个适配器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E7%B3%BB%E5%88%97%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">7. 系列总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">8.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

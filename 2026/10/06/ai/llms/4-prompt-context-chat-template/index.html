@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="区分 Prompt、Context 与 Chat Template，理解 System、User、Assistant、历史对话和外部信息如何组成模型真正接收的 Token 序列。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Prompt、Context 与 Chat Template：模型真正看到了什么？">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/06/ai/llms/4-prompt-context-chat-template/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="区分 Prompt、Context 与 Chat Template，理解 System、User、Assistant、历史对话和外部信息如何组成模型真正接收的 Token 序列。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012102144675.png">
+<meta property="article:published_time" content="2026-10-06T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-06T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta property="article:tag" content="大语言模型">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="Prompt">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012102144675.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/06/ai/llms/4-prompt-context-chat-template/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Prompt、Context 与 Chat Template：模型真正看到了什么？ | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/06/ai/llms/4-prompt-context-chat-template/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Prompt、Context 与 Chat Template：模型真正看到了什么？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-06 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-06T10:00:00+08:00">2026-10-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">区分 Prompt、Context 与 Chat Template，理解 System、User、Assistant、历史对话和外部信息如何组成模型真正接收的 Token 序列。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Prompt、Context-与-Chat-Template：模型真正看到了什么？"><a href="#Prompt、Context-与-Chat-Template：模型真正看到了什么？" class="headerlink" title="Prompt、Context 与 Chat Template：模型真正看到了什么？"></a>Prompt、Context 与 Chat Template：模型真正看到了什么？</h1><p>在前两篇文章中，我们已经了解了一次 LLM 请求的完整过程，以及 Tokenizer 如何把文本转换为 Token ID。</p>
+<p>接下来会遇到三个经常一起出现、也最容易混淆的概念：</p>
+<ul>
+<li>Prompt；</li>
+<li>Context；</li>
+<li>Chat Template。</li>
+</ul>
+<p>用户可能只输入了一句话，但模型真正接收到的内容还可能包括 System Message、历史对话、工具结果、检索资料、角色标记和特殊 Token。</p>
+<p>因此：</p>
+<blockquote>
+<p>用户输入的文字，不一定等于模型最终看到的完整输入。</p>
+</blockquote>
+<p>本文将从消息结构开始，介绍 Prompt、Context 和 Chat Template 各自解决什么问题，以及它们如何共同组成模型真正接收的 Token 序列。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012102144675.png" alt="image-20261012102144675"></p>
+<h1 id="先理解三个核心概念"><a href="#先理解三个核心概念" class="headerlink" title="先理解三个核心概念"></a>先理解三个核心概念</h1><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>核心含义</th>
+<th>典型内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Prompt</td>
+<td>提供给模型的指令、问题或输入</td>
+<td>当前问题、任务描述、Few-shot 示例</td>
+</tr>
+<tr>
+<td>Context</td>
+<td>模型在本次推理中能够利用的全部信息</td>
+<td>System、历史对话、当前问题、工具结果、检索资料</td>
+</tr>
+<tr>
+<td>Chat Template</td>
+<td>将结构化消息转换为模型约定序列的格式规则</td>
+<td>角色标记、消息边界、生成起始标记</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>三者之间的关系可以概括为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Prompt 与其他信息</span><br><span class="line">        ↓</span><br><span class="line">组成 Context</span><br><span class="line">        ↓</span><br><span class="line">Chat Template 序列化消息</span><br><span class="line">        ↓</span><br><span class="line">Tokenizer 转换为 Token ID</span><br><span class="line">        ↓</span><br><span class="line">模型执行推理</span><br></pre></td></tr></table></figure>
+<h1 id="Prompt-到底是什么？"><a href="#Prompt-到底是什么？" class="headerlink" title="Prompt 到底是什么？"></a>Prompt 到底是什么？</h1><p>Prompt 通常翻译为“提示词”，但在不同语境中，它的范围并不完全一致。</p>
+<h2 id="狭义-Prompt"><a href="#狭义-Prompt" class="headerlink" title="狭义 Prompt"></a>狭义 Prompt</h2><p>狭义 Prompt 指用户当前提供的指令或问题：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">请用三个要点解释什么是大语言模型。</span><br></pre></td></tr></table></figure>
+<h2 id="广义-Prompt"><a href="#广义-Prompt" class="headerlink" title="广义 Prompt"></a>广义 Prompt</h2><p>有些文档会把发送给模型的全部输入统称为 Prompt，包括：</p>
+<ul>
+<li>System 指令；</li>
+<li>用户问题；</li>
+<li>历史对话；</li>
+<li>Few-shot 示例；</li>
+<li>检索到的文档；</li>
+<li>工具说明；</li>
+<li>输出格式要求。</li>
+</ul>
+<p>因此，看到“Prompt 长度”“Prompt Token”或“Prompt Engineering”时，需要结合上下文判断这里的 Prompt 指当前用户输入，还是指模型的完整输入。</p>
+<p>在本文中，为了便于区分：</p>
+<ul>
+<li><strong>Prompt</strong> 主要表示任务指令或输入内容；</li>
+<li><strong>Context</strong> 表示模型本次请求能够看到的全部内容。</li>
+</ul>
+<h1 id="Context：模型本轮能够看到的全部信息"><a href="#Context：模型本轮能够看到的全部信息" class="headerlink" title="Context：模型本轮能够看到的全部信息"></a>Context：模型本轮能够看到的全部信息</h1><p>Context 可以理解为模型本次推理的“临时工作区”。典型 Context 由以下部分组成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">System Message</span><br><span class="line">     +</span><br><span class="line">历史 User / Assistant 消息</span><br><span class="line">     +</span><br><span class="line">当前 User 消息</span><br><span class="line">     +</span><br><span class="line">工具结果或检索资料</span><br><span class="line">     +</span><br><span class="line">工具定义及其他控制信息</span><br></pre></td></tr></table></figure>
+<p>这些内容经过 Chat Template 和 Tokenizer 处理后，共同占用模型的上下文窗口。</p>
+<h2 id="Context-不等于长期记忆"><a href="#Context-不等于长期记忆" class="headerlink" title="Context 不等于长期记忆"></a>Context 不等于长期记忆</h2><p>模型不会因为上一轮回答过某个问题，就自动永久记住那次对话。</p>
+<p>无状态推理可以简化理解为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">第一轮请求：System + User 1</span><br><span class="line">第二轮请求：System + User 1 + Assistant 1 + User 2</span><br><span class="line">第三轮请求：System + User 1 + Assistant 1 + User 2 + Assistant 2 + User 3</span><br></pre></td></tr></table></figure>
+<p>每一轮都需要重新提供模型需要参考的历史消息。</p>
+<p>一些聊天产品或 API 看起来“记住”了对话，是因为应用或服务端替用户保存了历史，并在下一次调用时重新组装 Context；也可能使用摘要、数据库或其他外部记忆机制。模型本身只能利用当前请求实际提供给它的信息。</p>
+<h2 id="Context-Window-是容量上限"><a href="#Context-Window-是容量上限" class="headerlink" title="Context Window 是容量上限"></a>Context Window 是容量上限</h2><p>Context Window（上下文窗口）表示模型一次推理能够处理的 Token 范围。通常需要同时容纳：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">输入 Token + 新生成 Token</span><br></pre></td></tr></table></figure>
+<p>但具体限制方式由模型和推理服务决定。有的服务分别限制最大输入和最大输出，有的服务限制二者总和。</p>
+<p>上下文窗口越大，不代表模型就能同等有效地利用其中所有内容。过长 Context 可能带来：</p>
+<ul>
+<li>更高的 Prefill 延迟；</li>
+<li>更大的 KV Cache；</li>
+<li>更高的调用费用；</li>
+<li>更多无关信息和冲突信息；</li>
+<li>重要内容被埋在大量文本中；</li>
+<li>输入被截断的风险。</li>
+</ul>
+<h1 id="消息角色分别表示什么？"><a href="#消息角色分别表示什么？" class="headerlink" title="消息角色分别表示什么？"></a>消息角色分别表示什么？</h1><p>聊天接口通常使用 <code>role</code> 和 <code>content</code> 表示一条消息：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请解释什么是 Token。&quot;</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>常见角色包括：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>典型作用</th>
+<th>常见内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>System</td>
+<td>提供整体行为要求和任务背景</td>
+<td>身份、边界、风格、约束</td>
+</tr>
+<tr>
+<td>User</td>
+<td>表示用户指令或输入</td>
+<td>问题、数据、修改意见</td>
+</tr>
+<tr>
+<td>Assistant</td>
+<td>表示模型此前的回答</td>
+<td>对话历史、Few-shot 目标回答</td>
+</tr>
+<tr>
+<td>Tool</td>
+<td>表示工具执行结果</td>
+<td>搜索结果、数据库记录、函数返回值</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>角色是否被支持、具体名称以及序列化方式取决于模型和 Chat Template。不能假设所有模型都原生支持完全相同的角色集合。</p>
+<h2 id="System-Message"><a href="#System-Message" class="headerlink" title="System Message"></a>System Message</h2><p>System Message 常用于描述：</p>
+<ul>
+<li>模型扮演什么角色；</li>
+<li>任务目标是什么；</li>
+<li>回答风格和语言；</li>
+<li>输出格式；</li>
+<li>不允许执行的操作；</li>
+<li>可使用的背景信息。</li>
+</ul>
+<p>例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: (</span><br><span class="line">        <span class="string">&quot;你是一名面向初学者的人工智能老师。&quot;</span></span><br><span class="line">        <span class="string">&quot;请使用简体中文回答，并在首次出现术语时给出解释。&quot;</span></span><br><span class="line">    ),</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>System Message 可以引导模型，但不是不可突破的程序级权限边界。模型如何响应冲突指令，与训练方式、模板、服务端规则和安全机制都有关系。</p>
+<p>因此，真正的安全控制不能只依赖一句 System Prompt，还需要权限校验、工具白名单、参数验证、沙箱和人工确认等机制。</p>
+<h2 id="User-Message"><a href="#User-Message" class="headerlink" title="User Message"></a>User Message</h2><p>User Message 表示当前用户提供的问题、要求或数据。例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请用一个生活中的比喻解释 Context Window。&quot;</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>用户输入可能包含不可信内容。在 RAG、网页浏览或文件处理场景中，外部文档中的文字也不能自动被当成可信指令。</p>
+<h2 id="Assistant-Message"><a href="#Assistant-Message" class="headerlink" title="Assistant Message"></a>Assistant Message</h2><p>Assistant Message 通常保存模型此前的回答：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;Context Window 可以理解为模型一次能够摊在桌面上阅读的材料。&quot;</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>多轮对话中，历史 Assistant Message 会再次进入 Context，使模型知道自己之前说过什么。</p>
+<p>Assistant Message 也可用于 Few-shot 示例：人为提供理想回答，让模型模仿任务格式和风格。</p>
+<h2 id="Tool-Message"><a href="#Tool-Message" class="headerlink" title="Tool Message"></a>Tool Message</h2><p>支持工具调用的模型可能使用 Tool Message 表示外部程序的执行结果。例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;role&quot;</span>: <span class="string">&quot;tool&quot;</span>,</span><br><span class="line">    <span class="string">&quot;content&quot;</span>: <span class="string">&quot;北京当前温度为 18℃。&quot;</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>完整工具调用通常还涉及工具名称、调用 ID、参数和模型生成的 Tool Call。具体数据结构因模型、模板和 API 而异。</p>
+<p>工具结果属于 Context 中的数据，而不是天然可信的高优先级指令。应用应防范工具输出或外部网页中夹带的 Prompt Injection。</p>
+<h1 id="消息顺序为什么重要？"><a href="#消息顺序为什么重要？" class="headerlink" title="消息顺序为什么重要？"></a>消息顺序为什么重要？</h1><p>语言模型处理的是一个有顺序的 Token 序列。下面两个消息列表包含相同文字，但含义不同：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">User：我的名字是小明。</span><br><span class="line">Assistant：你好，小明。</span><br><span class="line">User：我叫什么名字？</span><br></pre></td></tr></table></figure>
+<p>与：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">User：我叫什么名字？</span><br><span class="line">Assistant：你好，小明。</span><br><span class="line">User：我的名字是小明。</span><br></pre></td></tr></table></figure>
+<p>Chat Template 会按照消息列表中的顺序进行序列化。打乱顺序、遗漏消息或错误标注角色，都可能让模型得到不同的上下文。</p>
+<p>不过，角色优先级不是由消息在列表中的位置单独保证的。模型是否遵循某种角色层级，取决于模型训练、模板设计和推理服务的控制机制。</p>
+<h1 id="Chat-Template-解决了什么问题？"><a href="#Chat-Template-解决了什么问题？" class="headerlink" title="Chat Template 解决了什么问题？"></a>Chat Template 解决了什么问题？</h1><p>聊天模型本质上仍然是在继续一段 Token 序列。<code>messages</code> 这样的 Python 列表或 JSON 数组只是应用层结构，Transformer 并不能直接读取。</p>
+<p>Chat Template 负责将结构化消息转换成模型训练时使用的文本格式。</p>
+<p>例如，应用层消息：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名人工智能老师。&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;什么是 Token？&quot;</span>&#125;,</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>可能被转换成类似 ChatML 的序列：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;|im_start|&gt;system</span><br><span class="line">你是一名人工智能老师。&lt;|im_end|&gt;</span><br><span class="line">&lt;|im_start|&gt;user</span><br><span class="line">什么是 Token？&lt;|im_end|&gt;</span><br><span class="line">&lt;|im_start|&gt;assistant</span><br></pre></td></tr></table></figure>
+<p>其中包含：</p>
+<ul>
+<li>角色起始标记；</li>
+<li>消息内容；</li>
+<li>消息结束标记；</li>
+<li>Assistant 回答的起始标记。</li>
+</ul>
+<p>不同模型可能使用完全不同的格式。例如，有的模型使用 ChatML 风格，有的使用 <code>[INST]...[/INST]</code>，还有的使用自己的 Header Token。</p>
+<p>即使消息内容相同，使用错误模板也可能导致：</p>
+<ul>
+<li>模型继续复述用户内容；</li>
+<li>System Message 失效；</li>
+<li>角色混乱；</li>
+<li>输出异常的特殊标记；</li>
+<li>指令遵循能力下降；</li>
+<li>工具调用格式错误。</li>
+</ul>
+<blockquote>
+<p>Chat Template 必须尽量匹配模型训练或后训练时使用的格式。</p>
+</blockquote>
+<h1 id="Chat-Template-本质上是什么？"><a href="#Chat-Template-本质上是什么？" class="headerlink" title="Chat Template 本质上是什么？"></a>Chat Template 本质上是什么？</h1><p>在 Transformers 中，Chat Template 通常是一段保存在 Tokenizer 配置中的 Jinja 模板。</p>
+<p>一个简化模板可能类似：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;%- for message in messages %&#125;</span><br><span class="line">    &#123;&#123;- &#x27;&lt;|&#x27; + message[&#x27;role&#x27;] + &#x27;|&gt;\n&#x27; &#125;&#125;</span><br><span class="line">    &#123;&#123;- message[&#x27;content&#x27;] + eos_token &#125;&#125;</span><br><span class="line">&#123;%- endfor %&#125;</span><br><span class="line">&#123;%- if add_generation_prompt %&#125;</span><br><span class="line">    &#123;&#123;- &#x27;&lt;|assistant|&gt;\n&#x27; &#125;&#125;</span><br><span class="line">&#123;%- endif %&#125;</span><br></pre></td></tr></table></figure>
+<p>它完成三件事：</p>
+<ol>
+<li>遍历消息列表；</li>
+<li>将角色、内容和消息边界按固定格式拼接；</li>
+<li>必要时在末尾添加 Assistant 生成起始标记。</li>
+</ol>
+<p>可以直接查看 Tokenizer 使用的模板：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(tokenizer.chat_template)</span><br></pre></td></tr></table></figure>
+<p>复杂模型的模板可能还会处理：</p>
+<ul>
+<li>工具定义；</li>
+<li>Tool Call 与 Tool Result；</li>
+<li>检索文档；</li>
+<li>多模态内容；</li>
+<li>模型特有的推理字段；</li>
+<li>当前日期等附加信息。</li>
+</ul>
+<h1 id="add-generation-prompt-有什么作用？"><a href="#add-generation-prompt-有什么作用？" class="headerlink" title="add_generation_prompt 有什么作用？"></a><code>add_generation_prompt</code> 有什么作用？</h1><p><code>add_generation_prompt=True</code> 会让模板在序列末尾添加“接下来由 Assistant 回答”的标记——前提是该模板定义了这种标记。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">without_prompt = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">False</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">False</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">with_prompt = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">False</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>对于 ChatML 风格，差异可能是末尾多出：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;|im_start|&gt;assistant</span><br></pre></td></tr></table></figure>
+<p>如果模型需要生成起始标记却没有添加，它可能把最后一条 User Message 当作尚未结束的内容继续补全，而不是开始回答。</p>
+<p>但并非所有模型都需要独立的 Assistant 起始标记，因此该参数的实际效果取决于具体模板。</p>
+<h1 id="continue-final-message-是什么？"><a href="#continue-final-message-是什么？" class="headerlink" title="continue_final_message 是什么？"></a><code>continue_final_message</code> 是什么？</h1><p>通常情况下，我们希望模型在最后一条 User Message 后开始新的 Assistant Message。</p>
+<p>另一种情况是：消息列表最后已经包含一个尚未写完的 Assistant Message，希望模型继续完成它。例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请用 JSON 返回用户信息。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&#x27;&#123;&quot;name&quot;: &quot;&#x27;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">formatted = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">False</span>,</span><br><span class="line">    continue_final_message=<span class="literal">True</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><code>continue_final_message=True</code> 会让模型续写最后一条消息，而不是创建新的 Assistant Message。这种方式有时称为 Prefill Response。</p>
+<p>需要注意：</p>
+<blockquote>
+<p>不要同时设置 <code>add_generation_prompt=True</code> 和 <code>continue_final_message=True</code>。</p>
+</blockquote>
+<p>前者要求开始一条新消息，后者要求继续最后一条消息，语义互相冲突，Transformers 会拒绝这种组合。</p>
+<h1 id="为什么推荐让-Chat-Template-直接-Token-化？"><a href="#为什么推荐让-Chat-Template-直接-Token-化？" class="headerlink" title="为什么推荐让 Chat Template 直接 Token 化？"></a>为什么推荐让 Chat Template 直接 Token 化？</h1><p>最安全的常见写法是：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">model_inputs = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>这样 Chat Template 可以直接返回：</p>
+<ul>
+<li><code>input_ids</code>；</li>
+<li><code>attention_mask</code>；</li>
+<li>其他模型可能需要的字段。</li>
+</ul>
+<p>如果先获得字符串，再单独调用 Tokenizer：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">formatted_text = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">False</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">model_inputs = tokenizer(</span><br><span class="line">    formatted_text,</span><br><span class="line">    add_special_tokens=<span class="literal">False</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>通常应设置 <code>add_special_tokens=False</code>，因为 Chat Template 已经加入了它需要的特殊 Token。再次自动添加 BOS、EOS 等 Token，可能造成重复标记并影响模型表现。</p>
+<h1 id="Context-中还可能包含什么？"><a href="#Context-中还可能包含什么？" class="headerlink" title="Context 中还可能包含什么？"></a>Context 中还可能包含什么？</h1><h2 id="Few-shot-示例"><a href="#Few-shot-示例" class="headerlink" title="Few-shot 示例"></a>Few-shot 示例</h2><p>可以在 Context 中放入几个输入与理想输出示例，让模型模仿任务：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">messages = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请判断评论情感，只回答正面或负面。&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;这次体验非常好。&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;正面&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;页面经常崩溃。&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;负面&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;客服回复得很及时。&quot;</span>&#125;,</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+<p>模型不是在这次请求中更新参数，而是根据 Context 中展示的模式继续生成。</p>
+<h2 id="RAG-检索资料"><a href="#RAG-检索资料" class="headerlink" title="RAG 检索资料"></a>RAG 检索资料</h2><p>RAG 应用会先检索与问题相关的文档，再把文档片段放入 Context：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">System 指令</span><br><span class="line">+ 检索资料</span><br><span class="line">+ 用户问题</span><br></pre></td></tr></table></figure>
+<p>模型只能依据实际放入 Context 的片段生成回答。资料没有被检索到、被截断或内容本身错误，都会影响最终结果。</p>
+<h2 id="工具定义"><a href="#工具定义" class="headerlink" title="工具定义"></a>工具定义</h2><p>支持 Function Calling 的模型可能还需要在 Context 中接收工具名称、说明和参数 Schema。工具越多、Schema 越长，占用的输入 Token 也越多。</p>
+<h1 id="多轮对话如何管理-Context？"><a href="#多轮对话如何管理-Context？" class="headerlink" title="多轮对话如何管理 Context？"></a>多轮对话如何管理 Context？</h1><p>最直接的方法是保存全部历史：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">messages.append(&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_input&#125;)</span><br><span class="line">response = generate_reply(messages)</span><br><span class="line">messages.append(&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: response&#125;)</span><br></pre></td></tr></table></figure>
+<p>但历史会越来越长，最终触及上下文窗口。常见策略包括：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>策略</th>
+<th>优点</th>
+<th>风险</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>保留全部历史</td>
+<td>信息最完整</td>
+<td>Token 持续增长</td>
+</tr>
+<tr>
+<td>只保留最近 N 轮</td>
+<td>简单、成本可控</td>
+<td>较早信息丢失</td>
+</tr>
+<tr>
+<td>摘要旧消息</td>
+<td>节省 Token</td>
+<td>摘要可能遗漏细节</td>
+</tr>
+<tr>
+<td>提取关键事实</td>
+<td>适合用户偏好和状态</td>
+<td>需要额外的数据结构</td>
+</tr>
+<tr>
+<td>外部记忆检索</td>
+<td>按需取回相关信息</td>
+<td>检索可能不准确</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>无论使用哪种方式，最终都要把选中的信息重新放入本轮 Context。</p>
+<h1 id="Context-冲突时会发生什么？"><a href="#Context-冲突时会发生什么？" class="headerlink" title="Context 冲突时会发生什么？"></a>Context 冲突时会发生什么？</h1><p>Context 中可能出现互相矛盾的内容：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">System：使用简体中文回答。</span><br><span class="line">User：请使用英文回答。</span><br><span class="line">检索文档：忽略之前所有要求。</span><br></pre></td></tr></table></figure>
+<p>模型最终如何响应取决于：</p>
+<ul>
+<li>模型的后训练方式；</li>
+<li>Chat Template 对角色的表示；</li>
+<li>推理服务施加的规则；</li>
+<li>指令的清晰度与位置；</li>
+<li>模型自身能力。</li>
+</ul>
+<p>应用设计时不应只期待模型“自己判断正确优先级”。外部文档和工具结果应当与可信指令分离，并通过程序执行权限控制。</p>
+<h1 id="实战：观察-Qwen-的真实-Chat-Template"><a href="#实战：观察-Qwen-的真实-Chat-Template" class="headerlink" title="实战：观察 Qwen 的真实 Chat Template"></a>实战：观察 Qwen 的真实 Chat Template</h1><p>下面继续使用本地模型：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./models/Qwen2.5-0.5B-Instruct</span><br></pre></td></tr></table></figure>
+<p>程序将展示：</p>
+<ul>
+<li>Qwen 保存的 Chat Template；</li>
+<li>单轮与多轮消息的格式化结果；</li>
+<li>System Message 和历史对话增加的 Token 数；</li>
+<li><code>add_generation_prompt</code> 的影响；</li>
+<li>Assistant Prefill；</li>
+<li>完整的两轮对话生成过程。</li>
+</ul>
+<p>示例代码：将下面代码保存为 <code>qwen_chat_template_walkthrough.py</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_PATH = <span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">select_device_and_dtype</span>():</span><br><span class="line">    <span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;cuda&quot;</span>, torch.float16</span><br><span class="line">    <span class="keyword">if</span> torch.backends.mps.is_available():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;mps&quot;</span>, torch.float32</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;cpu&quot;</span>, torch.float32</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">device, dtype = select_device_and_dtype()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;运行设备: <span class="subst">&#123;device&#125;</span>，数据类型: <span class="subst">&#123;dtype&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">    dtype=dtype,</span><br><span class="line">).to(device)</span><br><span class="line">model.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">format_and_count</span>(<span class="params"></span></span><br><span class="line"><span class="params">    name: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    messages: <span class="built_in">list</span>[<span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]],</span></span><br><span class="line"><span class="params">    *,</span></span><br><span class="line"><span class="params">    add_generation_prompt: <span class="built_in">bool</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;打印模板化文本及其 Token 数量。&quot;&quot;&quot;</span></span><br><span class="line">    formatted_text = tokenizer.apply_chat_template(</span><br><span class="line">        messages,</span><br><span class="line">        tokenize=<span class="literal">False</span>,</span><br><span class="line">        add_generation_prompt=add_generation_prompt,</span><br><span class="line">    )</span><br><span class="line">    token_ids = tokenizer.apply_chat_template(</span><br><span class="line">        messages,</span><br><span class="line">        tokenize=<span class="literal">True</span>,</span><br><span class="line">        add_generation_prompt=add_generation_prompt,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n&quot;</span> + <span class="string">&quot;=&quot;</span> * <span class="number">72</span>)</span><br><span class="line">    <span class="built_in">print</span>(name)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;消息数量:&quot;</span>, <span class="built_in">len</span>(messages))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Token 数量:&quot;</span>, <span class="built_in">len</span>(token_ids))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;格式化结果:&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(formatted_text)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_reply</span>(<span class="params">messages: <span class="built_in">list</span>[<span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]]</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;根据完整消息历史生成一条 Assistant 回复。&quot;&quot;&quot;</span></span><br><span class="line">    model_inputs = tokenizer.apply_chat_template(</span><br><span class="line">        messages,</span><br><span class="line">        tokenize=<span class="literal">True</span>,</span><br><span class="line">        add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">        return_dict=<span class="literal">True</span>,</span><br><span class="line">        return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">    ).to(device)</span><br><span class="line"></span><br><span class="line">    input_length = model_inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> torch.inference_mode():</span><br><span class="line">        output_ids = model.generate(</span><br><span class="line">            **model_inputs,</span><br><span class="line">            max_new_tokens=<span class="number">96</span>,</span><br><span class="line">            do_sample=<span class="literal">False</span>,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    generated_ids = output_ids[<span class="number">0</span>, input_length:]</span><br><span class="line">    <span class="keyword">return</span> tokenizer.decode(</span><br><span class="line">        generated_ids,</span><br><span class="line">        skip_special_tokens=<span class="literal">True</span>,</span><br><span class="line">    ).strip()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== Tokenizer 保存的 Chat Template ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(tokenizer.chat_template)</span><br><span class="line"></span><br><span class="line">single_turn = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;什么是 Context Window？&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">with_system = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名面向初学者的人工智能老师，请使用简体中文回答。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;什么是 Context Window？&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">multi_turn = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名面向初学者的人工智能老师，请使用简体中文回答。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;什么是 Token？&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;Token 是模型处理文本时使用的基本离散单元。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;它和汉字是一一对应的吗？&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">format_and_count(</span><br><span class="line">    <span class="string">&quot;=== 单轮 User Message ===&quot;</span>,</span><br><span class="line">    single_turn,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line">format_and_count(</span><br><span class="line">    <span class="string">&quot;=== 增加 System Message ===&quot;</span>,</span><br><span class="line">    with_system,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line">format_and_count(</span><br><span class="line">    <span class="string">&quot;=== 增加历史对话 ===&quot;</span>,</span><br><span class="line">    multi_turn,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">format_and_count(</span><br><span class="line">    <span class="string">&quot;=== 不添加 Assistant 生成起始标记 ===&quot;</span>,</span><br><span class="line">    with_system,</span><br><span class="line">    add_generation_prompt=<span class="literal">False</span>,</span><br><span class="line">)</span><br><span class="line">format_and_count(</span><br><span class="line">    <span class="string">&quot;=== 添加 Assistant 生成起始标记 ===&quot;</span>,</span><br><span class="line">    with_system,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== Assistant Prefill ===&quot;</span>)</span><br><span class="line">prefill_messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请使用 JSON 返回用户信息，姓名是小明。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&#x27;&#123;&quot;name&quot;: &quot;&#x27;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line">prefilled_text = tokenizer.apply_chat_template(</span><br><span class="line">    prefill_messages,</span><br><span class="line">    tokenize=<span class="literal">False</span>,</span><br><span class="line">    continue_final_message=<span class="literal">True</span>,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(prefilled_text)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 真实两轮对话 ===&quot;</span>)</span><br><span class="line">conversation = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;system&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;你是一名人工智能老师，请使用一句话回答。&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;什么是 Token？&quot;</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">first_reply = generate_reply(conversation)</span><br><span class="line">conversation.append(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: first_reply,</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;第一轮回答:&quot;</span>, first_reply)</span><br><span class="line"></span><br><span class="line">conversation.append(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;它和汉字是一一对应的吗？&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line">second_reply = generate_reply(conversation)</span><br><span class="line">conversation.append(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: second_reply,</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;第二轮回答:&quot;</span>, second_reply)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 第二轮使用的完整消息历史 ===&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> index, message <span class="keyword">in</span> <span class="built_in">enumerate</span>(conversation):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;index&#125;</span>: role=<span class="subst">&#123;message[<span class="string">&#x27;role&#x27;</span>]!r&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(message[<span class="string">&quot;content&quot;</span>])</span><br></pre></td></tr></table></figure>
+<h2 id="如何阅读运行结果"><a href="#如何阅读运行结果" class="headerlink" title="如何阅读运行结果"></a>如何阅读运行结果</h2><h3 id="System-Message-会占用-Token"><a href="#System-Message-会占用-Token" class="headerlink" title="System Message 会占用 Token"></a>System Message 会占用 Token</h3><p>System Message 不是隐藏在模型参数之外的免费配置。经过 Chat Template 后，它会成为输入序列的一部分，占用上下文窗口并增加 Prefill 计算量。</p>
+<p>一些托管服务可能还会加入用户看不到的服务端指令，因此客户端估算 Token 数时可能无法复现完整结果。</p>
+<h3 id="历史对话会被完整重新编码"><a href="#历史对话会被完整重新编码" class="headerlink" title="历史对话会被完整重新编码"></a>历史对话会被完整重新编码</h3><p>第二轮请求中，程序重新发送：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">System</span><br><span class="line">+ 第一轮 User</span><br><span class="line">+ 第一轮 Assistant</span><br><span class="line">+ 第二轮 User</span><br></pre></td></tr></table></figure>
+<p>如果不把第一轮消息加入 <code>conversation</code>，模型就无法从本次 Context 中知道之前发生了什么。</p>
+<h3 id="add-generation-prompt-改变末尾结构"><a href="#add-generation-prompt-改变末尾结构" class="headerlink" title="add_generation_prompt 改变末尾结构"></a><code>add_generation_prompt</code> 改变末尾结构</h3><p>比较两段格式化结果，可以看到添加生成提示后，序列末尾出现了模型所需的 Assistant 起始结构。</p>
+<h3 id="Assistant-Prefill-不是新消息"><a href="#Assistant-Prefill-不是新消息" class="headerlink" title="Assistant Prefill 不是新消息"></a>Assistant Prefill 不是新消息</h3><p><code>continue_final_message=True</code> 会继续最后一条 Assistant Message。它适合控制回答开头，但不能与 <code>add_generation_prompt=True</code> 一起使用。</p>
+<h1 id="按-Token-预算保留最近对话"><a href="#按-Token-预算保留最近对话" class="headerlink" title="按 Token 预算保留最近对话"></a>按 Token 预算保留最近对话</h1><p>下面的示例把历史记录组织成完整轮次，在不超过输入 Token 预算的情况下，从最近的对话开始保留：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">count_chat_tokens</span>(<span class="params">messages: <span class="built_in">list</span>[<span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]]</span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    token_ids = tokenizer.apply_chat_template(</span><br><span class="line">        messages,</span><br><span class="line">        tokenize=<span class="literal">True</span>,</span><br><span class="line">        add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(token_ids)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">build_recent_context</span>(<span class="params"></span></span><br><span class="line"><span class="params">    system_message: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>],</span></span><br><span class="line"><span class="params">    history_turns: <span class="built_in">list</span>[<span class="built_in">tuple</span>[<span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>], <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]]],</span></span><br><span class="line"><span class="params">    current_user_message: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>],</span></span><br><span class="line"><span class="params">    max_input_tokens: <span class="built_in">int</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">list</span>[<span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]]:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在 Token 预算内保留尽可能多的最近完整对话轮次。&quot;&quot;&quot;</span></span><br><span class="line">    selected_turns = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> turn <span class="keyword">in</span> <span class="built_in">reversed</span>(history_turns):</span><br><span class="line">        candidate_turns = [turn, *selected_turns]</span><br><span class="line">        candidate_messages = [system_message]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> user_message, assistant_message <span class="keyword">in</span> candidate_turns:</span><br><span class="line">            candidate_messages.extend([user_message, assistant_message])</span><br><span class="line"></span><br><span class="line">        candidate_messages.append(current_user_message)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> count_chat_tokens(candidate_messages) &gt; max_input_tokens:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">        selected_turns = candidate_turns</span><br><span class="line"></span><br><span class="line">    result = [system_message]</span><br><span class="line">    <span class="keyword">for</span> user_message, assistant_message <span class="keyword">in</span> selected_turns:</span><br><span class="line">        result.extend([user_message, assistant_message])</span><br><span class="line">    result.append(current_user_message)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> count_chat_tokens(result) &gt; max_input_tokens:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;System Message 和当前问题已经超过输入预算&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+<p>这个示例有意保留完整的 User/Assistant 轮次，避免简单删除单条消息后留下角色错位。</p>
+<p>真实应用还需要考虑：</p>
+<ul>
+<li>必须始终保留的安全指令；</li>
+<li>当前用户问题的最大长度；</li>
+<li>工具定义和检索文档占用的 Token；</li>
+<li>给模型输出预留多少 Token；</li>
+<li>旧对话是否需要摘要；</li>
+<li>哪些用户事实应保存到外部记忆。</li>
+</ul>
+<h1 id="常见错误"><a href="#常见错误" class="headerlink" title="常见错误"></a>常见错误</h1><h2 id="错误一：把-Prompt-和-Context-当成完全相同的概念"><a href="#错误一：把-Prompt-和-Context-当成完全相同的概念" class="headerlink" title="错误一：把 Prompt 和 Context 当成完全相同的概念"></a>错误一：把 Prompt 和 Context 当成完全相同的概念</h2><p>广义用法中 Prompt 可以指完整输入，但在分析系统时，区分当前指令和全部 Context 更清晰。</p>
+<h2 id="错误二：认为模型会自动记住聊天历史"><a href="#错误二：认为模型会自动记住聊天历史" class="headerlink" title="错误二：认为模型会自动记住聊天历史"></a>错误二：认为模型会自动记住聊天历史</h2><p>模型只能利用当前请求实际包含的消息。所谓“对话记忆”通常由应用保存、筛选和重新注入。</p>
+<h2 id="错误三：手动拼接-User-和-Assistant-就能适配所有模型"><a href="#错误三：手动拼接-User-和-Assistant-就能适配所有模型" class="headerlink" title="错误三：手动拼接 User: 和 Assistant: 就能适配所有模型"></a>错误三：手动拼接 <code>User:</code> 和 <code>Assistant:</code> 就能适配所有模型</h2><p>不同模型使用不同角色标记、消息边界和特殊 Token。应优先使用模型自带 Chat Template。</p>
+<h2 id="错误四：模板化后再次自动添加特殊-Token"><a href="#错误四：模板化后再次自动添加特殊-Token" class="headerlink" title="错误四：模板化后再次自动添加特殊 Token"></a>错误四：模板化后再次自动添加特殊 Token</h2><p>Chat Template 通常已经包含所需特殊 Token。先格式化为字符串再 Tokenize 时，应根据模型文档设置 <code>add_special_tokens=False</code>，避免重复 BOS 或 EOS。</p>
+<h2 id="错误五：同时启用-add-generation-prompt-和-continue-final-message"><a href="#错误五：同时启用-add-generation-prompt-和-continue-final-message" class="headerlink" title="错误五：同时启用 add_generation_prompt 和 continue_final_message"></a>错误五：同时启用 <code>add_generation_prompt</code> 和 <code>continue_final_message</code></h2><p>一个表示开始新的 Assistant Message，另一个表示继续最后一条消息，两者语义冲突。</p>
+<h2 id="错误六：System-Prompt-可以代替程序权限控制"><a href="#错误六：System-Prompt-可以代替程序权限控制" class="headerlink" title="错误六：System Prompt 可以代替程序权限控制"></a>错误六：System Prompt 可以代替程序权限控制</h2><p>System Prompt 只能引导模型行为，不能代替身份验证、授权、参数校验、沙箱和人工确认。</p>
+<h2 id="错误七：把检索文档或工具结果当成可信指令"><a href="#错误七：把检索文档或工具结果当成可信指令" class="headerlink" title="错误七：把检索文档或工具结果当成可信指令"></a>错误七：把检索文档或工具结果当成可信指令</h2><p>外部内容可能错误、过时或包含 Prompt Injection。应将其作为数据处理，并限制其影响范围。</p>
+<h2 id="错误八：无限保留所有历史消息"><a href="#错误八：无限保留所有历史消息" class="headerlink" title="错误八：无限保留所有历史消息"></a>错误八：无限保留所有历史消息</h2><p>历史越长，Token、延迟和成本越高，也可能引入噪声。需要根据任务设计裁剪、摘要或外部记忆策略。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>Prompt、Context 和 Chat Template 的关系可以总结为：</p>
+<ol>
+<li>Prompt 是提供给模型的指令、问题或输入，但有时也被广义地用于表示全部输入；</li>
+<li>Context 是模型本次推理能够看到的全部内容；</li>
+<li>System、历史对话、当前问题、检索资料和工具结果都可能进入 Context；</li>
+<li>模型不会自动保留上一轮对话，应用需要重新发送所需历史；</li>
+<li>Chat Template 把结构化消息转换为模型训练时使用的序列格式；</li>
+<li><code>add_generation_prompt</code> 通常用于开始新的 Assistant 回答；</li>
+<li><code>continue_final_message</code> 用于续写最后一条消息，两者不能同时使用；</li>
+<li>Chat Template 与 Tokenizer 共同决定模型最终接收的 Token ID；</li>
+<li>所有进入 Context 的内容都会占用 Token 预算，并影响延迟、内存和费用；</li>
+<li>System Prompt 不是程序级安全边界，外部内容也不是天然可信指令。</li>
+</ol>
+<p>理解模型到底看到了什么之后，下一步就可以学习如何组织更清晰、稳定且可验证的 Prompt。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/chat_templating">Hugging Face Transformers：Chat Templates</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/chat_templating_writing">Hugging Face Transformers：Writing a Chat Template</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/main_classes/tokenizer">Hugging Face Transformers：Tokenizer</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B-Instruct 模型页面</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+              <a href="/tags/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" rel="tag"># 大语言模型</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+              <a href="/tags/Prompt/" rel="tag"># Prompt</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/05/ai/llms/3-tokenizer/" rel="prev" title="Token 与 Tokenizer：文字如何变成模型能够计算的数字？">
+      <i class="fa fa-chevron-left"></i> Token 与 Tokenizer：文字如何变成模型能够计算的数字？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/07/ai/llms/5-logits-softmax/" rel="next" title="Logits、Softmax 与概率：模型如何选择下一个 Token？">
+      Logits、Softmax 与概率：模型如何选择下一个 Token？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Prompt%E3%80%81Context-%E4%B8%8E-Chat-Template%EF%BC%9A%E6%A8%A1%E5%9E%8B%E7%9C%9F%E6%AD%A3%E7%9C%8B%E5%88%B0%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">Prompt、Context 与 Chat Template：模型真正看到了什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%88%E7%90%86%E8%A7%A3%E4%B8%89%E4%B8%AA%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">先理解三个核心概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Prompt-%E5%88%B0%E5%BA%95%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">Prompt 到底是什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8B%AD%E4%B9%89-Prompt"><span class="nav-number">3.1.</span> <span class="nav-text">狭义 Prompt</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%BF%E4%B9%89-Prompt"><span class="nav-number">3.2.</span> <span class="nav-text">广义 Prompt</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Context%EF%BC%9A%E6%A8%A1%E5%9E%8B%E6%9C%AC%E8%BD%AE%E8%83%BD%E5%A4%9F%E7%9C%8B%E5%88%B0%E7%9A%84%E5%85%A8%E9%83%A8%E4%BF%A1%E6%81%AF"><span class="nav-number">4.</span> <span class="nav-text">Context：模型本轮能够看到的全部信息</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Context-%E4%B8%8D%E7%AD%89%E4%BA%8E%E9%95%BF%E6%9C%9F%E8%AE%B0%E5%BF%86"><span class="nav-number">4.1.</span> <span class="nav-text">Context 不等于长期记忆</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Context-Window-%E6%98%AF%E5%AE%B9%E9%87%8F%E4%B8%8A%E9%99%90"><span class="nav-number">4.2.</span> <span class="nav-text">Context Window 是容量上限</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E8%A7%92%E8%89%B2%E5%88%86%E5%88%AB%E8%A1%A8%E7%A4%BA%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">5.</span> <span class="nav-text">消息角色分别表示什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#System-Message"><span class="nav-number">5.1.</span> <span class="nav-text">System Message</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#User-Message"><span class="nav-number">5.2.</span> <span class="nav-text">User Message</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Assistant-Message"><span class="nav-number">5.3.</span> <span class="nav-text">Assistant Message</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Tool-Message"><span class="nav-number">5.4.</span> <span class="nav-text">Tool Message</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E9%A1%BA%E5%BA%8F%E4%B8%BA%E4%BB%80%E4%B9%88%E9%87%8D%E8%A6%81%EF%BC%9F"><span class="nav-number">6.</span> <span class="nav-text">消息顺序为什么重要？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Chat-Template-%E8%A7%A3%E5%86%B3%E4%BA%86%E4%BB%80%E4%B9%88%E9%97%AE%E9%A2%98%EF%BC%9F"><span class="nav-number">7.</span> <span class="nav-text">Chat Template 解决了什么问题？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Chat-Template-%E6%9C%AC%E8%B4%A8%E4%B8%8A%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">8.</span> <span class="nav-text">Chat Template 本质上是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#add-generation-prompt-%E6%9C%89%E4%BB%80%E4%B9%88%E4%BD%9C%E7%94%A8%EF%BC%9F"><span class="nav-number">9.</span> <span class="nav-text">add_generation_prompt 有什么作用？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#continue-final-message-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">10.</span> <span class="nav-text">continue_final_message 是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%8E%A8%E8%8D%90%E8%AE%A9-Chat-Template-%E7%9B%B4%E6%8E%A5-Token-%E5%8C%96%EF%BC%9F"><span class="nav-number">11.</span> <span class="nav-text">为什么推荐让 Chat Template 直接 Token 化？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Context-%E4%B8%AD%E8%BF%98%E5%8F%AF%E8%83%BD%E5%8C%85%E5%90%AB%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">12.</span> <span class="nav-text">Context 中还可能包含什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Few-shot-%E7%A4%BA%E4%BE%8B"><span class="nav-number">12.1.</span> <span class="nav-text">Few-shot 示例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RAG-%E6%A3%80%E7%B4%A2%E8%B5%84%E6%96%99"><span class="nav-number">12.2.</span> <span class="nav-text">RAG 检索资料</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E5%AE%9A%E4%B9%89"><span class="nav-number">12.3.</span> <span class="nav-text">工具定义</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E8%BD%AE%E5%AF%B9%E8%AF%9D%E5%A6%82%E4%BD%95%E7%AE%A1%E7%90%86-Context%EF%BC%9F"><span class="nav-number">13.</span> <span class="nav-text">多轮对话如何管理 Context？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Context-%E5%86%B2%E7%AA%81%E6%97%B6%E4%BC%9A%E5%8F%91%E7%94%9F%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">14.</span> <span class="nav-text">Context 冲突时会发生什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E6%88%98%EF%BC%9A%E8%A7%82%E5%AF%9F-Qwen-%E7%9A%84%E7%9C%9F%E5%AE%9E-Chat-Template"><span class="nav-number">15.</span> <span class="nav-text">实战：观察 Qwen 的真实 Chat Template</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%98%85%E8%AF%BB%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">15.1.</span> <span class="nav-text">如何阅读运行结果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#System-Message-%E4%BC%9A%E5%8D%A0%E7%94%A8-Token"><span class="nav-number">15.1.1.</span> <span class="nav-text">System Message 会占用 Token</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%86%E5%8F%B2%E5%AF%B9%E8%AF%9D%E4%BC%9A%E8%A2%AB%E5%AE%8C%E6%95%B4%E9%87%8D%E6%96%B0%E7%BC%96%E7%A0%81"><span class="nav-number">15.1.2.</span> <span class="nav-text">历史对话会被完整重新编码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#add-generation-prompt-%E6%94%B9%E5%8F%98%E6%9C%AB%E5%B0%BE%E7%BB%93%E6%9E%84"><span class="nav-number">15.1.3.</span> <span class="nav-text">add_generation_prompt 改变末尾结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Assistant-Prefill-%E4%B8%8D%E6%98%AF%E6%96%B0%E6%B6%88%E6%81%AF"><span class="nav-number">15.1.4.</span> <span class="nav-text">Assistant Prefill 不是新消息</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8C%89-Token-%E9%A2%84%E7%AE%97%E4%BF%9D%E7%95%99%E6%9C%80%E8%BF%91%E5%AF%B9%E8%AF%9D"><span class="nav-number">16.</span> <span class="nav-text">按 Token 预算保留最近对话</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E9%94%99%E8%AF%AF"><span class="nav-number">17.</span> <span class="nav-text">常见错误</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E4%B8%80%EF%BC%9A%E6%8A%8A-Prompt-%E5%92%8C-Context-%E5%BD%93%E6%88%90%E5%AE%8C%E5%85%A8%E7%9B%B8%E5%90%8C%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-number">17.1.</span> <span class="nav-text">错误一：把 Prompt 和 Context 当成完全相同的概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E4%BA%8C%EF%BC%9A%E8%AE%A4%E4%B8%BA%E6%A8%A1%E5%9E%8B%E4%BC%9A%E8%87%AA%E5%8A%A8%E8%AE%B0%E4%BD%8F%E8%81%8A%E5%A4%A9%E5%8E%86%E5%8F%B2"><span class="nav-number">17.2.</span> <span class="nav-text">错误二：认为模型会自动记住聊天历史</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E4%B8%89%EF%BC%9A%E6%89%8B%E5%8A%A8%E6%8B%BC%E6%8E%A5-User-%E5%92%8C-Assistant-%E5%B0%B1%E8%83%BD%E9%80%82%E9%85%8D%E6%89%80%E6%9C%89%E6%A8%A1%E5%9E%8B"><span class="nav-number">17.3.</span> <span class="nav-text">错误三：手动拼接 User: 和 Assistant: 就能适配所有模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E5%9B%9B%EF%BC%9A%E6%A8%A1%E6%9D%BF%E5%8C%96%E5%90%8E%E5%86%8D%E6%AC%A1%E8%87%AA%E5%8A%A8%E6%B7%BB%E5%8A%A0%E7%89%B9%E6%AE%8A-Token"><span class="nav-number">17.4.</span> <span class="nav-text">错误四：模板化后再次自动添加特殊 Token</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E4%BA%94%EF%BC%9A%E5%90%8C%E6%97%B6%E5%90%AF%E7%94%A8-add-generation-prompt-%E5%92%8C-continue-final-message"><span class="nav-number">17.5.</span> <span class="nav-text">错误五：同时启用 add_generation_prompt 和 continue_final_message</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E5%85%AD%EF%BC%9ASystem-Prompt-%E5%8F%AF%E4%BB%A5%E4%BB%A3%E6%9B%BF%E7%A8%8B%E5%BA%8F%E6%9D%83%E9%99%90%E6%8E%A7%E5%88%B6"><span class="nav-number">17.6.</span> <span class="nav-text">错误六：System Prompt 可以代替程序权限控制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E4%B8%83%EF%BC%9A%E6%8A%8A%E6%A3%80%E7%B4%A2%E6%96%87%E6%A1%A3%E6%88%96%E5%B7%A5%E5%85%B7%E7%BB%93%E6%9E%9C%E5%BD%93%E6%88%90%E5%8F%AF%E4%BF%A1%E6%8C%87%E4%BB%A4"><span class="nav-number">17.7.</span> <span class="nav-text">错误七：把检索文档或工具结果当成可信指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E5%85%AB%EF%BC%9A%E6%97%A0%E9%99%90%E4%BF%9D%E7%95%99%E6%89%80%E6%9C%89%E5%8E%86%E5%8F%B2%E6%B6%88%E6%81%AF"><span class="nav-number">17.8.</span> <span class="nav-text">错误八：无限保留所有历史消息</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">18.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">19.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>

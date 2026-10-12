@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jinglv.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":5,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="从数据准备、反向传播和大规模预训练出发，理解继续预训练、SFT、偏好对齐、分布式训练、评测与迭代如何共同构成 LLM 的训练流程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLM 如何训练：从预训练到后训练">
+<meta property="og:url" content="https://jinglv.github.io/2026/10/11/ai/llms/9-llm-training/index.html">
+<meta property="og:site_name" content="Jean&#39;s Blog">
+<meta property="og:description" content="从数据准备、反向传播和大规模预训练出发，理解继续预训练、SFT、偏好对齐、分布式训练、评测与迭代如何共同构成 LLM 的训练流程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012113255890.png">
+<meta property="article:published_time" content="2026-10-11T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-11T02:00:00.000Z">
+<meta property="article:author" content="Jean Lv">
+<meta property="article:tag" content="人工智能学习">
+<meta property="article:tag" content="大语言模型">
+<meta property="article:tag" content="LLM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012113255890.png">
+
+<link rel="canonical" href="https://jinglv.github.io/2026/10/11/ai/llms/9-llm-training/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LLM 如何训练：从预训练到后训练 | Jean's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Jean's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jean's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">一个专注软件测试开发技术的个人博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jinglv.github.io/2026/10/11/ai/llms/9-llm-training/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="Jean Lv">
+      <meta itemprop="description" content="涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jean's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LLM 如何训练：从预训练到后训练
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-11 10:00:00" itemprop="dateCreated datePublished" datetime="2026-10-11T10:00:00+08:00">2026-10-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" itemprop="url" rel="index"><span itemprop="name">大语言模型</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从数据准备、反向传播和大规模预训练出发，理解继续预训练、SFT、偏好对齐、分布式训练、评测与迭代如何共同构成 LLM 的训练流程。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="LLM-如何训练：从预训练到后训练"><a href="#LLM-如何训练：从预训练到后训练" class="headerlink" title="LLM 如何训练：从预训练到后训练"></a>LLM 如何训练：从预训练到后训练</h1><p>在上一篇文章中，我们进入 Transformer 内部，了解了 Token 如何经过 Embedding、Self-Attention、FFN 和多层 Transformer Block，最终得到词表上的 Logits。</p>
+<p>不过，一个随机初始化的 Transformer 只会输出近似随机的概率分布。模型能够续写文本、回答问题、编写代码，并不是因为工程师把所有规则逐条写进程序，而是因为模型参数在大量训练数据上经过了持续优化。</p>
+<p>本文将介绍一条典型的 LLM 训练路线：</p>
+<blockquote>
+<p>目标与数据设计 → Tokenizer → 预训练 → 后训练 → 评测与安全验证 → 部署反馈与迭代</p>
+</blockquote>
+<p>需要先说明：这不是所有模型都必须遵循的唯一流程。经典的 InstructGPT 路线包含 SFT、奖励模型和 PPO，但现代模型也可能使用 DPO、RLAIF、可验证奖励强化学习或其他后训练方法。不同团队会根据模型目标、数据和计算资源选择不同配方。</p>
+<p><img src="https://jing-images.oss-cn-beijing.aliyuncs.com/img/image-20261012113255890.png" alt="image-20261012113255890"></p>
+<h1 id="本文要回答什么？"><a href="#本文要回答什么？" class="headerlink" title="本文要回答什么？"></a>本文要回答什么？</h1><p>本文重点建立训练全景，而不是教读者在一台电脑上复现前沿大模型：</p>
+<ol>
+<li>训练过程中究竟在更新什么；</li>
+<li>原始文本如何变成监督信号；</li>
+<li>预训练、继续预训练和 SFT 有什么区别；</li>
+<li>偏好数据、奖励模型、PPO 和 DPO 分别解决什么问题；</li>
+<li>为什么训练大模型需要混合精度和分布式并行；</li>
+<li>为什么 Loss 下降不等于模型已经安全、真实且可部署；</li>
+<li>数据、训练、评测和部署反馈如何形成闭环。</li>
+</ol>
+<h1 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h1><h2 id="预训练：获得基础能力"><a href="#预训练：获得基础能力" class="headerlink" title="预训练：获得基础能力"></a>预训练：获得基础能力</h2><p>预训练通常使用大规模文本、代码和多语言数据，通过自监督学习让模型掌握语言规律、知识关联及部分推理模式。</p>
+<p>对于典型的 Decoder-only 自回归语言模型，训练目标是：给定前面的 Token，预测下一个 Token。原始文本本身就能提供输入和目标，不需要人工逐条标注，因此被称为自监督学习。</p>
+<p>预训练完成后得到的通常称为<strong>基础模型（Base Model）</strong>。它擅长文本续写，但未必能稳定理解聊天角色、遵循用户指令或拒绝不安全请求。</p>
+<h2 id="监督微调：学习遵循指令"><a href="#监督微调：学习遵循指令" class="headerlink" title="监督微调：学习遵循指令"></a>监督微调：学习遵循指令</h2><p>监督微调（Supervised Fine-Tuning，SFT）使用高质量的“指令—回答”或多轮对话数据继续训练基础模型，使它学会按照指定格式回答问题、完成任务。</p>
+<p>SFT 的关键不只是数据数量，更是数据质量、覆盖范围和一致性。少量高质量数据可以显著改变模型的交互方式，但“5K～100K 条就一定足够”并不是普遍规律：所需规模取决于基础模型能力、任务范围、数据多样性和训练目标。</p>
+<p>在常见的 assistant-only 训练方式中，系统消息和用户指令对应的标签会被设为 <code>-100</code>，只在 Assistant 回答部分计算交叉熵损失。不过，这同样不是硬性规定；有些训练配方会对完整序列计算损失，或者给不同部分设置不同权重。</p>
+<h2 id="偏好对齐：让回答更符合目标"><a href="#偏好对齐：让回答更符合目标" class="headerlink" title="偏好对齐：让回答更符合目标"></a>偏好对齐：让回答更符合目标</h2><p>SFT 告诉模型“一个合格回答是什么样”，偏好对齐则利用回答之间的相对优劣，进一步优化有用性、真实性、风格和安全边界。</p>
+<p>偏好对齐有多种实现方式，RLHF 只是其中一种。因此，“预训练、SFT 和 RLHF 三个阶段缺一不可”并不准确。更稳妥的说法是：</p>
+<ul>
+<li>预训练通常负责获得通用语言能力；</li>
+<li>SFT 常用于建立指令遵循和对话格式；</li>
+<li>RLHF、DPO 等方法可以继续优化偏好，但具体路线因模型而异。</li>
+</ul>
+<p>此外，完成偏好优化并不意味着模型已经“安全”或“完全符合人类价值”。训练数据的偏差、奖励模型的局限、越狱攻击和分布外输入仍可能导致失败，因此还需要持续评测、红队测试和部署期防护。</p>
+<h1 id="训练究竟改变了什么？"><a href="#训练究竟改变了什么？" class="headerlink" title="训练究竟改变了什么？"></a>训练究竟改变了什么？</h1><p>Transformer 的结构由代码和配置定义，而训练主要改变其中的可学习参数，也就是权重。</p>
+<p>可以把一个训练步骤简化为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">一批 Token</span><br><span class="line">   ↓</span><br><span class="line">Forward：模型计算 Logits</span><br><span class="line">   ↓</span><br><span class="line">Loss：比较预测与目标 Token</span><br><span class="line">   ↓</span><br><span class="line">Backward：反向传播计算每个参数的梯度</span><br><span class="line">   ↓</span><br><span class="line">Optimizer：根据梯度更新参数</span><br><span class="line">   ↓</span><br><span class="line">进入下一批数据</span><br></pre></td></tr></table></figure>
+<p>参数更新可以抽象表示为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">θ_new = θ_old - learning_rate × gradient</span><br></pre></td></tr></table></figure>
+<p>真实优化器通常比这个公式复杂。例如 AdamW 会维护梯度的一阶和二阶统计量，并结合权重衰减更新参数。</p>
+<p>训练不会把每篇文档原封不动地写入一个可查询数据库。模型在大量样本上调整参数，使某些 Token 序列在相应上下文中获得更高概率。知识、语言模式和行为倾向以分布式方式编码在参数中，这也是模型可能概括知识、混淆事实或产生幻觉的原因之一。</p>
+<h2 id="训练、微调与推理"><a href="#训练、微调与推理" class="headerlink" title="训练、微调与推理"></a>训练、微调与推理</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>过程</th>
+<th>是否计算梯度</th>
+<th>是否更新权重</th>
+<th>主要目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>预训练</td>
+<td>是</td>
+<td>是</td>
+<td>获得通用语言与知识能力</td>
+</tr>
+<tr>
+<td>继续预训练</td>
+<td>是</td>
+<td>是</td>
+<td>适应新领域、语言或数据分布</td>
+</tr>
+<tr>
+<td>SFT</td>
+<td>是</td>
+<td>是</td>
+<td>学习指令、对话和目标输出</td>
+</tr>
+<tr>
+<td>偏好优化</td>
+<td>是</td>
+<td>是</td>
+<td>调整回答偏好和行为边界</td>
+</tr>
+<tr>
+<td>推理</td>
+<td>否</td>
+<td>否</td>
+<td>使用已有权重生成答案</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>KV Cache、Temperature 和 Top-p 都属于推理过程中的机制，不会因为用户进行一次普通请求就修改模型参数。</p>
+<h1 id="技术细节"><a href="#技术细节" class="headerlink" title="技术细节"></a>技术细节</h1><h2 id="1-数据准备"><a href="#1-数据准备" class="headerlink" title="1. 数据准备"></a>1. 数据准备</h2><p>训练前通常需要完成以下工作：</p>
+<ol>
+<li><strong>采集</strong>：收集网页、书籍、论文、代码和多语言语料等数据。</li>
+<li><strong>清洗</strong>：删除乱码、模板页、低质量内容和异常样本。</li>
+<li><strong>去重</strong>：减少重复文档和近似内容，降低记忆与数据泄漏风险。</li>
+<li><strong>过滤</strong>：处理隐私、版权、安全和基准测试污染等问题。</li>
+<li><strong>配比</strong>：控制不同语言、领域和数据来源所占比例。</li>
+<li><strong>分词</strong>：使用 Tokenizer 将文本编码为 Token ID 序列。</li>
+</ol>
+<p>数据质量会直接影响模型能力上限。仅仅增加未经筛选的数据，不一定能持续提升模型效果。</p>
+<h2 id="2-预训练"><a href="#2-预训练" class="headerlink" title="2. 预训练"></a>2. 预训练</h2><h3 id="2-1-下一个-Token-预测"><a href="#2-1-下一个-Token-预测" class="headerlink" title="2.1 下一个 Token 预测"></a>2.1 下一个 Token 预测</h3><p>假设 Token 序列为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x₁, x₂, x₃, ..., xₜ</span><br></pre></td></tr></table></figure>
+<p>自回归语言模型学习条件概率：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P(xₜ | x₁, x₂, ..., xₜ₋₁)</span><br></pre></td></tr></table></figure>
+<p>训练时，模型会在序列的多个位置同时进行预测，并使用交叉熵衡量预测分布与真实 Token 之间的差异。训练目标可以写成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">L = -Σ log P(xₜ | x₁, ..., xₜ₋₁)</span><br></pre></td></tr></table></figure>
+<p>在 Causal Language Model 中，框架通常会在内部将输入与标签错开一位：当前位置的隐藏状态用于预测下一个 Token。</p>
+<h3 id="2-2-一个训练-Batch-经历了什么？"><a href="#2-2-一个训练-Batch-经历了什么？" class="headerlink" title="2.2 一个训练 Batch 经历了什么？"></a>2.2 一个训练 Batch 经历了什么？</h3><p>文本通常会先被拼接或切分成固定长度的训练序列，再组成 Batch：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">原始文档</span><br><span class="line">   ↓</span><br><span class="line">Tokenizer</span><br><span class="line">   ↓</span><br><span class="line">连续 Token 流</span><br><span class="line">   ↓</span><br><span class="line">切分或 Packing</span><br><span class="line">   ↓</span><br><span class="line">[batch_size, sequence_length]</span><br></pre></td></tr></table></figure>
+<p>一次迭代通常包含：</p>
+<ol>
+<li>从数据加载器取得一个 Batch；</li>
+<li>执行 Forward 得到 Logits 和 Loss；</li>
+<li>使用 Backward 计算梯度；</li>
+<li>根据需要执行梯度累积与梯度裁剪；</li>
+<li>Optimizer 更新权重；</li>
+<li>Learning Rate Scheduler 调整学习率；</li>
+<li>清空梯度并处理下一批数据；</li>
+<li>定期保存 Checkpoint 和运行验证集评测。</li>
+</ol>
+<p>如果显存一次只能容纳较小 Batch，可以执行多次 Forward/Backward 后再更新：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">effective_batch_size</span><br><span class="line">= micro_batch_size</span><br><span class="line">× gradient_accumulation_steps</span><br><span class="line">× data_parallel_world_size</span><br></pre></td></tr></table></figure>
+<p>这里的等式用于理解常见数据并行训练；实际框架还可能使用序列并行等策略。</p>
+<h3 id="2-3-继续预训练"><a href="#2-3-继续预训练" class="headerlink" title="2.3 继续预训练"></a>2.3 继续预训练</h3><p>预训练并非只能发生一次。已有基础模型还可以在特定数据上继续进行 Next-Token Prediction，常称为 Continued Pretraining 或 Domain-Adaptive Pretraining。</p>
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">通用基础模型</span><br><span class="line">   ↓</span><br><span class="line">高质量代码、医学、法律或特定语言语料</span><br><span class="line">   ↓</span><br><span class="line">领域继续预训练</span><br><span class="line">   ↓</span><br><span class="line">领域基础模型</span><br></pre></td></tr></table></figure>
+<p>继续预训练改变的是模型对某类数据分布的建模能力；SFT 更侧重“根据指令怎样回答”。两者不能简单互相替代。</p>
+<p>继续训练还要注意灾难性遗忘：如果只使用范围很窄的新数据，模型原有的通用能力可能下降。因此常见做法包括混入部分通用数据、控制学习率，并持续评测多个能力维度。</p>
+<h3 id="2-4-如何理解训练规模"><a href="#2-4-如何理解训练规模" class="headerlink" title="2.4 如何理解训练规模"></a>2.4 如何理解训练规模</h3><p>LLM 的训练规模差异非常大，不能用一组数字概括所有模型。下面是用于建立直觉的宽泛范围，而不是行业门槛：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>可能的量级</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练数据</td>
+<td>数十亿到数万亿 Token</td>
+<td>取决于模型规模、数据策略和重复训练轮数</td>
+</tr>
+<tr>
+<td>参数量</td>
+<td>数亿到数千亿以上</td>
+<td>小模型和超大模型的计算需求差异巨大</td>
+</tr>
+<tr>
+<td>训练时间</td>
+<td>数天到数月</td>
+<td>取决于硬件数量、利用率和训练规模</td>
+</tr>
+<tr>
+<td>训练成本</td>
+<td>差异可达多个数量级</td>
+<td>硬件、能源、工程和实验成本都应计入</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>因此，“7B～1T 参数”“几万亿 Token”“百万～亿美元”可以描述部分大型项目，却不应写成 LLM 训练的固定范围。</p>
+<p>对于稠密 Transformer，业界有时使用下面的近似关系建立计算量直觉：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Training FLOPs ≈ 6 × 参数量 N × 训练 Token 数 D</span><br></pre></td></tr></table></figure>
+<p>它只是粗略估算，不包含所有架构差异、稀疏激活、重计算和硬件利用率。真正训练预算还受到序列长度、并行策略、通信开销、失败重启和实验次数影响。</p>
+<h2 id="3-监督微调（SFT）"><a href="#3-监督微调（SFT）" class="headerlink" title="3. 监督微调（SFT）"></a>3. 监督微调（SFT）</h2><p>SFT 数据通常包含：</p>
+<ul>
+<li>系统消息：规定模型角色、行为边界或输出格式；</li>
+<li>用户消息：提出指令或问题；</li>
+<li>Assistant 消息：给出目标回答；</li>
+<li>多轮历史：让模型学习在对话上下文中持续交互。</li>
+</ul>
+<p>训练过程依然是 Token 级交叉熵优化。与预训练相比，核心变化主要在于数据分布和标签掩码：模型不再只学习任意文本的延续方式，而是重点学习如何生成理想回答。</p>
+<p>需要注意，聊天模板是模型训练格式的一部分。<code>system</code>、<code>user</code>、<code>assistant</code> 等角色最终都会被转换成特定的 Token 序列；推理时如果使用了不匹配的模板，模型表现可能明显下降。</p>
+<h2 id="4-经典-RLHF：奖励模型与-PPO"><a href="#4-经典-RLHF：奖励模型与-PPO" class="headerlink" title="4. 经典 RLHF：奖励模型与 PPO"></a>4. 经典 RLHF：奖励模型与 PPO</h2><p>RLHF（Reinforcement Learning from Human Feedback）利用人类反馈构造奖励信号。以经典的 InstructGPT 路线为例，它通常建立在已经完成 SFT 的模型之上。</p>
+<h3 id="4-1-收集偏好数据"><a href="#4-1-收集偏好数据" class="headerlink" title="4.1 收集偏好数据"></a>4.1 收集偏好数据</h3><p>对于同一个 Prompt，让模型生成多个候选回答，再由标注者选择或排序哪些回答更好：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Prompt + 获胜回答（chosen）+ 落选回答（rejected）</span><br></pre></td></tr></table></figure>
+<p>“更好”必须通过标注规范定义，可能同时考虑有用性、正确性、相关性、表达质量和安全性。偏好标签并不是客观真理，也会受到标注者背景和规范设计的影响。</p>
+<h3 id="4-2-训练奖励模型"><a href="#4-2-训练奖励模型" class="headerlink" title="4.2 训练奖励模型"></a>4.2 训练奖励模型</h3><p>奖励模型（Reward Model，RM）读取 Prompt 和回答，并输出一个标量分数。训练时希望获胜回答的分数高于落选回答。常见的成对排序损失为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">L_RM = -log σ(r_chosen - r_rejected)</span><br></pre></td></tr></table></figure>
+<p>其中，<code>r_chosen</code> 和 <code>r_rejected</code> 分别是奖励模型对两个回答的评分。</p>
+<h3 id="4-3-使用-PPO-优化策略模型"><a href="#4-3-使用-PPO-优化策略模型" class="headerlink" title="4.3 使用 PPO 优化策略模型"></a>4.3 使用 PPO 优化策略模型</h3><p>PPO 阶段通常包含四个角色：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>策略模型（Policy）</td>
+<td>生成回答，也是要被更新的 LLM</td>
+</tr>
+<tr>
+<td>参考模型（Reference）</td>
+<td>通常冻结，用于限制策略偏离原有模型太远</td>
+</tr>
+<tr>
+<td>奖励模型（Reward Model）</td>
+<td>对完整回答给出奖励分数</td>
+</tr>
+<tr>
+<td>价值模型（Value Model）</td>
+<td>估计期望回报，帮助计算 Advantage</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>一个训练批次的简化流程如下：</p>
+<ol>
+<li>策略模型根据 Prompt 采样回答；</li>
+<li>奖励模型对回答打分；</li>
+<li>计算策略模型与参考模型之间的 KL 惩罚；</li>
+<li>价值模型估计回报，并计算 Advantage；</li>
+<li>使用 PPO 的裁剪目标更新策略模型；</li>
+<li>更新价值模型，并监控奖励、KL、长度和生成质量。</li>
+</ol>
+<p>KL 约束用于减少策略模型为了追逐奖励而过度偏离参考模型的风险，但它不能彻底消除奖励投机或训练不稳定。</p>
+<h2 id="5-DPO-与-RLAIF"><a href="#5-DPO-与-RLAIF" class="headerlink" title="5. DPO 与 RLAIF"></a>5. DPO 与 RLAIF</h2><h3 id="5-1-DPO：直接使用偏好数据"><a href="#5-1-DPO：直接使用偏好数据" class="headerlink" title="5.1 DPO：直接使用偏好数据"></a>5.1 DPO：直接使用偏好数据</h3><p>DPO（Direct Preference Optimization）直接在 <code>chosen/rejected</code> 偏好对上优化策略模型，不需要单独训练奖励模型，也不需要运行 PPO 的在线采样循环。</p>
+<p>DPO 的工程实现通常更简单，但“更简单”不等于在所有任务上都与 PPO 效果相同。最终表现仍取决于偏好数据质量、参考模型、超参数和评测目标。</p>
+<h3 id="5-2-RLAIF：反馈来源发生变化"><a href="#5-2-RLAIF：反馈来源发生变化" class="headerlink" title="5.2 RLAIF：反馈来源发生变化"></a>5.2 RLAIF：反馈来源发生变化</h3><p>RLAIF（Reinforcement Learning from AI Feedback）使用 AI 生成或判断偏好反馈，以减少部分人工标注成本。它描述的是<strong>反馈来源</strong>，而不是一种与 PPO、DPO 并列的固定优化算法。</p>
+<p>例如，AI 可以依据一组原则比较两个回答，再用这些偏好训练奖励模型或执行直接偏好优化。AI 反馈可以扩展数据规模，但也可能继承评审模型的偏差和错误，因此仍需人工校准和独立评测。</p>
+<h2 id="6-各阶段对比"><a href="#6-各阶段对比" class="headerlink" title="6. 各阶段对比"></a>6. 各阶段对比</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>典型数据</th>
+<th>优化目标</th>
+<th>典型产物</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>预训练</td>
+<td>大规模原始语料</td>
+<td>下一个 Token 预测</td>
+<td>基础模型</td>
+</tr>
+<tr>
+<td>SFT</td>
+<td>指令—回答、多轮对话</td>
+<td>模仿目标回答、学习指令遵循</td>
+<td>指令模型</td>
+</tr>
+<tr>
+<td>奖励模型训练</td>
+<td>Prompt、获胜回答、落选回答</td>
+<td>学习回答之间的相对偏好</td>
+<td>奖励模型</td>
+</tr>
+<tr>
+<td>PPO 式 RLHF</td>
+<td>在线采样回答、奖励、参考策略</td>
+<td>在约束下提高期望奖励</td>
+<td>对齐后的策略模型</td>
+</tr>
+<tr>
+<td>DPO 等直接偏好优化</td>
+<td>离线偏好对</td>
+<td>提高获胜回答的相对概率</td>
+<td>对齐后的策略模型</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="7-大规模训练为什么需要分布式系统？"><a href="#7-大规模训练为什么需要分布式系统？" class="headerlink" title="7. 大规模训练为什么需要分布式系统？"></a>7. 大规模训练为什么需要分布式系统？</h2><p>当模型、Optimizer State、梯度和激活值无法放入单张 GPU 时，需要把计算或数据拆到多张设备上。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>并行方式</th>
+<th>基本思想</th>
+<th>主要解决的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data Parallel</td>
+<td>每张设备放模型副本，处理不同数据</td>
+<td>提高数据吞吐</td>
+</tr>
+<tr>
+<td>Tensor Parallel</td>
+<td>把单个矩阵运算拆到多张设备</td>
+<td>单层参数或计算过大</td>
+</tr>
+<tr>
+<td>Pipeline Parallel</td>
+<td>把不同模型层放到不同设备</td>
+<td>模型层整体放不下</td>
+</tr>
+<tr>
+<td>Sequence Parallel</td>
+<td>沿序列维度拆分部分计算</td>
+<td>长序列激活占用大</td>
+</tr>
+<tr>
+<td>Expert Parallel</td>
+<td>把不同 MoE Expert 分散到设备</td>
+<td>稀疏专家模型训练</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>大型训练还会使用：</p>
+<ul>
+<li>BF16 或 FP16 混合精度；</li>
+<li>Gradient Checkpointing，用额外计算换激活显存；</li>
+<li>ZeRO 或 Fully Sharded Data Parallel，切分参数、梯度和优化器状态；</li>
+<li>高吞吐数据管线；</li>
+<li>分布式 Checkpoint；</li>
+<li>故障检测与训练恢复；</li>
+<li>通信与计算重叠。</li>
+</ul>
+<p>因此，训练成本不只是“GPU 数量 × 运行时间”。硬件利用率、网络互联、存储吞吐和系统稳定性都会显著影响最终成本。</p>
+<h2 id="8-评测为什么贯穿全流程？"><a href="#8-评测为什么贯穿全流程？" class="headerlink" title="8. 评测为什么贯穿全流程？"></a>8. 评测为什么贯穿全流程？</h2><p>Loss 是重要信号，但不是最终产品质量的完整度量。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">训练 Loss 下降</span><br><span class="line">    ≠</span><br><span class="line">所有任务效果都提升</span><br><span class="line">    ≠</span><br><span class="line">事实性与安全性都提升</span><br><span class="line">    ≠</span><br><span class="line">模型已经可以上线</span><br></pre></td></tr></table></figure>
+<p>不同阶段需要观察不同指标：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>常见检查内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据准备</td>
+<td>数据质量、重复率、隐私、版权、污染</td>
+</tr>
+<tr>
+<td>预训练</td>
+<td>Train/Validation Loss、Perplexity、能力评测</td>
+</tr>
+<tr>
+<td>SFT</td>
+<td>指令遵循、格式、领域任务、多轮对话</td>
+</tr>
+<tr>
+<td>偏好优化</td>
+<td>Win Rate、奖励、KL、长度偏差、Reward Hacking</td>
+</tr>
+<tr>
+<td>安全评测</td>
+<td>有害请求、越狱、隐私泄露、偏见</td>
+</tr>
+<tr>
+<td>部署评测</td>
+<td>延迟、吞吐、成本、稳定性、线上失败案例</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>评测集必须与训练数据隔离。若基准题目或参考答案进入训练集，分数可能反映记忆或数据污染，而不是真实泛化能力。</p>
+<p>完整流程更接近：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">数据与目标设计</span><br><span class="line">   ↓</span><br><span class="line">训练</span><br><span class="line">   ↓</span><br><span class="line">离线能力、安全与偏差评测</span><br><span class="line">   ↓</span><br><span class="line">失败分析与数据修订</span><br><span class="line">   ↓</span><br><span class="line">重新训练或继续后训练</span><br><span class="line">   ↓</span><br><span class="line">受控部署与线上监控</span><br><span class="line">   └──────────→ 回到数据与评测</span><br></pre></td></tr></table></figure>
+<h1 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h1><p>以下代码用于展示核心控制流，不是可直接用于大规模训练的完整工程。真实训练还需要分布式并行、混合精度、梯度累积、检查点、数据流式加载和完善的评测系统。</p>
+<h2 id="1-预训练：Next-Token-Prediction"><a href="#1-预训练：Next-Token-Prediction" class="headerlink" title="1. 预训练：Next-Token Prediction"></a>1. 预训练：Next-Token Prediction</h2><p>下面使用本地下载模型Qwen2.5-0.5B-Instruct的配置和 Tokenizer，随机初始化模型参数，演示一个训练步骤：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Project ：llm-base</span></span><br><span class="line"><span class="comment"># File    ：qwen_pretrain_demo.py</span></span><br><span class="line"><span class="comment"># Author  ：jinglv</span></span><br><span class="line"><span class="comment"># Date    ：2026/10/10</span></span><br><span class="line"><span class="comment"># Software：PyCharm</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch.optim <span class="keyword">import</span> AdamW</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoConfig, AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_PATH = <span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 优先使用 NVIDIA GPU，其次是 Apple Silicon GPU，否则回退到 CPU。</span></span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    device = <span class="string">&quot;cuda&quot;</span></span><br><span class="line"><span class="keyword">elif</span> torch.backends.mps.is_available():</span><br><span class="line">    device = <span class="string">&quot;mps&quot;</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    device = <span class="string">&quot;cpu&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;运行设备:&quot;</span>, device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Tokenizer 直接读取本地 Qwen 模型目录，不访问网络。</span></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 这里只读取模型结构配置，然后随机初始化全部参数。</span></span><br><span class="line"><span class="comment"># 这才是“从零预训练”；from_pretrained 会加载已经训练好的权重。</span></span><br><span class="line">config = AutoConfig.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line">model = AutoModelForCausalLM.from_config(config).to(device)</span><br><span class="line">model.config.use_cache = <span class="literal">False</span></span><br><span class="line"></span><br><span class="line">optimizer = AdamW(model.parameters(), lr=<span class="number">1e-4</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 一个极小的演示批次。真实预训练应使用大规模、清洗后的流式语料。</span></span><br><span class="line">text_batch = [</span><br><span class="line">    <span class="string">&quot;今天天气很好，适合出去散步。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;大语言模型通过预测下一个 Token 学习语言规律。&quot;</span></span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># padding 让不同长度的文本组成一个批次；truncation 限制最大上下文长度。</span></span><br><span class="line">batch = tokenizer(</span><br><span class="line">    text_batch,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span>,</span><br><span class="line">    padding=<span class="literal">True</span>,</span><br><span class="line">    truncation=<span class="literal">True</span>,</span><br><span class="line">    max_length=<span class="number">128</span></span><br><span class="line">).to(device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># CausalLM 内部会自动把标签错开一位：位置 t 的输出预测位置 t+1 的 Token。</span></span><br><span class="line">labels = batch[<span class="string">&quot;input_ids&quot;</span>].clone()</span><br><span class="line"></span><br><span class="line"><span class="comment"># -100 是 CrossEntropyLoss 默认忽略的标签值，不在 Padding Token 上计算损失。</span></span><br><span class="line">labels[batch[<span class="string">&quot;attention_mask&quot;</span>] == <span class="number">0</span>] = -<span class="number">100</span></span><br><span class="line"></span><br><span class="line">model.train()</span><br><span class="line">outputs = model(</span><br><span class="line">    **batch,</span><br><span class="line">    labels=labels</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">optimizer.zero_grad(set_to_none=<span class="literal">True</span>)</span><br><span class="line">outputs.loss.backward()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 梯度裁剪可以降低单步异常大梯度造成训练不稳定的风险。</span></span><br><span class="line">torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=<span class="number">1.0</span>)</span><br><span class="line">optimizer.step()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;预训练单步完成，loss:&quot;</span>, outputs.loss.item())</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/Users/jean/.pyenv/shims/uv run /Users/jean/PycharmProjects/llm-base/.venv/bin/python /Users/jean/PycharmProjects/llm-base/qwen_pretrain_demo.py </span><br><span class="line">运行设备: mps</span><br><span class="line">预训练单步完成，loss: 11.999110221862793</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><code>AutoModelForCausalLM</code> 会在内部完成标签错位，使位置 <code>t</code> 的输出预测位置 <code>t+1</code> 的 Token。Padding 必须从损失中排除，否则模型会浪费能力去预测填充符号。</p>
+<h2 id="2-SFT：只在-Assistant-回答上计算损失"><a href="#2-SFT：只在-Assistant-回答上计算损失" class="headerlink" title="2. SFT：只在 Assistant 回答上计算损失"></a>2. SFT：只在 Assistant 回答上计算损失</h2><p>下面使用模型自带的 Chat Template 构造训练序列。与手写 <code>User:</code>、<code>Assistant:</code> 字符串相比，这种方式更接近模型实际的训练格式。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Project ：llm-base</span></span><br><span class="line"><span class="comment"># File    ：qwen_sft_demo.py</span></span><br><span class="line"><span class="comment"># Author  ：jinglv</span></span><br><span class="line"><span class="comment"># Date    ：2026/10/10</span></span><br><span class="line"><span class="comment"># Software：PyCharm</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch.optim <span class="keyword">import</span> AdamW</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_PATH = <span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 优先使用 NVIDIA GPU，其次是 Apple Silicon GPU，否则回退到 CPU。</span></span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    device = <span class="string">&quot;cuda&quot;</span></span><br><span class="line"><span class="keyword">elif</span> torch.backends.mps.is_available():</span><br><span class="line">    device = <span class="string">&quot;mps&quot;</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    device = <span class="string">&quot;cpu&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;运行设备:&quot;</span>, device)</span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># SFT 从本地已有权重继续训练，而不是随机初始化模型。</span></span><br><span class="line">model = AutoModelForCausalLM.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">    dtype=torch.float32</span><br><span class="line">).to(device)</span><br><span class="line">model.config.use_cache = <span class="literal">False</span></span><br><span class="line"></span><br><span class="line">optimizer = AdamW(model.parameters(), lr=<span class="number">1e-5</span>)</span><br><span class="line"></span><br><span class="line">instruction = <span class="string">&quot;用一句话解释梯度下降。&quot;</span></span><br><span class="line">response = <span class="string">&quot;梯度下降沿损失函数下降最快的方向迭代更新模型参数。&quot;</span></span><br><span class="line"></span><br><span class="line">prompt_messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: instruction</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">full_messages = [</span><br><span class="line">    *prompt_messages,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: response</span><br><span class="line">    &#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># Prompt 末尾包含 Qwen Chat Template 添加的 Assistant 开始标记。</span></span><br><span class="line">prompt = tokenizer.apply_chat_template(</span><br><span class="line">    prompt_messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span></span><br><span class="line">).to(device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 完整序列包含 User Prompt、Assistant 回答及回答结束标记。</span></span><br><span class="line">full = tokenizer.apply_chat_template(</span><br><span class="line">    full_messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">False</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span></span><br><span class="line">).to(device)</span><br><span class="line"></span><br><span class="line">prompt_length = prompt[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 不能根据字符串长度猜测回答边界。</span></span><br><span class="line"><span class="comment"># 这里验证完整序列的前缀确实与待生成 Prompt 完全一致。</span></span><br><span class="line"><span class="keyword">assert</span> torch.equal(</span><br><span class="line">    prompt[<span class="string">&quot;input_ids&quot;</span>],</span><br><span class="line">    full[<span class="string">&quot;input_ids&quot;</span>][:, :prompt_length]</span><br><span class="line">), <span class="string">&quot;Chat Template 的生成前缀与完整对话不一致&quot;</span></span><br><span class="line"></span><br><span class="line">labels = full[<span class="string">&quot;input_ids&quot;</span>].clone()</span><br><span class="line"></span><br><span class="line"><span class="comment"># User Prompt 部分设为 -100，只在 Assistant 回答上计算语言模型损失。</span></span><br><span class="line">labels[:, :prompt_length] = -<span class="number">100</span></span><br><span class="line">labels[full[<span class="string">&quot;attention_mask&quot;</span>] == <span class="number">0</span>] = -<span class="number">100</span></span><br><span class="line"></span><br><span class="line">model.train()</span><br><span class="line">outputs = model(</span><br><span class="line">    **full,</span><br><span class="line">    labels=labels</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">optimizer.zero_grad(set_to_none=<span class="literal">True</span>)</span><br><span class="line">outputs.loss.backward()</span><br><span class="line">torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=<span class="number">1.0</span>)</span><br><span class="line">optimizer.step()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;SFT 单步完成，loss:&quot;</span>, outputs.loss.item())</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/Users/jean/.pyenv/shims/uv run /Users/jean/PycharmProjects/llm-base/.venv/bin/python /Users/jean/PycharmProjects/llm-base/qwen_sft_demo.py </span><br><span class="line">运行设备: mps</span><br><span class="line">Loading weights: 100%|██████████| 290/290 [00:00&lt;00:00, 364.79it/s]</span><br><span class="line">SFT 单步完成，loss: 2.633002281188965</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>不能简单地分别对 <code>instruction</code> 和完整文本分词，再假设两次得到的 Token 数可以直接拼接。BPE 等分词算法的结果可能受到前后字符影响，聊天模板还会插入特殊 Token，因此必须验证回答边界。</p>
+<h2 id="3-奖励模型：成对偏好损失"><a href="#3-奖励模型：成对偏好损失" class="headerlink" title="3. 奖励模型：成对偏好损失"></a>3. 奖励模型：成对偏好损失</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Project ：llm-base</span></span><br><span class="line"><span class="comment"># File    ：qwen_reward_model_demo.py</span></span><br><span class="line"><span class="comment"># Author  ：jinglv</span></span><br><span class="line"><span class="comment"># Date    ：2026/10/10</span></span><br><span class="line"><span class="comment"># Software：PyCharm</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">from</span> torch.optim <span class="keyword">import</span> AdamW</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForSequenceClassification, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_PATH = <span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 优先使用 NVIDIA GPU，其次是 Apple Silicon GPU，否则回退到 CPU。</span></span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    device = <span class="string">&quot;cuda&quot;</span></span><br><span class="line"><span class="keyword">elif</span> torch.backends.mps.is_available():</span><br><span class="line">    device = <span class="string">&quot;mps&quot;</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    device = <span class="string">&quot;cpu&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;运行设备:&quot;</span>, device)</span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># num_labels=1 会在 Qwen 主干后添加一个输出标量分数的分类头。</span></span><br><span class="line"><span class="comment"># 本地 CausalLM 权重不包含这个评分头，因此评分头会被随机初始化。</span></span><br><span class="line">model = AutoModelForSequenceClassification.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">    num_labels=<span class="number">1</span>,</span><br><span class="line">    dtype=torch.float32</span><br><span class="line">).to(device)</span><br><span class="line">model.config.pad_token_id = tokenizer.pad_token_id</span><br><span class="line"></span><br><span class="line">optimizer = AdamW(model.parameters(), lr=<span class="number">1e-5</span>)</span><br><span class="line"></span><br><span class="line">prompt = <span class="string">&quot;地球为什么有四季？&quot;</span></span><br><span class="line">chosen = <span class="string">&quot;因为地轴相对公转轨道平面存在倾角，各地区接收太阳辐射随公转而变化。&quot;</span></span><br><span class="line">rejected = <span class="string">&quot;因为地球在夏天离太阳更近。&quot;</span></span><br><span class="line"></span><br><span class="line">chosen_messages = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: prompt&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: chosen&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">rejected_messages = [</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: prompt&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: rejected&#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># chosen 和 rejected 都必须包含同一个 Prompt，只让回答质量产生分数差异。</span></span><br><span class="line">chosen_batch = tokenizer.apply_chat_template(</span><br><span class="line">    chosen_messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">False</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span></span><br><span class="line">).to(device)</span><br><span class="line"></span><br><span class="line">rejected_batch = tokenizer.apply_chat_template(</span><br><span class="line">    rejected_messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">False</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span></span><br><span class="line">).to(device)</span><br><span class="line"></span><br><span class="line">model.train()</span><br><span class="line">chosen_score = model(**chosen_batch).logits.squeeze(-<span class="number">1</span>)</span><br><span class="line">rejected_score = model(**rejected_batch).logits.squeeze(-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># Bradley-Terry 成对偏好损失：鼓励 chosen_score 高于 rejected_score。</span></span><br><span class="line">loss = -F.logsigmoid(chosen_score - rejected_score).mean()</span><br><span class="line"></span><br><span class="line">optimizer.zero_grad(set_to_none=<span class="literal">True</span>)</span><br><span class="line">loss.backward()</span><br><span class="line">torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=<span class="number">1.0</span>)</span><br><span class="line">optimizer.step()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Chosen 分数:&quot;</span>, chosen_score.item())</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Rejected 分数:&quot;</span>, rejected_score.item())</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;奖励模型单步完成，loss:&quot;</span>, loss.item())</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">/Users/jean/.pyenv/shims/uv run /Users/jean/PycharmProjects/llm-base/.venv/bin/python /Users/jean/PycharmProjects/llm-base/qwen_reward_model_demo.py </span><br><span class="line">运行设备: mps</span><br><span class="line">Loading weights: 100%|██████████| 290/290 [00:00&lt;00:00, 315.46it/s]</span><br><span class="line">[transformers] Qwen2ForSequenceClassification LOAD REPORT from: ./models/Qwen2.5-0.5B-Instruct</span><br><span class="line">Key          | Status  | </span><br><span class="line">-------------+---------+-</span><br><span class="line">score.weight | MISSING | </span><br><span class="line"></span><br><span class="line">Notes:</span><br><span class="line">- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.</span><br><span class="line">Chosen 分数: 5.9947357177734375</span><br><span class="line">Rejected 分数: 4.799543380737305</span><br><span class="line">奖励模型单步完成，loss: 0.26439738273620605</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>实际奖励模型通常会分别编码 <code>Prompt + chosen</code> 和 <code>Prompt + rejected</code>，取序列末端的标量分数，再使用上述损失进行训练。</p>
+<h2 id="4-PPO：单步教学骨架"><a href="#4-PPO：单步教学骨架" class="headerlink" title="4. PPO：单步教学骨架"></a>4. PPO：单步教学骨架</h2><p>PPO 不能简化为 <code>-(reward - KL) * log_prob</code>。真正的 PPO 至少需要旧策略概率、Advantage、裁剪目标和价值函数。下面的代码把这些组件压缩到一个单机训练步骤中，用于理解控制流，而不是可直接扩展到生产环境的 RLHF 实现。</p>
+<p>示例中的奖励头是随机初始化的，因此 Loss 和奖励数值没有质量意义；它只能验证张量流和 PPO 裁剪目标。真正训练必须使用已经训练并经过评测的奖励模型，还要正确处理 Padding、EOS、可变回答长度、多个 PPO Epoch、分布式采样和监控指标。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Project ：llm-base</span></span><br><span class="line"><span class="comment"># File    ：qwen_ppo_demo.py</span></span><br><span class="line"><span class="comment"># Author  ：jinglv</span></span><br><span class="line"><span class="comment"># Date    ：2026/10/10</span></span><br><span class="line"><span class="comment"># Software：PyCharm</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> torch.nn.functional <span class="keyword">as</span> F</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"><span class="keyword">from</span> torch.optim <span class="keyword">import</span> AdamW</span><br><span class="line"><span class="keyword">from</span> transformers <span class="keyword">import</span> AutoModelForCausalLM, AutoTokenizer</span><br><span class="line"></span><br><span class="line">MODEL_PATH = <span class="string">&quot;./models/Qwen2.5-0.5B-Instruct&quot;</span></span><br><span class="line">MAX_NEW_TOKENS = <span class="number">8</span></span><br><span class="line">BETA = <span class="number">0.02</span></span><br><span class="line">EPSILON = <span class="number">0.2</span></span><br><span class="line">VALUE_COEF = <span class="number">0.5</span></span><br><span class="line">GAMMA = <span class="number">1.0</span></span><br><span class="line">GAE_LAMBDA = <span class="number">0.95</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 优先使用 NVIDIA GPU，其次是 Apple Silicon GPU，否则回退到 CPU。</span></span><br><span class="line"><span class="keyword">if</span> torch.cuda.is_available():</span><br><span class="line">    device = <span class="string">&quot;cuda&quot;</span></span><br><span class="line"><span class="keyword">elif</span> torch.backends.mps.is_available():</span><br><span class="line">    device = <span class="string">&quot;mps&quot;</span></span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    device = <span class="string">&quot;cpu&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;运行设备:&quot;</span>, device)</span><br><span class="line"></span><br><span class="line">tokenizer = AutoTokenizer.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># policy 是需要更新的策略模型。</span></span><br><span class="line">policy = AutoModelForCausalLM.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">    dtype=torch.float32</span><br><span class="line">).to(device)</span><br><span class="line">policy.config.use_cache = <span class="literal">False</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># reference 是冻结的初始模型，用于计算 KL 惩罚，限制策略偏离原模型过远。</span></span><br><span class="line"><span class="comment"># 这个教学示例没有为 old_policy 再加载一份模型，而是在更新前保存 old_log_probs。</span></span><br><span class="line">reference = AutoModelForCausalLM.from_pretrained(</span><br><span class="line">    MODEL_PATH,</span><br><span class="line">    local_files_only=<span class="literal">True</span>,</span><br><span class="line">    dtype=torch.float32</span><br><span class="line">).to(device)</span><br><span class="line">reference.config.use_cache = <span class="literal">False</span></span><br><span class="line">reference.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> parameter <span class="keyword">in</span> reference.parameters():</span><br><span class="line">    parameter.requires_grad_(<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># value_head 估计每个回答 Token 之后的期望回报。</span></span><br><span class="line">value_head = nn.Linear(policy.config.hidden_size, <span class="number">1</span>).to(device)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 为避免加载第三份 0.5B 模型，演示代码复用 reference 的隐藏状态并添加奖励头。</span></span><br><span class="line"><span class="comment"># 该奖励头是随机初始化的，只能验证 PPO 控制流；真实训练必须换成已训练的奖励模型。</span></span><br><span class="line">reward_head = nn.Linear(policy.config.hidden_size, <span class="number">1</span>).to(device)</span><br><span class="line">reward_head.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> parameter <span class="keyword">in</span> reward_head.parameters():</span><br><span class="line">    parameter.requires_grad_(<span class="literal">False</span>)</span><br><span class="line"></span><br><span class="line">optimizer = AdamW(</span><br><span class="line">    [*policy.parameters(), *value_head.parameters()],</span><br><span class="line">    lr=<span class="number">1e-6</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>,</span><br><span class="line">        <span class="string">&quot;content&quot;</span>: <span class="string">&quot;用一句话解释什么是注意力机制。&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">model_inputs = tokenizer.apply_chat_template(</span><br><span class="line">    messages,</span><br><span class="line">    tokenize=<span class="literal">True</span>,</span><br><span class="line">    add_generation_prompt=<span class="literal">True</span>,</span><br><span class="line">    return_dict=<span class="literal">True</span>,</span><br><span class="line">    return_tensors=<span class="string">&quot;pt&quot;</span></span><br><span class="line">).to(device)</span><br><span class="line"></span><br><span class="line">prompt_length = model_inputs[<span class="string">&quot;input_ids&quot;</span>].shape[<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一步：使用更新前的策略采样回答，并固定这批样本对应的旧概率。</span></span><br><span class="line">policy.<span class="built_in">eval</span>()</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> torch.no_grad():</span><br><span class="line">    generated_ids = policy.generate(</span><br><span class="line">        **model_inputs,</span><br><span class="line">        max_new_tokens=MAX_NEW_TOKENS,</span><br><span class="line">        do_sample=<span class="literal">True</span>,</span><br><span class="line">        temperature=<span class="number">0.8</span>,</span><br><span class="line">        pad_token_id=tokenizer.pad_token_id,</span><br><span class="line">        eos_token_id=tokenizer.eos_token_id</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    attention_mask = torch.ones_like(generated_ids)</span><br><span class="line"></span><br><span class="line">    old_outputs = policy(</span><br><span class="line">        input_ids=generated_ids,</span><br><span class="line">        attention_mask=attention_mask,</span><br><span class="line">        output_hidden_states=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    reference_outputs = reference(</span><br><span class="line">        input_ids=generated_ids,</span><br><span class="line">        attention_mask=attention_mask,</span><br><span class="line">        output_hidden_states=<span class="literal">True</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 预测第一个回答 Token 的 logits 位于 prompt_length - 1。</span></span><br><span class="line">    response_ids = generated_ids[:, prompt_length:]</span><br><span class="line">    old_response_logits = old_outputs.logits[:, prompt_length - <span class="number">1</span>:-<span class="number">1</span>]</span><br><span class="line">    reference_response_logits = reference_outputs.logits[:, prompt_length - <span class="number">1</span>:-<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    old_log_probs = old_response_logits.log_softmax(-<span class="number">1</span>).gather(</span><br><span class="line">        dim=-<span class="number">1</span>,</span><br><span class="line">        index=response_ids.unsqueeze(-<span class="number">1</span>)</span><br><span class="line">    ).squeeze(-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    reference_log_probs = reference_response_logits.log_softmax(-<span class="number">1</span>).gather(</span><br><span class="line">        dim=-<span class="number">1</span>,</span><br><span class="line">        index=response_ids.unsqueeze(-<span class="number">1</span>)</span><br><span class="line">    ).squeeze(-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    old_values = value_head(</span><br><span class="line">        old_outputs.hidden_states[-<span class="number">1</span>][:, prompt_length:]</span><br><span class="line">    ).squeeze(-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 序列级奖励只添加到回答的最后一个 Token。</span></span><br><span class="line">    sequence_score = reward_head(</span><br><span class="line">        reference_outputs.hidden_states[-<span class="number">1</span>][:, -<span class="number">1</span>]</span><br><span class="line">    ).squeeze(-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># sampled KL 使用当前样本上的 log π_old - log π_ref 估计。</span></span><br><span class="line">    kl_penalty = old_log_probs - reference_log_probs</span><br><span class="line">    token_rewards = -BETA * kl_penalty</span><br><span class="line">    token_rewards[:, -<span class="number">1</span>] += sequence_score</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 使用 GAE 从后向前计算每个 Token 的 Advantage。</span></span><br><span class="line">    advantages = torch.zeros_like(token_rewards)</span><br><span class="line">    next_value = torch.zeros_like(old_values[:, <span class="number">0</span>])</span><br><span class="line">    next_advantage = torch.zeros_like(old_values[:, <span class="number">0</span>])</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> token_index <span class="keyword">in</span> <span class="built_in">reversed</span>(<span class="built_in">range</span>(token_rewards.shape[<span class="number">1</span>])):</span><br><span class="line">        delta = (</span><br><span class="line">            token_rewards[:, token_index]</span><br><span class="line">            + GAMMA * next_value</span><br><span class="line">            - old_values[:, token_index]</span><br><span class="line">        )</span><br><span class="line">        next_advantage = delta + GAMMA * GAE_LAMBDA * next_advantage</span><br><span class="line">        advantages[:, token_index] = next_advantage</span><br><span class="line">        next_value = old_values[:, token_index]</span><br><span class="line"></span><br><span class="line">    returns = advantages + old_values</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 标准化 Advantage 通常能让优化过程更稳定。</span></span><br><span class="line">    advantages = (</span><br><span class="line">        (advantages - advantages.mean())</span><br><span class="line">        / (advantages.std(unbiased=<span class="literal">False</span>) + <span class="number">1e-8</span>)</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第二步：对同一批回答重新计算策略概率，并执行 PPO 裁剪更新。</span></span><br><span class="line">policy.train()</span><br><span class="line"></span><br><span class="line">new_outputs = policy(</span><br><span class="line">    input_ids=generated_ids,</span><br><span class="line">    attention_mask=attention_mask,</span><br><span class="line">    output_hidden_states=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">new_response_logits = new_outputs.logits[:, prompt_length - <span class="number">1</span>:-<span class="number">1</span>]</span><br><span class="line">new_log_probs = new_response_logits.log_softmax(-<span class="number">1</span>).gather(</span><br><span class="line">    dim=-<span class="number">1</span>,</span><br><span class="line">    index=response_ids.unsqueeze(-<span class="number">1</span>)</span><br><span class="line">).squeeze(-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">new_values = value_head(</span><br><span class="line">    new_outputs.hidden_states[-<span class="number">1</span>][:, prompt_length:]</span><br><span class="line">).squeeze(-<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ratio 表示新策略与采样时旧策略对同一动作的概率比。</span></span><br><span class="line">ratio = torch.exp(new_log_probs - old_log_probs)</span><br><span class="line">unclipped_objective = ratio * advantages</span><br><span class="line">clipped_objective = torch.clamp(</span><br><span class="line">    ratio,</span><br><span class="line">    <span class="number">1.0</span> - EPSILON,</span><br><span class="line">    <span class="number">1.0</span> + EPSILON</span><br><span class="line">) * advantages</span><br><span class="line"></span><br><span class="line">policy_loss = -torch.minimum(</span><br><span class="line">    unclipped_objective,</span><br><span class="line">    clipped_objective</span><br><span class="line">).mean()</span><br><span class="line"></span><br><span class="line">value_loss = F.mse_loss(new_values, returns)</span><br><span class="line">loss = policy_loss + VALUE_COEF * value_loss</span><br><span class="line"></span><br><span class="line">optimizer.zero_grad(set_to_none=<span class="literal">True</span>)</span><br><span class="line">loss.backward()</span><br><span class="line">torch.nn.utils.clip_grad_norm_(</span><br><span class="line">    [*policy.parameters(), *value_head.parameters()],</span><br><span class="line">    max_norm=<span class="number">1.0</span></span><br><span class="line">)</span><br><span class="line">optimizer.step()</span><br><span class="line"></span><br><span class="line">generated_text = tokenizer.decode(</span><br><span class="line">    response_ids[<span class="number">0</span>],</span><br><span class="line">    skip_special_tokens=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;采样回答:&quot;</span>, generated_text)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;序列奖励:&quot;</span>, sequence_score.item())</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;PPO 单步完成，loss:&quot;</span>, loss.item())</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;注意：奖励头未经训练，本示例只用于展示 PPO 的核心控制流。&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>执行结果</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">/Users/jean/.pyenv/shims/uv run /Users/jean/PycharmProjects/llm-base/.venv/bin/python /Users/jean/PycharmProjects/llm-base/qwen_ppo_demo.py </span><br><span class="line">运行设备: mps</span><br><span class="line">Loading weights: 100%|██████████| 290/290 [00:00&lt;00:00, 342.03it/s]</span><br><span class="line">Loading weights: 100%|██████████| 290/290 [00:00&lt;00:00, 1389.01it/s]</span><br><span class="line">采样回答: 注意力机制是一种深度学习模型技术，</span><br><span class="line">序列奖励: -5.308444976806641</span><br><span class="line">PPO 单步完成，loss: 21.72451400756836</span><br><span class="line">注意：奖励头未经训练，本示例只用于展示 PPO 的核心控制流。</span><br><span class="line"></span><br><span class="line">Process finished with exit code 0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>工程实践中通常应使用经过验证的 RLHF 训练框架，而不是根据这段伪代码自行实现分布式 PPO。</p>
+<h1 id="常见误区"><a href="#常见误区" class="headerlink" title="常见误区"></a>常见误区</h1><h2 id="误区一：LLM-训练固定分成三个缺一不可的阶段"><a href="#误区一：LLM-训练固定分成三个缺一不可的阶段" class="headerlink" title="误区一：LLM 训练固定分成三个缺一不可的阶段"></a>误区一：LLM 训练固定分成三个缺一不可的阶段</h2><p>预训练、SFT、奖励模型和 PPO 是一条经典路线，但并不是唯一配方。DPO 可以跳过显式奖励模型与 PPO；RLAIF 改变反馈来源；有些领域模型只进行继续预训练和 SFT。</p>
+<h2 id="误区二：只有-RLHF-才能提高安全性"><a href="#误区二：只有-RLHF-才能提高安全性" class="headerlink" title="误区二：只有 RLHF 才能提高安全性"></a>误区二：只有 RLHF 才能提高安全性</h2><p>安全数据 SFT、拒绝采样、DPO、规则系统、输入输出审核和部署期监控都可能参与安全治理。RLHF 不是安全性的充分条件，也不是唯一手段。</p>
+<h2 id="误区三：SFT-永远只在回答部分计算损失"><a href="#误区三：SFT-永远只在回答部分计算损失" class="headerlink" title="误区三：SFT 永远只在回答部分计算损失"></a>误区三：SFT 永远只在回答部分计算损失</h2><p>只训练 Assistant Token 是常见实践，但不是定义本身。是否屏蔽 Prompt、是否训练多轮中的全部 Assistant 回复，以及是否对不同 Token 加权，都属于具体训练配方。</p>
+<h2 id="误区四：偏好标签代表统一的人类价值"><a href="#误区四：偏好标签代表统一的人类价值" class="headerlink" title="误区四：偏好标签代表统一的人类价值"></a>误区四：偏好标签代表统一的人类价值</h2><p>不同人群可能对正确性、风格和安全边界有不同判断。所谓“人类偏好”实际上来自特定标注规范、标注者和采样分布，因此必须报告数据来源并进行偏差评测。</p>
+<h2 id="误区五：训练就是把资料存进模型"><a href="#误区五：训练就是把资料存进模型" class="headerlink" title="误区五：训练就是把资料存进模型"></a>误区五：训练就是把资料存进模型</h2><p>训练通过梯度更新分布式参数，使目标 Token 在相应上下文中获得更高概率。它不是把文档保存成可精确查询、实时更新的数据库。</p>
+<h2 id="误区六：训练-Loss-越低，模型就一定越好"><a href="#误区六：训练-Loss-越低，模型就一定越好" class="headerlink" title="误区六：训练 Loss 越低，模型就一定越好"></a>误区六：训练 Loss 越低，模型就一定越好</h2><p>更低的训练 Loss 可能来自更好学习，也可能伴随过拟合、数据泄漏或基准污染。模型还需要在独立验证集、下游能力、安全性和部署指标上评测。</p>
+<h2 id="误区七：模型参数显存就是全部训练显存"><a href="#误区七：模型参数显存就是全部训练显存" class="headerlink" title="误区七：模型参数显存就是全部训练显存"></a>误区七：模型参数显存就是全部训练显存</h2><p>训练还需要梯度、优化器状态、激活值和临时工作区。使用 AdamW 全参数训练时，训练内存通常显著高于只加载权重进行推理。</p>
+<h2 id="误区八：微调一定能增加新知识"><a href="#误区八：微调一定能增加新知识" class="headerlink" title="误区八：微调一定能增加新知识"></a>误区八：微调一定能增加新知识</h2><p>SFT 更擅长塑造回答格式和行为。注入大量稳定领域知识时，继续预训练、RAG 或外部工具可能更合适，具体取决于知识是否频繁变化、是否需要引用和能否容忍参数记忆误差。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>LLM 训练可以分成两个大的层次：</p>
+<ol>
+<li><strong>预训练</strong>：通过大规模自监督学习获得通用语言能力，产出基础模型；</li>
+<li><strong>后训练</strong>：通过 SFT、偏好优化及其他方法塑造模型行为，产出适合交互和部署的模型。</li>
+</ol>
+<p>其中，SFT、RLHF、DPO 和 RLAIF 并不是互相完全排斥或固定依次出现的步骤，而是后训练工具箱中的不同组成部分。理解每种方法解决什么问题、使用什么数据、优化什么目标，比记住一条固定流程更重要。</p>
+<p>还需要记住：训练是由数据、优化、分布式系统和评测共同构成的工程闭环。能够完成一次 <code>loss.backward()</code>，距离训练出可靠、可部署的大模型仍然很远。</p>
+<p>下一篇将专门介绍模型对齐，深入拆解 SFT、偏好数据、奖励模型、PPO、DPO、RLAIF 和 Reward Hacking。本文中的 RLHF 内容只用于建立训练全景。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2203.02155">Training language models to follow instructions with human feedback</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2305.18290">Direct Preference Optimization: Your Language Model is Secretly a Reward Model</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2212.08073">Constitutional AI: Harmlessness from AI Feedback</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2203.15556">Training Compute-Optimal Large Language Models</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1909.08053">Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/1910.02054">ZeRO: Memory Optimizations Toward Training Trillion Parameter Models</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/tasks/language_modeling">Hugging Face Transformers：Causal language modeling</a></li>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/docs/transformers/chat_templating">Hugging Face Transformers：Chat templates</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E4%B9%A0/" rel="tag"># 人工智能学习</a>
+              <a href="/tags/%E5%A4%A7%E8%AF%AD%E8%A8%80%E6%A8%A1%E5%9E%8B/" rel="tag"># 大语言模型</a>
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/10/ai/llms/8-transformer-architecture/" rel="prev" title="Transformer 架构：LLM 如何理解 Token 之间的关系？">
+      <i class="fa fa-chevron-left"></i> Transformer 架构：LLM 如何理解 Token 之间的关系？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/12/ai/llms/10-llm-alignment/" rel="next" title="LLM 对齐：SFT、RLHF、PPO 与 DPO">
+      LLM 对齐：SFT、RLHF、PPO 与 DPO <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#LLM-%E5%A6%82%E4%BD%95%E8%AE%AD%E7%BB%83%EF%BC%9A%E4%BB%8E%E9%A2%84%E8%AE%AD%E7%BB%83%E5%88%B0%E5%90%8E%E8%AE%AD%E7%BB%83"><span class="nav-number">1.</span> <span class="nav-text">LLM 如何训练：从预训练到后训练</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%AC%E6%96%87%E8%A6%81%E5%9B%9E%E7%AD%94%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">本文要回答什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="nav-number">3.</span> <span class="nav-text">核心概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%84%E8%AE%AD%E7%BB%83%EF%BC%9A%E8%8E%B7%E5%BE%97%E5%9F%BA%E7%A1%80%E8%83%BD%E5%8A%9B"><span class="nav-number">3.1.</span> <span class="nav-text">预训练：获得基础能力</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%91%E7%9D%A3%E5%BE%AE%E8%B0%83%EF%BC%9A%E5%AD%A6%E4%B9%A0%E9%81%B5%E5%BE%AA%E6%8C%87%E4%BB%A4"><span class="nav-number">3.2.</span> <span class="nav-text">监督微调：学习遵循指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%81%8F%E5%A5%BD%E5%AF%B9%E9%BD%90%EF%BC%9A%E8%AE%A9%E5%9B%9E%E7%AD%94%E6%9B%B4%E7%AC%A6%E5%90%88%E7%9B%AE%E6%A0%87"><span class="nav-number">3.3.</span> <span class="nav-text">偏好对齐：让回答更符合目标</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E7%A9%B6%E7%AB%9F%E6%94%B9%E5%8F%98%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">4.</span> <span class="nav-text">训练究竟改变了什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E3%80%81%E5%BE%AE%E8%B0%83%E4%B8%8E%E6%8E%A8%E7%90%86"><span class="nav-number">4.1.</span> <span class="nav-text">训练、微调与推理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8A%80%E6%9C%AF%E7%BB%86%E8%8A%82"><span class="nav-number">5.</span> <span class="nav-text">技术细节</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%95%B0%E6%8D%AE%E5%87%86%E5%A4%87"><span class="nav-number">5.1.</span> <span class="nav-text">1. 数据准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E9%A2%84%E8%AE%AD%E7%BB%83"><span class="nav-number">5.2.</span> <span class="nav-text">2. 预训练</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E4%B8%8B%E4%B8%80%E4%B8%AA-Token-%E9%A2%84%E6%B5%8B"><span class="nav-number">5.2.1.</span> <span class="nav-text">2.1 下一个 Token 预测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E4%B8%80%E4%B8%AA%E8%AE%AD%E7%BB%83-Batch-%E7%BB%8F%E5%8E%86%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">5.2.2.</span> <span class="nav-text">2.2 一个训练 Batch 经历了什么？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E7%BB%A7%E7%BB%AD%E9%A2%84%E8%AE%AD%E7%BB%83"><span class="nav-number">5.2.3.</span> <span class="nav-text">2.3 继续预训练</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3%E8%AE%AD%E7%BB%83%E8%A7%84%E6%A8%A1"><span class="nav-number">5.2.4.</span> <span class="nav-text">2.4 如何理解训练规模</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E7%9B%91%E7%9D%A3%E5%BE%AE%E8%B0%83%EF%BC%88SFT%EF%BC%89"><span class="nav-number">5.3.</span> <span class="nav-text">3. 监督微调（SFT）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E7%BB%8F%E5%85%B8-RLHF%EF%BC%9A%E5%A5%96%E5%8A%B1%E6%A8%A1%E5%9E%8B%E4%B8%8E-PPO"><span class="nav-number">5.4.</span> <span class="nav-text">4. 经典 RLHF：奖励模型与 PPO</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E6%94%B6%E9%9B%86%E5%81%8F%E5%A5%BD%E6%95%B0%E6%8D%AE"><span class="nav-number">5.4.1.</span> <span class="nav-text">4.1 收集偏好数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E8%AE%AD%E7%BB%83%E5%A5%96%E5%8A%B1%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.4.2.</span> <span class="nav-text">4.2 训练奖励模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-%E4%BD%BF%E7%94%A8-PPO-%E4%BC%98%E5%8C%96%E7%AD%96%E7%95%A5%E6%A8%A1%E5%9E%8B"><span class="nav-number">5.4.3.</span> <span class="nav-text">4.3 使用 PPO 优化策略模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-DPO-%E4%B8%8E-RLAIF"><span class="nav-number">5.5.</span> <span class="nav-text">5. DPO 与 RLAIF</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-DPO%EF%BC%9A%E7%9B%B4%E6%8E%A5%E4%BD%BF%E7%94%A8%E5%81%8F%E5%A5%BD%E6%95%B0%E6%8D%AE"><span class="nav-number">5.5.1.</span> <span class="nav-text">5.1 DPO：直接使用偏好数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-RLAIF%EF%BC%9A%E5%8F%8D%E9%A6%88%E6%9D%A5%E6%BA%90%E5%8F%91%E7%94%9F%E5%8F%98%E5%8C%96"><span class="nav-number">5.5.2.</span> <span class="nav-text">5.2 RLAIF：反馈来源发生变化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%90%84%E9%98%B6%E6%AE%B5%E5%AF%B9%E6%AF%94"><span class="nav-number">5.6.</span> <span class="nav-text">6. 各阶段对比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E5%A4%A7%E8%A7%84%E6%A8%A1%E8%AE%AD%E7%BB%83%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%EF%BC%9F"><span class="nav-number">5.7.</span> <span class="nav-text">7. 大规模训练为什么需要分布式系统？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-%E8%AF%84%E6%B5%8B%E4%B8%BA%E4%BB%80%E4%B9%88%E8%B4%AF%E7%A9%BF%E5%85%A8%E6%B5%81%E7%A8%8B%EF%BC%9F"><span class="nav-number">5.8.</span> <span class="nav-text">8. 评测为什么贯穿全流程？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B"><span class="nav-number">6.</span> <span class="nav-text">代码示例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%A2%84%E8%AE%AD%E7%BB%83%EF%BC%9ANext-Token-Prediction"><span class="nav-number">6.1.</span> <span class="nav-text">1. 预训练：Next-Token Prediction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-SFT%EF%BC%9A%E5%8F%AA%E5%9C%A8-Assistant-%E5%9B%9E%E7%AD%94%E4%B8%8A%E8%AE%A1%E7%AE%97%E6%8D%9F%E5%A4%B1"><span class="nav-number">6.2.</span> <span class="nav-text">2. SFT：只在 Assistant 回答上计算损失</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%A5%96%E5%8A%B1%E6%A8%A1%E5%9E%8B%EF%BC%9A%E6%88%90%E5%AF%B9%E5%81%8F%E5%A5%BD%E6%8D%9F%E5%A4%B1"><span class="nav-number">6.3.</span> <span class="nav-text">3. 奖励模型：成对偏好损失</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-PPO%EF%BC%9A%E5%8D%95%E6%AD%A5%E6%95%99%E5%AD%A6%E9%AA%A8%E6%9E%B6"><span class="nav-number">6.4.</span> <span class="nav-text">4. PPO：单步教学骨架</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%AF%E5%8C%BA"><span class="nav-number">7.</span> <span class="nav-text">常见误区</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%80%EF%BC%9ALLM-%E8%AE%AD%E7%BB%83%E5%9B%BA%E5%AE%9A%E5%88%86%E6%88%90%E4%B8%89%E4%B8%AA%E7%BC%BA%E4%B8%80%E4%B8%8D%E5%8F%AF%E7%9A%84%E9%98%B6%E6%AE%B5"><span class="nav-number">7.1.</span> <span class="nav-text">误区一：LLM 训练固定分成三个缺一不可的阶段</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%8C%EF%BC%9A%E5%8F%AA%E6%9C%89-RLHF-%E6%89%8D%E8%83%BD%E6%8F%90%E9%AB%98%E5%AE%89%E5%85%A8%E6%80%A7"><span class="nav-number">7.2.</span> <span class="nav-text">误区二：只有 RLHF 才能提高安全性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%89%EF%BC%9ASFT-%E6%B0%B8%E8%BF%9C%E5%8F%AA%E5%9C%A8%E5%9B%9E%E7%AD%94%E9%83%A8%E5%88%86%E8%AE%A1%E7%AE%97%E6%8D%9F%E5%A4%B1"><span class="nav-number">7.3.</span> <span class="nav-text">误区三：SFT 永远只在回答部分计算损失</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%9B%9B%EF%BC%9A%E5%81%8F%E5%A5%BD%E6%A0%87%E7%AD%BE%E4%BB%A3%E8%A1%A8%E7%BB%9F%E4%B8%80%E7%9A%84%E4%BA%BA%E7%B1%BB%E4%BB%B7%E5%80%BC"><span class="nav-number">7.4.</span> <span class="nav-text">误区四：偏好标签代表统一的人类价值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%BA%94%EF%BC%9A%E8%AE%AD%E7%BB%83%E5%B0%B1%E6%98%AF%E6%8A%8A%E8%B5%84%E6%96%99%E5%AD%98%E8%BF%9B%E6%A8%A1%E5%9E%8B"><span class="nav-number">7.5.</span> <span class="nav-text">误区五：训练就是把资料存进模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AD%EF%BC%9A%E8%AE%AD%E7%BB%83-Loss-%E8%B6%8A%E4%BD%8E%EF%BC%8C%E6%A8%A1%E5%9E%8B%E5%B0%B1%E4%B8%80%E5%AE%9A%E8%B6%8A%E5%A5%BD"><span class="nav-number">7.6.</span> <span class="nav-text">误区六：训练 Loss 越低，模型就一定越好</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E4%B8%83%EF%BC%9A%E6%A8%A1%E5%9E%8B%E5%8F%82%E6%95%B0%E6%98%BE%E5%AD%98%E5%B0%B1%E6%98%AF%E5%85%A8%E9%83%A8%E8%AE%AD%E7%BB%83%E6%98%BE%E5%AD%98"><span class="nav-number">7.7.</span> <span class="nav-text">误区七：模型参数显存就是全部训练显存</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%AF%E5%8C%BA%E5%85%AB%EF%BC%9A%E5%BE%AE%E8%B0%83%E4%B8%80%E5%AE%9A%E8%83%BD%E5%A2%9E%E5%8A%A0%E6%96%B0%E7%9F%A5%E8%AF%86"><span class="nav-number">7.8.</span> <span class="nav-text">误区八：微调一定能增加新知识</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">8.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">9.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Jean Lv"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">Jean Lv</p>
+  <div class="site-description" itemprop="description">涉猎的主要编程语言Java、Python, 领域软件测试、AI测试开发相关</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">179</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">53</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Jean Lv</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'default',
+      logLevel: 3,
+      flowchart: {
+        curve: 'linear',
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      gantt: {
+        axisFormat: '%m/%d/%Y'
+      },
+      sequence: {
+        actorMargin: 50,
+        messageAlign: 'center'
+      }
+    });
+    mermaid.contentLoaded();
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
